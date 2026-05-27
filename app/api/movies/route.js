@@ -6,19 +6,20 @@ export async function GET(request) {
   const mood = searchParams.get('mood') || 'trending';
   const genre = searchParams.get('genre') || '';
   const search = searchParams.get('search') || '';
+  const page = searchParams.get('page') || '1';
 
   try {
     let url;
     if (search) {
-      url = `${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(search)}`;
+      url = `${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(search)}&page=${page}`;
     } else if (mood === 'trending') {
-      url = `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}`;
+      url = `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}&page=${page}`;
     } else if (mood === 'top rated') {
-      url = `${TMDB_BASE}/movie/top_rated?api_key=${TMDB_KEY}`;
+      url = `${TMDB_BASE}/movie/top_rated?api_key=${TMDB_KEY}&page=${page}`;
     } else if (mood === 'new') {
-      url = `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}`;
+      url = `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}&page=${page}`;
     } else {
-      url = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&vote_average.gte=7&vote_count.lte=5000&sort_by=vote_average.desc`;
+      url = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&vote_average.gte=7&vote_count.lte=5000&vote_count.gte=500&sort_by=vote_average.desc&page=${page}`;
     }
     if (genre) url += `&with_genres=${genre}`;
 
