@@ -54,7 +54,7 @@ const GRADS = [
 
 function CommentPanel({ movie, onClose, accent }) {
   const [comments, setComments] = useState([
-    {id:1,user:'reelcritic',avatar:'R',text:'One of the defining films of the decade.',likes:84,time:'2h',liked:false},
+    {id:1,user:'reelcritic',avatar:'R',text:'One of the defining films of the decade. Absolutely unforgettable.',likes:84,time:'2h',liked:false},
     {id:2,user:'filmbuff_mx',avatar:'F',text:'Slow burn but worth every second. That ending hit different.',likes:31,time:'5h',liked:false},
     {id:3,user:'popcorn.wav',avatar:'P',text:'Gorgeous visually but emotionally hollow.',likes:12,time:'1d',liked:false},
   ]);
@@ -134,6 +134,7 @@ function MovieCard({ movie, isActive, index }) {
       <div style={{position:'absolute',left:0,top:'22%',bottom:'22%',width:3,background:`linear-gradient(to bottom,transparent,${accent},transparent)`,opacity:isActive?0.55:0,transition:'opacity 0.5s ease',borderRadius:2}}/>
       <div style={{position:'absolute',inset:0,opacity:0.15,mixBlendMode:'overlay',pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
 
+      {/* Top bar */}
       <div style={{position:'absolute',top:0,left:0,right:0,zIndex:10,padding:'18px 16px 0',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.35)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/>
@@ -146,6 +147,7 @@ function MovieCard({ movie, isActive, index }) {
         </div>
       </div>
 
+      {/* Bottom content */}
       <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
         <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap'}}>
           {(movie.genre||[]).map(g=>(
@@ -161,7 +163,10 @@ function MovieCard({ movie, isActive, index }) {
             <span style={{fontSize:12,color:'rgba(255,255,255,0.38)'}}>{movie.votes} ratings</span>
           </div>
         </div>
-        <p style={{fontSize:13,color:'rgba(255,255,255,0.5)',lineHeight:1.7,margin:'0 0 14px',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{movie.overview}</p>
+
+        {/* Full description — no line clamp */}
+        <p style={{fontSize:13,color:'rgba(255,255,255,0.5)',lineHeight:1.7,margin:'0 0 14px'}}>{movie.overview}</p>
+
         {showStars&&(
           <div style={{display:'flex',gap:5,alignItems:'center',marginBottom:10,animation:'fadeUp 0.2s ease'}}>
             {[1,2,3,4,5].map(s=>(
@@ -174,6 +179,7 @@ function MovieCard({ movie, isActive, index }) {
         )}
       </div>
 
+      {/* Side actions */}
       <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[
           {icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:()=>setLiked(p=>!p)},
@@ -245,18 +251,28 @@ export default function CineScroll() {
   const [searchRes,setSearchRes]=useState([]);
   const [searching,setSearching]=useState(false);
   const containerRef=useRef(null);
+  const pageRef=useRef(1);
+  const loadingMoreRef=useRef(false);
 
-  const fetchMovies=useCallback(async(mood,genre,search='')=>{
-    setLoading(true);
+  const fetchMovies=useCallback(async(mood,genre,search='',page=1,append=false)=>{
+    if(loadingMoreRef.current&&append) return;
+    if(append) loadingMoreRef.current=true;
+    else setLoading(true);
     try{
-      const params=new URLSearchParams({mood:mood.toLowerCase(),genre,search});
+      const params=new URLSearchParams({mood:mood.toLowerCase(),genre,search,page:String(page)});
       const res=await fetch(`/api/movies?${params}`);
       const data=await res.json();
-      setMovies(data.movies||[]);
-      setActiveIndex(0);
-      setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
+      if(append){
+        setMovies(p=>[...p,...(data.movies||[])]);
+      } else {
+        setMovies(data.movies||[]);
+        setActiveIndex(0);
+        pageRef.current=1;
+        setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
+      }
     }catch(e){console.error(e);}
-    setLoading(false);
+    if(append) loadingMoreRef.current=false;
+    else setLoading(false);
   },[]);
 
   useEffect(()=>{fetchMovies(activeMood,activeGenre);},[activeMood,activeGenre]);
@@ -278,10 +294,20 @@ export default function CineScroll() {
   useEffect(()=>{
     const el=containerRef.current;
     if(!el)return;
-    const fn=()=>setActiveIndex(Math.round(el.scrollTop/el.clientHeight));
+    const fn=()=>{
+      const idx=Math.round(el.scrollTop/el.clientHeight);
+      setActiveIndex(idx);
+      setMovies(prev=>{
+        if(idx>=prev.length-3){
+          pageRef.current+=1;
+          fetchMovies(activeMood,activeGenre,'',pageRef.current,true);
+        }
+        return prev;
+      });
+    };
     el.addEventListener('scroll',fn,{passive:true});
     return()=>el.removeEventListener('scroll',fn);
-  },[]);
+  },[activeMood,activeGenre,fetchMovies]);
 
   const scrollTo=i=>{
     containerRef.current?.scrollTo({top:i*containerRef.current.clientHeight,behavior:'smooth'});
@@ -295,6 +321,7 @@ export default function CineScroll() {
     <div style={{width:'100%',height:'100vh',background:'#04040A',overflow:'hidden',position:'relative',fontFamily:"'DM Sans',sans-serif",color:'#fff'}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700;1,900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 
+      {/* Top Nav */}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.8) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
@@ -310,6 +337,7 @@ export default function CineScroll() {
         </div>
       </div>
 
+      {/* Active filter pills */}
       {(activeGenre||activeMood!=='Trending')&&!showFilter&&!showSearch&&(
         <div style={{position:'fixed',top:62,left:16,zIndex:38,display:'flex',gap:6,pointerEvents:'none'}}>
           {activeMood!=='Trending'&&<div style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700}}>{activeMood}</div>}
@@ -317,6 +345,7 @@ export default function CineScroll() {
         </div>
       )}
 
+      {/* Search */}
       {showSearch&&(
         <div style={{position:'fixed',inset:0,zIndex:45,background:'rgba(4,4,10,0.97)',backdropFilter:'blur(24px)',padding:'78px 16px 20px',display:'flex',flexDirection:'column',gap:12,animation:'fadeIn 0.2s ease'}}>
           <div style={{position:'relative'}}>
@@ -344,6 +373,7 @@ export default function CineScroll() {
         </div>
       )}
 
+      {/* Feed */}
       <div ref={containerRef} style={{width:'100%',height:'100vh',overflowY:'scroll',scrollSnapType:'y mandatory',scrollbarWidth:'none'}}>
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         {loading?(
@@ -353,19 +383,21 @@ export default function CineScroll() {
           </div>
         ):(
           movies.map((m,i)=>(
-            <div key={m.id} style={{width:'100%',height:'100vh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative'}}>
+            <div key={`${m.id}-${i}`} style={{width:'100%',height:'100vh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative'}}>
               <MovieCard movie={m} isActive={i===activeIndex} index={i}/>
             </div>
           ))
         )}
       </div>
 
+      {/* Progress dots */}
       <div style={{position:'fixed',right:5,top:'50%',transform:'translateY(-50%)',display:'flex',flexDirection:'column',gap:4,zIndex:20,pointerEvents:'none'}}>
         {movies.slice(0,12).map((_,i)=>(
           <div key={i} style={{width:i===activeIndex?3:2,height:i===activeIndex?24:6,borderRadius:2,background:i===activeIndex?accent:'rgba(255,255,255,0.1)',transition:'all 0.3s ease',boxShadow:i===activeIndex?`0 0 8px ${accent}`:'none'}}/>
         ))}
       </div>
 
+      {/* Scroll hint */}
       {activeIndex===0&&movies.length>1&&(
         <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',zIndex:20,pointerEvents:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:5,animation:'bob 2.2s ease infinite'}}>
           <div style={{fontSize:9,letterSpacing:3,color:'rgba(255,255,255,0.16)',fontWeight:700}}>SCROLL</div>
