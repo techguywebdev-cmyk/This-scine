@@ -632,4 +632,4 @@ export default function CineScroll() {
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}`}</style>
     </div>
   );
-}
+    }
