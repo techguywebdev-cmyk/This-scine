@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useUser, useClerk, SignIn } from '@clerk/nextjs';
+import { useUser, useClerk } from '@clerk/nextjs';
 
 const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) => {
   const icons = {
@@ -20,7 +20,6 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     similar:  'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
     reply:    ['M9 17l-5-5 5-5','M4 12h11a4 4 0 0 1 0 8h-1'],
     user:     ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2','M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
-    google:   'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
     logout:   ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4','M16 17l5-5-5-5','M21 12H9'],
   };
   const def = icons[name];
@@ -63,13 +62,13 @@ function AuthGate({ onClose, accent }) {
   const { openSignIn } = useClerk();
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',justifyContent:'center',animation:'fadeIn 0.2s ease'}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'rgba(5,5,12,0.98)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 24px 44px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'rgba(5,5,12,0.98)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 24px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 24px'}}/>
         <div style={{textAlign:'center',marginBottom:28}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:900,fontStyle:'italic',color:'#fff',marginBottom:8}}>Join CineScroll</div>
           <div style={{fontSize:14,color:'rgba(255,255,255,0.45)',lineHeight:1.6}}>Sign in to leave reviews, save your watchlist, and discover films with friends.</div>
         </div>
-        <button onClick={() => { openSignIn(); onClose(); }} style={{width:'100%',background:'#fff',border:'none',borderRadius:16,padding:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:12,fontFamily:'inherit'}}>
+        <button onClick={()=>{openSignIn();onClose();}} style={{width:'100%',background:'#fff',border:'none',borderRadius:16,padding:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:12,fontFamily:'inherit'}}>
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -78,7 +77,7 @@ function AuthGate({ onClose, accent }) {
           </svg>
           <span style={{fontSize:15,fontWeight:700,color:'#1a1a1a'}}>Continue with Google</span>
         </button>
-        <button onClick={() => { openSignIn(); onClose(); }} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:16,padding:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,fontFamily:'inherit'}}>
+        <button onClick={()=>{openSignIn();onClose();}} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:16,padding:'16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,fontFamily:'inherit'}}>
           <SvgIcon name="user" size={18} color="rgba(255,255,255,0.7)"/>
           <span style={{fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>Sign in with Email</span>
         </button>
@@ -93,15 +92,10 @@ function AuthGate({ onClose, accent }) {
 function UserMenu({ onClose, accent }) {
   const { user } = useUser();
   const { signOut } = useClerk();
-  const watched = 42;
-  const reviews = 8;
-
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(12px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'rgba(5,5,12,0.98)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 24px 44px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'rgba(5,5,12,0.98)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 24px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 20px'}}/>
-
-        {/* Profile header */}
         <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:24,paddingBottom:20,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           <div style={{width:52,height:52,borderRadius:'50%',background:`${accent}22`,border:`2px solid ${accent}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
             {user?.imageUrl
@@ -110,27 +104,19 @@ function UserMenu({ onClose, accent }) {
             }
           </div>
           <div>
-            <div style={{fontSize:16,fontWeight:700,color:'#fff'}}>{user?.firstName || user?.username || 'Cinephile'}</div>
+            <div style={{fontSize:16,fontWeight:700,color:'#fff'}}>{user?.firstName||user?.username||'Cinephile'}</div>
             <div style={{fontSize:12,color:'rgba(255,255,255,0.35)',marginTop:2}}>{user?.primaryEmailAddress?.emailAddress}</div>
           </div>
         </div>
-
-        {/* Stats */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:24}}>
-          {[
-            {label:'Watched',value:watched},
-            {label:'Reviews',value:reviews},
-            {label:'Saved',value:12},
-          ].map(s=>(
+          {[{label:'Watched',value:42},{label:'Reviews',value:8},{label:'Saved',value:12}].map(s=>(
             <div key={s.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'14px 10px',textAlign:'center'}}>
               <div style={{fontSize:22,fontWeight:800,color:accent,fontFamily:"'Playfair Display',serif"}}>{s.value}</div>
               <div style={{fontSize:10,color:'rgba(255,255,255,0.35)',marginTop:3,letterSpacing:0.5}}>{s.label}</div>
             </div>
           ))}
         </div>
-
-        {/* Sign out */}
-        <button onClick={() => signOut()} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit'}}>
+        <button onClick={()=>signOut()} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit'}}>
           <SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/>
           <span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span>
         </button>
@@ -153,7 +139,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const inputRef = useRef(null);
 
   const toggleLike = id => setComments(p => p.map(c =>
-    c.id === id ? {...c, liked:!c.liked, likes:c.liked?c.likes-1:c.likes+1} : c
+    c.id===id ? {...c,liked:!c.liked,likes:c.liked?c.likes-1:c.likes+1} : c
   ));
 
   const startReply = (comment) => {
@@ -166,11 +152,11 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const post = () => {
     if (!isSignedIn) { onAuthRequired(); return; }
     if (!input.trim()) return;
-    const username = user?.username || user?.firstName || 'you';
-    const avatar = (user?.firstName || user?.username || 'Y')[0].toUpperCase();
+    const username = user?.username||user?.firstName||'you';
+    const avatar = (user?.firstName||user?.username||'Y')[0].toUpperCase();
     if (replyingTo) {
-      setComments(p => p.map(c => c.id === replyingTo.id
-        ? {...c, replies:[...(c.replies||[]),{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false}]}
+      setComments(p => p.map(c => c.id===replyingTo.id
+        ? {...c,replies:[...(c.replies||[]),{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false}]}
         : c
       ));
     } else {
@@ -181,9 +167,11 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   };
 
   return (
-    <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'72%',background:'rgba(4,4,8,0.98)',backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+    <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:'rgba(4,4,8,0.98)',backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
       <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'10px auto 0',flexShrink:0}}/>
+
+      {/* Header */}
       <div style={{padding:'12px 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
         <div>
           <span style={{fontSize:15,fontWeight:700,color:'#fff'}}>Reviews</span>
@@ -194,6 +182,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         </button>
       </div>
 
+      {/* Comments list */}
       <div style={{flex:1,overflowY:'auto',padding:'12px 20px',display:'flex',flexDirection:'column',gap:14,scrollbarWidth:'none',minHeight:0}}>
         {comments.map(c=>(
           <div key={c.id}>
@@ -206,11 +195,11 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
                 </div>
                 <p style={{fontSize:13.5,color:'rgba(255,255,255,0.65)',lineHeight:1.55,margin:'0 0 6px'}}>{c.text}</p>
                 <div style={{display:'flex',gap:12,alignItems:'center'}}>
-                  <button onClick={() => toggleLike(c.id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
+                  <button onClick={()=>toggleLike(c.id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
                     <SvgIcon name="heart" size={12} color={c.liked?'#FF6B8A':'rgba(255,255,255,0.2)'} filled={c.liked}/>
                     <span style={{fontSize:11,fontWeight:600,color:c.liked?'#FF6B8A':'rgba(255,255,255,0.2)'}}>{c.likes}</span>
                   </button>
-                  <button onClick={() => startReply(c)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
+                  <button onClick={()=>startReply(c)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
                     <SvgIcon name="reply" size={12} color="rgba(255,255,255,0.25)"/>
                     <span style={{fontSize:11,color:'rgba(255,255,255,0.25)',fontWeight:500}}>Reply</span>
                   </button>
@@ -233,6 +222,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         ))}
       </div>
 
+      {/* Reply indicator */}
       {replyingTo&&(
         <div style={{padding:'6px 20px',background:'rgba(255,255,255,0.04)',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <span style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>Replying to <span style={{color:accent}}>@{replyingTo.user}</span></span>
@@ -240,18 +230,23 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         </div>
       )}
 
-      {/* Input — always visible */}
+      {/* Input — always pinned to bottom */}
       {isSignedIn ? (
-        <div style={{padding:'10px 16px 20px',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',gap:8,alignItems:'center',flexShrink:0,background:'rgba(4,4,8,0.98)'}}>
-          <input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&post()}
+        <div style={{padding:'10px 16px 34px',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',gap:8,alignItems:'center',flexShrink:0,background:'rgba(4,4,8,0.98)'}}>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&post()}
             placeholder={replyingTo?`Reply to @${replyingTo.user}...`:'Write a review...'}
-            style={{flex:1,background:'rgba(255,255,255,0.06)',border:`1px solid ${replyingTo?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+            style={{flex:1,background:'rgba(255,255,255,0.06)',border:`1px solid ${replyingTo?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}
+          />
           <button onClick={post} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <SvgIcon name="send" size={14} color="#000"/>
           </button>
         </div>
       ) : (
-        <div style={{padding:'14px 20px 24px',borderTop:'1px solid rgba(255,255,255,0.05)',flexShrink:0,background:'rgba(4,4,8,0.98)'}}>
+        <div style={{padding:'14px 20px 34px',borderTop:'1px solid rgba(255,255,255,0.05)',flexShrink:0,background:'rgba(4,4,8,0.98)'}}>
           <button onClick={onAuthRequired} style={{width:'100%',background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:16,padding:'13px',cursor:'pointer',fontFamily:'inherit',fontSize:14,color:accent,fontWeight:600}}>
             Sign in to leave a review
           </button>
@@ -333,20 +328,9 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired }) {
   const accent=movie.accent||'#F5A623';
   const bgImage=movie.backdrop||movie.poster;
 
-  const handleLike = () => {
-    if (!isSignedIn) { onAuthRequired(); return; }
-    setLiked(p=>!p);
-  };
-
-  const handleSave = () => {
-    if (!isSignedIn) { onAuthRequired(); return; }
-    setSaved(p=>!p);
-  };
-
-  const handleRate = () => {
-    if (!isSignedIn) { onAuthRequired(); return; }
-    setShowStars(p=>!p);
-  };
+  const handleLike=()=>{ if(!isSignedIn){onAuthRequired();return;} setLiked(p=>!p); };
+  const handleSave=()=>{ if(!isSignedIn){onAuthRequired();return;} setSaved(p=>!p); };
+  const handleRate=()=>{ if(!isSignedIn){onAuthRequired();return;} setShowStars(p=>!p); };
 
   return (
     <div style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A'}}>
@@ -363,8 +347,8 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired }) {
       <div style={{position:'absolute',left:0,top:'22%',bottom:'22%',width:3,background:`linear-gradient(to bottom,transparent,${accent},transparent)`,opacity:isActive?0.55:0,transition:'opacity 0.5s ease',borderRadius:2}}/>
       <div style={{position:'absolute',inset:0,opacity:0.15,mixBlendMode:'overlay',pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
 
-      {/* Top bar */}
-      <div style={{position:'absolute',top:64,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
+      {/* Top bar — pushed down to 80px to clear the nav */}
+      <div style={{position:'absolute',top:80,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/>
           <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.45)',letterSpacing:2.5,textTransform:'uppercase'}}>{String(index+1).padStart(2,'0')}</span>
@@ -554,7 +538,6 @@ export default function CineScroll() {
           <button onClick={()=>{setShowFilter(p=>!p);setShowSearch(false);}} style={{background:showFilter?`${accent}18`:'rgba(0,0,0,0.55)',border:`1px solid ${showFilter?accent+'44':'rgba(255,255,255,0.1)'}`,borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)',transition:'all 0.2s ease'}}>
             <SvgIcon name="sliders" size={17} color={showFilter?accent:'rgba(255,255,255,0.7)'}/>
           </button>
-          {/* User avatar / sign in button */}
           {isSignedIn ? (
             <button onClick={()=>setShowUserMenu(true)} style={{width:36,height:36,borderRadius:'50%',background:`${accent}22`,border:`2px solid ${accent}55`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0}}>
               {user?.imageUrl
