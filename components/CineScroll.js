@@ -57,7 +57,6 @@ const GRADS = [
   'linear-gradient(170deg,#080005 0%,#200010 50%,#6b0a35 100%)',
 ];
 
-// ─── Auth Gate ────────────────────────────────────────────────────────────────
 function AuthGate({ onClose, accent }) {
   const { openSignIn } = useClerk();
   return (
@@ -88,7 +87,6 @@ function AuthGate({ onClose, accent }) {
   );
 }
 
-// ─── User Menu ────────────────────────────────────────────────────────────────
 function UserMenu({ onClose, accent }) {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -126,7 +124,6 @@ function UserMenu({ onClose, accent }) {
   );
 }
 
-// ─── Comment Panel ────────────────────────────────────────────────────────────
 function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const { isSignedIn, user } = useUser();
   const [comments, setComments] = useState([
@@ -170,8 +167,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
     <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:'rgba(4,4,8,0.98)',backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
       <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'10px auto 0',flexShrink:0}}/>
-
-      {/* Header */}
       <div style={{padding:'12px 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
         <div>
           <span style={{fontSize:15,fontWeight:700,color:'#fff'}}>Reviews</span>
@@ -182,8 +177,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         </button>
       </div>
 
-      {/* Comments list */}
-      <div style={{flex:1,overflowY:'auto',padding:'12px 20px',display:'flex',flexDirection:'column',gap:14,scrollbarWidth:'none',minHeight:0}}>
+      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'12px 20px',display:'flex',flexDirection:'column',gap:14,scrollbarWidth:'none',minHeight:0}}>
         {comments.map(c=>(
           <div key={c.id}>
             <div style={{display:'flex',gap:10}}>
@@ -222,7 +216,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         ))}
       </div>
 
-      {/* Reply indicator */}
       {replyingTo&&(
         <div style={{padding:'6px 20px',background:'rgba(255,255,255,0.04)',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <span style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>Replying to <span style={{color:accent}}>@{replyingTo.user}</span></span>
@@ -230,17 +223,11 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         </div>
       )}
 
-      {/* Input — always pinned to bottom */}
       {isSignedIn ? (
         <div style={{padding:'10px 16px 34px',borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',gap:8,alignItems:'center',flexShrink:0,background:'rgba(4,4,8,0.98)'}}>
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={e=>setInput(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&post()}
+          <input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&post()}
             placeholder={replyingTo?`Reply to @${replyingTo.user}...`:'Write a review...'}
-            style={{flex:1,background:'rgba(255,255,255,0.06)',border:`1px solid ${replyingTo?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}
-          />
+            style={{flex:1,background:'rgba(255,255,255,0.06)',border:`1px solid ${replyingTo?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
           <button onClick={post} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <SvgIcon name="send" size={14} color="#000"/>
           </button>
@@ -256,7 +243,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   );
 }
 
-// ─── Similar Sheet ────────────────────────────────────────────────────────────
 function SimilarSheet({ movie, onClose, accent, onSelect }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -285,7 +271,7 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
             <SvgIcon name="close" size={12} color="rgba(255,255,255,0.4)"/>
           </button>
         </div>
-        <div style={{flex:1,overflowY:'auto',padding:'12px 20px',display:'flex',flexDirection:'column',gap:8,scrollbarWidth:'none'}}>
+        <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'12px 20px',display:'flex',flexDirection:'column',gap:8,scrollbarWidth:'none'}}>
           {loading&&<div style={{textAlign:'center',padding:30,color:'rgba(255,255,255,0.3)',fontSize:13}}>Finding similar titles…</div>}
           {!loading&&items.length===0&&<div style={{textAlign:'center',padding:30,color:'rgba(255,255,255,0.3)',fontSize:13}}>No similar titles found</div>}
           {items.map((m,i)=>(
@@ -313,7 +299,6 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
   );
 }
 
-// ─── Movie Card ───────────────────────────────────────────────────────────────
 function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired }) {
   const { isSignedIn } = useUser();
   const [liked,setLiked]=useState(false);
@@ -347,7 +332,7 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired }) {
       <div style={{position:'absolute',left:0,top:'22%',bottom:'22%',width:3,background:`linear-gradient(to bottom,transparent,${accent},transparent)`,opacity:isActive?0.55:0,transition:'opacity 0.5s ease',borderRadius:2}}/>
       <div style={{position:'absolute',inset:0,opacity:0.15,mixBlendMode:'overlay',pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
 
-      {/* Top bar — pushed down to 80px to clear the nav */}
+      {/* Top bar */}
       <div style={{position:'absolute',top:80,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/>
@@ -413,7 +398,6 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired }) {
   );
 }
 
-// ─── Filter Sheet ─────────────────────────────────────────────────────────────
 function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
   return (
     <>
@@ -453,7 +437,6 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
 export default function CineScroll() {
   const { isSignedIn, user } = useUser();
   const { openSignIn } = useClerk();
@@ -522,7 +505,7 @@ export default function CineScroll() {
   const activeGenreLabel=GENRE_OPTIONS.find(g=>g.id===activeGenre)?.label||'All';
 
   return(
-    <div style={{width:'100%',height:'100vh',background:'#04040A',overflow:'hidden',position:'relative',fontFamily:"'DM Sans',sans-serif",color:'#fff'}}>
+    <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"'DM Sans',sans-serif",color:'#fff',overflow:'hidden'}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700;1,900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 
       {/* Top Nav */}
@@ -568,7 +551,7 @@ export default function CineScroll() {
             <div style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)'}}><SvgIcon name="search" size={16} color="rgba(255,255,255,0.28)"/></div>
             <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search movies & TV shows..." style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.09)',borderRadius:14,padding:'13px 16px 13px 42px',color:'#fff',fontSize:16,outline:'none',fontFamily:'inherit'}}/>
           </div>
-          <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:6,scrollbarWidth:'none'}}>
+          <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',display:'flex',flexDirection:'column',gap:6,scrollbarWidth:'none'}}>
             {searching&&<div style={{textAlign:'center',padding:20,color:'rgba(255,255,255,0.3)',fontSize:13}}>Searching…</div>}
             {(searchQ?searchRes:movies).map((m,i)=>(
               <button key={m.id} onClick={()=>{if(!searchQ){scrollTo(i);}else{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}setShowSearch(false);setSearchQ('');}} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'11px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit'}}>
@@ -592,17 +575,17 @@ export default function CineScroll() {
         </div>
       )}
 
-      {/* Feed */}
-      <div ref={containerRef} style={{width:'100%',height:'100vh',overflowY:'scroll',scrollSnapType:'y mandatory',scrollbarWidth:'none'}}>
+      {/* Feed — iOS optimised */}
+      <div ref={containerRef} style={{position:'fixed',inset:0,overflowY:'scroll',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         {loading?(
-          <div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'start',flexDirection:'column',gap:12}}>
+          <div style={{height:'100dvh',display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'start',flexDirection:'column',gap:12}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:40,fontWeight:900,fontStyle:'italic',color:'#fff'}}>CineScroll</div>
             <div style={{fontSize:11,color:'rgba(255,255,255,0.2)',letterSpacing:3}}>LOADING FILMS…</div>
           </div>
         ):(
           movies.map((m,i)=>(
-            <div key={`${m.id}-${i}`} style={{width:'100%',height:'100vh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative'}}>
+            <div key={`${m.id}-${i}`} style={{width:'100%',height:'100dvh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
               <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)}/>
             </div>
           ))
@@ -632,4 +615,4 @@ export default function CineScroll() {
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}`}</style>
     </div>
   );
-    }
+  }
