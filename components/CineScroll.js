@@ -23,9 +23,9 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     logout:   ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4','M16 17l5-5-5-5','M21 12H9'],
     trash:    ['M3 6h18','M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6','M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2'],
     check:    'M20 6L9 17l-5-5',
-    film:     ['M2 8h20','M2 16h20','M7 2v20','M17 2v20','M2 2h20a0 0 0 0 1 0 0v20a0 0 0 0 1 0 0H2a0 0 0 0 1 0 0V2a0 0 0 0 1 0 0z'],
     award:    ['M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14z','M8.21 13.89L7 23l5-3 5 3-1.21-9.12'],
     share:    ['M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8','M16 6l-4-4-4 4','M12 2v13'],
+    loader:   ['M12 2v4','M12 18v4','M4.93 4.93l2.83 2.83','M16.24 16.24l2.83 2.83','M2 12h4','M18 12h4','M4.93 19.07l2.83-2.83','M16.24 7.76l2.83-2.83'],
   };
   const def = icons[name];
   if (!def) return null;
@@ -62,19 +62,131 @@ const GRADS = [
   'linear-gradient(170deg,#080005 0%,#200010 50%,#6b0a35 100%)',
 ];
 
-// ─── CineScore Calculator ─────────────────────────────────────────────────────
+// ─── Share Card Generator ─────────────────────────────────────────────────────
+function generateShareCard(type, data, accent) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 450;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, 800, 450);
+  bg.addColorStop(0, '#04040A');
+  bg.addColorStop(1, '#0a0a18');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 800, 450);
+
+  // Accent glow
+  const glow = ctx.createRadialGradient(400, 225, 0, 400, 225, 400);
+  glow.addColorStop(0, accent + '22');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, 800, 450);
+
+  // Border
+  ctx.strokeStyle = accent + '44';
+  ctx.lineWidth = 2;
+  ctx.roundRect(10, 10, 780, 430, 20);
+  ctx.stroke();
+
+  // Logo
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.arc(50, 50, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'italic bold 22px Georgia, serif';
+  ctx.fillText('CineScroll', 68, 57);
+
+  if (type === 'score') {
+    // CineScore card
+    ctx.fillStyle = accent;
+    ctx.font = 'bold 100px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(data.score, 400, 230);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CINESCORE', 400, 270);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'italic 24px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(data.name, 400, 320);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`${data.watched} watched · ${data.reviews} reviews · ${data.saved} saved`, 400, 355);
+
+    ctx.fillStyle = accent + '88';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('this-scine.vercel.app', 400, 420);
+
+  } else if (type === 'watchlist') {
+    // Watchlist card
+    ctx.fillStyle = '#fff';
+    ctx.font = 'italic bold 28px Georgia, serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${data.name}'s Watchlist`, 40, 115);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`${data.total} films · ${data.watched} watched`, 40, 140);
+
+    // Show up to 5 movie titles
+    const items = data.items.slice(0, 5);
+    items.forEach((m, i) => {
+      const y = 175 + i * 44;
+      ctx.fillStyle = accent + '22';
+      ctx.roundRect(40, y - 22, 720, 36, 8);
+      ctx.fill();
+      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.3)' : '#fff';
+      ctx.font = m.watched ? '14px sans-serif' : 'bold 14px sans-serif';
+      ctx.fillText(`${i + 1}. ${m.title} (${m.year})`, 58, y);
+      ctx.fillStyle = accent;
+      ctx.font = '13px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`★ ${m.rating}`, 750, y);
+      ctx.textAlign = 'left';
+    });
+
+    if (data.total > 5) {
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`+ ${data.total - 5} more`, 40, 175 + 5 * 44);
+    }
+
+    ctx.fillStyle = accent + '88';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('this-scine.vercel.app', 400, 420);
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+async function shareImage(dataUrl, title, text) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const file = new File([blob], 'cinescroll-share.png', { type: 'image/png' });
+  if (navigator.share && navigator.canShare({ files: [file] })) {
+    await navigator.share({ title, text, files: [file], url: 'https://this-scine.vercel.app' });
+  } else {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'cinescroll-share.png';
+    a.click();
+  }
+}
+
+// ─── CineScore Ring ───────────────────────────────────────────────────────────
 function calcCineScore(watched, reviews, saved, ratings) {
-  const base = (watched * 3) + (reviews * 8) + (saved * 2) + (ratings * 4);
-  return Math.min(999, base);
+  return Math.min(999, (watched * 3) + (reviews * 8) + (saved * 2) + (ratings * 4));
 }
 
 function CineScoreRing({ score, accent }) {
-  const max = 999;
-  const pct = score / max;
-  const r = 38;
-  const circ = 2 * Math.PI * r;
-  const dash = pct * circ;
-
+  const r = 38, circ = 2 * Math.PI * r;
+  const dash = (score / 999) * circ;
   return (
     <div style={{position:'relative',width:100,height:100,display:'flex',alignItems:'center',justifyContent:'center'}}>
       <svg width="100" height="100" style={{position:'absolute',inset:0,transform:'rotate(-90deg)'}}>
@@ -92,37 +204,110 @@ function CineScoreRing({ score, accent }) {
 }
 
 // ─── Profile Sheet ────────────────────────────────────────────────────────────
-function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews }) {
+function ProfileSheet({ onClose, accent }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [tab, setTab] = useState('profile');
+  const [watchlist, setWatchlist] = useState([]);
+  const [userReviews, setUserReviews] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoadingData(true);
+      try {
+        const [wRes, rRes] = await Promise.all([
+          fetch('/api/watchlist'),
+          fetch('/api/reviews'),
+        ]);
+        const wData = await wRes.json();
+        const rData = await rRes.json();
+        setWatchlist(wData.items || []);
+        setUserReviews(rData.items || []);
+      } catch {}
+      setLoadingData(false);
+    };
+    load();
+  }, []);
+
+  const toggleWatched = async (item) => {
+    const next = !item.watched;
+    setWatchlist(p => p.map(m => m.movie_id === item.movie_id ? {...m, watched: next} : m));
+    await fetch('/api/watchlist', {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ movieId: item.movie_id, watched: next }),
+    });
+  };
+
+  const removeFromWatchlist = async (item) => {
+    setWatchlist(p => p.filter(m => m.movie_id !== item.movie_id));
+    await fetch('/api/watchlist', {
+      method: 'DELETE',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ movieId: item.movie_id }),
+    });
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOut();
+  };
 
   const watched = watchlist.filter(m => m.watched).length;
   const saved = watchlist.length;
   const reviews = userReviews.length;
-  const ratings = watchlist.filter(m => m.rating > 0).length;
-  const cineScore = calcCineScore(watched, reviews, saved, ratings);
+  const cineScore = calcCineScore(watched, reviews, saved, 0);
 
   const topGenres = watchlist
     .flatMap(m => m.genre || [])
     .reduce((acc, g) => { acc[g] = (acc[g] || 0) + 1; return acc; }, {});
   const sortedGenres = Object.entries(topGenres).sort((a,b) => b[1]-a[1]).slice(0,3);
 
-  const avgRating = watchlist.filter(m=>m.rating>0).length > 0
-    ? (watchlist.filter(m=>m.rating>0).reduce((s,m)=>s+m.rating,0) / watchlist.filter(m=>m.rating>0).length).toFixed(1)
+  const avgRating = userReviews.filter(r=>r.rating>0).length > 0
+    ? (userReviews.filter(r=>r.rating>0).reduce((s,r)=>s+r.rating,0) / userReviews.filter(r=>r.rating>0).length).toFixed(1)
     : '—';
 
-  const TABS = ['profile','watchlist','reviews'];
+  const handleShareScore = async () => {
+    setSharing(true);
+    try {
+      const dataUrl = generateShareCard('score', {
+        score: cineScore,
+        name: user?.firstName || user?.username || 'Cinephile',
+        watched, reviews, saved,
+      }, accent);
+      await shareImage(dataUrl, 'My CineScore', `My CineScore is ${cineScore}! Check out CineScroll`);
+    } catch(e) { console.error(e); }
+    setSharing(false);
+  };
+
+  const handleShareWatchlist = async () => {
+    setSharing(true);
+    try {
+      const dataUrl = generateShareCard('watchlist', {
+        name: user?.firstName || user?.username || 'Cinephile',
+        total: watchlist.length,
+        watched,
+        items: watchlist.map(m => ({ title: m.title, year: m.year, rating: m.rating, watched: m.watched })),
+      }, accent);
+      await shareImage(dataUrl, 'My CineScroll Watchlist', `Check out my watchlist on CineScroll!`);
+    } catch(e) { console.error(e); }
+    setSharing(false);
+  };
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(12px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       <div onClick={e=>e.stopPropagation()} style={{width:'100%',height:'88%',background:'rgba(5,5,12,0.98)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.35s cubic-bezier(0.22,1,0.36,1)'}}>
-        <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+        <style>{`
+          @keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+          @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+          @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        `}</style>
 
-        {/* Handle */}
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 0',flexShrink:0}}/>
 
-        {/* Header */}
         <div style={{padding:'16px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:900,fontStyle:'italic',color:'#fff'}}>My Profile</span>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -131,15 +316,14 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
         </div>
 
         {/* Tabs */}
-        <div style={{display:'flex',gap:0,padding:'14px 20px 0',flexShrink:0,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-          {TABS.map(t=>(
+        <div style={{display:'flex',padding:'14px 20px 0',flexShrink:0,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+          {['profile','watchlist','reviews'].map(t=>(
             <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:'none',border:'none',cursor:'pointer',padding:'8px 0 12px',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:400,color:tab===t?accent:'rgba(255,255,255,0.35)',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,transition:'all 0.2s ease',textTransform:'capitalize'}}>
-              {t}
+              {t}{t==='watchlist'&&watchlist.length>0?` (${watchlist.length})`:''}
             </button>
           ))}
         </div>
 
-        {/* Content */}
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
 
           {/* ── PROFILE TAB ── */}
@@ -158,7 +342,7 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
                   <div style={{fontSize:12,color:'rgba(255,255,255,0.35)',marginTop:2}}>{user?.primaryEmailAddress?.emailAddress}</div>
                   <div style={{display:'flex',alignItems:'center',gap:4,marginTop:6}}>
                     <div style={{width:6,height:6,borderRadius:'50%',background:accent}}/>
-                    <span style={{fontSize:11,color:accent,fontWeight:600,letterSpacing:0.5}}>Active Member</span>
+                    <span style={{fontSize:11,color:accent,fontWeight:600}}>Active Member</span>
                   </div>
                 </div>
               </div>
@@ -168,20 +352,19 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
                 <CineScoreRing score={cineScore} accent={accent}/>
                 <div style={{flex:1}}>
                   <div style={{fontSize:11,letterSpacing:2,color:'rgba(255,255,255,0.35)',fontWeight:700,marginBottom:6,textTransform:'uppercase'}}>CineScore</div>
-                  <div style={{fontSize:13,color:'rgba(255,255,255,0.6)',lineHeight:1.6}}>
-                    {cineScore < 100 ? 'Just getting started. Watch more films!' :
-                     cineScore < 300 ? 'Casual viewer. Keep exploring.' :
-                     cineScore < 600 ? 'Dedicated cinephile. Impressive.' :
-                     'Elite film connoisseur. Legendary.'}
+                  <div style={{fontSize:13,color:'rgba(255,255,255,0.6)',lineHeight:1.6,marginBottom:10}}>
+                    {cineScore<100?'Just getting started. Watch more films!':
+                     cineScore<300?'Casual viewer. Keep exploring.':
+                     cineScore<600?'Dedicated cinephile. Impressive.':'Elite film connoisseur. Legendary.'}
                   </div>
-                  <button style={{marginTop:10,background:'none',border:`1px solid ${accent}44`,borderRadius:20,padding:'4px 12px',cursor:'pointer',fontSize:11,color:accent,fontWeight:600,fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}}>
-                    <SvgIcon name="share" size={11} color={accent}/>
-                    Share Score
+                  <button onClick={handleShareScore} disabled={sharing} style={{background:'none',border:`1px solid ${accent}44`,borderRadius:20,padding:'5px 14px',cursor:'pointer',fontSize:11,color:accent,fontWeight:600,fontFamily:'inherit',display:'flex',alignItems:'center',gap:6,opacity:sharing?0.6:1}}>
+                    {sharing ? <span style={{animation:'spin 0.8s linear infinite',display:'inline-block'}}>◌</span> : <SvgIcon name="share" size={11} color={accent}/>}
+                    {sharing ? 'Preparing...' : 'Share Score'}
                   </button>
                 </div>
               </div>
 
-              {/* Stats grid */}
+              {/* Stats */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
                 {[
                   {label:'Films Watched',value:watched,icon:'eye'},
@@ -200,39 +383,33 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
               </div>
 
               {/* Top genres */}
-              {sortedGenres.length > 0 && (
+              {sortedGenres.length>0&&(
                 <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'16px',marginBottom:16}}>
                   <div style={{fontSize:10,letterSpacing:2,color:'rgba(255,255,255,0.3)',fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Top Genres</div>
-                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {sortedGenres.map(([genre, count], i)=>{
-                      const maxCount = sortedGenres[0][1];
-                      const pct = (count/maxCount)*100;
-                      return (
-                        <div key={genre}>
-                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                            <span style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontWeight:500}}>{genre}</span>
-                            <span style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>{count}</span>
-                          </div>
-                          <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.06)'}}>
-                            <div style={{height:'100%',borderRadius:2,background:accent,width:`${pct}%`,transition:'width 0.8s ease'}}/>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {sortedGenres.map(([genre,count])=>(
+                    <div key={genre} style={{marginBottom:8}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                        <span style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontWeight:500}}>{genre}</span>
+                        <span style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>{count}</span>
+                      </div>
+                      <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.06)'}}>
+                        <div style={{height:'100%',borderRadius:2,background:accent,width:`${(count/sortedGenres[0][1])*100}%`,transition:'width 0.8s ease'}}/>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {sortedGenres.length === 0 && (
-                <div style={{textAlign:'center',padding:'20px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>
-                  Save movies to build your taste profile
-                </div>
+              {sortedGenres.length===0&&!loadingData&&(
+                <div style={{textAlign:'center',padding:'20px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>Save movies to build your taste profile</div>
               )}
 
               {/* Sign out */}
-              <button onClick={()=>signOut()} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',marginTop:8}}>
-                <SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/>
-                <span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span>
+              <button onClick={handleSignOut} disabled={signingOut} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',marginTop:8,opacity:signingOut?0.7:1}}>
+                {signingOut
+                  ? <><span style={{fontSize:14,animation:'spin 0.8s linear infinite',display:'inline-block'}}>◌</span><span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Signing out…</span></>
+                  : <><SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/><span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span></>
+                }
               </button>
             </div>
           )}
@@ -240,31 +417,39 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
           {/* ── WATCHLIST TAB ── */}
           {tab==='watchlist'&&(
             <div style={{padding:'16px 20px'}}>
-              {watchlist.length===0 ? (
+              {watchlist.length>0&&(
+                <button onClick={handleShareWatchlist} disabled={sharing} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:`1px solid ${accent}44`,borderRadius:14,padding:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit',marginBottom:14,opacity:sharing?0.6:1}}>
+                  {sharing?<span style={{animation:'spin 0.8s linear infinite',display:'inline-block'}}>◌</span>:<SvgIcon name="share" size={15} color={accent}/>}
+                  <span style={{fontSize:13,color:accent,fontWeight:600}}>{sharing?'Preparing...':'Share Watchlist'}</span>
+                </button>
+              )}
+              {loadingData?(
+                <div style={{textAlign:'center',padding:40,color:'rgba(255,255,255,0.3)',fontSize:13}}>Loading…</div>
+              ):watchlist.length===0?(
                 <div style={{textAlign:'center',padding:'40px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
                   <SvgIcon name="bookmark" size={36} color="rgba(255,255,255,0.1)"/>
                   <div style={{fontSize:15,color:'rgba(255,255,255,0.3)',fontWeight:500}}>Your watchlist is empty</div>
                   <div style={{fontSize:13,color:'rgba(255,255,255,0.2)'}}>Tap Save on any film to add it here</div>
                 </div>
-              ) : (
+              ):(
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   {watchlist.map((m,i)=>(
-                    <div key={m.id} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'10px 14px'}}>
+                    <div key={m.movie_id} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'10px 14px'}}>
                       <div style={{width:44,height:60,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>
                         {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
                           <span style={{fontSize:14,fontWeight:700,color:m.watched?'rgba(255,255,255,0.4)':'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',textDecoration:m.watched?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</span>
-                          {m.isTV&&<span style={{fontSize:9,color:m.accent,border:`1px solid ${m.accent}44`,borderRadius:3,padding:'1px 5px',flexShrink:0}}>TV</span>}
+                          {m.is_tv&&<span style={{fontSize:9,color:m.accent,border:`1px solid ${m.accent}44`,borderRadius:3,padding:'1px 5px',flexShrink:0}}>TV</span>}
                         </div>
                         <div style={{fontSize:11,color:'rgba(255,255,255,0.28)',marginBottom:6}}>{m.year} · ★ {m.rating}</div>
                         <div style={{display:'flex',gap:8}}>
-                          <button onClick={()=>setWatchlist(p=>p.map(x=>x.id===m.id?{...x,watched:!x.watched}:x))} style={{background:m.watched?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${m.watched?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'3px 10px',cursor:'pointer',fontSize:11,color:m.watched?accent:'rgba(255,255,255,0.35)',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}>
+                          <button onClick={()=>toggleWatched(m)} style={{background:m.watched?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${m.watched?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'3px 10px',cursor:'pointer',fontSize:11,color:m.watched?accent:'rgba(255,255,255,0.35)',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}>
                             <SvgIcon name="check" size={10} color={m.watched?accent:'rgba(255,255,255,0.35)'}/>
                             {m.watched?'Watched':'Mark watched'}
                           </button>
-                          <button onClick={()=>setWatchlist(p=>p.filter(x=>x.id!==m.id))} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,padding:'3px 8px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          <button onClick={()=>removeFromWatchlist(m)} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,padding:'3px 8px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
                             <SvgIcon name="trash" size={11} color="rgba(255,255,255,0.3)"/>
                           </button>
                         </div>
@@ -279,18 +464,20 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
           {/* ── REVIEWS TAB ── */}
           {tab==='reviews'&&(
             <div style={{padding:'16px 20px'}}>
-              {userReviews.length===0 ? (
+              {loadingData?(
+                <div style={{textAlign:'center',padding:40,color:'rgba(255,255,255,0.3)',fontSize:13}}>Loading…</div>
+              ):userReviews.length===0?(
                 <div style={{textAlign:'center',padding:'40px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
                   <SvgIcon name="chat" size={36} color="rgba(255,255,255,0.1)"/>
                   <div style={{fontSize:15,color:'rgba(255,255,255,0.3)',fontWeight:500}}>No reviews yet</div>
                   <div style={{fontSize:13,color:'rgba(255,255,255,0.2)'}}>Tap Review on any film to share your thoughts</div>
                 </div>
-              ) : (
+              ):(
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   {userReviews.map(r=>(
                     <div key={r.id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px'}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-                        <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{r.movieTitle}</span>
+                        <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{r.movie_title}</span>
                         <span style={{fontSize:11,color:'rgba(255,255,255,0.25)'}}>{r.time}</span>
                       </div>
                       {r.rating>0&&(
@@ -307,7 +494,6 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews })
               )}
             </div>
           )}
-
         </div>
       </div>
     </div>
@@ -346,7 +532,7 @@ function AuthGate({ onClose, accent }) {
 }
 
 // ─── Comment Panel ────────────────────────────────────────────────────────────
-function CommentPanel({ movie, onClose, accent, onAuthRequired, onReviewPosted }) {
+function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const { isSignedIn, user } = useUser();
   const [comments, setComments] = useState([
     {id:1,user:'reelcritic',avatar:'R',text:'One of the defining films of the decade. Absolutely unforgettable.',likes:84,time:'2h',liked:false,replies:[]},
@@ -368,7 +554,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired, onReviewPosted }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  const post = () => {
+  const post = async () => {
     if (!isSignedIn) { onAuthRequired(); return; }
     if (!input.trim()) return;
     const username = user?.username||user?.firstName||'you';
@@ -380,7 +566,12 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired, onReviewPosted }
       ));
     } else {
       setComments(p => [{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false,replies:[]},...p]);
-      onReviewPosted?.({id:Date.now(),movieTitle:movie?.title,text:input,rating:0,time:'now'});
+      // Save to Supabase
+      await fetch('/api/reviews', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ movieId: movie?.id, movieTitle: movie?.title, text: input, rating: 0 }),
+      });
     }
     setInput('');
     setReplyingTo(null);
@@ -471,7 +662,8 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
   useEffect(() => {
     if (!movie) return;
     setLoading(true);
-    fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}`)
+    const genreIds = (movie.genreIds || []).join(',');
+    fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${genreIds}`)
       .then(r=>r.json())
       .then(d=>{setItems(d.movies||[]);setLoading(false);})
       .catch(()=>setLoading(false));
@@ -521,7 +713,7 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
 }
 
 // ─── Movie Card ───────────────────────────────────────────────────────────────
-function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSave, isSaved, onReviewPosted }) {
+function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSave, isSaved }) {
   const { isSignedIn } = useUser();
   const [liked,setLiked]=useState(false);
   const [userRating,setUserRating]=useState(0);
@@ -610,7 +802,7 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
         ))}
       </div>
 
-      {showComments&&<CommentPanel movie={movie} onClose={()=>setShowComments(false)} accent={accent} onAuthRequired={()=>{setShowComments(false);onAuthRequired();}} onReviewPosted={onReviewPosted}/>}
+      {showComments&&<CommentPanel movie={movie} onClose={()=>setShowComments(false)} accent={accent} onAuthRequired={()=>{setShowComments(false);onAuthRequired();}}/>}
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
     </div>
   );
@@ -673,24 +865,30 @@ export default function CineScroll() {
   const [searchRes,setSearchRes]=useState([]);
   const [searching,setSearching]=useState(false);
   const [similarMovie,setSimilarMovie]=useState(null);
-  const [watchlist,setWatchlist]=useState([]);
-  const [userReviews,setUserReviews]=useState([]);
+  const [watchlistIds,setWatchlistIds]=useState(new Set());
   const containerRef=useRef(null);
   const pageRef=useRef(1);
   const loadingMoreRef=useRef(false);
 
-  const handleSave=(movie)=>{
-    setWatchlist(p=>{
-      const exists=p.find(m=>m.id===movie.id);
-      if(exists) return p.filter(m=>m.id!==movie.id);
-      return [...p,{...movie,watched:false,rating:0,savedAt:Date.now()}];
-    });
-  };
+  // Load watchlist IDs so Save button stays in sync
+  useEffect(()=>{
+    if(!isSignedIn) return;
+    fetch('/api/watchlist')
+      .then(r=>r.json())
+      .then(d=>{
+        setWatchlistIds(new Set((d.items||[]).map(m=>m.movie_id)));
+      });
+  },[isSignedIn]);
 
-  const isSaved=(movieId)=>watchlist.some(m=>m.id===movieId);
-
-  const handleReviewPosted=(review)=>{
-    setUserReviews(p=>[review,...p]);
+  const handleSave=async(movie)=>{
+    const already=watchlistIds.has(movie.id);
+    if(already){
+      setWatchlistIds(p=>{const n=new Set(p);n.delete(movie.id);return n;});
+      await fetch('/api/watchlist',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie.id})});
+    } else {
+      setWatchlistIds(p=>new Set([...p,movie.id]));
+      await fetch('/api/watchlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(movie)});
+    }
   };
 
   const fetchMovies=useCallback(async(mood,genre,search='',page=1,append=false)=>{
@@ -763,9 +961,9 @@ export default function CineScroll() {
                 ? <img src={user.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                 : <span style={{fontSize:13,fontWeight:700,color:accent}}>{(user?.firstName||user?.username||'?')[0].toUpperCase()}</span>
               }
-              {watchlist.length>0&&(
+              {watchlistIds.size>0&&(
                 <div style={{position:'absolute',top:-2,right:-2,width:14,height:14,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #04040A'}}>
-                  <span style={{fontSize:7,fontWeight:800,color:'#04040A'}}>{watchlist.length}</span>
+                  <span style={{fontSize:7,fontWeight:800,color:'#04040A'}}>{watchlistIds.size}</span>
                 </div>
               )}
             </button>
@@ -777,7 +975,7 @@ export default function CineScroll() {
         </div>
       </div>
 
-      {/* Active filter pills */}
+      {/* Filter pills */}
       {(activeGenre||activeMood!=='Trending')&&!showFilter&&!showSearch&&(
         <div style={{position:'fixed',top:62,left:16,zIndex:38,display:'flex',gap:6,pointerEvents:'none'}}>
           {activeMood!=='Trending'&&<div style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700}}>{activeMood}</div>}
@@ -827,7 +1025,7 @@ export default function CineScroll() {
         ):(
           movies.map((m,i)=>(
             <div key={`${m.id}-${i}`} style={{width:'100%',height:'100dvh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
-              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={isSaved(m.id)} onReviewPosted={handleReviewPosted}/>
+              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)}/>
             </div>
           ))
         )}
@@ -840,7 +1038,6 @@ export default function CineScroll() {
         ))}
       </div>
 
-      {/* Scroll hint */}
       {activeIndex===0&&movies.length>1&&(
         <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',zIndex:20,pointerEvents:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:5,animation:'bob 2.2s ease infinite'}}>
           <div style={{fontSize:9,letterSpacing:3,color:'rgba(255,255,255,0.16)',fontWeight:700}}>SCROLL</div>
@@ -851,9 +1048,9 @@ export default function CineScroll() {
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
-      {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews}/>}
+      {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent}/>}
 
-      <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}`}</style>
+      <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-    }
+                    }
