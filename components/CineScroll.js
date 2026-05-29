@@ -1053,4 +1053,4 @@ export default function CineScroll() {
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-                    }
+}
