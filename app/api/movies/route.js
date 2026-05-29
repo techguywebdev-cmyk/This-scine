@@ -24,7 +24,7 @@ const GRADS = [
   'linear-gradient(170deg,#080005 0%,#200010 50%,#6b0a35 100%)',
 ];
 
-function truncateDescription(text, maxWords = 30) {
+function truncateDescription(text, maxWords = 28) {
   if (!text) return 'No description available.';
   const words = text.trim().split(/\s+/);
   if (words.length <= maxWords) return text.trim();
@@ -40,6 +40,7 @@ function formatItem(m, i) {
     rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A',
     votes: m.vote_count >= 1000 ? `${(m.vote_count/1000).toFixed(0)}K` : String(m.vote_count || 0),
     genre: (m.genre_ids || []).map(id => GENRE_MAP[id]).filter(Boolean).slice(0, 2),
+    genreIds: m.genre_ids || [],
     overview: truncateDescription(m.overview, 28),
     backdrop: m.backdrop_path ? `https://image.tmdb.org/t/p/original${m.backdrop_path}` : null,
     poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
@@ -57,26 +58,48 @@ export async function GET(request) {
   const search = searchParams.get('search') || '';
   const page = searchParams.get('page') || '1';
   const similar = searchParams.get('similar') || '';
+  const similarGenres = searchParams.get('similarGenres') || '';
+  const similarType = searchParams.get('similarType') || 'movie';
 
   const randomOffset = page === '1' ? Math.floor(Math.random() * 8) + 1 : parseInt(page);
 
   try {
-    // Similar content
+    // ── IMPROVED SIMILAR: uses genre IDs + keywords for real content matching ──
     if (similar) {
-      const [movRes, tvRes] = await Promise.all([
-        fetch(`${TMDB_BASE}/movie/${similar}/similar?api_key=${TMDB_KEY}&page=1`),
-        fetch(`${TMDB_BASE}/tv/${similar}/similar?api_key=${TMDB_KEY}&page=1`),
+      const genreIds = similarGenres.split(',').filter(Boolean).join(',');
+
+      // Fetch details to get keywords
+      const [detailRes, keywordRes] = await Promise.all([
+        fetch(`${TMDB_BASE}/${similarType}/${similar}?api_key=${TMDB_KEY}`),
+        fetch(`${TMDB_BASE}/${similarType}/${similar}/keywords?api_key=${TMDB_KEY}`),
       ]);
+      const detail = await detailRes.json().catch(() => ({}));
+      const keywordData = await keywordRes.json().catch(() => ({}));
+
+      const keywords = (keywordData.keywords || keywordData.results || [])
+        .slice(0, 5).map(k => k.id).join(',');
+
+      // Use genre-based discover for truly similar content
+      const discoverGenres = genreIds || (detail.genres || []).map(g => g.id).join(',');
+
+      const [movRes, tvRes] = await Promise.all([
+        fetch(`${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${discoverGenres}&sort_by=popularity.desc&vote_count.gte=100&page=1${keywords ? `&with_keywords=${keywords}` : ''}`),
+        fetch(`${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${discoverGenres}&sort_by=popularity.desc&vote_count.gte=50&page=1${keywords ? `&with_keywords=${keywords}` : ''}`),
+      ]);
+
       const movData = await movRes.json().catch(() => ({ results: [] }));
       const tvData = await tvRes.json().catch(() => ({ results: [] }));
+
+      // Exclude the original movie/show
       const combined = [
-        ...(movData.results || []).slice(0, 6),
-        ...(tvData.results || []).slice(0, 6),
+        ...(movData.results || []).filter(m => m.id !== parseInt(similar)).slice(0, 6),
+        ...(tvData.results || []).filter(m => m.id !== parseInt(similar)).slice(0, 6),
       ].filter(m => m.backdrop_path || m.poster_path).slice(0, 12);
+
       return Response.json({ movies: combined.map((m, i) => formatItem(m, i)) });
     }
 
-    // Search across movies + TV
+    // ── SEARCH ──
     if (search) {
       const [movRes, tvRes] = await Promise.all([
         fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(search)}&page=1`),
@@ -91,16 +114,11 @@ export async function GET(request) {
       return Response.json({ movies: combined.map((m, i) => formatItem(m, i)) });
     }
 
-    // KEY FIX: when a genre is selected, ALWAYS use discover
-    // because trending/top_rated endpoints ignore with_genres
+    // ── MAIN FEED ──
     let movieUrl, tvUrl;
-
     if (genre) {
-      // Genre selected — use discover for accurate filtering
       movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=100&page=${randomOffset}`;
       tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=50&page=${randomOffset}`;
-
-      // Layer in mood sorting on top of genre
       if (mood === 'top rated') {
         movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=500&page=${randomOffset}`;
         tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=200&page=${randomOffset}`;
@@ -113,7 +131,6 @@ export async function GET(request) {
         tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7&vote_count.lte=2000&vote_count.gte=100&sort_by=vote_average.desc&page=${randomOffset}`;
       }
     } else {
-      // No genre — use mood-specific endpoints
       if (mood === 'trending') {
         movieUrl = `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}&page=${randomOffset}`;
         tvUrl = `${TMDB_BASE}/trending/tv/week?api_key=${TMDB_KEY}&page=${randomOffset}`;
@@ -124,7 +141,6 @@ export async function GET(request) {
         movieUrl = `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}&page=${randomOffset}`;
         tvUrl = `${TMDB_BASE}/tv/on_the_air?api_key=${TMDB_KEY}&page=${randomOffset}`;
       } else {
-        // Hidden gems
         movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&vote_average.gte=7&vote_count.lte=5000&vote_count.gte=500&sort_by=vote_average.desc&page=${randomOffset}`;
         tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&vote_average.gte=7&vote_count.lte=2000&vote_count.gte=200&sort_by=vote_average.desc&page=${randomOffset}`;
       }
@@ -137,7 +153,6 @@ export async function GET(request) {
     const movies = (movData.results || []).filter(m => m.backdrop_path || m.poster_path).slice(0, 8);
     const shows = (tvData.results || []).filter(m => m.backdrop_path || m.poster_path).slice(0, 4);
 
-    // Interleave: 2 movies, 1 TV show
     const interleaved = [];
     let mi = 0, ti = 0;
     while (interleaved.length < 12 && (mi < movies.length || ti < shows.length)) {
@@ -147,7 +162,6 @@ export async function GET(request) {
     }
 
     return Response.json({ movies: interleaved.map((m, i) => formatItem(m, i)) });
-
   } catch (err) {
     console.error(err);
     return Response.json({ movies: [], error: 'Failed to fetch' }, { status: 500 });
