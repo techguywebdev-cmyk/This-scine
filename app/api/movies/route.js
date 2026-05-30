@@ -33,14 +33,15 @@ function truncateDescription(text, maxWords = 28) {
 
 function formatItem(m, i) {
   const isTV = !m.title;
+  const genreIds = m.genre_ids || (m.genres || []).map(g => g.id) || [];
   return {
     id: m.id,
     title: m.title || m.name || 'Untitled',
     year: (m.release_date || m.first_air_date || '').split('-')[0],
     rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A',
     votes: m.vote_count >= 1000 ? `${(m.vote_count/1000).toFixed(0)}K` : String(m.vote_count || 0),
-    genre: (m.genre_ids || []).map(id => GENRE_MAP[id]).filter(Boolean).slice(0, 2),
-    genreIds: m.genre_ids || [],
+    genre: genreIds.map(id => GENRE_MAP[id]).filter(Boolean).slice(0, 2),
+    genreIds,
     overview: truncateDescription(m.overview, 28),
     backdrop: m.backdrop_path ? `https://image.tmdb.org/t/p/original${m.backdrop_path}` : null,
     poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
@@ -58,48 +59,91 @@ export async function GET(request) {
   const search = searchParams.get('search') || '';
   const page = searchParams.get('page') || '1';
   const similar = searchParams.get('similar') || '';
-  const similarGenres = searchParams.get('similarGenres') || '';
   const similarType = searchParams.get('similarType') || 'movie';
+  const similarGenres = searchParams.get('similarGenres') || '';
 
   const randomOffset = page === '1' ? Math.floor(Math.random() * 8) + 1 : parseInt(page);
 
   try {
-    // ── IMPROVED SIMILAR: uses genre IDs + keywords for real content matching ──
+
+    // ── SIMILAR: multi-signal approach ──────────────────────────────────────
     if (similar) {
-      const genreIds = similarGenres.split(',').filter(Boolean).join(',');
+      const itemId = parseInt(similar);
 
-      // Fetch details to get keywords
-      const [detailRes, keywordRes] = await Promise.all([
-        fetch(`${TMDB_BASE}/${similarType}/${similar}?api_key=${TMDB_KEY}`),
-        fetch(`${TMDB_BASE}/${similarType}/${similar}/keywords?api_key=${TMDB_KEY}`),
+      // Fetch full details, keywords, and recommendations in parallel
+      const [detailRes, keywordRes, recMovieRes, recTvRes] = await Promise.all([
+        fetch(`${TMDB_BASE}/${similarType}/${itemId}?api_key=${TMDB_KEY}`),
+        fetch(`${TMDB_BASE}/${similarType}/${itemId}/keywords?api_key=${TMDB_KEY}`),
+        fetch(`${TMDB_BASE}/${similarType}/${itemId}/recommendations?api_key=${TMDB_KEY}&page=1`),
+        // Also try the other type in case it's misidentified
+        fetch(`${TMDB_BASE}/${similarType === 'tv' ? 'movie' : 'tv'}/${itemId}/recommendations?api_key=${TMDB_KEY}&page=1`),
       ]);
+
       const detail = await detailRes.json().catch(() => ({}));
-      const keywordData = await keywordRes.json().catch(() => ({}));
+      const keywordData = await keywordRes.json().catch(() => ({ keywords: [], results: [] }));
+      const recMovieData = await recMovieRes.json().catch(() => ({ results: [] }));
+      const recTvData = await recTvRes.json().catch(() => ({ results: [] }));
 
+      // Get genre IDs from multiple sources
+      const detailGenreIds = (detail.genres || []).map(g => g.id);
+      const passedGenreIds = similarGenres.split(',').filter(Boolean).map(Number);
+      const allGenreIds = [...new Set([...detailGenreIds, ...passedGenreIds])];
+
+      // Get keywords for better matching
       const keywords = (keywordData.keywords || keywordData.results || [])
-        .slice(0, 5).map(k => k.id).join(',');
+        .slice(0, 3).map(k => k.id);
 
-      // Use genre-based discover for truly similar content
-      const discoverGenres = genreIds || (detail.genres || []).map(g => g.id).join(',');
+      // Build discover URLs using genre + keyword signals
+      const genreParam = allGenreIds.slice(0, 3).join(',');
+      const keywordParam = keywords.join(',');
 
-      const [movRes, tvRes] = await Promise.all([
-        fetch(`${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${discoverGenres}&sort_by=popularity.desc&vote_count.gte=100&page=1${keywords ? `&with_keywords=${keywords}` : ''}`),
-        fetch(`${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${discoverGenres}&sort_by=popularity.desc&vote_count.gte=50&page=1${keywords ? `&with_keywords=${keywords}` : ''}`),
+      const discoverBase = genreParam
+        ? `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=100`
+        : `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&sort_by=popularity.desc&vote_count.gte=100`;
+
+      const [discoverRes, discoverRes2, crossTypeRes] = await Promise.all([
+        fetch(discoverBase + (keywordParam ? `&with_keywords=${keywordParam}` : '') + '&page=1'),
+        fetch(discoverBase + '&page=2'),
+        // Cross-search: if it's a movie look for similar TV shows too
+        genreParam
+          ? fetch(`${TMDB_BASE}/discover/${similarType === 'tv' ? 'movie' : 'tv'}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=100&page=1`)
+          : fetch(`${TMDB_BASE}/trending/${similarType}/week?api_key=${TMDB_KEY}`),
       ]);
 
-      const movData = await movRes.json().catch(() => ({ results: [] }));
-      const tvData = await tvRes.json().catch(() => ({ results: [] }));
+      const discoverData = await discoverRes.json().catch(() => ({ results: [] }));
+      const discoverData2 = await discoverRes2.json().catch(() => ({ results: [] }));
+      const crossTypeData = await crossTypeRes.json().catch(() => ({ results: [] }));
 
-      // Exclude the original movie/show
-      const combined = [
-        ...(movData.results || []).filter(m => m.id !== parseInt(similar)).slice(0, 6),
-        ...(tvData.results || []).filter(m => m.id !== parseInt(similar)).slice(0, 6),
-      ].filter(m => m.backdrop_path || m.poster_path).slice(0, 12);
+      // Pool all results, remove the source item, deduplicate
+      const allResults = [
+        ...(recMovieData.results || []),
+        ...(recTvData.results || []),
+        ...(discoverData.results || []),
+        ...(discoverData2.results || []),
+        ...(crossTypeData.results || []),
+      ];
 
-      return Response.json({ movies: combined.map((m, i) => formatItem(m, i)) });
+      const seen = new Set([itemId]);
+      const unique = allResults.filter(m => {
+        const id = m.id;
+        if (seen.has(id)) return false;
+        if (!m.backdrop_path && !m.poster_path) return false;
+        if ((m.vote_average || 0) < 5) return false;
+        seen.add(id);
+        return true;
+      });
+
+      // Sort by rating × popularity for best results first
+      unique.sort((a, b) => {
+        const scoreA = (a.vote_average || 0) * Math.log(Math.max(a.vote_count || 1, 1));
+        const scoreB = (b.vote_average || 0) * Math.log(Math.max(b.vote_count || 1, 1));
+        return scoreB - scoreA;
+      });
+
+      return Response.json({ movies: unique.slice(0, 14).map((m, i) => formatItem(m, i)) });
     }
 
-    // ── SEARCH ──
+    // ── SEARCH ──────────────────────────────────────────────────────────────
     if (search) {
       const [movRes, tvRes] = await Promise.all([
         fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(search)}&page=1`),
@@ -114,7 +158,7 @@ export async function GET(request) {
       return Response.json({ movies: combined.map((m, i) => formatItem(m, i)) });
     }
 
-    // ── MAIN FEED ──
+    // ── MAIN FEED ────────────────────────────────────────────────────────────
     let movieUrl, tvUrl;
     if (genre) {
       movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=100&page=${randomOffset}`;
@@ -162,8 +206,9 @@ export async function GET(request) {
     }
 
     return Response.json({ movies: interleaved.map((m, i) => formatItem(m, i)) });
+
   } catch (err) {
     console.error(err);
     return Response.json({ movies: [], error: 'Failed to fetch' }, { status: 500 });
   }
-}
+                   }
