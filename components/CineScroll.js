@@ -1,4 +1,3 @@
-'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 
@@ -62,34 +61,25 @@ const GRADS = [
   'linear-gradient(170deg,#080005 0%,#200010 50%,#6b0a35 100%)',
 ];
 
-// ─── Share Card Generator ─────────────────────────────────────────────────────
 function generateShareCard(type, data, accent) {
   const canvas = document.createElement('canvas');
   canvas.width = 800;
   canvas.height = 450;
   const ctx = canvas.getContext('2d');
-
-  // Background
   const bg = ctx.createLinearGradient(0, 0, 800, 450);
   bg.addColorStop(0, '#04040A');
   bg.addColorStop(1, '#0a0a18');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, 800, 450);
-
-  // Accent glow
   const glow = ctx.createRadialGradient(400, 225, 0, 400, 225, 400);
   glow.addColorStop(0, accent + '22');
   glow.addColorStop(1, 'transparent');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, 800, 450);
-
-  // Border
   ctx.strokeStyle = accent + '44';
   ctx.lineWidth = 2;
   ctx.roundRect(10, 10, 780, 430, 20);
   ctx.stroke();
-
-  // Logo
   ctx.fillStyle = accent;
   ctx.beginPath();
   ctx.arc(50, 50, 8, 0, Math.PI * 2);
@@ -99,42 +89,32 @@ function generateShareCard(type, data, accent) {
   ctx.fillText('CineScroll', 68, 57);
 
   if (type === 'score') {
-    // CineScore card
     ctx.fillStyle = accent;
     ctx.font = 'bold 100px Georgia, serif';
     ctx.textAlign = 'center';
     ctx.fillText(data.score, 400, 230);
-
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '18px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('CINESCORE', 400, 270);
-
     ctx.fillStyle = '#fff';
     ctx.font = 'italic 24px Georgia, serif';
     ctx.textAlign = 'center';
     ctx.fillText(data.name, 400, 320);
-
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = '14px sans-serif';
     ctx.fillText(`${data.watched} watched · ${data.reviews} reviews · ${data.saved} saved`, 400, 355);
-
     ctx.fillStyle = accent + '88';
     ctx.font = '13px sans-serif';
     ctx.fillText('this-scine.vercel.app', 400, 420);
-
   } else if (type === 'watchlist') {
-    // Watchlist card
     ctx.fillStyle = '#fff';
     ctx.font = 'italic bold 28px Georgia, serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${data.name}'s Watchlist`, 40, 115);
-
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '14px sans-serif';
     ctx.fillText(`${data.total} films · ${data.watched} watched`, 40, 140);
-
-    // Show up to 5 movie titles
     const items = data.items.slice(0, 5);
     items.forEach((m, i) => {
       const y = 175 + i * 44;
@@ -150,19 +130,16 @@ function generateShareCard(type, data, accent) {
       ctx.fillText(`★ ${m.rating}`, 750, y);
       ctx.textAlign = 'left';
     });
-
     if (data.total > 5) {
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
       ctx.font = '13px sans-serif';
       ctx.fillText(`+ ${data.total - 5} more`, 40, 175 + 5 * 44);
     }
-
     ctx.fillStyle = accent + '88';
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('this-scine.vercel.app', 400, 420);
   }
-
   return canvas.toDataURL('image/png');
 }
 
@@ -179,7 +156,6 @@ async function shareImage(dataUrl, title, text) {
   }
 }
 
-// ─── CineScore Ring ───────────────────────────────────────────────────────────
 function calcCineScore(watched, reviews, saved, ratings) {
   return Math.min(999, (watched * 3) + (reviews * 8) + (saved * 2) + (ratings * 4));
 }
@@ -203,7 +179,6 @@ function CineScoreRing({ score, accent }) {
   );
 }
 
-// ─── Profile Sheet ────────────────────────────────────────────────────────────
 function ProfileSheet({ onClose, accent }) {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -253,7 +228,13 @@ function ProfileSheet({ onClose, accent }) {
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    await signOut();
+    try {
+      await signOut({ redirectUrl: '/' });
+    } catch (error) {
+      console.error("Sign out error:", error);
+      await signOut();
+    }
+    setSigningOut(false);
   };
 
   const watched = watchlist.filter(m => m.watched).length;
@@ -305,17 +286,13 @@ function ProfileSheet({ onClose, accent }) {
           @keyframes fadeIn{from{opacity:0}to{opacity:1}}
           @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         `}</style>
-
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 0',flexShrink:0}}/>
-
         <div style={{padding:'16px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:900,fontStyle:'italic',color:'#fff'}}>My Profile</span>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <SvgIcon name="close" size={13} color="rgba(255,255,255,0.4)"/>
           </button>
         </div>
-
-        {/* Tabs */}
         <div style={{display:'flex',padding:'14px 20px 0',flexShrink:0,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           {['profile','watchlist','reviews'].map(t=>(
             <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:'none',border:'none',cursor:'pointer',padding:'8px 0 12px',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:400,color:tab===t?accent:'rgba(255,255,255,0.35)',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,transition:'all 0.2s ease',textTransform:'capitalize'}}>
@@ -323,13 +300,9 @@ function ProfileSheet({ onClose, accent }) {
             </button>
           ))}
         </div>
-
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
-
-          {/* ── PROFILE TAB ── */}
           {tab==='profile'&&(
             <div style={{padding:'20px'}}>
-              {/* Avatar + name */}
               <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:24}}>
                 <div style={{width:64,height:64,borderRadius:'50%',background:`${accent}22`,border:`2px solid ${accent}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
                   {user?.imageUrl
@@ -346,8 +319,6 @@ function ProfileSheet({ onClose, accent }) {
                   </div>
                 </div>
               </div>
-
-              {/* CineScore */}
               <div style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${accent}22`,borderRadius:20,padding:'20px',marginBottom:16,display:'flex',alignItems:'center',gap:20}}>
                 <CineScoreRing score={cineScore} accent={accent}/>
                 <div style={{flex:1}}>
@@ -363,8 +334,6 @@ function ProfileSheet({ onClose, accent }) {
                   </button>
                 </div>
               </div>
-
-              {/* Stats */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
                 {[
                   {label:'Films Watched',value:watched,icon:'eye'},
@@ -381,8 +350,6 @@ function ProfileSheet({ onClose, accent }) {
                   </div>
                 ))}
               </div>
-
-              {/* Top genres */}
               {sortedGenres.length>0&&(
                 <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'16px',marginBottom:16}}>
                   <div style={{fontSize:10,letterSpacing:2,color:'rgba(255,255,255,0.3)',fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Top Genres</div>
@@ -399,22 +366,24 @@ function ProfileSheet({ onClose, accent }) {
                   ))}
                 </div>
               )}
-
               {sortedGenres.length===0&&!loadingData&&(
                 <div style={{textAlign:'center',padding:'20px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>Save movies to build your taste profile</div>
               )}
-
-              {/* Sign out */}
               <button onClick={handleSignOut} disabled={signingOut} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',marginTop:8,opacity:signingOut?0.7:1}}>
-                {signingOut
-                  ? <><span style={{fontSize:14,animation:'spin 0.8s linear infinite',display:'inline-block'}}>◌</span><span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Signing out…</span></>
-                  : <><SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/><span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span></>
-                }
+                {signingOut ? (
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <div style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.2)',borderTopColor:accent,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
+                    <span style={{fontSize:14,color:'rgba(255,255,255,0.5)',fontWeight:500}}>Signing out…</span>
+                  </div>
+                ) : (
+                  <>
+                    <SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/>
+                    <span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span>
+                  </>
+                )}
               </button>
             </div>
           )}
-
-          {/* ── WATCHLIST TAB ── */}
           {tab==='watchlist'&&(
             <div style={{padding:'16px 20px'}}>
               {watchlist.length>0&&(
@@ -460,8 +429,6 @@ function ProfileSheet({ onClose, accent }) {
               )}
             </div>
           )}
-
-          {/* ── REVIEWS TAB ── */}
           {tab==='reviews'&&(
             <div style={{padding:'16px 20px'}}>
               {loadingData?(
@@ -500,7 +467,6 @@ function ProfileSheet({ onClose, accent }) {
   );
 }
 
-// ─── Auth Gate ────────────────────────────────────────────────────────────────
 function AuthGate({ onClose, accent }) {
   const { openSignIn } = useClerk();
   return (
@@ -531,7 +497,6 @@ function AuthGate({ onClose, accent }) {
   );
 }
 
-// ─── Comment Panel ────────────────────────────────────────────────────────────
 function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const { isSignedIn, user } = useUser();
   const [comments, setComments] = useState([
@@ -542,18 +507,15 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const [input, setInput] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const inputRef = useRef(null);
-
   const toggleLike = id => setComments(p => p.map(c =>
     c.id===id ? {...c,liked:!c.liked,likes:c.liked?c.likes-1:c.likes+1} : c
   ));
-
   const startReply = (comment) => {
     if (!isSignedIn) { onAuthRequired(); return; }
     setReplyingTo(comment);
     setInput(`@${comment.user} `);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
-
   const post = async () => {
     if (!isSignedIn) { onAuthRequired(); return; }
     if (!input.trim()) return;
@@ -566,7 +528,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
       ));
     } else {
       setComments(p => [{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false,replies:[]},...p]);
-      // Save to Supabase
       await fetch('/api/reviews', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -576,7 +537,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
     setInput('');
     setReplyingTo(null);
   };
-
   return (
     <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:'rgba(4,4,8,0.98)',backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
@@ -654,7 +614,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   );
 }
 
-// ─── Similar Sheet ────────────────────────────────────────────────────────────
 function SimilarSheet({ movie, onClose, accent, onSelect }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -662,8 +621,9 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
   useEffect(() => {
     if (!movie) return;
     setLoading(true);
-    const genreIds = (movie.genreIds || []).join(',');
-    fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${genreIds}`)
+    const genreIds = (movie.genreIds || movie.genre_ids || []).join(',');
+    const fallbackGenres = genreIds || "";
+    fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${fallbackGenres}`)
       .then(r=>r.json())
       .then(d=>{setItems(d.movies||[]);setLoading(false);})
       .catch(()=>setLoading(false));
@@ -677,7 +637,9 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 0',flexShrink:0}}/>
         <div style={{padding:'14px 20px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
           <div>
-            <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>Similar to</div>
+            <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>
+              {movie?.isTV ? 'Similar Series' : 'Similar Movies'}
+            </div>
             <div style={{fontSize:12,color:accent,marginTop:1,fontStyle:'italic',fontFamily:"'Playfair Display',serif"}}>{movie?.title}</div>
           </div>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -712,7 +674,6 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
   );
 }
 
-// ─── Movie Card ───────────────────────────────────────────────────────────────
 function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSave, isSaved }) {
   const { isSignedIn } = useUser();
   const [liked,setLiked]=useState(false);
@@ -725,7 +686,6 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
   const fmt=n=>n>=1000?`${(n/1000).toFixed(0)}K`:n;
   const accent=movie.accent||'#F5A623';
   const bgImage=movie.backdrop||movie.poster;
-
   const handleLike=()=>{ if(!isSignedIn){onAuthRequired();return;} setLiked(p=>!p); };
   const handleSave=()=>{ if(!isSignedIn){onAuthRequired();return;} onSave(movie); };
   const handleRate=()=>{ if(!isSignedIn){onAuthRequired();return;} setShowStars(p=>!p); };
@@ -744,7 +704,6 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
       <div style={{position:'absolute',top:0,left:0,right:0,height:'25%',background:'linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,transparent 100%)',pointerEvents:'none'}}/>
       <div style={{position:'absolute',left:0,top:'22%',bottom:'22%',width:3,background:`linear-gradient(to bottom,transparent,${accent},transparent)`,opacity:isActive?0.55:0,transition:'opacity 0.5s ease',borderRadius:2}}/>
       <div style={{position:'absolute',inset:0,opacity:0.15,mixBlendMode:'overlay',pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
-
       <div style={{position:'absolute',top:80,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/>
@@ -757,7 +716,6 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
           <span style={{fontSize:10,color:'rgba(255,255,255,0.28)'}}>/10</span>
         </div>
       </div>
-
       <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
         <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap',alignItems:'center'}}>
           {(movie.genre||[]).map(g=>(
@@ -786,7 +744,6 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
           </div>
         )}
       </div>
-
       <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[
           {icon:'heart',   label:fmt(likeCount+(liked?1:0)), active:liked,                  color:'#FF6B8A', filled:liked,        fn:handleLike},
@@ -801,14 +758,12 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
           </button>
         ))}
       </div>
-
       {showComments&&<CommentPanel movie={movie} onClose={()=>setShowComments(false)} accent={accent} onAuthRequired={()=>{setShowComments(false);onAuthRequired();}}/>}
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
     </div>
   );
 }
 
-// ─── Filter Sheet ─────────────────────────────────────────────────────────────
 function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
   return (
     <>
@@ -848,7 +803,6 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
 export default function CineScroll() {
   const { isSignedIn, user } = useUser();
   const { openSignIn } = useClerk();
@@ -870,7 +824,6 @@ export default function CineScroll() {
   const pageRef=useRef(1);
   const loadingMoreRef=useRef(false);
 
-  // Load watchlist IDs so Save button stays in sync
   useEffect(()=>{
     if(!isSignedIn) return;
     fetch('/api/watchlist')
@@ -941,8 +894,6 @@ export default function CineScroll() {
   return(
     <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"'DM Sans',sans-serif",color:'#fff',overflow:'hidden'}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700;1,900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
-
-      {/* Top Nav */}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
@@ -974,16 +925,12 @@ export default function CineScroll() {
           )}
         </div>
       </div>
-
-      {/* Filter pills */}
       {(activeGenre||activeMood!=='Trending')&&!showFilter&&!showSearch&&(
         <div style={{position:'fixed',top:62,left:16,zIndex:38,display:'flex',gap:6,pointerEvents:'none'}}>
           {activeMood!=='Trending'&&<div style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700}}>{activeMood}</div>}
           {activeGenre&&<div style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700}}>{activeGenreLabel}</div>}
         </div>
       )}
-
-      {/* Search */}
       {showSearch&&(
         <div style={{position:'fixed',inset:0,zIndex:45,background:'rgba(4,4,10,0.97)',backdropFilter:'blur(24px)',padding:'78px 16px 20px',display:'flex',flexDirection:'column',gap:12,animation:'fadeIn 0.2s ease'}}>
           <div style={{position:'relative'}}>
@@ -1013,8 +960,6 @@ export default function CineScroll() {
           </div>
         </div>
       )}
-
-      {/* Feed */}
       <div ref={containerRef} style={{position:'fixed',inset:0,overflowY:'scroll',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         {loading?(
@@ -1030,27 +975,22 @@ export default function CineScroll() {
           ))
         )}
       </div>
-
-      {/* Progress dots */}
       <div style={{position:'fixed',right:5,top:'50%',transform:'translateY(-50%)',display:'flex',flexDirection:'column',gap:4,zIndex:20,pointerEvents:'none'}}>
         {movies.slice(0,12).map((_,i)=>(
           <div key={i} style={{width:i===activeIndex?3:2,height:i===activeIndex?24:6,borderRadius:2,background:i===activeIndex?accent:'rgba(255,255,255,0.1)',transition:'all 0.3s ease',boxShadow:i===activeIndex?`0 0 8px ${accent}`:'none'}}/>
         ))}
       </div>
-
       {activeIndex===0&&movies.length>1&&(
         <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',zIndex:20,pointerEvents:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:5,animation:'bob 2.2s ease infinite'}}>
           <div style={{fontSize:9,letterSpacing:3,color:'rgba(255,255,255,0.16)',fontWeight:700}}>SCROLL</div>
           <SvgIcon name="chevron" size={16} color="rgba(255,255,255,0.16)"/>
         </div>
       )}
-
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent}/>}
-
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-    }
+}
