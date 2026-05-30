@@ -60,348 +60,395 @@ const GRADS = [
   'linear-gradient(170deg,#080005 0%,#200010 50%,#6b0a35 100%)',
 ];
 
-// ─── Content type label helper ─────────────────────────────────────────────
 function getContentLabel(movie) {
   if (!movie) return 'Films';
   const genres = (movie.genre || []).map(g => g.toLowerCase());
-  if (genres.includes('animation') || genres.includes('anime')) return 'Anime & Cartoons';
+  if (genres.includes('animation')) return 'Anime & Cartoons';
   if (movie.isTV) return 'Series';
   return 'Movies';
 }
 
+// ─── Load image for canvas ─────────────────────────────────────────────────
+function loadCanvasImage(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    // Use TMDB w342 for faster load
+    img.src = url.includes('tmdb.org') ? url.replace('original', 'w342').replace('w500', 'w342') : url;
+    setTimeout(() => resolve(null), 4000); // 4s timeout
+  });
+}
+
 // ─── Share Card Generator ──────────────────────────────────────────────────
 async function generateShareCard(type, data, accent) {
-  const W = 750, H = 1334; // Portrait 9:16
+  const W = 750, H = 1334;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Deep dark background
-  ctx.fillStyle = '#060610';
+  // Background
+  ctx.fillStyle = '#06060E';
   ctx.fillRect(0, 0, W, H);
 
-  // Ambient glow top
-  const glowTop = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, H * 0.6);
-  glowTop.addColorStop(0, accent + '33');
+  // Top glow
+  const glowTop = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, H * 0.55);
+  glowTop.addColorStop(0, accent + '28');
   glowTop.addColorStop(1, 'transparent');
   ctx.fillStyle = glowTop;
   ctx.fillRect(0, 0, W, H);
 
-  // Ambient glow bottom
-  const glowBot = ctx.createRadialGradient(W/2, H, 0, W/2, H, H * 0.5);
-  glowBot.addColorStop(0, accent + '22');
+  // Bottom glow
+  const glowBot = ctx.createRadialGradient(W/2, H, 0, W/2, H, H * 0.45);
+  glowBot.addColorStop(0, accent + '18');
   glowBot.addColorStop(1, 'transparent');
   ctx.fillStyle = glowBot;
   ctx.fillRect(0, 0, W, H);
 
   // Outer border
-  ctx.strokeStyle = accent + '55';
+  ctx.strokeStyle = accent + '50';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(14, 14, W - 28, H - 28, 28);
+  ctx.roundRect(12, 12, W - 24, H - 24, 28);
   ctx.stroke();
 
-  // Inner subtle border
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(20, 20, W - 40, H - 40, 24);
-  ctx.stroke();
+  // Top accent line
+  const topBar = ctx.createLinearGradient(0, 0, W, 0);
+  topBar.addColorStop(0, 'transparent');
+  topBar.addColorStop(0.3, accent + 'aa');
+  topBar.addColorStop(0.7, accent + 'aa');
+  topBar.addColorStop(1, 'transparent');
+  ctx.fillStyle = topBar;
+  ctx.fillRect(60, 12, W - 120, 3);
 
-  // Top accent bar
-  const bar = ctx.createLinearGradient(0, 0, W, 0);
-  bar.addColorStop(0, 'transparent');
-  bar.addColorStop(0.5, accent);
-  bar.addColorStop(1, 'transparent');
-  ctx.fillStyle = bar;
-  ctx.fillRect(80, 14, W - 160, 3);
-
-  // Logo row
+  // Logo
   ctx.beginPath();
-  ctx.arc(54, 72, 8, 0, Math.PI * 2);
+  ctx.arc(52, 68, 9, 0, Math.PI * 2);
   ctx.fillStyle = accent;
   ctx.fill();
-
-  // Glow dot
   ctx.beginPath();
-  ctx.arc(54, 72, 14, 0, Math.PI * 2);
-  ctx.fillStyle = accent + '22';
+  ctx.arc(52, 68, 16, 0, Math.PI * 2);
+  ctx.fillStyle = accent + '20';
   ctx.fill();
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'italic bold 32px Georgia, serif';
+  ctx.fillStyle = '#fff';
+  ctx.font = 'italic bold 30px Georgia, serif';
   ctx.textAlign = 'left';
-  ctx.fillText('CineScroll', 72, 83);
+  ctx.fillText('CineScroll', 70, 78);
 
-  // Divider after logo
-  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(40, 110);
-  ctx.lineTo(W - 40, 110);
+  ctx.moveTo(36, 106);
+  ctx.lineTo(W - 36, 106);
   ctx.stroke();
 
   if (type === 'score') {
-    // ── SCORE CARD ──
-
-    // Username
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = '22px sans-serif';
+    // Header
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    ctx.font = '600 16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('CINEPHILE PROFILE', W/2, 170);
+    ctx.fillText('CINEPHILE PROFILE', W/2, 156);
 
-    // Name
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'italic bold 52px Georgia, serif';
-    ctx.fillText(data.name, W/2, 240);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'italic bold 58px Georgia, serif';
+    ctx.fillText(data.name, W/2, 222);
 
-    // Big score ring (drawn with arcs)
-    const cx = W/2, cy = 480, r = 160;
-    const pct = Math.min(data.score / 999, 1);
-    const startAngle = -Math.PI / 2;
-    const endAngle = startAngle + pct * 2 * Math.PI;
-
-    // Track
+    // Score ring
+    const cx = W/2, cy = 460, r = 155;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 16;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 18;
     ctx.stroke();
 
-    // Progress arc
-    const grad = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
-    grad.addColorStop(0, accent + 'aa');
-    grad.addColorStop(1, accent);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, startAngle, endAngle);
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 16;
-    ctx.lineCap = 'round';
-    ctx.stroke();
+    // Filled arc
+    const pct = Math.min(data.score / 999, 1);
+    if (pct > 0) {
+      const grad = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+      grad.addColorStop(0, accent + '88');
+      grad.addColorStop(1, accent);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + pct * 2 * Math.PI);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 18;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
 
-    // Inner ring glow
+    // Inner glow ring
     ctx.beginPath();
-    ctx.arc(cx, cy, r - 30, 0, Math.PI * 2);
-    ctx.fillStyle = accent + '0d';
+    ctx.arc(cx, cy, r - 28, 0, Math.PI * 2);
+    ctx.fillStyle = accent + '08';
     ctx.fill();
 
     // Score number
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 100px Georgia, serif';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 110px Georgia, serif';
     ctx.textAlign = 'center';
-    ctx.fillText(data.score, cx, cy + 28);
+    ctx.fillText(data.score, cx, cy + 34);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '18px sans-serif';
-    ctx.letterSpacing = '4px';
-    ctx.fillText('CINESCORE', cx, cy + 64);
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.font = '600 15px sans-serif';
+    ctx.letterSpacing = '5px';
+    ctx.fillText('CINESCORE', cx, cy + 70);
+    ctx.letterSpacing = '0px';
 
-    // Score label
-    const label = data.score < 100 ? 'Newcomer' : data.score < 300 ? 'Casual Viewer' : data.score < 600 ? 'Dedicated Cinephile' : 'Elite Connoisseur';
+    const rankLabel = data.score < 100 ? 'Newcomer' : data.score < 300 ? 'Casual Viewer' : data.score < 600 ? 'Dedicated Cinephile' : 'Elite Connoisseur';
     ctx.fillStyle = accent;
-    ctx.font = 'italic 26px Georgia, serif';
-    ctx.fillText(label, cx, cy + 110);
+    ctx.font = 'italic 28px Georgia, serif';
+    ctx.fillText(rankLabel, cx, cy + 112);
 
-    // Stats row
-    const stats = [
-      { label: 'WATCHED', value: data.watched },
-      { label: 'REVIEWS', value: data.reviews },
-      { label: 'SAVED', value: data.saved },
-    ];
-    const statY = 720;
-    const colW = W / 3;
-
-    stats.forEach((s, i) => {
+    // Stats
+    const statY = 700;
+    const cols = [{label:'WATCHED',value:data.watched},{label:'REVIEWS',value:data.reviews},{label:'SAVED',value:data.saved}];
+    cols.forEach((s, i) => {
+      const colW = W / 3;
       const x = colW * i + colW / 2;
-      // Card bg
+      // Card
       ctx.fillStyle = 'rgba(255,255,255,0.04)';
       ctx.beginPath();
-      ctx.roundRect(colW * i + 30, statY - 44, colW - 60, 90, 14);
+      ctx.roundRect(colW*i+28, statY-42, colW-56, 94, 16);
       ctx.fill();
-      ctx.strokeStyle = accent + '22';
+      ctx.strokeStyle = accent + '25';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(colW * i + 30, statY - 44, colW - 60, 90, 14);
+      ctx.roundRect(colW*i+28, statY-42, colW-56, 94, 16);
       ctx.stroke();
 
       ctx.fillStyle = accent;
-      ctx.font = 'bold 36px Georgia, serif';
+      ctx.font = 'bold 38px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText(s.value, x, statY + 4);
+      ctx.fillText(s.value, x, statY + 8);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '13px sans-serif';
-      ctx.fillText(s.label, x, statY + 30);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(s.label, x, statY + 34);
     });
 
-    // Bottom divider
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    // Divider
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(40, 840);
-    ctx.lineTo(W - 40, 840);
+    ctx.moveTo(36, 826);
+    ctx.lineTo(W-36, 826);
     ctx.stroke();
 
-    // Tagline
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
     ctx.font = 'italic 20px Georgia, serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Discover your next favourite film', W/2, 900);
+    ctx.fillText('Discover your next favourite film', W/2, 888);
 
-    // QR placeholder / URL pill
-    ctx.fillStyle = accent + '18';
+    // URL pill
+    ctx.fillStyle = accent + '15';
     ctx.beginPath();
-    ctx.roundRect(W/2 - 160, 930, 320, 46, 23);
+    ctx.roundRect(W/2-150, 916, 300, 48, 24);
     ctx.fill();
-    ctx.strokeStyle = accent + '44';
+    ctx.strokeStyle = accent + '40';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(W/2 - 160, 930, 320, 46, 23);
+    ctx.roundRect(W/2-150, 916, 300, 48, 24);
     ctx.stroke();
-
     ctx.fillStyle = accent;
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText('this-scine.vercel.app', W/2, 958);
-
-    // Bottom accent bar
-    const barBot = ctx.createLinearGradient(0, 0, W, 0);
-    barBot.addColorStop(0, 'transparent');
-    barBot.addColorStop(0.5, accent);
-    barBot.addColorStop(1, 'transparent');
-    ctx.fillStyle = barBot;
-    ctx.fillRect(80, H - 17, W - 160, 3);
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('this-scine.vercel.app', W/2, 945);
 
   } else if (type === 'watchlist') {
-    // ── WATCHLIST CARD ──
 
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '20px sans-serif';
+    // Header
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    ctx.font = '600 16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('WATCHLIST', W/2, 165);
+    ctx.fillText('WATCHLIST', W/2, 156);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'italic bold 48px Georgia, serif';
-    ctx.fillText(data.name, W/2, 225);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'italic bold 52px Georgia, serif';
+    ctx.fillText(data.name, W/2, 216);
 
-    // Stats pills
-    const pills = [`${data.total} Films`, `${data.watched} Watched`];
-    let pillX = W/2 - 140;
-    pills.forEach(p => {
-      ctx.fillStyle = accent + '22';
+    // Pills
+    const pillData = [`${data.total} Films`, `${data.watched} Watched`];
+    let px = W/2 - 148;
+    for (const p of pillData) {
+      ctx.fillStyle = accent + '20';
       ctx.beginPath();
-      ctx.roundRect(pillX, 245, 130, 34, 17);
+      ctx.roundRect(px, 234, 136, 36, 18);
       ctx.fill();
       ctx.strokeStyle = accent + '44';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(pillX, 245, 130, 34, 17);
+      ctx.roundRect(px, 234, 136, 36, 18);
       ctx.stroke();
       ctx.fillStyle = accent;
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(p, pillX + 65, 267);
-      pillX += 150;
-    });
+      ctx.fillText(p, px + 68, 257);
+      px += 156;
+    }
 
     // Divider
-    ctx.strokeStyle = accent + '33';
+    ctx.strokeStyle = accent + '30';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(40, 300);
-    ctx.lineTo(W - 40, 300);
+    ctx.moveTo(36, 288);
+    ctx.lineTo(W - 36, 288);
     ctx.stroke();
 
-    // Movie list
-    const items = data.items.slice(0, 8);
-    items.forEach((m, i) => {
-      const y = 330 + i * 110;
+    // Movie cards with poster images
+    const items = data.items.slice(0, 6);
+    const POSTER_H = 140;
+    const POSTER_W = 94;
+    const CARD_H = POSTER_H + 16;
+    const startY = 304;
 
-      // Card bg
+    for (let i = 0; i < items.length; i++) {
+      const m = items[i];
+      const y = startY + i * (CARD_H + 10);
+
+      // Card background
       ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)';
       ctx.beginPath();
-      ctx.roundRect(36, y, W - 72, 92, 14);
+      ctx.roundRect(36, y, W - 72, CARD_H, 14);
       ctx.fill();
-
       if (!m.watched) {
-        ctx.strokeStyle = accent + '22';
+        ctx.strokeStyle = accent + '20';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(36, y, W - 72, 92, 14);
+        ctx.roundRect(36, y, W - 72, CARD_H, 14);
         ctx.stroke();
       }
 
-      // Number badge
-      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.1)' : accent + '33';
+      // Poster image
+      const posterX = 50, posterY = y + 8;
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
       ctx.beginPath();
-      ctx.roundRect(52, y + 26, 36, 36, 8);
+      ctx.roundRect(posterX, posterY, POSTER_W, POSTER_H, 8);
       ctx.fill();
-      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.3)' : accent;
-      ctx.font = 'bold 18px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(i + 1, 70, y + 50);
 
-      // Title
-      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.3)' : '#ffffff';
-      ctx.font = m.watched ? 'italic 20px Georgia, serif' : 'italic bold 22px Georgia, serif';
-      ctx.textAlign = 'left';
-      const titleText = m.title.length > 28 ? m.title.slice(0, 28) + '…' : m.title;
-      ctx.fillText(titleText, 102, y + 40);
+      if (m.poster) {
+        const img = await loadCanvasImage(m.poster);
+        if (img) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(posterX, posterY, POSTER_W, POSTER_H, 8);
+          ctx.clip();
+          ctx.drawImage(img, posterX, posterY, POSTER_W, POSTER_H);
+          ctx.restore();
+        }
+      }
 
-      // Year + rating
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '14px sans-serif';
-      ctx.fillText(`${m.year}`, 102, y + 64);
+      // Gradient over poster for text
+      const pGrad = ctx.createLinearGradient(posterX, posterY, posterX + POSTER_W, posterY);
+      pGrad.addColorStop(0.7, 'transparent');
+      pGrad.addColorStop(1, 'rgba(6,6,14,0.6)');
+      ctx.fillStyle = pGrad;
+      ctx.beginPath();
+      ctx.roundRect(posterX, posterY, POSTER_W, POSTER_H, 8);
+      ctx.fill();
 
-      // Rating
-      ctx.fillStyle = accent;
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`★ ${m.rating}`, W - 52, y + 50);
-
-      // Watched badge
+      // Watched overlay
       if (m.watched) {
-        ctx.fillStyle = accent + '33';
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
         ctx.beginPath();
-        ctx.roundRect(W - 130, y + 30, 70, 26, 13);
+        ctx.roundRect(posterX, posterY, POSTER_W, POSTER_H, 8);
         ctx.fill();
         ctx.fillStyle = accent;
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('WATCHED', W - 95, y + 47);
+        ctx.fillText('✓', posterX + POSTER_W/2, posterY + POSTER_H/2 + 4);
       }
-    });
 
-    if (data.total > 8) {
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.font = 'italic 16px sans-serif';
+      // Number badge
+      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.08)' : accent + '25';
+      ctx.beginPath();
+      ctx.roundRect(162, y + CARD_H/2 - 16, 28, 28, 6);
+      ctx.fill();
+      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.3)' : accent;
+      ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`+ ${data.total - 8} more films`, W/2, 330 + 8 * 110 + 20);
+      ctx.fillText(i + 1, 176, y + CARD_H/2 + 5);
+
+      // Title
+      const maxTitleW = W - 72 - POSTER_W - 30 - 80;
+      ctx.fillStyle = m.watched ? 'rgba(255,255,255,0.3)' : '#fff';
+      ctx.font = m.watched ? 'italic 18px Georgia, serif' : 'italic bold 20px Georgia, serif';
+      ctx.textAlign = 'left';
+      const titleText = m.title.length > 24 ? m.title.slice(0, 24) + '…' : m.title;
+      ctx.fillText(titleText, 200, y + 44);
+
+      // Genre tags
+      if (m.genre && m.genre.length > 0) {
+        ctx.fillStyle = accent + '88';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(m.genre.slice(0,2).join(' · '), 200, y + 66);
+      }
+
+      // Year
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(m.year || '', 200, m.genre?.length ? y + 86 : y + 70);
+
+      // Rating pill — right side, vertically centered
+      ctx.fillStyle = accent + '20';
+      ctx.beginPath();
+      ctx.roundRect(W - 112, y + CARD_H/2 - 18, 80, 34, 17);
+      ctx.fill();
+      ctx.strokeStyle = accent + '44';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(W - 112, y + CARD_H/2 - 18, 80, 34, 17);
+      ctx.stroke();
+      ctx.fillStyle = accent;
+      ctx.font = 'bold 15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`★ ${m.rating}`, W - 72, y + CARD_H/2 + 5);
+
+      // Watched badge — above rating
+      if (m.watched) {
+        ctx.fillStyle = accent + '18';
+        ctx.beginPath();
+        ctx.roundRect(W - 112, y + 8, 80, 24, 12);
+        ctx.fill();
+        ctx.fillStyle = accent;
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('WATCHED', W - 72, y + 24);
+      }
+    }
+
+    if (data.total > 6) {
+      const moreY = startY + 6 * (CARD_H + 10) + 14;
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.font = 'italic 15px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`+ ${data.total - 6} more`, W/2, moreY);
     }
 
     // URL pill
-    const urlY = H - 100;
-    ctx.fillStyle = accent + '18';
+    const urlY = H - 88;
+    ctx.fillStyle = accent + '15';
     ctx.beginPath();
-    ctx.roundRect(W/2 - 160, urlY, 320, 46, 23);
+    ctx.roundRect(W/2 - 150, urlY, 300, 48, 24);
     ctx.fill();
-    ctx.strokeStyle = accent + '44';
+    ctx.strokeStyle = accent + '40';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(W/2 - 160, urlY, 320, 46, 23);
+    ctx.roundRect(W/2 - 150, urlY, 300, 48, 24);
     ctx.stroke();
     ctx.fillStyle = accent;
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('this-scine.vercel.app', W/2, urlY + 28);
-
-    // Bottom accent bar
-    const barBot = ctx.createLinearGradient(0, 0, W, 0);
-    barBot.addColorStop(0, 'transparent');
-    barBot.addColorStop(0.5, accent);
-    barBot.addColorStop(1, 'transparent');
-    ctx.fillStyle = barBot;
-    ctx.fillRect(80, H - 17, W - 160, 3);
   }
+
+  // Bottom accent line
+  const botBar = ctx.createLinearGradient(0, 0, W, 0);
+  botBar.addColorStop(0, 'transparent');
+  botBar.addColorStop(0.3, accent + 'aa');
+  botBar.addColorStop(0.7, accent + 'aa');
+  botBar.addColorStop(1, 'transparent');
+  ctx.fillStyle = botBar;
+  ctx.fillRect(60, H - 15, W - 120, 3);
 
   return canvas.toDataURL('image/png');
 }
@@ -415,14 +462,12 @@ async function shareImage(dataUrl, title, text) {
       return;
     }
   } catch {}
-  // Fallback: download
   const a = document.createElement('a');
   a.href = dataUrl;
   a.download = 'cinescroll.png';
   a.click();
 }
 
-// ─── CineScore Ring ────────────────────────────────────────────────────────
 function calcCineScore(watched, reviews, saved) {
   return Math.min(999, (watched * 3) + (reviews * 8) + (saved * 2));
 }
@@ -446,10 +491,9 @@ function CineScoreRing({ score, accent }) {
   );
 }
 
-// ─── Toast Notification ────────────────────────────────────────────────────
 function Toast({ message, accent }) {
   return (
-    <div style={{position:'fixed',top:80,left:'50%',transform:'translateX(-50%)',zIndex:200,background:'rgba(5,5,12,0.96)',backdropFilter:'blur(20px)',border:`1px solid ${accent}44`,borderRadius:24,padding:'12px 24px',display:'flex',alignItems:'center',gap:10,animation:'toastIn 0.3s cubic-bezier(0.22,1,0.36,1)',whiteSpace:'nowrap',boxShadow:`0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${accent}22`}}>
+    <div style={{position:'fixed',top:80,left:'50%',transform:'translateX(-50%)',zIndex:200,background:'rgba(5,5,12,0.96)',backdropFilter:'blur(20px)',border:`1px solid ${accent}44`,borderRadius:24,padding:'12px 24px',display:'flex',alignItems:'center',gap:10,animation:'toastIn 0.3s cubic-bezier(0.22,1,0.36,1)',whiteSpace:'nowrap',boxShadow:`0 8px 32px rgba(0,0,0,0.5)`}}>
       <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 8px ${accent}`}}/>
       <span style={{fontSize:14,fontWeight:600,color:'#fff'}}>{message}</span>
       <style>{`@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
@@ -458,37 +502,16 @@ function Toast({ message, accent }) {
 }
 
 // ─── Profile Sheet ─────────────────────────────────────────────────────────
-function ProfileSheet({ onClose, accent }) {
+function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, loadingData }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [tab, setTab] = useState('profile');
-  const [watchlist, setWatchlist] = useState([]);
-  const [userReviews, setUserReviews] = useState([]);
-  const [loadingData, setLoadingData] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [signedOut, setSignedOut] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      setLoadingData(true);
-      try {
-        const [wRes, rRes] = await Promise.all([fetch('/api/watchlist'), fetch('/api/reviews')]);
-        const wData = await wRes.json();
-        const rData = await rRes.json();
-        setWatchlist(wData.items || []);
-        setUserReviews(rData.items || []);
-      } catch {}
-      setLoadingData(false);
-    };
-    load();
-  }, []);
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const toggleWatched = async (item) => {
     const next = !item.watched;
@@ -506,8 +529,8 @@ function ProfileSheet({ onClose, accent }) {
     try { await signOut(); } catch {}
     setSigningOut(false);
     setSignedOut(true);
-    showToast('You have been signed out ✓');
-    setTimeout(() => { onClose(); }, 2000);
+    showToast('Signed out successfully ✓');
+    setTimeout(() => onClose(), 2000);
   };
 
   const watched = watchlist.filter(m => m.watched).length;
@@ -544,7 +567,15 @@ function ProfileSheet({ onClose, accent }) {
         name: user?.firstName || user?.username || 'Cinephile',
         total: watchlist.length,
         watched,
-        items: watchlist.map(m => ({ title:m.title, year:m.year, rating:m.rating, watched:m.watched })),
+        items: watchlist.map(m => ({
+          title: m.title,
+          year: m.year,
+          rating: m.rating,
+          watched: m.watched,
+          poster: m.poster,
+          genre: m.genre,
+          gradient: m.gradient,
+        })),
       }, accent);
       await shareImage(dataUrl, 'My Watchlist', `Check out my CineScroll watchlist!`);
       showToast('Share card ready!');
@@ -559,7 +590,6 @@ function ProfileSheet({ onClose, accent }) {
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
 
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 0',flexShrink:0}}/>
-
         <div style={{padding:'16px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:900,fontStyle:'italic',color:'#fff'}}>My Profile</span>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -577,7 +607,6 @@ function ProfileSheet({ onClose, accent }) {
 
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
 
-          {/* ── PROFILE TAB ── */}
           {tab==='profile'&&(
             <div style={{padding:'20px'}}>
               <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:24}}>
@@ -651,31 +680,18 @@ function ProfileSheet({ onClose, accent }) {
                 <div style={{textAlign:'center',padding:'20px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>Save movies to build your taste profile</div>
               )}
 
-              {/* Sign out button */}
               <button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:signedOut?`${accent}10`:'rgba(255,255,255,0.04)',border:`1px solid ${signedOut?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:14,padding:'14px',cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',marginTop:8,transition:'all 0.3s ease'}}>
-                {signedOut ? (
-                  <>
-                    <div style={{width:18,height:18,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                      <SvgIcon name="check" size={11} color="#000"/>
-                    </div>
-                    <span style={{fontSize:14,color:accent,fontWeight:600}}>Signed out successfully</span>
-                  </>
-                ) : signingOut ? (
-                  <>
-                    <div style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
-                    <span style={{fontSize:14,color:'rgba(255,255,255,0.5)',fontWeight:500}}>Signing out…</span>
-                  </>
-                ) : (
-                  <>
-                    <SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/>
-                    <span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span>
-                  </>
+                {signedOut?(
+                  <><div style={{width:18,height:18,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={11} color="#000"/></div><span style={{fontSize:14,color:accent,fontWeight:600}}>Signed out successfully</span></>
+                ):signingOut?(
+                  <><div style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/><span style={{fontSize:14,color:'rgba(255,255,255,0.5)',fontWeight:500}}>Signing out…</span></>
+                ):(
+                  <><SvgIcon name="logout" size={16} color="rgba(255,255,255,0.4)"/><span style={{fontSize:14,color:'rgba(255,255,255,0.4)',fontWeight:500}}>Sign out</span></>
                 )}
               </button>
             </div>
           )}
 
-          {/* ── WATCHLIST TAB ── */}
           {tab==='watchlist'&&(
             <div style={{padding:'16px 20px'}}>
               {watchlist.length>0&&(
@@ -696,6 +712,7 @@ function ProfileSheet({ onClose, accent }) {
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   {watchlist.map((m,i)=>(
                     <div key={m.movie_id} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'10px 14px'}}>
+                      {/* Poster thumbnail */}
                       <div style={{width:44,height:60,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>
                         {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
                       </div>
@@ -704,7 +721,12 @@ function ProfileSheet({ onClose, accent }) {
                           <span style={{fontSize:14,fontWeight:700,color:m.watched?'rgba(255,255,255,0.4)':'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',textDecoration:m.watched?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</span>
                           {m.is_tv&&<span style={{fontSize:9,color:m.accent||'#F5A623',border:`1px solid ${m.accent||'#F5A623'}44`,borderRadius:3,padding:'1px 5px',flexShrink:0}}>TV</span>}
                         </div>
-                        <div style={{fontSize:11,color:'rgba(255,255,255,0.28)',marginBottom:6}}>{m.year} · ★ {m.rating}</div>
+                        {/* Year + rating on same line, watched badge separate */}
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                          <span style={{fontSize:11,color:'rgba(255,255,255,0.28)'}}>{m.year}</span>
+                          <span style={{fontSize:11,color:m.accent||accent,fontWeight:600}}>★ {m.rating}</span>
+                          {m.watched&&<span style={{fontSize:9,color:accent,background:`${accent}18`,border:`1px solid ${accent}33`,borderRadius:10,padding:'1px 7px',fontWeight:700}}>WATCHED</span>}
+                        </div>
                         <div style={{display:'flex',gap:8}}>
                           <button onClick={()=>toggleWatched(m)} style={{background:m.watched?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${m.watched?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'3px 10px',cursor:'pointer',fontSize:11,color:m.watched?accent:'rgba(255,255,255,0.35)',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}>
                             <SvgIcon name="check" size={10} color={m.watched?accent:'rgba(255,255,255,0.35)'}/>
@@ -722,7 +744,6 @@ function ProfileSheet({ onClose, accent }) {
             </div>
           )}
 
-          {/* ── REVIEWS TAB ── */}
           {tab==='reviews'&&(
             <div style={{padding:'16px 20px'}}>
               {loadingData?(
@@ -805,14 +826,12 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const inputRef = useRef(null);
 
   const toggleLike = id => setComments(p => p.map(c => c.id===id?{...c,liked:!c.liked,likes:c.liked?c.likes-1:c.likes+1}:c));
-
   const startReply = (comment) => {
     if (!isSignedIn) { onAuthRequired(); return; }
     setReplyingTo(comment);
     setInput(`@${comment.user} `);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
-
   const post = async () => {
     if (!isSignedIn) { onAuthRequired(); return; }
     if (!input.trim()) return;
@@ -825,10 +844,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
       ));
     } else {
       setComments(p => [{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false,replies:[]},...p]);
-      await fetch('/api/reviews', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ movieId:movie?.id, movieTitle:movie?.title, text:input, rating:0 }),
-      });
+      await fetch('/api/reviews', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ movieId:movie?.id, movieTitle:movie?.title, text:input, rating:0 }) });
     }
     setInput(''); setReplyingTo(null);
   };
@@ -901,9 +917,7 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
         </div>
       ) : (
         <div style={{padding:'14px 20px 34px',borderTop:'1px solid rgba(255,255,255,0.05)',flexShrink:0,background:'rgba(4,4,8,0.98)'}}>
-          <button onClick={onAuthRequired} style={{width:'100%',background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:16,padding:'13px',cursor:'pointer',fontFamily:'inherit',fontSize:14,color:accent,fontWeight:600}}>
-            Sign in to leave a review
-          </button>
+          <button onClick={onAuthRequired} style={{width:'100%',background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:16,padding:'13px',cursor:'pointer',fontFamily:'inherit',fontSize:14,color:accent,fontWeight:600}}>Sign in to leave a review</button>
         </div>
       )}
     </div>
@@ -914,8 +928,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
 function SimilarSheet({ movie, onClose, accent, onSelect }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Determine content type label
   const contentLabel = getContentLabel(movie);
 
   useEffect(() => {
@@ -923,22 +935,18 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
     setLoading(true);
     const genreIds = (movie.genreIds || movie.genre_ids || []).join(',');
     fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${genreIds}`)
-      .then(r=>r.json())
-      .then(d=>{setItems(d.movies||[]);setLoading(false);})
-      .catch(()=>setLoading(false));
+      .then(r=>r.json()).then(d=>{setItems(d.movies||[]);setLoading(false);}).catch(()=>setLoading(false));
   }, [movie]);
 
   return (
     <>
       <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(6px)'}}/>
       <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:60,background:'rgba(5,5,10,0.98)',backdropFilter:'blur(32px)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',maxHeight:'75vh',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
-        <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+        <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 0',flexShrink:0}}/>
         <div style={{padding:'14px 20px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
           <div>
-            <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>
-              Similar {contentLabel}
-            </div>
+            <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>Similar {contentLabel}</div>
             <div style={{fontSize:12,color:accent,marginTop:1,fontStyle:'italic',fontFamily:"'Playfair Display',serif"}}>{movie?.title}</div>
           </div>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -950,14 +958,9 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
             <div style={{textAlign:'center',padding:30,display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
               <div style={{width:28,height:28,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
               <span style={{color:'rgba(255,255,255,0.3)',fontSize:13}}>Finding similar {contentLabel.toLowerCase()}…</span>
-              <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
             </div>
           )}
-          {!loading&&items.length===0&&(
-            <div style={{textAlign:'center',padding:30,color:'rgba(255,255,255,0.3)',fontSize:13}}>
-              No similar {contentLabel.toLowerCase()} found
-            </div>
-          )}
+          {!loading&&items.length===0&&<div style={{textAlign:'center',padding:30,color:'rgba(255,255,255,0.3)',fontSize:13}}>No similar {contentLabel.toLowerCase()} found</div>}
           {items.map((m,i)=>(
             <button key={m.id} onClick={()=>{onSelect(m);onClose();}} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'10px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit'}}>
               <div style={{width:44,height:60,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>
@@ -1003,12 +1006,10 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
 
   return (
     <div style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A'}}>
-      {bgImage&&(
-        <>
-          <div style={{position:'absolute',inset:0,backgroundImage:`url(${bgImage})`,backgroundSize:'cover',backgroundPosition:'center top',opacity:imgLoaded?(isActive?1:0.7):0,transition:'opacity 0.6s ease'}}/>
-          <img src={bgImage} alt="" onLoad={()=>setImgLoaded(true)} style={{position:'absolute',opacity:0,width:1,height:1,pointerEvents:'none'}}/>
-        </>
-      )}
+      {bgImage&&(<>
+        <div style={{position:'absolute',inset:0,backgroundImage:`url(${bgImage})`,backgroundSize:'cover',backgroundPosition:'center top',opacity:imgLoaded?(isActive?1:0.7):0,transition:'opacity 0.6s ease'}}/>
+        <img src={bgImage} alt="" onLoad={()=>setImgLoaded(true)} style={{position:'absolute',opacity:0,width:1,height:1,pointerEvents:'none'}}/>
+      </>)}
       <div style={{position:'absolute',inset:0,background:movie.gradient||GRADS[index%GRADS.length],opacity:imgLoaded?0:1,transition:'opacity 0.6s ease'}}/>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 60% 25%, transparent 20%, rgba(0,0,0,0.6) 100%)',pointerEvents:'none'}}/>
       <div style={{position:'absolute',bottom:0,left:0,right:0,height:'75%',background:'linear-gradient(to top,rgba(0,0,0,0.98) 0%,rgba(0,0,0,0.85) 28%,rgba(0,0,0,0.3) 60%,transparent 100%)',pointerEvents:'none'}}/>
@@ -1031,9 +1032,7 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
 
       <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
         <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap',alignItems:'center'}}>
-          {(movie.genre||[]).map(g=>(
-            <span key={g} style={{fontSize:9,letterSpacing:2.5,color:accent,fontWeight:800,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}44`,borderRadius:4}}>{g}</span>
-          ))}
+          {(movie.genre||[]).map(g=>(<span key={g} style={{fontSize:9,letterSpacing:2.5,color:accent,fontWeight:800,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}44`,borderRadius:4}}>{g}</span>))}
           {movie.isTV&&<span style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.4)',fontWeight:600,padding:'3px 8px',border:'1px solid rgba(255,255,255,0.12)',borderRadius:4}}>SERIES</span>}
         </div>
         <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:Math.min(52,Math.max(28,56-(movie.title?.length||0)*0.9)),fontWeight:900,fontStyle:'italic',color:'#fff',margin:'0 0 6px',lineHeight:1.0,letterSpacing:-1,textShadow:`0 0 60px ${accent}30,0 4px 30px rgba(0,0,0,0.8)`}}>{movie.title}</h2>
@@ -1137,25 +1136,66 @@ export default function CineScroll() {
   const [searching,setSearching]=useState(false);
   const [similarMovie,setSimilarMovie]=useState(null);
   const [watchlistIds,setWatchlistIds]=useState(new Set());
+
+  // Background-loaded profile data — preloaded as soon as user signs in
+  const [watchlist,setWatchlist]=useState([]);
+  const [userReviews,setUserReviews]=useState([]);
+  const [loadingProfileData,setLoadingProfileData]=useState(false);
+
   const containerRef=useRef(null);
   const pageRef=useRef(1);
   const loadingMoreRef=useRef(false);
 
-  useEffect(()=>{
-    if(!isSignedIn)return;
-    fetch('/api/watchlist').then(r=>r.json()).then(d=>{
-      setWatchlistIds(new Set((d.items||[]).map(m=>m.movie_id)));
-    });
-  },[isSignedIn]);
+  // ── Load profile data in background on sign-in ──
+  useEffect(() => {
+    if (!isSignedIn) {
+      setWatchlist([]);
+      setUserReviews([]);
+      setWatchlistIds(new Set());
+      return;
+    }
+    const loadProfile = async () => {
+      setLoadingProfileData(true);
+      try {
+        const [wRes, rRes] = await Promise.all([
+          fetch('/api/watchlist'),
+          fetch('/api/reviews'),
+        ]);
+        const wData = await wRes.json();
+        const rData = await rRes.json();
+        const items = wData.items || [];
+        setWatchlist(items);
+        setWatchlistIds(new Set(items.map(m => m.movie_id)));
+        setUserReviews(rData.items || []);
+      } catch {}
+      setLoadingProfileData(false);
+    };
+    loadProfile();
+  }, [isSignedIn]);
 
-  const handleSave=async(movie)=>{
-    const already=watchlistIds.has(movie.id);
-    if(already){
-      setWatchlistIds(p=>{const n=new Set(p);n.delete(movie.id);return n;});
-      await fetch('/api/watchlist',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie.id})});
+  const handleSave = async (movie) => {
+    const already = watchlistIds.has(movie.id);
+    if (already) {
+      setWatchlistIds(p => { const n = new Set(p); n.delete(movie.id); return n; });
+      setWatchlist(p => p.filter(m => m.movie_id !== movie.id));
+      await fetch('/api/watchlist', { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ movieId:movie.id }) });
     } else {
-      setWatchlistIds(p=>new Set([...p,movie.id]));
-      await fetch('/api/watchlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(movie)});
+      setWatchlistIds(p => new Set([...p, movie.id]));
+      setWatchlist(p => [{
+        movie_id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        rating: movie.rating,
+        poster: movie.poster,
+        backdrop: movie.backdrop,
+        genre: movie.genre,
+        overview: movie.overview,
+        accent: movie.accent,
+        gradient: movie.gradient,
+        is_tv: movie.isTV || false,
+        watched: false,
+      }, ...p]);
+      await fetch('/api/watchlist', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(movie) });
     }
   };
 
@@ -1210,6 +1250,7 @@ export default function CineScroll() {
     <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"'DM Sans',sans-serif",color:'#fff',overflow:'hidden'}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700;1,900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 
+      {/* Top Nav */}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
@@ -1311,9 +1352,18 @@ export default function CineScroll() {
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
-      {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent}/>}
+      {showProfile&&(
+        <ProfileSheet
+          onClose={()=>setShowProfile(false)}
+          accent={accent}
+          watchlist={watchlist}
+          setWatchlist={setWatchlist}
+          userReviews={userReviews}
+          loadingData={loadingProfileData}
+        />
+      )}
 
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-        }
+    }
