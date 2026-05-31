@@ -197,4 +197,4 @@ export async function GET(request) {
     console.error(err);
     return Response.json({ movies: [], error: 'Failed to fetch' }, { status: 500 });
   }
-                            }
+    }
