@@ -192,9 +192,8 @@ export async function GET(request) {
     }
 
     return Response.json({ movies: interleaved.map((m, i) => formatItem(m, i)) });
-
-  } catch (err) {
+} catch (err) {
     console.error(err);
     return Response.json({ movies: [], error: 'Failed to fetch' }, { status: 500 });
   }
-  }
+}
