@@ -25,7 +25,6 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     check:    'M20 6L9 17l-5-5',
     share:    ['M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8','M16 6l-4-4-4 4','M12 2v13'],
     play:     'M5 3l14 9-14 9V3z',
-    mood:     ['M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z','M8 14s1.5 2 4 2 4-2 4-2','M9 9h.01','M15 9h.01'],
   };
   const def = icons[name];
   if (!def) return null;
@@ -46,22 +45,23 @@ const GENRE_OPTIONS = [
   {label:'Animation',id:'16'},{label:'Documentary',id:'99'},
 ];
 
-const MOODS = [
+const FEED_MOODS = [
   {label:'Trending',icon:'flame'},{label:'Top Rated',icon:'star'},
   {label:'New',icon:'sparkle'},{label:'Hidden Gems',icon:'gem'},
 ];
 
+// Phase 3 — these are the FEEL moods for the 🎭 screen
 const FEEL_MOODS = [
-  { label:'Inspired',   emoji:'🚀', color:'#4DA8DA', genres:'18,36',    sort:'vote_average.desc' },
-  { label:'Thrilled',   emoji:'⚡', color:'#F5A623', genres:'28,53',    sort:'popularity.desc' },
-  { label:'Scared',     emoji:'👻', color:'#B07FEF', genres:'27',       sort:'popularity.desc' },
-  { label:'Romantic',   emoji:'💕', color:'#E87AAA', genres:'10749,18', sort:'vote_average.desc' },
-  { label:'Mind-blown', emoji:'🌀', color:'#50C8D4', genres:'878,9648', sort:'vote_average.desc' },
-  { label:'Laugh',      emoji:'😂', color:'#E8C84A', genres:'35',       sort:'popularity.desc' },
-  { label:'Emotional',  emoji:'😢', color:'#6BBF6B', genres:'18,10749', sort:'vote_average.desc' },
-  { label:'Epic',       emoji:'⚔️', color:'#FF7A2F', genres:'28,14,12',sort:'popularity.desc' },
-  { label:'Dark',       emoji:'🖤', color:'#8B8B8B', genres:'80,53,18', sort:'vote_average.desc' },
-  { label:'Nostalgic',  emoji:'🎞️', color:'#C4922A', genres:'35,18',   sort:'vote_average.desc' },
+  { label:'Inspired',   emoji:'🚀', color:'#4DA8DA', genres:'18,36' },
+  { label:'Thrilled',   emoji:'⚡', color:'#F5A623', genres:'28,53' },
+  { label:'Scared',     emoji:'👻', color:'#B07FEF', genres:'27' },
+  { label:'Romantic',   emoji:'💕', color:'#E87AAA', genres:'10749,18' },
+  { label:'Mind-blown', emoji:'🌀', color:'#50C8D4', genres:'878,9648' },
+  { label:'Laugh',      emoji:'😂', color:'#E8C84A', genres:'35' },
+  { label:'Emotional',  emoji:'😢', color:'#6BBF6B', genres:'18,10749' },
+  { label:'Epic',       emoji:'⚔️', color:'#FF7A2F', genres:'28,14,12' },
+  { label:'Dark',       emoji:'🖤', color:'#8B8B8B', genres:'80,53,18' },
+  { label:'Nostalgic',  emoji:'🎞️', color:'#C4922A', genres:'35,18' },
 ];
 
 const GRADS = [
@@ -104,87 +104,56 @@ async function generateShareCard(type, data, accent) {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#05050D';
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.015)';
-  ctx.lineWidth = 1;
-  for (let i = -H; i < W + H; i += 40) {
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke();
-  }
+  ctx.fillStyle = '#05050D'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.015)'; ctx.lineWidth = 1;
+  for (let i = -H; i < W + H; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke(); }
 
   const g1 = ctx.createRadialGradient(W*.5,0,0,W*.5,0,H*.65);
   g1.addColorStop(0,accent+'30'); g1.addColorStop(0.5,accent+'0a'); g1.addColorStop(1,'transparent');
   ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
-
   const g2 = ctx.createRadialGradient(W*.5,H,0,W*.5,H,H*.5);
   g2.addColorStop(0,accent+'20'); g2.addColorStop(1,'transparent');
   ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
 
   ctx.shadowColor=accent; ctx.shadowBlur=20;
   ctx.strokeStyle=accent+'60'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.roundRect(10,10,W-20,H-20,32); ctx.stroke();
-  ctx.shadowBlur=0;
-
+  ctx.beginPath(); ctx.roundRect(10,10,W-20,H-20,32); ctx.stroke(); ctx.shadowBlur=0;
   ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(18,18,W-36,H-36,26); ctx.stroke();
 
   const topBar=ctx.createLinearGradient(0,0,W,0);
-  topBar.addColorStop(0,'transparent'); topBar.addColorStop(0.25,accent+'cc');
-  topBar.addColorStop(0.75,accent+'cc'); topBar.addColorStop(1,'transparent');
+  topBar.addColorStop(0,'transparent'); topBar.addColorStop(0.25,accent+'cc'); topBar.addColorStop(0.75,accent+'cc'); topBar.addColorStop(1,'transparent');
   ctx.fillStyle=topBar; ctx.beginPath(); ctx.roundRect(40,10,W-80,3,2); ctx.fill();
 
-  ctx.shadowColor=accent; ctx.shadowBlur=15;
-  ctx.fillStyle=accent; ctx.beginPath(); ctx.arc(48,66,9,0,Math.PI*2); ctx.fill();
-  ctx.shadowBlur=0;
-  ctx.strokeStyle=accent+'30'; ctx.lineWidth=8;
-  ctx.beginPath(); ctx.arc(48,66,14,0,Math.PI*2); ctx.stroke();
-  ctx.fillStyle='#ffffff'; ctx.font='italic bold 32px Georgia, serif';
-  ctx.textAlign='left'; ctx.fillText('CineScroll',66,76);
+  ctx.shadowColor=accent; ctx.shadowBlur=15; ctx.fillStyle=accent; ctx.beginPath(); ctx.arc(48,66,9,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle=accent+'30'; ctx.lineWidth=8; ctx.beginPath(); ctx.arc(48,66,14,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle='#ffffff'; ctx.font='italic bold 32px Georgia, serif'; ctx.textAlign='left'; ctx.fillText('CineScroll',66,76);
 
   const divGrad=ctx.createLinearGradient(0,0,W,0);
   divGrad.addColorStop(0,'transparent'); divGrad.addColorStop(0.5,'rgba(255,255,255,0.08)'); divGrad.addColorStop(1,'transparent');
   ctx.fillStyle=divGrad; ctx.fillRect(36,102,W-72,1);
 
   if (type==='score') {
-    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='600 13px sans-serif';
-    ctx.textAlign='center'; ctx.letterSpacing='4px';
-    ctx.fillText('CINEPHILE PROFILE',W/2,152); ctx.letterSpacing='0px';
-
-    ctx.fillStyle='#ffffff'; ctx.font='italic bold 60px Georgia, serif';
-    ctx.fillText(data.name,W/2,224);
-
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='600 13px sans-serif'; ctx.textAlign='center'; ctx.letterSpacing='4px'; ctx.fillText('CINEPHILE PROFILE',W/2,152); ctx.letterSpacing='0px';
+    ctx.fillStyle='#ffffff'; ctx.font='italic bold 60px Georgia, serif'; ctx.fillText(data.name,W/2,224);
     const rankLabel=data.score<100?'🌱 Newcomer':data.score<300?'🎬 Casual Viewer':data.score<600?'🏆 Dedicated Cinephile':'👑 Elite Connoisseur';
     ctx.fillStyle=accent+'18'; ctx.beginPath(); ctx.roundRect(W/2-130,240,260,38,19); ctx.fill();
     ctx.strokeStyle=accent+'44'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(W/2-130,240,260,38,19); ctx.stroke();
     ctx.fillStyle=accent; ctx.font='bold 14px sans-serif'; ctx.fillText(rankLabel,W/2,263);
 
     const cx=W/2,cy=480,r=158;
-    ctx.shadowColor=accent; ctx.shadowBlur=30;
-    ctx.strokeStyle=accent+'15'; ctx.lineWidth=30;
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=20;
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
-
+    ctx.shadowColor=accent; ctx.shadowBlur=30; ctx.strokeStyle=accent+'15'; ctx.lineWidth=30; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=20; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
     const pct=Math.min(data.score/999,1);
     if(pct>0){
-      const ag=ctx.createLinearGradient(cx-r,cy,cx+r,cy);
-      ag.addColorStop(0,accent+'80'); ag.addColorStop(0.5,accent); ag.addColorStop(1,accent+'cc');
-      ctx.shadowColor=accent; ctx.shadowBlur=16;
-      ctx.strokeStyle=ag; ctx.lineWidth=20; ctx.lineCap='round';
-      ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+pct*2*Math.PI); ctx.stroke();
-      ctx.shadowBlur=0; ctx.lineCap='butt';
+      const ag=ctx.createLinearGradient(cx-r,cy,cx+r,cy); ag.addColorStop(0,accent+'80'); ag.addColorStop(0.5,accent); ag.addColorStop(1,accent+'cc');
+      ctx.shadowColor=accent; ctx.shadowBlur=16; ctx.strokeStyle=ag; ctx.lineWidth=20; ctx.lineCap='round';
+      ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+pct*2*Math.PI); ctx.stroke(); ctx.shadowBlur=0; ctx.lineCap='butt';
     }
-
-    const ig=ctx.createRadialGradient(cx,cy,0,cx,cy,r-20);
-    ig.addColorStop(0,accent+'0d'); ig.addColorStop(1,'transparent');
+    const ig=ctx.createRadialGradient(cx,cy,0,cx,cy,r-20); ig.addColorStop(0,accent+'0d'); ig.addColorStop(1,'transparent');
     ctx.fillStyle=ig; ctx.beginPath(); ctx.arc(cx,cy,r-10,0,Math.PI*2); ctx.fill();
-
-    ctx.fillStyle='#ffffff'; ctx.font='bold 108px Georgia, serif';
-    ctx.shadowColor=accent; ctx.shadowBlur=20;
-    ctx.fillText(data.score,cx,cy+34); ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='600 13px sans-serif';
-    ctx.letterSpacing='5px'; ctx.fillText('CINESCORE',cx,cy+68); ctx.letterSpacing='0px';
+    ctx.fillStyle='#ffffff'; ctx.font='bold 108px Georgia, serif'; ctx.shadowColor=accent; ctx.shadowBlur=20; ctx.fillText(data.score,cx,cy+34); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='600 13px sans-serif'; ctx.letterSpacing='5px'; ctx.fillText('CINESCORE',cx,cy+68); ctx.letterSpacing='0px';
 
     const cols=[{label:'WATCHED',value:data.watched,icon:'👁'},{label:'REVIEWS',value:data.reviews,icon:'✍️'},{label:'SAVED',value:data.saved,icon:'🔖'}];
     const statY=710; const colW=W/3;
@@ -194,154 +163,79 @@ async function generateShareCard(type, data, accent) {
       ctx.strokeStyle=accent+'28'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(colW*i+24,statY-46,colW-48,100,18); ctx.stroke();
       ctx.font='22px sans-serif'; ctx.fillStyle='#fff'; ctx.fillText(s.icon,x,statY-10);
       ctx.fillStyle=accent; ctx.font='bold 34px Georgia, serif'; ctx.fillText(s.value,x,statY+24);
-      ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='600 11px sans-serif';
-      ctx.letterSpacing='2px'; ctx.fillText(s.label,x,statY+44); ctx.letterSpacing='0px';
+      ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='600 11px sans-serif'; ctx.letterSpacing='2px'; ctx.fillText(s.label,x,statY+44); ctx.letterSpacing='0px';
     });
-
     ctx.fillStyle=divGrad; ctx.fillRect(36,840,W-72,1);
-    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='italic 20px Georgia, serif';
-    ctx.fillText('Discover your next favourite film',W/2,888);
-
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='italic 20px Georgia, serif'; ctx.fillText('Discover your next favourite film',W/2,888);
     ctx.fillStyle=accent+'15'; ctx.beginPath(); ctx.roundRect(W/2-155,910,310,50,25); ctx.fill();
     ctx.strokeStyle=accent+'50'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(W/2-155,910,310,50,25); ctx.stroke();
     ctx.fillStyle=accent; ctx.font='bold 16px sans-serif'; ctx.fillText('this-scine.vercel.app',W/2,940);
-
   } else if (type==='watchlist') {
-    ctx.fillStyle='rgba(255,255,255,0.32)'; ctx.font='600 13px sans-serif';
-    ctx.textAlign='center'; ctx.letterSpacing='4px';
-    ctx.fillText('WATCHLIST',W/2,148); ctx.letterSpacing='0px';
-
-    ctx.fillStyle='#ffffff'; ctx.font='italic bold 54px Georgia, serif';
-    ctx.fillText(data.name,W/2,210);
-
-    const pillLabels=[`${data.total} Films`,`${data.watched} Watched`];
-    let px=W/2-152;
+    ctx.fillStyle='rgba(255,255,255,0.32)'; ctx.font='600 13px sans-serif'; ctx.textAlign='center'; ctx.letterSpacing='4px'; ctx.fillText('WATCHLIST',W/2,148); ctx.letterSpacing='0px';
+    ctx.fillStyle='#ffffff'; ctx.font='italic bold 54px Georgia, serif'; ctx.fillText(data.name,W/2,210);
+    const pillLabels=[`${data.total} Films`,`${data.watched} Watched`]; let px=W/2-152;
     for(const p of pillLabels){
-      const pw=140;
-      ctx.fillStyle=accent+'18'; ctx.beginPath(); ctx.roundRect(px,228,pw,36,18); ctx.fill();
+      const pw=140; ctx.fillStyle=accent+'18'; ctx.beginPath(); ctx.roundRect(px,228,pw,36,18); ctx.fill();
       ctx.strokeStyle=accent+'55'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(px,228,pw,36,18); ctx.stroke();
-      ctx.fillStyle=accent; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(p,px+pw/2,251); px+=pw+16;
+      ctx.fillStyle=accent; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.fillText(p,px+pw/2,251); px+=pw+16;
     }
-
     ctx.fillStyle=divGrad; ctx.fillRect(36,282,W-72,1);
-
-    const items=data.items.slice(0,6);
-    const CARD_H=118,POSTER_W=72,POSTER_H=102,startY=296;
-
+    const items=data.items.slice(0,6); const CARD_H=118,POSTER_W=72,POSTER_H=102,startY=296;
     for(let idx=0;idx<items.length;idx++){
-      const m=items[idx];
-      const cardY=startY+idx*(CARD_H+8);
-
-      if(m.watched){ctx.fillStyle='rgba(255,255,255,0.02)';}
-      else{const cg=ctx.createLinearGradient(36,cardY,W-36,cardY);cg.addColorStop(0,'rgba(255,255,255,0.06)');cg.addColorStop(1,'rgba(255,255,255,0.03)');ctx.fillStyle=cg;}
+      const m=items[idx]; const cardY=startY+idx*(CARD_H+8);
+      if(m.watched){ctx.fillStyle='rgba(255,255,255,0.02)';}else{const cg=ctx.createLinearGradient(36,cardY,W-36,cardY);cg.addColorStop(0,'rgba(255,255,255,0.06)');cg.addColorStop(1,'rgba(255,255,255,0.03)');ctx.fillStyle=cg;}
       ctx.beginPath(); ctx.roundRect(36,cardY,W-72,CARD_H,16); ctx.fill();
-      ctx.strokeStyle=m.watched?'rgba(255,255,255,0.04)':accent+'22'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.roundRect(36,cardY,W-72,CARD_H,16); ctx.stroke();
-
+      ctx.strokeStyle=m.watched?'rgba(255,255,255,0.04)':accent+'22'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(36,cardY,W-72,CARD_H,16); ctx.stroke();
       const posterX=50,posterY=cardY+8;
       ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10); ctx.fill();
-
-      if(m.poster){
-        const img=await loadCanvasImage(m.poster);
-        if(img){
-          ctx.save(); ctx.beginPath(); ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10); ctx.clip();
-          const scale=Math.max(POSTER_W/img.width,POSTER_H/img.height);
-          const dw=img.width*scale,dh=img.height*scale;
-          ctx.drawImage(img,posterX+(POSTER_W-dw)/2,posterY+(POSTER_H-dh)/2,dw,dh);
-          ctx.restore();
-        }
-      }
-
-      if(m.watched){
-        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10); ctx.fill();
-        ctx.fillStyle=accent; ctx.font='20px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('✓',posterX+POSTER_W/2,posterY+POSTER_H/2+7);
-      }
-
-      ctx.strokeStyle=m.watched?'rgba(255,255,255,0.08)':accent+'33'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10); ctx.stroke();
-
+      if(m.poster){const img=await loadCanvasImage(m.poster);if(img){ctx.save();ctx.beginPath();ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10);ctx.clip();const scale=Math.max(POSTER_W/img.width,POSTER_H/img.height);const dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,posterX+(POSTER_W-dw)/2,posterY+(POSTER_H-dh)/2,dw,dh);ctx.restore();}}
+      if(m.watched){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10);ctx.fill();ctx.fillStyle=accent;ctx.font='20px sans-serif';ctx.textAlign='center';ctx.fillText('✓',posterX+POSTER_W/2,posterY+POSTER_H/2+7);}
+      ctx.strokeStyle=m.watched?'rgba(255,255,255,0.08)':accent+'33'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10); ctx.stroke();
       const numX=posterX+POSTER_W+14;
-      ctx.fillStyle=m.watched?'rgba(255,255,255,0.06)':accent+'20';
-      ctx.beginPath(); ctx.roundRect(numX,cardY+CARD_H/2-14,28,28,7); ctx.fill();
-      ctx.fillStyle=m.watched?'rgba(255,255,255,0.3)':accent;
-      ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(idx+1,numX+14,cardY+CARD_H/2+5);
-
+      ctx.fillStyle=m.watched?'rgba(255,255,255,0.06)':accent+'20'; ctx.beginPath(); ctx.roundRect(numX,cardY+CARD_H/2-14,28,28,7); ctx.fill();
+      ctx.fillStyle=m.watched?'rgba(255,255,255,0.3)':accent; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.fillText(idx+1,numX+14,cardY+CARD_H/2+5);
       const textX=numX+38;
       const title=m.title.length>22?m.title.slice(0,22)+'…':m.title;
-      ctx.fillStyle=m.watched?'rgba(255,255,255,0.35)':'#ffffff';
-      ctx.font=m.watched?'italic 19px Georgia, serif':'italic bold 21px Georgia, serif';
-      ctx.textAlign='left'; ctx.fillText(title,textX,cardY+36);
-
-      if(m.genre&&m.genre.length>0){
-        ctx.fillStyle=accent+'99'; ctx.font='12px sans-serif';
-        ctx.fillText(m.genre.slice(0,2).join(' · '),textX,cardY+57);
-      }
-      ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.font='13px sans-serif';
-      ctx.fillText(m.year||'',textX,cardY+76);
-
+      ctx.fillStyle=m.watched?'rgba(255,255,255,0.35)':'#ffffff'; ctx.font=m.watched?'italic 19px Georgia, serif':'italic bold 21px Georgia, serif'; ctx.textAlign='left'; ctx.fillText(title,textX,cardY+36);
+      if(m.genre&&m.genre.length>0){ctx.fillStyle=accent+'99';ctx.font='12px sans-serif';ctx.fillText(m.genre.slice(0,2).join(' · '),textX,cardY+57);}
+      ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.font='13px sans-serif'; ctx.fillText(m.year||'',textX,cardY+76);
       const ratingX=W-36-76,ratingY=cardY+CARD_H/2-16;
       ctx.fillStyle=accent+'18'; ctx.beginPath(); ctx.roundRect(ratingX,ratingY,68,32,16); ctx.fill();
       ctx.strokeStyle=accent+'44'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(ratingX,ratingY,68,32,16); ctx.stroke();
-      ctx.fillStyle=accent; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(`★ ${m.rating}`,ratingX+34,ratingY+20);
-
-      if(m.watched){
-        const wY=ratingY-30;
-        ctx.fillStyle=accent+'22'; ctx.beginPath(); ctx.roundRect(ratingX,wY,68,22,11); ctx.fill();
-        ctx.fillStyle=accent; ctx.font='bold 10px sans-serif'; ctx.letterSpacing='1px';
-        ctx.fillText('WATCHED',ratingX+34,wY+15); ctx.letterSpacing='0px';
-      }
+      ctx.fillStyle=accent; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.fillText(`★ ${m.rating}`,ratingX+34,ratingY+20);
+      if(m.watched){const wY=ratingY-30;ctx.fillStyle=accent+'22';ctx.beginPath();ctx.roundRect(ratingX,wY,68,22,11);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 10px sans-serif';ctx.letterSpacing='1px';ctx.fillText('WATCHED',ratingX+34,wY+15);ctx.letterSpacing='0px';}
     }
-
-    if(data.total>6){
-      ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.font='italic 15px Georgia, serif';
-      ctx.textAlign='center'; ctx.fillText(`+ ${data.total-6} more`,W/2,startY+6*(CARD_H+8)+16);
-    }
-
+    if(data.total>6){ctx.fillStyle='rgba(255,255,255,0.18)';ctx.font='italic 15px Georgia, serif';ctx.textAlign='center';ctx.fillText(`+ ${data.total-6} more`,W/2,startY+6*(CARD_H+8)+16);}
     const urlY=H-90;
     ctx.fillStyle=accent+'15'; ctx.beginPath(); ctx.roundRect(W/2-155,urlY,310,50,25); ctx.fill();
     ctx.strokeStyle=accent+'50'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(W/2-155,urlY,310,50,25); ctx.stroke();
-    ctx.fillStyle=accent; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('this-scine.vercel.app',W/2,urlY+30);
+    ctx.fillStyle=accent; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.fillText('this-scine.vercel.app',W/2,urlY+30);
   }
 
   const botBar=ctx.createLinearGradient(0,0,W,0);
-  botBar.addColorStop(0,'transparent'); botBar.addColorStop(0.25,accent+'cc');
-  botBar.addColorStop(0.75,accent+'cc'); botBar.addColorStop(1,'transparent');
+  botBar.addColorStop(0,'transparent'); botBar.addColorStop(0.25,accent+'cc'); botBar.addColorStop(0.75,accent+'cc'); botBar.addColorStop(1,'transparent');
   ctx.fillStyle=botBar; ctx.beginPath(); ctx.roundRect(40,H-13,W-80,3,2); ctx.fill();
-
   return canvas.toDataURL('image/png');
 }
 
 async function shareImage(dataUrl, title, text) {
   try {
     const blob = await (await fetch(dataUrl)).blob();
-    const file = new File([blob], 'cinescroll.png', { type:'image/png' });
-    if (navigator.share && navigator.canShare({ files:[file] })) {
-      await navigator.share({ title, text, files:[file], url:'https://this-scine.vercel.app' });
-      return;
-    }
+    const file = new File([blob], 'cinescroll.png', {type:'image/png'});
+    if (navigator.share && navigator.canShare({files:[file]})) { await navigator.share({title,text,files:[file],url:'https://this-scine.vercel.app'}); return; }
   } catch {}
-  const a = document.createElement('a');
-  a.href = dataUrl; a.download = 'cinescroll.png'; a.click();
+  const a = document.createElement('a'); a.href=dataUrl; a.download='cinescroll.png'; a.click();
 }
 
-function calcCineScore(watched, reviews, saved) {
-  return Math.min(999, (watched*3)+(reviews*8)+(saved*2));
-}
+function calcCineScore(watched, reviews, saved) { return Math.min(999,(watched*3)+(reviews*8)+(saved*2)); }
 
 function CineScoreRing({ score, accent }) {
-  const r=38, circ=2*Math.PI*r, dash=(score/999)*circ;
+  const r=38,circ=2*Math.PI*r,dash=(score/999)*circ;
   return (
     <div style={{position:'relative',width:100,height:100,display:'flex',alignItems:'center',justifyContent:'center'}}>
       <svg width="100" height="100" style={{position:'absolute',inset:0,transform:'rotate(-90deg)'}}>
         <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6"/>
-        <circle cx="50" cy="50" r={r} fill="none" stroke={accent} strokeWidth="6"
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-          style={{transition:'stroke-dasharray 1s ease'}}/>
+        <circle cx="50" cy="50" r={r} fill="none" stroke={accent} strokeWidth="6" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{transition:'stroke-dasharray 1s ease'}}/>
       </svg>
       <div style={{textAlign:'center',zIndex:1}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,color:'#fff',lineHeight:1}}>{score}</div>
@@ -367,33 +261,29 @@ function TrailerPlayer({ movie, onClose }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const accent = movie?.accent || '#F5A623';
+  const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
 
   useEffect(() => {
-    if (!movie) return;
+    if (!movie || !TMDB_KEY) { setNotFound(true); setLoading(false); return; }
     const mediaType = movie.mediaType || 'movie';
-    fetch(`https://api.themoviedb.org/3/${mediaType}/${movie.id}/videos?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY || ''}`)
+    fetch(`https://api.themoviedb.org/3/${mediaType}/${movie.id}/videos?api_key=${TMDB_KEY}`)
       .then(r => r.json())
       .then(data => {
-        // Find official trailer first, then teaser, then any YouTube video
         const videos = data.results || [];
-        const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
-          || videos.find(v => v.type === 'Teaser' && v.site === 'YouTube')
-          || videos.find(v => v.site === 'YouTube');
-        if (trailer) {
-          setTrailerKey(trailer.key);
-        } else {
-          setNotFound(true);
-        }
+        const trailer =
+          videos.find(v => v.type==='Trailer' && v.site==='YouTube') ||
+          videos.find(v => v.type==='Teaser' && v.site==='YouTube') ||
+          videos.find(v => v.site==='YouTube');
+        if (trailer) { setTrailerKey(trailer.key); }
+        else { setNotFound(true); }
         setLoading(false);
       })
       .catch(() => { setNotFound(true); setLoading(false); });
-  }, [movie]);
+  }, [movie, TMDB_KEY]);
 
   return (
-    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:95,background:'rgba(0,0,0,0.96)',backdropFilter:'blur(20px)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',animation:'fadeIn 0.25s ease'}}>
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:95,background:'rgba(0,0,0,0.97)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',animation:'fadeIn 0.25s ease'}}>
       <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-
-      {/* Header */}
       <div onClick={e=>e.stopPropagation()} style={{position:'absolute',top:0,left:0,right:0,padding:'20px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'flex-start',zIndex:10}}>
         <div>
           <div style={{fontSize:11,letterSpacing:3,color:'rgba(255,255,255,0.35)',fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>Official Trailer</div>
@@ -404,15 +294,13 @@ function TrailerPlayer({ movie, onClose }) {
         </button>
       </div>
 
-      {/* Player area */}
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:700,padding:'0 0',position:'relative'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:720}}>
         {loading&&(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}>
             <div style={{width:36,height:36,border:`3px solid rgba(255,255,255,0.1)`,borderTop:`3px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
             <span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Loading trailer…</span>
           </div>
         )}
-
         {!loading&&notFound&&(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}>
             <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>🎬</div>
@@ -422,12 +310,11 @@ function TrailerPlayer({ movie, onClose }) {
             </div>
           </div>
         )}
-
         {!loading&&trailerKey&&(
-          <div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000',borderRadius:0}}>
+          <div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000'}}>
             <iframe
               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-              allow="autoplay; fullscreen; picture-in-picture"
+              allow="autoplay; fullscreen; picture-in-picture; web-share"
               allowFullScreen
               style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}}
               title={`${movie?.title} Trailer`}
@@ -436,33 +323,26 @@ function TrailerPlayer({ movie, onClose }) {
         )}
       </div>
 
-      {/* Movie meta below player */}
       {!loading&&trailerKey&&(
-        <div onClick={e=>e.stopPropagation()} style={{padding:'16px 20px 0',width:'100%',maxWidth:700}}>
-          <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-            {(movie?.genre||[]).map(g=>(
-              <span key={g} style={{fontSize:10,letterSpacing:2,color:accent,fontWeight:700,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}44`,borderRadius:4}}>{g}</span>
-            ))}
+        <div onClick={e=>e.stopPropagation()} style={{padding:'16px 20px 0',width:'100%',maxWidth:720}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}>
+            {(movie?.genre||[]).map(g=>(<span key={g} style={{fontSize:10,letterSpacing:2,color:accent,fontWeight:700,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}44`,borderRadius:4}}>{g}</span>))}
             <span style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>{movie?.year}</span>
-            <div style={{display:'flex',alignItems:'center',gap:4}}>
-              <SvgIcon name="star" size={11} color={accent} filled/>
-              <span style={{fontSize:12,color:accent,fontWeight:600}}>{movie?.rating}</span>
-            </div>
+            <div style={{display:'flex',alignItems:'center',gap:4}}><SvgIcon name="star" size={11} color={accent} filled/><span style={{fontSize:12,color:accent,fontWeight:600}}>{movie?.rating}</span></div>
           </div>
-          <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginTop:10,marginBottom:0}}>{movie?.overview}</p>
+          <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,margin:0}}>{movie?.overview}</p>
         </div>
       )}
 
-      {/* Tap anywhere hint */}
-      <div style={{position:'absolute',bottom:32,left:'50%',transform:'translateX(-50%)',fontSize:11,color:'rgba(255,255,255,0.18)',letterSpacing:2,pointerEvents:'none'}}>TAP ANYWHERE TO CLOSE</div>
+      <div style={{position:'absolute',bottom:32,left:'50%',transform:'translateX(-50%)',fontSize:11,color:'rgba(255,255,255,0.15)',letterSpacing:2,pointerEvents:'none'}}>TAP ANYWHERE TO CLOSE</div>
     </div>
   );
 }
 
 // ─── Phase 3: Mood Screen ───────────────────────────────────────────────────
 function MoodScreen({ onClose, onMoodSelect, accent }) {
-  const [loading, setLoading] = useState(false);
   const [activeMood, setActiveMood] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSelect = async (mood) => {
     setActiveMood(mood.label);
@@ -475,12 +355,12 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
   return (
     <div style={{position:'fixed',inset:0,zIndex:90,background:'rgba(4,4,10,0.98)',backdropFilter:'blur(24px)',display:'flex',flexDirection:'column',animation:'fadeIn 0.25s ease'}}>
       <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes moodIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      <div style={{padding:'20px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+      <div style={{padding:'56px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:900,fontStyle:'italic',color:'#fff'}}>I want to feel…</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:900,fontStyle:'italic',color:'#fff'}}>I want to feel…</div>
           <div style={{fontSize:13,color:'rgba(255,255,255,0.35)',marginTop:4}}>Pick a mood, we'll find the perfect film</div>
         </div>
-        <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           <SvgIcon name="close" size={15} color="rgba(255,255,255,0.5)"/>
         </button>
       </div>
@@ -489,10 +369,10 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
           const isActive=activeMood===mood.label;
           return (
             <button key={mood.label} onClick={()=>handleSelect(mood)} disabled={loading}
-              style={{background:isActive?`${mood.color}20`:'rgba(255,255,255,0.04)',border:`1px solid ${isActive?mood.color+'66':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'20px 16px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:8,fontFamily:'inherit',transition:'all 0.2s ease',opacity:loading&&!isActive?0.4:1,animation:`moodIn 0.3s ease ${i*0.05}s both`,position:'relative',overflow:'hidden'}}>
-              {isActive&&<div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 30% 50%, ${mood.color}15, transparent 70%)`,pointerEvents:'none'}}/>}
-              <span style={{fontSize:32,lineHeight:1}}>{mood.emoji}</span>
-              <div style={{fontSize:16,fontWeight:700,color:isActive?mood.color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{mood.label}</div>
+              style={{background:isActive?`${mood.color}22`:'rgba(255,255,255,0.04)',border:`1px solid ${isActive?mood.color+'66':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'22px 16px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:10,fontFamily:'inherit',transition:'all 0.2s ease',opacity:loading&&!isActive?0.4:1,animation:`moodIn 0.3s ease ${i*0.04}s both`,position:'relative',overflow:'hidden',boxShadow:isActive?`0 0 24px ${mood.color}20`:'none'}}>
+              {isActive&&<div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 30% 50%, ${mood.color}18, transparent 70%)`,pointerEvents:'none'}}/>}
+              <span style={{fontSize:34,lineHeight:1}}>{mood.emoji}</span>
+              <span style={{fontSize:16,fontWeight:700,color:isActive?mood.color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{mood.label}</span>
               {isActive&&loading&&<div style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:16,height:16,border:`2px solid ${mood.color}33`,borderTop:`2px solid ${mood.color}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>}
             </button>
           );
@@ -513,29 +393,23 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
   const [toast, setToast] = useState(null);
 
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),3000); };
-
   const toggleWatched = async (item) => {
-    const next = !item.watched;
+    const next=!item.watched;
     setWatchlist(p=>p.map(m=>m.movie_id===item.movie_id?{...m,watched:next}:m));
     await fetch('/api/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:item.movie_id,watched:next})});
   };
-
   const removeFromWatchlist = async (item) => {
     setWatchlist(p=>p.filter(m=>m.movie_id!==item.movie_id));
     await fetch('/api/watchlist',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:item.movie_id})});
   };
-
   const handleSignOut = async () => {
-    setSigningOut(true);
-    try { await signOut(); } catch {}
-    setSigningOut(false); setSignedOut(true);
-    showToast('Signed out successfully ✓');
+    setSigningOut(true); try{await signOut();}catch{}
+    setSigningOut(false); setSignedOut(true); showToast('Signed out successfully ✓');
     setTimeout(()=>onClose(),2000);
   };
 
   const watched=watchlist.filter(m=>m.watched).length;
-  const saved=watchlist.length;
-  const reviews=userReviews.length;
+  const saved=watchlist.length; const reviews=userReviews.length;
   const cineScore=calcCineScore(watched,reviews,saved);
   const topGenres=watchlist.flatMap(m=>m.genre||[]).reduce((acc,g)=>{acc[g]=(acc[g]||0)+1;return acc;},{});
   const sortedGenres=Object.entries(topGenres).sort((a,b)=>b[1]-a[1]).slice(0,3);
@@ -543,12 +417,14 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
 
   const handleShareScore=async()=>{
     setSharing(true);
-    try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}catch(e){console.error(e);}
+    try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}
+    catch(e){console.error(e);}
     setSharing(false);
   };
   const handleShareWatchlist=async()=>{
     setSharing(true);
-    try{const d=await generateShareCard('watchlist',{name:user?.firstName||user?.username||'Cinephile',total:watchlist.length,watched,items:watchlist.map(m=>({title:m.title,year:m.year,rating:m.rating,watched:m.watched,poster:m.poster,genre:m.genre}))},accent);await shareImage(d,'My Watchlist','Check out my CineScroll watchlist!');showToast('Share card ready!');}catch(e){console.error(e);}
+    try{const d=await generateShareCard('watchlist',{name:user?.firstName||user?.username||'Cinephile',total:watchlist.length,watched,items:watchlist.map(m=>({title:m.title,year:m.year,rating:m.rating,watched:m.watched,poster:m.poster,genre:m.genre}))},accent);await shareImage(d,'My Watchlist','Check out my CineScroll watchlist!');showToast('Share card ready!');}
+    catch(e){console.error(e);}
     setSharing(false);
   };
 
@@ -569,7 +445,6 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
             </button>
           ))}
         </div>
-
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
           {tab==='profile'&&(
             <div style={{padding:'20px'}}>
@@ -584,7 +459,6 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
                   <div style={{display:'flex',alignItems:'center',gap:4,marginTop:6}}><div style={{width:6,height:6,borderRadius:'50%',background:accent}}/><span style={{fontSize:11,color:accent,fontWeight:600}}>Active Member</span></div>
                 </div>
               </div>
-
               <div style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${accent}22`,borderRadius:20,padding:'20px',marginBottom:16,display:'flex',alignItems:'center',gap:20}}>
                 <CineScoreRing score={cineScore} accent={accent}/>
                 <div style={{flex:1}}>
@@ -596,7 +470,6 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
                   </button>
                 </div>
               </div>
-
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
                 {[{label:'Films Watched',value:watched,icon:'eye'},{label:'Reviews Written',value:reviews,icon:'chat'},{label:'Saved',value:saved,icon:'bookmark'},{label:'Avg Rating',value:avgRating,icon:'star'}].map(s=>(
                   <div key={s.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'14px'}}>
@@ -605,7 +478,6 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
                   </div>
                 ))}
               </div>
-
               {sortedGenres.length>0&&(
                 <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'16px',marginBottom:16}}>
                   <div style={{fontSize:10,letterSpacing:2,color:'rgba(255,255,255,0.3)',fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Top Genres</div>
@@ -618,7 +490,6 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
                 </div>
               )}
               {sortedGenres.length===0&&!loadingData&&<div style={{textAlign:'center',padding:'20px 0',color:'rgba(255,255,255,0.2)',fontSize:13}}>Save movies to build your taste profile</div>}
-
               <button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:signedOut?`${accent}10`:'rgba(255,255,255,0.04)',border:`1px solid ${signedOut?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:14,padding:'14px',cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',marginTop:8,transition:'all 0.3s ease'}}>
                 {signedOut?(<><div style={{width:18,height:18,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={11} color="#000"/></div><span style={{fontSize:14,color:accent,fontWeight:600}}>Signed out successfully</span></>)
                 :signingOut?(<><div style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/><span style={{fontSize:14,color:'rgba(255,255,255,0.5)',fontWeight:500}}>Signing out…</span></>)
@@ -626,56 +497,49 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
               </button>
             </div>
           )}
-
           {tab==='watchlist'&&(
             <div style={{padding:'16px 20px'}}>
-              {watchlist.length>0&&<button onClick={handleShareWatchlist} disabled={sharing} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:`1px solid ${accent}44`,borderRadius:14,padding:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit',marginBottom:14,opacity:sharing?0.6:1}}>{sharing?<span style={{animation:'spin 0.8s linear infinite',display:'inline-block'}}>◌</span>:<SvgIcon name="share" size={15} color={accent}/> }<span style={{fontSize:13,color:accent,fontWeight:600}}>{sharing?'Preparing…':'Share Watchlist'}</span></button>}
+              {watchlist.length>0&&<button onClick={handleShareWatchlist} disabled={sharing} style={{width:'100%',background:'rgba(255,255,255,0.04)',border:`1px solid ${accent}44`,borderRadius:14,padding:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit',marginBottom:14,opacity:sharing?0.6:1}}>{sharing?<span style={{animation:'spin 0.8s linear infinite',display:'inline-block'}}>◌</span>:<SvgIcon name="share" size={15} color={accent}/>}<span style={{fontSize:13,color:accent,fontWeight:600}}>{sharing?'Preparing…':'Share Watchlist'}</span></button>}
               {loadingData?(<div style={{textAlign:'center',padding:40,color:'rgba(255,255,255,0.3)',fontSize:13,display:'flex',flexDirection:'column',alignItems:'center',gap:10}}><div style={{width:24,height:24,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>Loading…</div>)
               :watchlist.length===0?(<div style={{textAlign:'center',padding:'40px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}><SvgIcon name="bookmark" size={36} color="rgba(255,255,255,0.1)"/><div style={{fontSize:15,color:'rgba(255,255,255,0.3)',fontWeight:500}}>Your watchlist is empty</div><div style={{fontSize:13,color:'rgba(255,255,255,0.2)'}}>Tap Save on any film to add it here</div></div>)
               :(<div style={{display:'flex',flexDirection:'column',gap:8}}>
-                  {watchlist.map((m,i)=>(
-                    <div key={m.movie_id} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'10px 14px'}}>
-                      <div style={{width:44,height:60,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>
-                        {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+                {watchlist.map((m,i)=>(
+                  <div key={m.movie_id} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'10px 14px'}}>
+                    <div style={{width:44,height:60,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>{m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                        <span style={{fontSize:14,fontWeight:700,color:m.watched?'rgba(255,255,255,0.4)':'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',textDecoration:m.watched?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</span>
+                        {m.is_tv&&<span style={{fontSize:9,color:m.accent||accent,border:`1px solid ${m.accent||accent}44`,borderRadius:3,padding:'1px 5px',flexShrink:0}}>TV</span>}
                       </div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
-                          <span style={{fontSize:14,fontWeight:700,color:m.watched?'rgba(255,255,255,0.4)':'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',textDecoration:m.watched?'line-through':'none',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</span>
-                          {m.is_tv&&<span style={{fontSize:9,color:m.accent||accent,border:`1px solid ${m.accent||accent}44`,borderRadius:3,padding:'1px 5px',flexShrink:0}}>TV</span>}
-                        </div>
-                        <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:6}}>
-                          <span style={{fontSize:11,color:'rgba(255,255,255,0.28)'}}>{m.year}</span>
-                          <span style={{fontSize:10,color:'rgba(255,255,255,0.2)'}}>·</span>
-                          <span style={{fontSize:11,color:m.accent||accent,fontWeight:600}}>★ {m.rating}</span>
-                          {m.watched&&<span style={{fontSize:9,color:accent,background:`${accent}18`,border:`1px solid ${accent}30`,borderRadius:10,padding:'1px 8px',fontWeight:700,letterSpacing:0.5}}>WATCHED</span>}
-                        </div>
-                        <div style={{display:'flex',gap:8}}>
-                          <button onClick={()=>toggleWatched(m)} style={{background:m.watched?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${m.watched?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'3px 10px',cursor:'pointer',fontSize:11,color:m.watched?accent:'rgba(255,255,255,0.35)',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}>
-                            <SvgIcon name="check" size={10} color={m.watched?accent:'rgba(255,255,255,0.35)'}/>
-                            {m.watched?'Watched':'Mark watched'}
-                          </button>
-                          <button onClick={()=>removeFromWatchlist(m)} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,padding:'3px 8px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="trash" size={11} color="rgba(255,255,255,0.3)"/></button>
-                        </div>
+                      <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:6}}>
+                        <span style={{fontSize:11,color:'rgba(255,255,255,0.28)'}}>{m.year}</span>
+                        <span style={{fontSize:10,color:'rgba(255,255,255,0.2)'}}>·</span>
+                        <span style={{fontSize:11,color:m.accent||accent,fontWeight:600}}>★ {m.rating}</span>
+                        {m.watched&&<span style={{fontSize:9,color:accent,background:`${accent}18`,border:`1px solid ${accent}30`,borderRadius:10,padding:'1px 8px',fontWeight:700}}>WATCHED</span>}
+                      </div>
+                      <div style={{display:'flex',gap:8}}>
+                        <button onClick={()=>toggleWatched(m)} style={{background:m.watched?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${m.watched?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'3px 10px',cursor:'pointer',fontSize:11,color:m.watched?accent:'rgba(255,255,255,0.35)',fontFamily:'inherit',display:'flex',alignItems:'center',gap:4}}><SvgIcon name="check" size={10} color={m.watched?accent:'rgba(255,255,255,0.35)'}/>{m.watched?'Watched':'Mark watched'}</button>
+                        <button onClick={()=>removeFromWatchlist(m)} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,padding:'3px 8px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="trash" size={11} color="rgba(255,255,255,0.3)"/></button>
                       </div>
                     </div>
-                  ))}
-                </div>)}
+                  </div>
+                ))}
+              </div>)}
             </div>
           )}
-
           {tab==='reviews'&&(
             <div style={{padding:'16px 20px'}}>
               {loadingData?(<div style={{textAlign:'center',padding:40,color:'rgba(255,255,255,0.3)',fontSize:13}}>Loading…</div>)
               :userReviews.length===0?(<div style={{textAlign:'center',padding:'40px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}><SvgIcon name="chat" size={36} color="rgba(255,255,255,0.1)"/><div style={{fontSize:15,color:'rgba(255,255,255,0.3)',fontWeight:500}}>No reviews yet</div><div style={{fontSize:13,color:'rgba(255,255,255,0.2)'}}>Tap Review on any film to share your thoughts</div></div>)
               :(<div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {userReviews.map(r=>(
-                    <div key={r.id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px'}}>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{r.movie_title}</span><span style={{fontSize:11,color:'rgba(255,255,255,0.25)'}}>{r.time}</span></div>
-                      {r.rating>0&&<div style={{display:'flex',gap:2,marginBottom:6}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={11} color={s<=r.rating?accent:'rgba(255,255,255,0.15)'} filled={s<=r.rating}/>)}</div>}
-                      <p style={{fontSize:13.5,color:'rgba(255,255,255,0.6)',lineHeight:1.55,margin:0}}>{r.text}</p>
-                    </div>
-                  ))}
-                </div>)}
+                {userReviews.map(r=>(
+                  <div key={r.id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{r.movie_title}</span><span style={{fontSize:11,color:'rgba(255,255,255,0.25)'}}>{r.time}</span></div>
+                    {r.rating>0&&<div style={{display:'flex',gap:2,marginBottom:6}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={11} color={s<=r.rating?accent:'rgba(255,255,255,0.15)'} filled={s<=r.rating}/>)}</div>}
+                    <p style={{fontSize:13.5,color:'rgba(255,255,255,0.6)',lineHeight:1.55,margin:0}}>{r.text}</p>
+                  </div>
+                ))}
+              </div>)}
             </div>
           )}
         </div>
@@ -823,7 +687,7 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
   );
 }
 
-// ─── Movie Card (with long-press trailer) ───────────────────────────────────
+// ─── Movie Card ─────────────────────────────────────────────────────────────
 function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSave, isSaved, onTrailer }) {
   const { isSignedIn } = useUser();
   const [liked,setLiked]=useState(false);
@@ -833,9 +697,9 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
   const [hoverStar,setHoverStar]=useState(0);
   const [imgLoaded,setImgLoaded]=useState(false);
   const [likeCount]=useState(Math.floor(Math.random()*60+8)*100);
-  const [showTrailerHint,setShowTrailerHint]=useState(false);
+  const [showHint,setShowHint]=useState(false);
   const longPressTimer=useRef(null);
-  const longPressActive=useRef(false);
+  const isPressingRef=useRef(false);
 
   const fmt=n=>n>=1000?`${(n/1000).toFixed(0)}K`:n;
   const accent=movie.accent||'#F5A623';
@@ -845,40 +709,32 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
   const handleSave=()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);};
   const handleRate=()=>{if(!isSignedIn){onAuthRequired();return;}setShowStars(p=>!p);};
 
-  // Long press handlers
-  const onPressStart = (e) => {
-    longPressActive.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressActive.current = true;
-      setShowTrailerHint(false);
-      onTrailer(movie);
-      // Haptic feedback if available
-      if (navigator.vibrate) navigator.vibrate(40);
-    }, 600);
-    // Show hint after 200ms
-    setTimeout(() => {
-      if (longPressTimer.current) setShowTrailerHint(true);
-    }, 200);
+  const onPressStart=()=>{
+    isPressingRef.current=true;
+    longPressTimer.current=setTimeout(()=>{
+      if(isPressingRef.current){
+        if(navigator.vibrate) navigator.vibrate(40);
+        onTrailer(movie);
+        setShowHint(false);
+      }
+    },600);
   };
-
-  const onPressEnd = () => {
+  const onPressEnd=()=>{
+    isPressingRef.current=false;
     clearTimeout(longPressTimer.current);
-    longPressTimer.current = null;
-    setShowTrailerHint(false);
   };
 
-  // Show trailer hint on first card
-  useEffect(() => {
-    if (isActive && index === 0) {
-      const t = setTimeout(() => setShowTrailerHint(true), 2000);
-      const t2 = setTimeout(() => setShowTrailerHint(false), 5000);
-      return () => { clearTimeout(t); clearTimeout(t2); };
-    }
-  }, [isActive, index]);
+  // Show "hold for trailer" hint on active card
+  useEffect(()=>{
+    if(!isActive){setShowHint(false);return;}
+    const t=setTimeout(()=>setShowHint(true),1500);
+    const t2=setTimeout(()=>setShowHint(false),4500);
+    return()=>{clearTimeout(t);clearTimeout(t2);};
+  },[isActive]);
 
   return (
     <div
-      style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A'}}
+      style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A',userSelect:'none',WebkitUserSelect:'none'}}
       onMouseDown={onPressStart} onMouseUp={onPressEnd} onMouseLeave={onPressEnd}
       onTouchStart={onPressStart} onTouchEnd={onPressEnd} onTouchCancel={onPressEnd}
     >
@@ -890,16 +746,16 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
       <div style={{position:'absolute',left:0,top:'22%',bottom:'22%',width:3,background:`linear-gradient(to bottom,transparent,${accent},transparent)`,opacity:isActive?0.55:0,transition:'opacity 0.5s ease',borderRadius:2}}/>
       <div style={{position:'absolute',inset:0,opacity:0.15,mixBlendMode:'overlay',pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
 
-      {/* Long press trailer hint */}
-      {showTrailerHint&&isActive&&(
-        <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:15,display:'flex',flexDirection:'column',alignItems:'center',gap:12,animation:'fadeIn 0.4s ease',pointerEvents:'none'}}>
-          <div style={{width:72,height:72,borderRadius:'50%',background:'rgba(0,0,0,0.7)',backdropFilter:'blur(12px)',border:`2px solid ${accent}66`,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:`0 0 30px ${accent}30`}}>
-            <SvgIcon name="play" size={28} color={accent} filled/>
+      {/* Hold-for-trailer hint */}
+      {showHint&&isActive&&(
+        <div style={{position:'absolute',top:'42%',left:'50%',transform:'translate(-50%,-50%)',zIndex:15,display:'flex',flexDirection:'column',alignItems:'center',gap:10,pointerEvents:'none',animation:'hintIn 0.4s ease'}}>
+          <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(0,0,0,0.65)',backdropFilter:'blur(10px)',border:`2px solid ${accent}55`,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:`0 0 28px ${accent}25`}}>
+            <SvgIcon name="play" size={24} color={accent} filled/>
           </div>
-          <div style={{background:'rgba(0,0,0,0.7)',backdropFilter:'blur(10px)',borderRadius:20,padding:'6px 16px',border:`1px solid rgba(255,255,255,0.1)`}}>
-            <span style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontWeight:600,letterSpacing:0.5}}>Hold for trailer</span>
+          <div style={{background:'rgba(0,0,0,0.65)',backdropFilter:'blur(10px)',borderRadius:20,padding:'5px 14px',border:'1px solid rgba(255,255,255,0.1)'}}>
+            <span style={{fontSize:11,color:'rgba(255,255,255,0.65)',fontWeight:600,letterSpacing:0.5}}>Hold for trailer</span>
           </div>
-          <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+          <style>{`@keyframes hintIn{from{opacity:0;transform:translate(-50%,-44%)}to{opacity:1;transform:translate(-50%,-50%)}}`}</style>
         </div>
       )}
 
@@ -975,7 +831,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
         <div style={{marginBottom:26}}>
           <div style={{fontSize:9,letterSpacing:3,color:'rgba(255,255,255,0.22)',fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Mood</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-            {MOODS.map(m=>{const on=activeMood===m.label;return <button key={m.label} onClick={()=>{onMood(m.label);onClose();}} style={{display:'flex',alignItems:'center',gap:10,background:on?'rgba(255,255,255,0.09)':'rgba(255,255,255,0.03)',border:`1px solid ${on?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.06)'}`,borderRadius:14,padding:'13px 15px',cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s ease'}}><SvgIcon name={m.icon} size={15} color={on?'#fff':'rgba(255,255,255,0.3)'} filled={on}/><span style={{fontSize:13,color:on?'#fff':'rgba(255,255,255,0.4)',fontWeight:on?600:400}}>{m.label}</span></button>;})}
+            {FEED_MOODS.map(m=>{const on=activeMood===m.label;return <button key={m.label} onClick={()=>{onMood(m.label);onClose();}} style={{display:'flex',alignItems:'center',gap:10,background:on?'rgba(255,255,255,0.09)':'rgba(255,255,255,0.03)',border:`1px solid ${on?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.06)'}`,borderRadius:14,padding:'13px 15px',cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s ease'}}><SvgIcon name={m.icon} size={15} color={on?'#fff':'rgba(255,255,255,0.3)'} filled={on}/><span style={{fontSize:13,color:on?'#fff':'rgba(255,255,255,0.4)',fontWeight:on?600:400}}>{m.label}</span></button>;})}
           </div>
         </div>
         <div>
@@ -1030,8 +886,7 @@ export default function CineScroll() {
         const [wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);
         const [wData,rData]=await Promise.all([wRes.json(),rRes.json()]);
         const items=wData.items||[];
-        setWatchlist(items);
-        setWatchlistIds(new Set(items.map(m=>m.movie_id)));
+        setWatchlist(items); setWatchlistIds(new Set(items.map(m=>m.movie_id)));
         setUserReviews(rData.items||[]);
       }catch(e){console.error(e);}
       setLoadingProfileData(false);
@@ -1054,7 +909,8 @@ export default function CineScroll() {
 
   const handleMoodSelect=async(mood)=>{
     const params=new URLSearchParams({mood:'trending',genre:mood.genres.split(',')[0],page:String(Math.floor(Math.random()*6)+1)});
-    try{const res=await fetch(`/api/movies?${params}`);const data=await res.json();setMovies(data.movies||[]);setActiveIndex(0);pageRef.current=1;setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);}catch(e){console.error(e);}
+    try{const res=await fetch(`/api/movies?${params}`);const data=await res.json();setMovies(data.movies||[]);setActiveIndex(0);pageRef.current=1;setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);}
+    catch(e){console.error(e);}
   };
 
   const fetchMovies=useCallback(async(mood,genre,search='',page=1,append=false)=>{
@@ -1082,24 +938,45 @@ export default function CineScroll() {
     return()=>clearTimeout(t);
   },[searchQ]);
 
+  // ── Scroll handler with preloading ──
   useEffect(()=>{
-    const el=containerRef.current;if(!el)return;
+    const el=containerRef.current; if(!el)return;
     const fn=()=>{
       const idx=Math.round(el.scrollTop/el.clientHeight);
       setActiveIndex(idx);
-      setMovies(prev=>{if(idx>=prev.length-3&&!loadingMoreRef.current){pageRef.current+=1;fetchMovies(activeMood,activeGenre,'',pageRef.current,true);}return prev;});
+      // Preload next images
+      setMovies(prev=>{
+        // Preload next 2 backdrop images
+        [idx+1,idx+2].forEach(i=>{
+          if(prev[i]?.backdrop){const img=new Image();img.src=prev[i].backdrop;}
+          if(prev[i]?.poster){const img=new Image();img.src=prev[i].poster;}
+        });
+        // Load more cards when 4 away from end
+        if(idx>=prev.length-4&&!loadingMoreRef.current){
+          pageRef.current+=1;
+          fetchMovies(activeMood,activeGenre,'',pageRef.current,true);
+        }
+        return prev;
+      });
     };
     el.addEventListener('scroll',fn,{passive:true});
     return()=>el.removeEventListener('scroll',fn);
   },[activeMood,activeGenre,fetchMovies]);
 
+  // Preload first 3 images on load
+  useEffect(()=>{
+    if(movies.length>0){
+      movies.slice(0,3).forEach(m=>{
+        if(m.backdrop){const img=new Image();img.src=m.backdrop;}
+        if(m.poster){const img=new Image();img.src=m.poster;}
+      });
+    }
+  },[movies.length>0]);
+
   const scrollTo=i=>{containerRef.current?.scrollTo({top:i*containerRef.current.clientHeight,behavior:'smooth'});setActiveIndex(i);};
   const handleSimilarSelect=m=>{setMovies(p=>[m,...p]);setTimeout(()=>scrollTo(0),50);};
   const accent=movies[activeIndex]?.accent||'#F5A623';
   const activeGenreLabel=GENRE_OPTIONS.find(g=>g.id===activeGenre)?.label||'All';
-
-  // Also need TMDB key exposed to client for trailer fetch
-  // Add NEXT_PUBLIC_TMDB_KEY to Vercel env vars (same value as TMDB_API_KEY)
 
   return(
     <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"'DM Sans',sans-serif",color:'#fff',overflow:'hidden'}}>
@@ -1124,7 +1001,7 @@ export default function CineScroll() {
           {isSignedIn?(
             <button onClick={()=>setShowProfile(true)} style={{width:36,height:36,borderRadius:'50%',background:`${accent}22`,border:`2px solid ${accent}55`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0,position:'relative'}}>
               {user?.imageUrl?<img src={user.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:13,fontWeight:700,color:accent}}>{(user?.firstName||user?.username||'?')[0].toUpperCase()}</span>}
-              {watchlistIds.size>0&&(<div style={{position:'absolute',top:-2,right:-2,width:14,height:14,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #04040A'}}><span style={{fontSize:7,fontWeight:800,color:'#04040A'}}>{watchlistIds.size}</span></div>)}
+              {watchlistIds.size>0&&<div style={{position:'absolute',top:-2,right:-2,width:14,height:14,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #04040A'}}><span style={{fontSize:7,fontWeight:800,color:'#04040A'}}>{watchlistIds.size}</span></div>}
             </button>
           ):(
             <button onClick={()=>setShowAuth(true)} style={{background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:22,padding:'6px 12px',cursor:'pointer',fontSize:12,color:accent,fontWeight:700,fontFamily:'inherit',whiteSpace:'nowrap'}}>Sign in</button>
@@ -1198,4 +1075,4 @@ export default function CineScroll() {
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-  }
+                                        }
