@@ -25,6 +25,7 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     check:    'M20 6L9 17l-5-5',
     share:    ['M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8','M16 6l-4-4-4 4','M12 2v13'],
     play:     'M5 3l14 9-14 9V3z',
+    tv:       ['M33 7h-4l-4-4H15L11 7H7a4 4 0 0 0-4 4v16a4 4 0 0 0 4 4h26a4 4 0 0 0 4-4V11a4 4 0 0 0-4-4z','M20 21a5 5 0 1 0 0-10 5 5 0 0 0 0 10z'],
   };
   const def = icons[name];
   if (!def) return null;
@@ -50,7 +51,6 @@ const FEED_MOODS = [
   {label:'New',icon:'sparkle'},{label:'Hidden Gems',icon:'gem'},
 ];
 
-// Phase 3 — these are the FEEL moods for the 🎭 screen
 const FEEL_MOODS = [
   { label:'Inspired',   emoji:'🚀', color:'#4DA8DA', genres:'18,36' },
   { label:'Thrilled',   emoji:'⚡', color:'#F5A623', genres:'28,53' },
@@ -103,32 +103,25 @@ async function generateShareCard(type, data, accent) {
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
-
   ctx.fillStyle = '#05050D'; ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = 'rgba(255,255,255,0.015)'; ctx.lineWidth = 1;
   for (let i = -H; i < W + H; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke(); }
-
   const g1 = ctx.createRadialGradient(W*.5,0,0,W*.5,0,H*.65);
   g1.addColorStop(0,accent+'30'); g1.addColorStop(0.5,accent+'0a'); g1.addColorStop(1,'transparent');
   ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
   const g2 = ctx.createRadialGradient(W*.5,H,0,W*.5,H,H*.5);
   g2.addColorStop(0,accent+'20'); g2.addColorStop(1,'transparent');
   ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
-
-  ctx.shadowColor=accent; ctx.shadowBlur=20;
-  ctx.strokeStyle=accent+'60'; ctx.lineWidth=1.5;
+  ctx.shadowColor=accent; ctx.shadowBlur=20; ctx.strokeStyle=accent+'60'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.roundRect(10,10,W-20,H-20,32); ctx.stroke(); ctx.shadowBlur=0;
   ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(18,18,W-36,H-36,26); ctx.stroke();
-
   const topBar=ctx.createLinearGradient(0,0,W,0);
   topBar.addColorStop(0,'transparent'); topBar.addColorStop(0.25,accent+'cc'); topBar.addColorStop(0.75,accent+'cc'); topBar.addColorStop(1,'transparent');
   ctx.fillStyle=topBar; ctx.beginPath(); ctx.roundRect(40,10,W-80,3,2); ctx.fill();
-
   ctx.shadowColor=accent; ctx.shadowBlur=15; ctx.fillStyle=accent; ctx.beginPath(); ctx.arc(48,66,9,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
   ctx.strokeStyle=accent+'30'; ctx.lineWidth=8; ctx.beginPath(); ctx.arc(48,66,14,0,Math.PI*2); ctx.stroke();
   ctx.fillStyle='#ffffff'; ctx.font='italic bold 32px Georgia, serif'; ctx.textAlign='left'; ctx.fillText('CineScroll',66,76);
-
   const divGrad=ctx.createLinearGradient(0,0,W,0);
   divGrad.addColorStop(0,'transparent'); divGrad.addColorStop(0.5,'rgba(255,255,255,0.08)'); divGrad.addColorStop(1,'transparent');
   ctx.fillStyle=divGrad; ctx.fillRect(36,102,W-72,1);
@@ -140,7 +133,6 @@ async function generateShareCard(type, data, accent) {
     ctx.fillStyle=accent+'18'; ctx.beginPath(); ctx.roundRect(W/2-130,240,260,38,19); ctx.fill();
     ctx.strokeStyle=accent+'44'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(W/2-130,240,260,38,19); ctx.stroke();
     ctx.fillStyle=accent; ctx.font='bold 14px sans-serif'; ctx.fillText(rankLabel,W/2,263);
-
     const cx=W/2,cy=480,r=158;
     ctx.shadowColor=accent; ctx.shadowBlur=30; ctx.strokeStyle=accent+'15'; ctx.lineWidth=30; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=20; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
@@ -154,7 +146,6 @@ async function generateShareCard(type, data, accent) {
     ctx.fillStyle=ig; ctx.beginPath(); ctx.arc(cx,cy,r-10,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#ffffff'; ctx.font='bold 108px Georgia, serif'; ctx.shadowColor=accent; ctx.shadowBlur=20; ctx.fillText(data.score,cx,cy+34); ctx.shadowBlur=0;
     ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='600 13px sans-serif'; ctx.letterSpacing='5px'; ctx.fillText('CINESCORE',cx,cy+68); ctx.letterSpacing='0px';
-
     const cols=[{label:'WATCHED',value:data.watched,icon:'👁'},{label:'REVIEWS',value:data.reviews,icon:'✍️'},{label:'SAVED',value:data.saved,icon:'🔖'}];
     const statY=710; const colW=W/3;
     cols.forEach((s,i)=>{
@@ -183,7 +174,8 @@ async function generateShareCard(type, data, accent) {
     const items=data.items.slice(0,6); const CARD_H=118,POSTER_W=72,POSTER_H=102,startY=296;
     for(let idx=0;idx<items.length;idx++){
       const m=items[idx]; const cardY=startY+idx*(CARD_H+8);
-      if(m.watched){ctx.fillStyle='rgba(255,255,255,0.02)';}else{const cg=ctx.createLinearGradient(36,cardY,W-36,cardY);cg.addColorStop(0,'rgba(255,255,255,0.06)');cg.addColorStop(1,'rgba(255,255,255,0.03)');ctx.fillStyle=cg;}
+      if(m.watched){ctx.fillStyle='rgba(255,255,255,0.02)';}
+      else{const cg=ctx.createLinearGradient(36,cardY,W-36,cardY);cg.addColorStop(0,'rgba(255,255,255,0.06)');cg.addColorStop(1,'rgba(255,255,255,0.03)');ctx.fillStyle=cg;}
       ctx.beginPath(); ctx.roundRect(36,cardY,W-72,CARD_H,16); ctx.fill();
       ctx.strokeStyle=m.watched?'rgba(255,255,255,0.04)':accent+'22'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(36,cardY,W-72,CARD_H,16); ctx.stroke();
       const posterX=50,posterY=cardY+8;
@@ -255,7 +247,48 @@ function Toast({ message, accent }) {
   );
 }
 
-// ─── Phase 4: Trailer Player ────────────────────────────────────────────────
+// ─── Streaming Platforms ────────────────────────────────────────────────────
+function StreamingBadges({ movieId, mediaType, accent }) {
+  const [providers, setProviders] = useState([]);
+  const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
+
+  useEffect(() => {
+    if (!movieId || !TMDB_KEY) return;
+    fetch(`https://api.themoviedb.org/3/${mediaType||'movie'}/${movieId}/watch/providers?api_key=${TMDB_KEY}`)
+      .then(r => r.json())
+      .then(data => {
+        // Try to get user region, fall back to US/GB
+        const results = data.results || {};
+        const regionData = results['US'] || results['GB'] || results['CA'] || Object.values(results)[0];
+        if (!regionData) return;
+        // Flatrate = subscription streaming (Netflix, Prime etc)
+        const flatrate = (regionData.flatrate || []).slice(0, 4);
+        setProviders(flatrate);
+      })
+      .catch(() => {});
+  }, [movieId, TMDB_KEY]);
+
+  if (providers.length === 0) return null;
+
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
+      <span style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.35)',fontWeight:600,textTransform:'uppercase'}}>Stream on</span>
+      <div style={{display:'flex',gap:5}}>
+        {providers.map(p => (
+          <div key={p.provider_id} style={{width:26,height:26,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.15)',flexShrink:0}} title={p.provider_name}>
+            <img
+              src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
+              alt={p.provider_name}
+              style={{width:'100%',height:'100%',objectFit:'cover'}}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Trailer Player ─────────────────────────────────────────────────────────
 function TrailerPlayer({ movie, onClose }) {
   const [trailerKey, setTrailerKey] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -293,36 +326,11 @@ function TrailerPlayer({ movie, onClose }) {
           <SvgIcon name="close" size={15} color="rgba(255,255,255,0.7)"/>
         </button>
       </div>
-
       <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:720}}>
-        {loading&&(
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}>
-            <div style={{width:36,height:36,border:`3px solid rgba(255,255,255,0.1)`,borderTop:`3px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
-            <span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Loading trailer…</span>
-          </div>
-        )}
-        {!loading&&notFound&&(
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}>
-            <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>🎬</div>
-            <div style={{textAlign:'center'}}>
-              <div style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)',marginBottom:6}}>No trailer available</div>
-              <div style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>We couldn't find a trailer for {movie?.title}</div>
-            </div>
-          </div>
-        )}
-        {!loading&&trailerKey&&(
-          <div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000'}}>
-            <iframe
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-              allow="autoplay; fullscreen; picture-in-picture; web-share"
-              allowFullScreen
-              style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}}
-              title={`${movie?.title} Trailer`}
-            />
-          </div>
-        )}
+        {loading&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}><div style={{width:36,height:36,border:`3px solid rgba(255,255,255,0.1)`,borderTop:`3px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Loading trailer…</span></div>}
+        {!loading&&notFound&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}><div style={{width:64,height:64,borderRadius:'50%',background:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>🎬</div><div style={{textAlign:'center'}}><div style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)',marginBottom:6}}>No trailer available</div><div style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>We couldn&apos;t find a trailer for {movie?.title}</div></div></div>}
+        {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture; web-share" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
       </div>
-
       {!loading&&trailerKey&&(
         <div onClick={e=>e.stopPropagation()} style={{padding:'16px 20px 0',width:'100%',maxWidth:720}}>
           <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}>
@@ -333,23 +341,20 @@ function TrailerPlayer({ movie, onClose }) {
           <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',lineHeight:1.6,margin:0}}>{movie?.overview}</p>
         </div>
       )}
-
       <div style={{position:'absolute',bottom:32,left:'50%',transform:'translateX(-50%)',fontSize:11,color:'rgba(255,255,255,0.15)',letterSpacing:2,pointerEvents:'none'}}>TAP ANYWHERE TO CLOSE</div>
     </div>
   );
 }
 
-// ─── Phase 3: Mood Screen ───────────────────────────────────────────────────
+// ─── Mood Screen ─────────────────────────────────────────────────────────────
 function MoodScreen({ onClose, onMoodSelect, accent }) {
   const [activeMood, setActiveMood] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleSelect = async (mood) => {
-    setActiveMood(mood.label);
-    setLoading(true);
+    setActiveMood(mood.label); setLoading(true);
     await onMoodSelect(mood);
-    setLoading(false);
-    onClose();
+    setLoading(false); onClose();
   };
 
   return (
@@ -358,7 +363,7 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
       <div style={{padding:'56px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
         <div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:900,fontStyle:'italic',color:'#fff'}}>I want to feel…</div>
-          <div style={{fontSize:13,color:'rgba(255,255,255,0.35)',marginTop:4}}>Pick a mood, we'll find the perfect film</div>
+          <div style={{fontSize:13,color:'rgba(255,255,255,0.35)',marginTop:4}}>Pick a mood, we&apos;ll find the perfect film</div>
         </div>
         <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           <SvgIcon name="close" size={15} color="rgba(255,255,255,0.5)"/>
@@ -382,7 +387,7 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
   );
 }
 
-// ─── Profile Sheet ──────────────────────────────────────────────────────────
+// ─── Profile Sheet ────────────────────────────────────────────────────────────
 function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, loadingData }) {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -548,7 +553,7 @@ function ProfileSheet({ onClose, accent, watchlist, setWatchlist, userReviews, l
   );
 }
 
-// ─── Auth Gate ──────────────────────────────────────────────────────────────
+// ─── Auth Gate ────────────────────────────────────────────────────────────────
 function AuthGate({ onClose, accent }) {
   const { openSignIn } = useClerk();
   return (
@@ -574,7 +579,7 @@ function AuthGate({ onClose, accent }) {
   );
 }
 
-// ─── Comment Panel ──────────────────────────────────────────────────────────
+// ─── Comment Panel ────────────────────────────────────────────────────────────
 function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const { isSignedIn, user } = useUser();
   const [comments, setComments] = useState([
@@ -585,7 +590,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   const [input,setInput]=useState('');
   const [replyingTo,setReplyingTo]=useState(null);
   const inputRef=useRef(null);
-
   const toggleLike=id=>setComments(p=>p.map(c=>c.id===id?{...c,liked:!c.liked,likes:c.liked?c.likes-1:c.likes+1}:c));
   const startReply=(comment)=>{if(!isSignedIn){onAuthRequired();return;}setReplyingTo(comment);setInput(`@${comment.user} `);setTimeout(()=>inputRef.current?.focus(),100);};
   const post=async()=>{
@@ -597,7 +601,6 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
     else{setComments(p=>[{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false,replies:[]},...p]);await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie?.id,movieTitle:movie?.title,text:input,rating:0})});}
     setInput('');setReplyingTo(null);
   };
-
   return (
     <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:'rgba(4,4,8,0.98)',backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
@@ -644,12 +647,11 @@ function CommentPanel({ movie, onClose, accent, onAuthRequired }) {
   );
 }
 
-// ─── Similar Sheet ──────────────────────────────────────────────────────────
+// ─── Similar Sheet ────────────────────────────────────────────────────────────
 function SimilarSheet({ movie, onClose, accent, onSelect }) {
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(true);
   const contentLabel=getContentLabel(movie);
-
   useEffect(()=>{
     if(!movie)return;
     setLoading(true);
@@ -657,7 +659,6 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
     fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${genreIds}`)
       .then(r=>r.json()).then(d=>{setItems(d.movies||[]);setLoading(false);}).catch(()=>setLoading(false));
   },[movie]);
-
   return (
     <>
       <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(6px)'}}/>
@@ -687,7 +688,7 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
   );
 }
 
-// ─── Movie Card ─────────────────────────────────────────────────────────────
+// ─── Movie Card ────────────────────────────────────────────────────────────────
 function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSave, isSaved, onTrailer }) {
   const { isSignedIn } = useUser();
   const [liked,setLiked]=useState(false);
@@ -713,18 +714,14 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
     isPressingRef.current=true;
     longPressTimer.current=setTimeout(()=>{
       if(isPressingRef.current){
-        if(navigator.vibrate) navigator.vibrate(40);
+        if(navigator.vibrate)navigator.vibrate(40);
         onTrailer(movie);
         setShowHint(false);
       }
     },600);
   };
-  const onPressEnd=()=>{
-    isPressingRef.current=false;
-    clearTimeout(longPressTimer.current);
-  };
+  const onPressEnd=()=>{isPressingRef.current=false;clearTimeout(longPressTimer.current);};
 
-  // Show "hold for trailer" hint on active card
   useEffect(()=>{
     if(!isActive){setShowHint(false);return;}
     const t=setTimeout(()=>setShowHint(true),1500);
@@ -733,11 +730,9 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
   },[isActive]);
 
   return (
-    <div
-      style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A',userSelect:'none',WebkitUserSelect:'none'}}
+    <div style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A',userSelect:'none',WebkitUserSelect:'none'}}
       onMouseDown={onPressStart} onMouseUp={onPressEnd} onMouseLeave={onPressEnd}
-      onTouchStart={onPressStart} onTouchEnd={onPressEnd} onTouchCancel={onPressEnd}
-    >
+      onTouchStart={onPressStart} onTouchEnd={onPressEnd} onTouchCancel={onPressEnd}>
       {bgImage&&(<><div style={{position:'absolute',inset:0,backgroundImage:`url(${bgImage})`,backgroundSize:'cover',backgroundPosition:'center top',opacity:imgLoaded?(isActive?1:0.7):0,transition:'opacity 0.6s ease'}}/><img src={bgImage} alt="" onLoad={()=>setImgLoaded(true)} style={{position:'absolute',opacity:0,width:1,height:1,pointerEvents:'none'}}/></>)}
       <div style={{position:'absolute',inset:0,background:movie.gradient||GRADS[index%GRADS.length],opacity:imgLoaded?0:1,transition:'opacity 0.6s ease'}}/>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 60% 25%, transparent 20%, rgba(0,0,0,0.6) 100%)',pointerEvents:'none'}}/>
@@ -746,7 +741,7 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
       <div style={{position:'absolute',left:0,top:'22%',bottom:'22%',width:3,background:`linear-gradient(to bottom,transparent,${accent},transparent)`,opacity:isActive?0.55:0,transition:'opacity 0.5s ease',borderRadius:2}}/>
       <div style={{position:'absolute',inset:0,opacity:0.15,mixBlendMode:'overlay',pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`}}/>
 
-      {/* Hold-for-trailer hint */}
+      {/* Trailer hint */}
       {showHint&&isActive&&(
         <div style={{position:'absolute',top:'42%',left:'50%',transform:'translate(-50%,-50%)',zIndex:15,display:'flex',flexDirection:'column',alignItems:'center',gap:10,pointerEvents:'none',animation:'hintIn 0.4s ease'}}>
           <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(0,0,0,0.65)',backdropFilter:'blur(10px)',border:`2px solid ${accent}55`,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:`0 0 28px ${accent}25`}}>
@@ -759,10 +754,11 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
         </div>
       )}
 
+      {/* Top bar — card number */}
       <div style={{position:'absolute',top:80,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/>
-          <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.45)',letterSpacing:2.5,textTransform:'uppercase'}}>{String(index+1).padStart(2,'0')}</span>
+          <span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.6)',letterSpacing:1}}>{String(index+1).padStart(2,'0')}</span>
           {movie.isTV&&<span style={{fontSize:9,color:accent,fontWeight:700,letterSpacing:1,marginLeft:2}}>TV</span>}
         </div>
         <div style={{display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(12px)',border:`1px solid ${accent}35`,borderRadius:20,padding:'5px 12px'}}>
@@ -772,11 +768,16 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
         </div>
       </div>
 
+      {/* Bottom content */}
       <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
-        <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap',alignItems:'center'}}>
+        <div style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap',alignItems:'center'}}>
           {(movie.genre||[]).map(g=>(<span key={g} style={{fontSize:9,letterSpacing:2.5,color:accent,fontWeight:800,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}44`,borderRadius:4}}>{g}</span>))}
           {movie.isTV&&<span style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.4)',fontWeight:600,padding:'3px 8px',border:'1px solid rgba(255,255,255,0.12)',borderRadius:4}}>SERIES</span>}
         </div>
+
+        {/* Streaming platforms */}
+        {isActive&&<StreamingBadges movieId={movie.id} mediaType={movie.mediaType} accent={accent}/>}
+
         <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:Math.min(52,Math.max(28,56-(movie.title?.length||0)*0.9)),fontWeight:900,fontStyle:'italic',color:'#fff',margin:'0 0 6px',lineHeight:1.0,letterSpacing:-1,textShadow:`0 0 60px ${accent}30,0 4px 30px rgba(0,0,0,0.8)`}}>{movie.title}</h2>
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:`${accent}bb`,fontStyle:'italic'}}>{movie.year}</span>
@@ -796,6 +797,7 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
         )}
       </div>
 
+      {/* Side actions */}
       <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[
           {icon:'heart',   label:fmt(likeCount+(liked?1:0)), active:liked,                  color:'#FF6B8A', filled:liked,        fn:handleLike},
@@ -817,7 +819,7 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
   );
 }
 
-// ─── Filter Sheet ───────────────────────────────────────────────────────────
+// ─── Filter Sheet ─────────────────────────────────────────────────────────────
 function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
   return (
     <>
@@ -846,7 +848,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
   );
 }
 
-// ─── Main App ────────────────────────────────────────────────────────────────
+// ─── Main App ─────────────────────────────────────────────────────────────────
 export default function CineScroll() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { openSignIn } = useClerk();
@@ -874,7 +876,6 @@ export default function CineScroll() {
   const loadingMoreRef=useRef(false);
   const profileLoadedRef=useRef(false);
 
-  // Background profile load
   useEffect(()=>{
     if(!isLoaded)return;
     if(!isSignedIn){setWatchlist([]);setUserReviews([]);setWatchlistIds(new Set());profileLoadedRef.current=false;return;}
@@ -886,7 +887,7 @@ export default function CineScroll() {
         const [wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);
         const [wData,rData]=await Promise.all([wRes.json(),rRes.json()]);
         const items=wData.items||[];
-        setWatchlist(items); setWatchlistIds(new Set(items.map(m=>m.movie_id)));
+        setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));
         setUserReviews(rData.items||[]);
       }catch(e){console.error(e);}
       setLoadingProfileData(false);
@@ -938,24 +939,17 @@ export default function CineScroll() {
     return()=>clearTimeout(t);
   },[searchQ]);
 
-  // ── Scroll handler with preloading ──
   useEffect(()=>{
-    const el=containerRef.current; if(!el)return;
+    const el=containerRef.current;if(!el)return;
     const fn=()=>{
       const idx=Math.round(el.scrollTop/el.clientHeight);
       setActiveIndex(idx);
-      // Preload next images
       setMovies(prev=>{
-        // Preload next 2 backdrop images
         [idx+1,idx+2].forEach(i=>{
           if(prev[i]?.backdrop){const img=new Image();img.src=prev[i].backdrop;}
           if(prev[i]?.poster){const img=new Image();img.src=prev[i].poster;}
         });
-        // Load more cards when 4 away from end
-        if(idx>=prev.length-4&&!loadingMoreRef.current){
-          pageRef.current+=1;
-          fetchMovies(activeMood,activeGenre,'',pageRef.current,true);
-        }
+        if(idx>=prev.length-4&&!loadingMoreRef.current){pageRef.current+=1;fetchMovies(activeMood,activeGenre,'',pageRef.current,true);}
         return prev;
       });
     };
@@ -963,7 +957,6 @@ export default function CineScroll() {
     return()=>el.removeEventListener('scroll',fn);
   },[activeMood,activeGenre,fetchMovies]);
 
-  // Preload first 3 images on load
   useEffect(()=>{
     if(movies.length>0){
       movies.slice(0,3).forEach(m=>{
@@ -971,7 +964,7 @@ export default function CineScroll() {
         if(m.poster){const img=new Image();img.src=m.poster;}
       });
     }
-  },[movies.length>0]);
+  },[movies.length]);
 
   const scrollTo=i=>{containerRef.current?.scrollTo({top:i*containerRef.current.clientHeight,behavior:'smooth'});setActiveIndex(i);};
   const handleSimilarSelect=m=>{setMovies(p=>[m,...p]);setTimeout(()=>scrollTo(0),50);};
@@ -989,8 +982,9 @@ export default function CineScroll() {
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900,fontStyle:'italic',letterSpacing:-0.5,color:'#fff'}}>CineScroll</span>
         </div>
         <div style={{display:'flex',gap:8,pointerEvents:'all',alignItems:'center'}}>
-          <button onClick={()=>setShowMood(true)} style={{background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
-            <span style={{fontSize:18}}>🎭</span>
+          {/* Mood button - styled to match nav */}
+          <button onClick={()=>setShowMood(true)} style={{background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)',fontSize:17,lineHeight:1}}>
+            🎭
           </button>
           <button onClick={()=>{setShowSearch(p=>!p);setShowFilter(false);}} style={{background:showSearch?`${accent}18`:'rgba(0,0,0,0.55)',border:`1px solid ${showSearch?accent+'44':'rgba(255,255,255,0.1)'}`,borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)',transition:'all 0.2s ease'}}>
             <SvgIcon name={showSearch?'close':'search'} size={17} color={showSearch?accent:'rgba(255,255,255,0.7)'}/>
@@ -1075,4 +1069,4 @@ export default function CineScroll() {
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-  }
+}
