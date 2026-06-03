@@ -66,16 +66,14 @@ export async function GET(request) {
 
   try {
 
-    // ── SIMILAR ──────────────────────────────────────────────────────────────
+    // ── SIMILAR ──
     if (similar) {
       const itemId = parseInt(similar);
-
       const [detailRes, keywordRes, recRes] = await Promise.all([
         fetch(`${TMDB_BASE}/${similarType}/${itemId}?api_key=${TMDB_KEY}`),
         fetch(`${TMDB_BASE}/${similarType}/${itemId}/keywords?api_key=${TMDB_KEY}`),
         fetch(`${TMDB_BASE}/${similarType}/${itemId}/recommendations?api_key=${TMDB_KEY}&page=1`),
       ]);
-
       const detail = await detailRes.json().catch(() => ({}));
       const keywordData = await keywordRes.json().catch(() => ({}));
       const recData = await recRes.json().catch(() => ({ results: [] }));
@@ -88,14 +86,14 @@ export async function GET(request) {
       const keywordParam = keywords.join(',');
 
       const discoverBase = genreParam
-        ? `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=100`
-        : `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&sort_by=popularity.desc&vote_count.gte=100`;
+        ? `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=200`
+        : `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&sort_by=popularity.desc&vote_count.gte=200`;
 
       const [disc1, disc2, crossRes] = await Promise.all([
         fetch(discoverBase + (keywordParam ? `&with_keywords=${keywordParam}` : '') + '&page=1'),
         fetch(discoverBase + '&page=2'),
         genreParam
-          ? fetch(`${TMDB_BASE}/discover/${similarType === 'tv' ? 'movie' : 'tv'}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=100&page=1`)
+          ? fetch(`${TMDB_BASE}/discover/${similarType === 'tv' ? 'movie' : 'tv'}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=200&page=1`)
           : fetch(`${TMDB_BASE}/trending/${similarType}/week?api_key=${TMDB_KEY}`),
       ]);
 
@@ -114,7 +112,8 @@ export async function GET(request) {
       const unique = pool.filter(m => {
         if (seen.has(m.id)) return false;
         if (!m.backdrop_path && !m.poster_path) return false;
-        if ((m.vote_average || 0) < 5) return false;
+        if ((m.vote_average || 0) < 6) return false;
+        if ((m.vote_count || 0) < 100) return false;
         seen.add(m.id);
         return true;
       });
@@ -128,7 +127,7 @@ export async function GET(request) {
       return Response.json({ movies: unique.slice(0, 14).map((m, i) => formatItem(m, i)) });
     }
 
-    // ── SEARCH ───────────────────────────────────────────────────────────────
+    // ── SEARCH ──
     if (search) {
       const [movRes, tvRes] = await Promise.all([
         fetch(`${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(search)}&page=1`),
@@ -143,22 +142,21 @@ export async function GET(request) {
       return Response.json({ movies: combined.map((m, i) => formatItem(m, i)) });
     }
 
-    // ── MAIN FEED ─────────────────────────────────────────────────────────────
+    // ── MAIN FEED ──
     let movieUrl, tvUrl;
-
     if (genre) {
-      movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=100&page=${randomOffset}`;
-      tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=50&page=${randomOffset}`;
+      movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=300&vote_average.gte=6&page=${randomOffset}`;
+      tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&vote_count.gte=100&vote_average.gte=6&page=${randomOffset}`;
       if (mood === 'top rated') {
-        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=500&page=${randomOffset}`;
-        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=200&page=${randomOffset}`;
+        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=1000&page=${randomOffset}`;
+        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=500&page=${randomOffset}`;
       } else if (mood === 'new') {
         const year = new Date().getFullYear();
-        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=release_date.desc&vote_count.gte=20&primary_release_year=${year}&page=${randomOffset}`;
-        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=first_air_date.desc&vote_count.gte=10&first_air_date_year=${year}&page=${randomOffset}`;
+        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=release_date.desc&vote_count.gte=50&primary_release_year=${year}&page=${randomOffset}`;
+        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=first_air_date.desc&vote_count.gte=20&first_air_date_year=${year}&page=${randomOffset}`;
       } else if (mood === 'hidden gems') {
-        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7&vote_count.lte=5000&vote_count.gte=200&sort_by=vote_average.desc&page=${randomOffset}`;
-        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7&vote_count.lte=2000&vote_count.gte=100&sort_by=vote_average.desc&page=${randomOffset}`;
+        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7.5&vote_count.lte=5000&vote_count.gte=300&sort_by=vote_average.desc&page=${randomOffset}`;
+        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7.5&vote_count.lte=2000&vote_count.gte=200&sort_by=vote_average.desc&page=${randomOffset}`;
       }
     } else {
       if (mood === 'trending') {
@@ -171,8 +169,8 @@ export async function GET(request) {
         movieUrl = `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}&page=${randomOffset}`;
         tvUrl = `${TMDB_BASE}/tv/on_the_air?api_key=${TMDB_KEY}&page=${randomOffset}`;
       } else {
-        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&vote_average.gte=7&vote_count.lte=5000&vote_count.gte=500&sort_by=vote_average.desc&page=${randomOffset}`;
-        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&vote_average.gte=7&vote_count.lte=2000&vote_count.gte=200&sort_by=vote_average.desc&page=${randomOffset}`;
+        movieUrl = `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&vote_average.gte=7.5&vote_count.gte=1000&sort_by=vote_average.desc&page=${randomOffset}`;
+        tvUrl = `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&vote_average.gte=7.5&vote_count.gte=500&sort_by=vote_average.desc&page=${randomOffset}`;
       }
     }
 
@@ -180,8 +178,13 @@ export async function GET(request) {
     const movData = await movRes.json();
     const tvData = await tvRes.json();
 
-    const movies = (movData.results || []).filter(m => m.backdrop_path || m.poster_path).slice(0, 8);
-    const shows = (tvData.results || []).filter(m => m.backdrop_path || m.poster_path).slice(0, 4);
+    // Stricter quality filter
+    const movies = (movData.results || [])
+      .filter(m => (m.backdrop_path || m.poster_path) && (m.vote_average || 0) >= 6 && (m.vote_count || 0) >= 100)
+      .slice(0, 8);
+    const shows = (tvData.results || [])
+      .filter(m => (m.backdrop_path || m.poster_path) && (m.vote_average || 0) >= 6 && (m.vote_count || 0) >= 50)
+      .slice(0, 4);
 
     const interleaved = [];
     let mi = 0, ti = 0;
@@ -197,5 +200,4 @@ export async function GET(request) {
     console.error(err);
     return Response.json({ movies: [], error: 'Failed to fetch' }, { status: 500 });
   }
-}
-
+      }
