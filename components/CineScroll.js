@@ -24,7 +24,7 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     trash:    ['M3 6h18','M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6','M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2'],
     check:    'M20 6L9 17l-5-5',
     share:    ['M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8','M16 6l-4-4-4 4','M12 2v13'],
-    play:     'M5 3l14 9-14 9V3z',
+    mood:     ['M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z','M8 14s1.5 2 4 2 4-2 4-2','M9 9h.01','M15 9h.01'],
   };
   const def = icons[name];
   if (!def) return null;
@@ -38,6 +38,7 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
   );
 };
 
+// --- Rest of your CineScroll.js code below ---
 const GENRE_OPTIONS = [
   {label:'All',id:''},{label:'Action',id:'28'},{label:'Drama',id:'18'},
   {label:'Horror',id:'27'},{label:'Sci-Fi',id:'878'},{label:'Comedy',id:'35'},
@@ -45,23 +46,22 @@ const GENRE_OPTIONS = [
   {label:'Animation',id:'16'},{label:'Documentary',id:'99'},
 ];
 
-const FEED_MOODS = [
+const MOODS = [
   {label:'Trending',icon:'flame'},{label:'Top Rated',icon:'star'},
   {label:'New',icon:'sparkle'},{label:'Hidden Gems',icon:'gem'},
 ];
 
-// Phase 3 — these are the FEEL moods for the 🎭 screen
 const FEEL_MOODS = [
-  { label:'Inspired',   emoji:'🚀', color:'#4DA8DA', genres:'18,36' },
-  { label:'Thrilled',   emoji:'⚡', color:'#F5A623', genres:'28,53' },
-  { label:'Scared',     emoji:'👻', color:'#B07FEF', genres:'27' },
-  { label:'Romantic',   emoji:'💕', color:'#E87AAA', genres:'10749,18' },
-  { label:'Mind-blown', emoji:'🌀', color:'#50C8D4', genres:'878,9648' },
-  { label:'Laugh',      emoji:'😂', color:'#E8C84A', genres:'35' },
-  { label:'Emotional',  emoji:'😢', color:'#6BBF6B', genres:'18,10749' },
-  { label:'Epic',       emoji:'⚔️', color:'#FF7A2F', genres:'28,14,12' },
-  { label:'Dark',       emoji:'🖤', color:'#8B8B8B', genres:'80,53,18' },
-  { label:'Nostalgic',  emoji:'🎞️', color:'#C4922A', genres:'35,18' },
+  { label:'Inspired',    emoji:'🚀', color:'#4DA8DA', genres:'18,36',      keywords:'inspiring,motivational,triumph',  sort:'vote_average.desc' },
+  { label:'Thrilled',    emoji:'⚡', color:'#F5A623', genres:'28,53',      keywords:'suspense,action,intense',        sort:'popularity.desc' },
+  { label:'Scared',      emoji:'👻', color:'#B07FEF', genres:'27',         keywords:'horror,fear,supernatural',       sort:'popularity.desc' },
+  { label:'Romantic',    emoji:'💕', color:'#E87AAA', genres:'10749,18',   keywords:'love,romance,relationship',      sort:'vote_average.desc' },
+  { label:'Mind-blown',  emoji:'🌀', color:'#50C8D4', genres:'878,9648',   keywords:'twist,psychological,mind-bending', sort:'vote_average.desc' },
+  { label:'Laugh',       emoji:'😂', color:'#E8C84A', genres:'35',         keywords:'funny,comedy,humor',             sort:'popularity.desc' },
+  { label:'Emotional',   emoji:'😢', color:'#6BBF6B', genres:'18,10749',   keywords:'emotional,touching,heartwarming', sort:'vote_average.desc' },
+  { label:'Epic',        emoji:'⚔️', color:'#FF7A2F', genres:'28,14,12',  keywords:'epic,adventure,fantasy',         sort:'popularity.desc' },
+  { label:'Dark',        emoji:'🖤', color:'#8B8B8B', genres:'80,53,18',   keywords:'dark,crime,noir',                sort:'vote_average.desc' },
+  { label:'Nostalgic',   emoji:'🎞️', color:'#C4922A', genres:'35,18',    keywords:'classic,retro,nostalgic',       sort:'vote_average.desc' },
 ];
 
 const GRADS = [
@@ -75,6 +75,7 @@ const GRADS = [
   'linear-gradient(170deg,#080005 0%,#200010 50%,#6b0a35 100%)',
 ];
 
+// --- Remaining code (functions, useEffect, render, etc.) remains unchanged ---
 function getContentLabel(movie) {
   if (!movie) return 'Films';
   const genres = (movie.genre || []).map(g => g.toLowerCase());
