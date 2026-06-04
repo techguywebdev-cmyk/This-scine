@@ -52,16 +52,16 @@ const FEED_MOODS = [
 ];
 
 const FEEL_MOODS = [
-  { label:'Inspired',   emoji:'🚀', color:'#4DA8DA', genres:'18,36' },
-  { label:'Thrilled',   emoji:'⚡', color:'#F5A623', genres:'28,53' },
-  { label:'Scared',     emoji:'👻', color:'#B07FEF', genres:'27' },
-  { label:'Romantic',   emoji:'💕', color:'#E87AAA', genres:'10749,18' },
-  { label:'Mind-blown', emoji:'🌀', color:'#50C8D4', genres:'878,9648' },
-  { label:'Laugh',      emoji:'😂', color:'#E8C84A', genres:'35' },
-  { label:'Emotional',  emoji:'😢', color:'#6BBF6B', genres:'18,10749' },
-  { label:'Epic',       emoji:'⚔️', color:'#FF7A2F', genres:'28,14,12' },
-  { label:'Dark',       emoji:'🖤', color:'#8B8B8B', genres:'80,53,18' },
-  { label:'Nostalgic',  emoji:'🎞️', color:'#C4922A', genres:'35,18' },
+  { label:'Inspired',   emoji:'🚀', color:'#4DA8DA', genres:'18,36',    desc:'Stories of triumph & courage' },
+  { label:'Thrilled',   emoji:'⚡', color:'#F5A623', genres:'28,53',    desc:'Edge-of-your-seat tension' },
+  { label:'Scared',     emoji:'👻', color:'#B07FEF', genres:'27',       desc:'Things that go bump at night' },
+  { label:'Romantic',   emoji:'💕', color:'#E87AAA', genres:'10749,18', desc:'Love stories that move you' },
+  { label:'Mind-blown', emoji:'🌀', color:'#50C8D4', genres:'878,9648', desc:'Reality-bending narratives' },
+  { label:'Laugh',      emoji:'😂', color:'#E8C84A', genres:'35',       desc:'Pure unfiltered comedy' },
+  { label:'Emotional',  emoji:'😢', color:'#6BBF6B', genres:'18,10749', desc:'Films that make you feel deeply' },
+  { label:'Epic',       emoji:'⚔️', color:'#FF7A2F', genres:'28,14,12', desc:'Grand adventures & battles' },
+  { label:'Dark',       emoji:'🖤', color:'#8B8B8B', genres:'80,53,18', desc:'Noir, crime & moral ambiguity' },
+  { label:'Nostalgic',  emoji:'🎞️', color:'#C4922A', genres:'35,18',   desc:'Classic tales from another era' },
 ];
 
 const GRADS = [
@@ -347,6 +347,7 @@ function TrailerPlayer({ movie, onClose }) {
 }
 
 // ─── Mood Screen ─────────────────────────────────────────────────────────────
+// ─── Phase 3: Mood Screen ─────────────────────────────────────────────────
 function MoodScreen({ onClose, onMoodSelect, accent }) {
   const [activeMood, setActiveMood] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -358,30 +359,121 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
   };
 
   return (
-    <div style={{position:'fixed',inset:0,zIndex:90,background:'rgba(4,4,10,0.98)',backdropFilter:'blur(24px)',display:'flex',flexDirection:'column',animation:'fadeIn 0.25s ease'}}>
-      <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes moodIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      <div style={{padding:'56px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-        <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:900,fontStyle:'italic',color:'#fff'}}>I want to feel…</div>
-          <div style={{fontSize:13,color:'rgba(255,255,255,0.35)',marginTop:4}}>Pick a mood, we&apos;ll find the perfect film</div>
+    <div style={{position:'fixed',inset:0,zIndex:90,background:'#05050D',display:'flex',flexDirection:'column',animation:'fadeIn 0.3s ease'}}>
+      <style>{`
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+      `}</style>
+
+      {/* Subtle background pattern */}
+      <div style={{position:'absolute',inset:0,backgroundImage:`radial-gradient(circle at 20% 20%, rgba(255,255,255,0.015) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.01) 0%, transparent 50%)`,pointerEvents:'none'}}/>
+
+      {/* Header */}
+      <div style={{padding:'56px 24px 0',flexShrink:0,position:'relative',zIndex:1}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+          <div>
+            <div style={{fontSize:11,letterSpacing:4,color:'rgba(255,255,255,0.25)',fontWeight:700,marginBottom:10,textTransform:'uppercase'}}>Mood Discovery</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,fontStyle:'italic',color:'#fff',lineHeight:1.1}}>How do you want<br/>to feel tonight?</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginTop:10,lineHeight:1.5}}>We&apos;ll find the perfect film for your mood</div>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:4}}>
+            <SvgIcon name="close" size={15} color="rgba(255,255,255,0.4)"/>
+          </button>
         </div>
-        <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'50%',width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <SvgIcon name="close" size={15} color="rgba(255,255,255,0.5)"/>
-        </button>
+
+        {/* Divider */}
+        <div style={{height:1,background:'linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent)',marginTop:24}}/>
       </div>
-      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'20px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,scrollbarWidth:'none',alignContent:'start'}}>
-        {FEEL_MOODS.map((mood,i)=>{
-          const isActive=activeMood===mood.label;
-          return (
-            <button key={mood.label} onClick={()=>handleSelect(mood)} disabled={loading}
-              style={{background:isActive?`${mood.color}22`:'rgba(255,255,255,0.04)',border:`1px solid ${isActive?mood.color+'66':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'22px 16px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:10,fontFamily:'inherit',transition:'all 0.2s ease',opacity:loading&&!isActive?0.4:1,animation:`moodIn 0.3s ease ${i*0.04}s both`,position:'relative',overflow:'hidden',boxShadow:isActive?`0 0 24px ${mood.color}20`:'none'}}>
-              {isActive&&<div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 30% 50%, ${mood.color}18, transparent 70%)`,pointerEvents:'none'}}/>}
-              <span style={{fontSize:34,lineHeight:1}}>{mood.emoji}</span>
-              <span style={{fontSize:16,fontWeight:700,color:isActive?mood.color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{mood.label}</span>
-              {isActive&&loading&&<div style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:16,height:16,border:`2px solid ${mood.color}33`,borderTop:`2px solid ${mood.color}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>}
-            </button>
-          );
-        })}
+
+      {/* Mood grid */}
+      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'20px 24px 40px',scrollbarWidth:'none'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {FEEL_MOODS.map((mood, i) => {
+            const isActive = activeMood === mood.label;
+            const isLoadingThis = isActive && loading;
+            return (
+              <button
+                key={mood.label}
+                onClick={() => handleSelect(mood)}
+                disabled={loading}
+                style={{
+                  position: 'relative',
+                  background: isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: 20,
+                  padding: '22px 18px 20px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: 14,
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s ease',
+                  opacity: loading && !isActive ? 0.35 : 1,
+                  animation: `slideUp 0.4s ease ${i * 0.04}s both`,
+                  overflow: 'hidden',
+                  textAlign: 'left',
+                  boxShadow: isActive ? '0 0 0 1px rgba(255,255,255,0.15), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
+                }}
+              >
+                {/* Active shimmer */}
+                {isActive && (
+                  <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.05), transparent 70%)',pointerEvents:'none'}}/>
+                )}
+
+                {/* Emoji — grayscale filter to match aesthetic */}
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 28,
+                  filter: isActive ? 'none' : 'grayscale(100%) brightness(1.8)',
+                  transition: 'filter 0.3s ease',
+                  lineHeight: 1,
+                }}>
+                  {mood.emoji}
+                </div>
+
+                {/* Label + description */}
+                <div>
+                  <div style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.7)',
+                    fontFamily: "'Playfair Display', serif",
+                    fontStyle: 'italic',
+                    marginBottom: 4,
+                    transition: 'color 0.2s ease',
+                  }}>
+                    {mood.label}
+                  </div>
+                  <div style={{
+                    fontSize: 11,
+                    color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)',
+                    lineHeight: 1.4,
+                    transition: 'color 0.2s ease',
+                  }}>
+                    {mood.desc}
+                  </div>
+                </div>
+
+                {/* Loading spinner */}
+                {isLoadingThis && (
+                  <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',width:16,height:16,border:'2px solid rgba(255,255,255,0.15)',borderTop:'2px solid rgba(255,255,255,0.7)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
+                )}
+
+                {/* Bottom accent line on active */}
+                {isActive && (
+                  <div style={{position:'absolute',bottom:0,left:'20%',right:'20%',height:2,background:'rgba(255,255,255,0.3)',borderRadius:1}}/>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1011,25 +1103,32 @@ export default function CineScroll() {
       )}
 
       {showSearch&&(
-        <div style={{position:'fixed',inset:0,zIndex:45,background:'rgba(4,4,10,0.97)',backdropFilter:'blur(24px)',padding:'78px 16px 20px',display:'flex',flexDirection:'column',gap:12,animation:'fadeIn 0.2s ease'}}>
-          <div style={{position:'relative'}}>
-            <div style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)'}}><SvgIcon name="search" size={16} color="rgba(255,255,255,0.28)"/></div>
-            <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search movies & TV shows..." style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.09)',borderRadius:14,padding:'13px 16px 13px 42px',color:'#fff',fontSize:16,outline:'none',fontFamily:'inherit'}}/>
+  <div style={{position:'fixed',inset:0,zIndex:45,background:'rgba(4,4,10,0.97)',backdropFilter:'blur(24px)',padding:'78px 16px 20px',display:'flex',flexDirection:'column',gap:12,animation:'fadeIn 0.2s ease'}}>
+    <div style={{display:'flex',gap:10,alignItems:'center'}}>
+      <div style={{position:'relative',flex:1}}>
+        <div style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)'}}><SvgIcon name="search" size={16} color="rgba(255,255,255,0.28)"/></div>
+        <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search movies & TV shows..." style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.09)',borderRadius:14,padding:'13px 16px 13px 42px',color:'#fff',fontSize:16,outline:'none',fontFamily:'inherit'}}/>
+      </div>
+      {/* Close button */}
+      <button onClick={()=>{setShowSearch(false);setSearchQ('');setSearchRes([]);}} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:44,height:44,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+        <SvgIcon name="close" size={16} color="rgba(255,255,255,0.6)"/>
+      </button>
+    </div>
+    <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',display:'flex',flexDirection:'column',gap:6,scrollbarWidth:'none'}}>
+      {searching&&<div style={{textAlign:'center',padding:20,color:'rgba(255,255,255,0.3)',fontSize:13}}>Searching…</div>}
+      {!searching&&searchQ&&searchRes.length===0&&<div style={{textAlign:'center',padding:20,color:'rgba(255,255,255,0.3)',fontSize:13}}>No results found</div>}
+      {(searchQ?searchRes:movies).map((m,i)=>(
+        <button key={m.id} onClick={()=>{if(!searchQ){scrollTo(i);}else{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}setShowSearch(false);setSearchQ('');setSearchRes([]);}} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'11px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit'}}>
+          <div style={{width:40,height:54,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>{m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}><span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{m.title}</span>{m.isTV&&<span style={{fontSize:9,color:m.accent,border:`1px solid ${m.accent}44`,borderRadius:3,padding:'1px 5px',letterSpacing:1,fontWeight:700}}>TV</span>}</div>
+            <div style={{fontSize:11,color:'rgba(255,255,255,0.28)',display:'flex',alignItems:'center',gap:5}}><span>{m.year}</span><span>·</span><SvgIcon name="star" size={10} color={m.accent} filled/><span style={{color:m.accent,fontWeight:600}}>{m.rating}</span></div>
           </div>
-          <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',display:'flex',flexDirection:'column',gap:6,scrollbarWidth:'none'}}>
-            {searching&&<div style={{textAlign:'center',padding:20,color:'rgba(255,255,255,0.3)',fontSize:13}}>Searching…</div>}
-            {(searchQ?searchRes:movies).map((m,i)=>(
-              <button key={m.id} onClick={()=>{if(!searchQ){scrollTo(i);}else{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}setShowSearch(false);setSearchQ('');}} style={{display:'flex',gap:12,alignItems:'center',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'11px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit'}}>
-                <div style={{width:40,height:54,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>{m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
-                <div>
-                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}><span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{m.title}</span>{m.isTV&&<span style={{fontSize:9,color:m.accent,border:`1px solid ${m.accent}44`,borderRadius:3,padding:'1px 5px',letterSpacing:1,fontWeight:700}}>TV</span>}</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.28)',display:'flex',alignItems:'center',gap:5}}><span>{m.year}</span><span>·</span><SvgIcon name="star" size={10} color={m.accent} filled/><span style={{color:m.accent,fontWeight:600}}>{m.rating}</span></div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
       {/* Feed */}
       <div ref={containerRef} style={{position:'fixed',inset:0,overflowY:'scroll',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
