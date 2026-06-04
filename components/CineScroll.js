@@ -1090,8 +1090,15 @@ function MovieCard({ movie, isActive, index, onFindSimilar, onAuthRequired, onSa
 }
 
 // ─── Filter Sheet ─────────────────────────────────────────────────────────────
-function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
-  return (
-    <>
-      {show&&<div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(6px)',animation:'bfade 0.2s ease'}}/>}
-      <div style={{position:'fixed
+
+    <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent}/>
+      {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect}/>}
+      {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
+      {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData}/>}
+      {showMood&&<MoodScreen onClose={()=>setShowMood(false)} onMoodSelect={handleMoodSelect} accent={accent}/>}
+      {trailerMovie&&<TrailerPlayer movie={trailerMovie} onClose={()=>setTrailerMovie(null)}/>}
+
+      <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+        }
