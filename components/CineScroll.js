@@ -448,31 +448,249 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
                     fontStyle: 'italic',
                     marginBottom: 4,
                     transition: 'color 0.2s ease',
+// ─── Phase 3: Mood Screen ─────────────────────────────────────────────────
+function MoodScreen({ onClose, onMoodSelect, accent }) {
+  const [activeMood, setActiveMood] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSelect = async (mood) => {
+    setActiveMood(mood.label);
+    setLoading(true);
+    await onMoodSelect(mood);
+    setLoading(false);
+    onClose();
+  };
+
+  const handleSurprise = () => {
+    const random = FEEL_MOODS[Math.floor(Math.random() * FEEL_MOODS.length)];
+    handleSelect(random);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 90,
+      background: '#05050D',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+      animation: 'fadeIn 0.3s ease',
+    }}>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        .mood-card:active { transform: scale(0.97); }
+      `}</style>
+
+      {/* ── Hero Section ── */}
+      <div style={{
+        position: 'relative',
+        minHeight: 320,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        padding: '0 20px 28px',
+      }}>
+        {/* Background image */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XMIfl.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 20%',
+          filter: 'brightness(0.35)',
+        }}/>
+
+        {/* Gradient overlays */}
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom, rgba(5,5,13,0.3) 0%, rgba(5,5,13,0.0) 30%, rgba(5,5,13,0.7) 70%, rgba(5,5,13,1) 100%)'}}/>
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(to right, rgba(5,5,13,0.5) 0%, transparent 60%)'}}/>
+
+        {/* Close button */}
+        <button onClick={onClose} style={{
+          position: 'absolute', top: 52, right: 18,
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '50%', width: 38, height: 38,
+          cursor: 'pointer', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 2,
+        }}>
+          <SvgIcon name="close" size={15} color="rgba(255,255,255,0.7)"/>
+        </button>
+
+        {/* Hero text */}
+        <div style={{position:'relative',zIndex:1,maxWidth:480}}>
+          <div style={{
+            fontSize: 10, letterSpacing: 4,
+            color: accent, fontWeight: 700,
+            textTransform: 'uppercase', marginBottom: 12,
+          }}>Mood Discovery</div>
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 'clamp(28px, 7vw, 42px)',
+            fontWeight: 900, color: '#fff',
+            margin: '0 0 10px', lineHeight: 1.1, letterSpacing: -1,
+          }}>How do you want<br/>to feel tonight?</h1>
+          <p style={{fontSize: 14, color: 'rgba(255,255,255,0.5)', margin: '0 0 24px', lineHeight: 1.5}}>
+            We&apos;ll find the perfect film for your mood.
+          </p>
+
+          {/* Surprise Me + shuffle */}
+          <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+            <button onClick={handleSurprise} disabled={loading} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: accent, border: 'none',
+              borderRadius: 24, padding: '11px 22px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 14, fontWeight: 700, color: '#05050D',
+              opacity: loading ? 0.7 : 1,
+              transition: 'all 0.2s ease',
+            }}>
+              <span style={{fontSize:16}}>✦</span>
+              Surprise Me
+            </button>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <div style={{display:'flex'}}>
+                {['#F5A623','#B07FEF','#4DA8DA'].map((c,i)=>(
+                  <div key={i} style={{width:26,height:26,borderRadius:'50%',background:c,border:'2px solid #05050D',marginLeft:i>0?-8:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11}}>🎬</div>
+                ))}
+              </div>
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:'#fff'}}>Join 12K+ film lovers</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>finding their perfect scene</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mood Grid ── */}
+      <div style={{padding:'4px 16px 20px'}}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))',
+          gap: 10,
+        }}>
+          {FEEL_MOODS.map((mood, i) => {
+            const isActive = activeMood === mood.label;
+            const isLoadingThis = isActive && loading;
+            return (
+              <button
+                key={mood.label}
+                className="mood-card"
+                onClick={() => handleSelect(mood)}
+                disabled={loading}
+                style={{
+                  position: 'relative',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${isActive ? mood.color + '55' : 'rgba(255,255,255,0.07)'}`,
+                  borderRadius: 18,
+                  padding: '18px 16px 14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  fontFamily: 'inherit',
+                  textAlign: 'left',
+                  transition: 'all 0.18s ease',
+                  opacity: loading && !isActive ? 0.4 : 1,
+                  animation: `slideUp 0.4s ease ${i * 0.035}s both`,
+                  overflow: 'hidden',
+                  boxShadow: isActive ? `0 0 20px ${mood.color}22, inset 0 1px 0 rgba(255,255,255,0.05)` : 'none',
+                  minHeight: 130,
+                }}
+              >
+                {/* Subtle bg gradient from mood color */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: `radial-gradient(circle at 20% 20%, ${mood.color}18 0%, transparent 65%)`,
+                  opacity: isActive ? 1 : 0.6,
+                  transition: 'opacity 0.2s ease',
+                  pointerEvents: 'none',
+                }}/>
+
+                {/* Icon badge */}
+                <div style={{
+                  width: 42, height: 42,
+                  borderRadius: 12,
+                  background: mood.color + '22',
+                  border: `1px solid ${mood.color}44`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, position: 'relative', zIndex: 1,
+                  flexShrink: 0,
+                }}>
+                  {mood.emoji}
+                </div>
+
+                {/* Text */}
+                <div style={{position:'relative',zIndex:1,flex:1}}>
+                  <div style={{
+                    fontSize: 15, fontWeight: 700,
+                    color: '#fff',
+                    fontFamily: "'Playfair Display', serif",
+                    fontStyle: 'italic',
+                    marginBottom: 4,
                   }}>
                     {mood.label}
                   </div>
                   <div style={{
                     fontSize: 11,
-                    color: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)',
+                    color: 'rgba(255,255,255,0.35)',
                     lineHeight: 1.4,
-                    transition: 'color 0.2s ease',
                   }}>
                     {mood.desc}
                   </div>
                 </div>
 
-                {/* Loading spinner */}
-                {isLoadingThis && (
-                  <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',width:16,height:16,border:'2px solid rgba(255,255,255,0.15)',borderTop:'2px solid rgba(255,255,255,0.7)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
-                )}
+                {/* Arrow button */}
+                <div style={{
+                  position: 'absolute', right: 12, bottom: 12,
+                  width: 26, height: 26, borderRadius: '50%',
+                  border: `1px solid ${isActive ? mood.color + '66' : 'rgba(255,255,255,0.12)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}>
+                  {isLoadingThis
+                    ? <div style={{width:10,height:10,border:'1.5px solid rgba(255,255,255,0.2)',borderTop:`1.5px solid ${mood.color}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
+                    : <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5h6M5 2l3 3-3 3" stroke={isActive?mood.color:'rgba(255,255,255,0.4)'} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  }
+                </div>
 
-                {/* Bottom accent line on active */}
-                {isActive && (
-                  <div style={{position:'absolute',bottom:0,left:'20%',right:'20%',height:2,background:'rgba(255,255,255,0.3)',borderRadius:1}}/>
-                )}
+                {/* Bottom accent bar */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: '15%', right: '15%',
+                  height: 2, borderRadius: 1,
+                  background: mood.color,
+                  opacity: isActive ? 0.6 : 0.2,
+                  transition: 'opacity 0.2s ease',
+                }}/>
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── How it works ── */}
+      <div style={{padding:'0 16px 40px'}}>
+        <div style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 20, padding: '20px 16px',
+        }}>
+          <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,marginBottom:16,textTransform:'uppercase'}}>How it works</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+            {[
+              {icon:'🔍',title:'Pick your mood',desc:'Choose how you want to feel.'},
+              {icon:'✦',title:'We do the magic',desc:'Curated films matched to your vibe.'},
+              {icon:'▶',title:'Press play & enjoy',desc:'The perfect scene is waiting.'},
+            ].map((s,i)=>(
+              <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,textAlign:'center'}}>
+                <div style={{width:38,height:38,borderRadius:'50%',border:`1px solid ${accent}33`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,color:accent}}>{s.icon}</div>
+                <div style={{fontSize:11,fontWeight:700,color:'#fff',lineHeight:1.3}}>{s.title}</div>
+                <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',lineHeight:1.4}}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
