@@ -239,7 +239,7 @@ async function generateShareCard(type, data, accent) {
   } else if (type==='watchlist') {
     ctx.fillStyle='rgba(255,255,255,0.32)'; ctx.font='600 13px sans-serif'; ctx.textAlign='center'; ctx.letterSpacing='4px'; ctx.fillText('WATCHLIST',W/2,148); ctx.letterSpacing='0px';
     ctx.fillStyle='#ffffff'; ctx.font='italic bold 54px Georgia, serif'; ctx.fillText(data.name,W/2,210);
-    const pillLabels=[`\( {data.total} Films`,` \){data.watched} Watched`]; let px=W/2-152;
+    const pillLabels=[`${data.total} Films`,`${data.watched} Watched`]; let px=W/2-152;
     for(const p of pillLabels){
       const pw=140; ctx.fillStyle=accent+'18'; ctx.beginPath(); ctx.roundRect(px,228,pw,36,18); ctx.fill();
       ctx.strokeStyle=accent+'55'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(px,228,pw,36,18); ctx.stroke();
@@ -326,7 +326,7 @@ function StreamingBadges({ movieId, mediaType, accent }) {
   const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
   useEffect(() => {
     if (!movieId || !TMDB_KEY) return;
-    fetch(`https://api.themoviedb.org/3/\( {mediaType||'movie'}/ \){movieId}/watch/providers?api_key=${TMDB_KEY}`)
+    fetch(`https://api.themoviedb.org/3/${mediaType||'movie'}/${movieId}/watch/providers?api_key=${TMDB_KEY}`)
       .then(r => r.json())
       .then(data => {
         const results = data.results || {};
@@ -360,7 +360,7 @@ function TrailerPlayer({ movie, onClose }) {
   const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
   useEffect(() => {
     if (!movie || !TMDB_KEY) { setNotFound(true); setLoading(false); return; }
-    fetch(`https://api.themoviedb.org/3/\( {movie.mediaType||'movie'}/ \){movie.id}/videos?api_key=${TMDB_KEY}`)
+    fetch(`https://api.themoviedb.org/3/${movie.mediaType||'movie'}/${movie.id}/videos?api_key=${TMDB_KEY}`)
       .then(r => r.json())
       .then(data => {
         const videos = data.results || [];
@@ -386,7 +386,7 @@ function TrailerPlayer({ movie, onClose }) {
       <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:720}}>
         {loading&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}><div style={{width:36,height:36,border:`3px solid rgba(255,255,255,0.1)`,borderTop:`3px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Loading trailer…</span></div>}
         {!loading&&notFound&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,padding:60}}><div style={{fontSize:40}}>🎬</div><div style={{textAlign:'center'}}><div style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)',marginBottom:6}}>No trailer available</div><div style={{fontSize:13,color:'rgba(255,255,255,0.3)'}}>We couldn&apos;t find a trailer for {movie?.title}</div></div></div>}
-        {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000'}}><iframe src={`https://www.youtube.com/embed/\( {trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture; web-share" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={` \){movie?.title} Trailer`}/></div>}
+        {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture; web-share" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
       </div>
       {!loading&&trailerKey&&(
         <div onClick={e=>e.stopPropagation()} style={{padding:'16px 20px 0',width:'100%',maxWidth:720}}>
@@ -406,17 +406,7 @@ function TrailerPlayer({ movie, onClose }) {
 function MoodScreen({ onClose, onMoodSelect, accent }) {
   const [activeMood, setActiveMood] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [moodInput, setMoodInput] = useState('');
-  const [showInput, setShowInput] = useState(false);
-  const [timeGreeting, setTimeGreeting] = useState('tonight');
-
-  useEffect(() => {
-    const h = new Date().getHours();
-    if (h >= 5 && h < 12) setTimeGreeting('this morning');
-    else if (h >= 12 && h < 17) setTimeGreeting('this afternoon');
-    else if (h >= 17 && h < 21) setTimeGreeting('this evening');
-    else setTimeGreeting('tonight');
-  }, []);
+  const [hoveredMood, setHoveredMood] = useState(null);
 
   const handleSelect = async (mood) => {
     setActiveMood(mood.label);
@@ -431,299 +421,204 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
     handleSelect(random);
   };
 
-  const handleTextMood = async () => {
-    if (!moodInput.trim()) return;
-    const lower = moodInput.toLowerCase();
-    const matched = FEEL_MOODS.find(m =>
-      lower.includes(m.label.toLowerCase()) ||
-      m.desc.toLowerCase().split(' ').some(w => w.length > 4 && lower.includes(w))
-    );
-    if (matched) {
-      handleSelect(matched);
-    } else {
-      // Default to trending if no match
-      const fallback = { label: 'Inspired', color: '#F5C842', bg: '#2A2000', genres: '18,36', desc: '' };
-      handleSelect(fallback);
-    }
-  };
-
-  // Background images per mood (cinematic stills from TMDB)
-  const moodBgs = {
-    Inspired:    'https://image.tmdb.org/t/p/w780/mDfJG3LC3Dqb67AZ52x3Z0jU0uB.jpg',
-    Thrilled:    'https://image.tmdb.org/t/p/w780/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg',
-    Scared:      'https://image.tmdb.org/t/p/w780/xazWoLealQwEgqZ89MLZklLZD3k.jpg',
-    Romantic:    'https://image.tmdb.org/t/p/w780/yFihWxQcmqcaBR31QM6Y8gT6aYV.jpg',
-    'Mind-blown':'https://image.tmdb.org/t/p/w780/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
-    Laugh:       'https://image.tmdb.org/t/p/w780/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
-    Emotional:   'https://image.tmdb.org/t/p/w780/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    Epic:        'https://image.tmdb.org/t/p/w780/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg',
-    Dark:        'https://image.tmdb.org/t/p/w780/eFMHFX0EopqOdwGqJTg1vJ2EsON.jpg',
-    Nostalgic:   'https://image.tmdb.org/t/p/w780/qJ2tW6WMQbzezjXI3LCOedfRGGV.jpg',
-  };
-
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 90,
-      background: 'linear-gradient(160deg, #07070F 0%, #0A0A18 60%, #060610 100%)',
+      background: 'linear-gradient(160deg, #07070F 0%, #0A0A18 50%, #060610 100%)',
       overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none',
-      animation: 'moodFadeIn 0.3s ease',
+      animation: 'moodFadeIn 0.35s ease',
     }}>
       <style>{`
-        @keyframes moodFadeIn { from{opacity:0} to{opacity:1} }
-        @keyframes cardIn { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        .mood-btn:active { transform: scale(0.96) !important; }
-        div::-webkit-scrollbar { display:none; }
+        @keyframes moodFadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes cardSlideUp { from { opacity: 0; transform: translateY(28px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        @keyframes glowPulse { 0%,100% { opacity: 0.4 } 50% { opacity: 0.8 } }
+        @keyframes particleFloat { 0% { transform: translateY(0) scale(1); opacity: 0.8 } 100% { transform: translateY(-40px) scale(0); opacity: 0 } }
+        .mood-card-btn { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .mood-card-btn:active { transform: scale(0.96) !important; }
+        div::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* Ambient glows */}
-      <div style={{position:'fixed',top:'-15%',left:'-10%',width:'55%',height:'55%',borderRadius:'50%',background:'radial-gradient(circle, rgba(80,50,180,0.07) 0%, transparent 70%)',pointerEvents:'none'}}/>
-      <div style={{position:'fixed',bottom:0,right:'-5%',width:'45%',height:'45%',borderRadius:'50%',background:'radial-gradient(circle, rgba(180,80,50,0.05) 0%, transparent 70%)',pointerEvents:'none'}}/>
+      {/* Ambient background glows */}
+      <div style={{position:'fixed',top:'-20%',left:'-10%',width:'60%',height:'60%',borderRadius:'50%',background:'radial-gradient(circle, rgba(80,50,180,0.08) 0%, transparent 70%)',pointerEvents:'none'}}/>
+      <div style={{position:'fixed',bottom:'-10%',right:'-10%',width:'50%',height:'50%',borderRadius:'50%',background:'radial-gradient(circle, rgba(180,80,50,0.06) 0%, transparent 70%)',pointerEvents:'none'}}/>
 
       {/* ── Hero ── */}
-      <div style={{padding:'52px 20px 0',position:'relative'}}>
+      <div style={{position:'relative',padding:'52px 20px 0',minHeight:280,display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
+
         {/* Close */}
-        <button onClick={onClose} style={{position:'absolute',top:52,right:18,background:'rgba(255,255,255,0.07)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'50%',width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
+        <button onClick={onClose} style={{position:'absolute',top:52,right:18,background:'rgba(255,255,255,0.06)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'50%',width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
           <SvgIcon name="close" size={14} color="rgba(255,255,255,0.6)"/>
         </button>
 
         {/* Label */}
-        <div style={{fontSize:10,letterSpacing:4,color:accent,fontWeight:700,textTransform:'uppercase',marginBottom:14}}>
-          Mood Discovery
-        </div>
+        <div style={{fontSize:10,letterSpacing:4,color:accent,fontWeight:700,textTransform:'uppercase',marginBottom:14,opacity:0.9}}>Mood Discovery</div>
 
-        {/* Dynamic greeting title */}
-        <h1 style={{
-          fontFamily:"'Playfair Display',serif",
-          fontSize:'clamp(28px,8vw,46px)',
-          fontWeight:900,color:'#fff',
-          margin:'0 0 10px',lineHeight:1.05,
-          letterSpacing:'-0.5px',maxWidth:460,
-        }}>
-          How do you want<br/>to feel {timeGreeting}?
+        {/* Title */}
+        <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:'clamp(30px,8vw,48px)',fontWeight:900,color:'#ffffff',margin:'0 0 12px',lineHeight:1.05,letterSpacing:'-0.5px',maxWidth:480}}>
+          How do you want<br/>to feel tonight?
         </h1>
-        <p style={{fontSize:14,color:'rgba(255,255,255,0.4)',margin:'0 0 24px',lineHeight:1.6,maxWidth:340}}>
-          Pick a mood or describe what you&apos;re in the mood for.
+        <p style={{fontSize:14,color:'rgba(255,255,255,0.4)',margin:'0 0 28px',lineHeight:1.6,maxWidth:360}}>
+          We&apos;ll curate the perfect film for your mood.
         </p>
 
-        {/* Text input mood */}
-        <div style={{marginBottom:20}}>
-          {showInput ? (
-            <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              <div style={{flex:1,position:'relative'}}>
-                <input
-                  autoFocus
-                  value={moodInput}
-                  onChange={e=>setMoodInput(e.target.value)}
-                  onKeyDown={e=>e.key==='Enter'&&handleTextMood()}
-                  placeholder="e.g. something that makes me cry, an epic adventure..."
-                  style={{
-                    width:'100%',boxSizing:'border-box',
-                    background:'rgba(255,255,255,0.06)',
-                    border:`1px solid ${accent}44`,
-                    borderRadius:14,padding:'13px 16px',
-                    color:'#fff',fontSize:14,outline:'none',
-                    fontFamily:'inherit',
-                  }}
-                />
-              </div>
-              <button onClick={handleTextMood} style={{background:accent,border:'none',borderRadius:12,width:46,height:46,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07070F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </button>
-              <button onClick={()=>{setShowInput(false);setMoodInput('');}} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:46,height:46,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <SvgIcon name="close" size={14} color="rgba(255,255,255,0.5)"/>
-              </button>
-            </div>
-          ) : (
-            <button onClick={()=>setShowInput(true)} style={{display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:'12px 16px',cursor:'pointer',fontFamily:'inherit',fontSize:13,color:'rgba(255,255,255,0.4)',width:'100%',textAlign:'left'}}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Describe what you&apos;re in the mood for…
-            </button>
-          )}
-        </div>
-
-        {/* Surprise Me + social proof */}
-        <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:28}}>
+        {/* Surprise Me */}
+        <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',marginBottom:32}}>
           <button onClick={handleSurprise} disabled={loading} style={{
             display:'flex',alignItems:'center',gap:8,
-            background:`linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)`,
-            border:'none',borderRadius:28,padding:'12px 22px',
-            cursor:'pointer',fontFamily:"'DM Sans',sans-serif",
-            fontSize:14,fontWeight:700,color:'#07070F',
-            boxShadow:`0 4px 18px ${accent}35`,
-            transition:'all 0.2s ease',opacity:loading?0.7:1,
+            background:`linear-gradient(135deg, ${accent}, ${accent}cc)`,
+            border:'none',borderRadius:28,padding:'13px 24px',
+            cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:700,
+            color:'#07070F',opacity:loading?0.7:1,
+            boxShadow:`0 4px 20px ${accent}40`,
+            transition:'all 0.2s ease',
           }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="#07070F">
-              <path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4.5L8 1z"/>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4.5L8 1z" fill="#07070F"/>
             </svg>
             Surprise Me
           </button>
 
-          {/* Social proof — static avatars */}
+          {/* Social proof */}
           <div style={{display:'flex',alignItems:'center',gap:10}}>
             <div style={{display:'flex'}}>
-              {[
-                {bg:'linear-gradient(135deg,#F5C842,#E8A020)',icon:'🎬'},
-                {bg:'linear-gradient(135deg,#B07FEF,#7040C0)',icon:'🎭'},
-                {bg:'linear-gradient(135deg,#4DA8FF,#2060C0)',icon:'🎞'},
-                {bg:'linear-gradient(135deg,#FF6BAE,#C04070)',icon:'📽'},
-              ].map((a,i)=>(
-                <div key={i} style={{
-                  width:30,height:30,borderRadius:'50%',
-                  background:a.bg,
-                  border:'2px solid #0A0A18',
-                  marginLeft:i>0?-10:0,
-                  display:'flex',alignItems:'center',justifyContent:'center',
-                  fontSize:14,zIndex:4-i,position:'relative',
-                  boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
-                }}>
-                  {a.icon}
+              {['#F5C842','#B07FEF','#4DA8FF','#FF6BAE'].map((c,i)=>(
+                <div key={i} style={{width:28,height:28,borderRadius:'50%',background:`linear-gradient(135deg, ${c}, ${c}88)`,border:'2px solid #0A0A18',marginLeft:i>0?-9:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,boxShadow:`0 2px 8px ${c}40`}}>
+                  {['🎬','🎭','🎞','📽'][i]}
                 </div>
               ))}
             </div>
             <div>
-              <div style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.85)'}}>Join 12K+ film lovers</div>
+              <div style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.8)'}}>Join 12K+ film lovers</div>
               <div style={{fontSize:11,color:'rgba(255,255,255,0.35)'}}>finding their perfect scene</div>
             </div>
           </div>
         </div>
 
         {/* Divider */}
-        <div style={{height:1,background:'linear-gradient(to right,transparent,rgba(255,255,255,0.07),transparent)',marginBottom:0}}/>
+        <div style={{height:1,background:'linear-gradient(to right, transparent, rgba(255,255,255,0.07), transparent)',marginBottom:0}}/>
       </div>
 
-      {/* ── Mood Cards Grid ── */}
-      <div style={{padding:'16px 16px 20px'}}>
+      {/* ── Mood Grid ── */}
+      <div style={{padding:'16px 16px 24px'}}>
         <div style={{
           display:'grid',
-          gridTemplateColumns:'repeat(auto-fill, minmax(min(100%,155px),1fr))',
+          gridTemplateColumns:'repeat(auto-fill, minmax(min(100%, 155px), 1fr))',
           gap:10,
         }}>
           {FEEL_MOODS.map((mood, i) => {
             const isActive = activeMood === mood.label;
+            const isHovered = hoveredMood === mood.label;
             const isLoadingThis = isActive && loading;
-            const bg = moodBgs[mood.label];
+            const highlight = isActive || isHovered;
 
             return (
               <button
                 key={mood.label}
-                className="mood-btn"
+                className="mood-card-btn"
                 onClick={() => handleSelect(mood)}
+                onMouseEnter={() => setHoveredMood(mood.label)}
+                onMouseLeave={() => setHoveredMood(null)}
                 disabled={loading}
                 style={{
-                  position: 'relative',
-                  borderRadius: 18,
-                  border: `1px solid ${isActive ? mood.color+'55' : 'rgba(255,255,255,0.07)'}`,
-                  padding: 0,
-                  cursor: 'pointer',
-                  overflow: 'hidden',
-                  minHeight: 160,
-                  opacity: loading && !isActive ? 0.4 : 1,
-                  animation: `cardIn 0.45s ease ${i*0.04}s both`,
+                  position:'relative',
+                  background: highlight
+                    ? `linear-gradient(145deg, ${mood.bg}, rgba(0,0,0,0.4))`
+                    : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${highlight ? mood.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: 20,
+                  padding:'18px 14px 16px',
+                  cursor:'pointer',
+                  display:'flex',
+                  flexDirection:'column',
+                  alignItems:'flex-start',
+                  gap:12,
+                  fontFamily:'inherit',
+                  textAlign:'left',
+                  opacity: loading && !isActive ? 0.35 : 1,
+                  animation:`cardSlideUp 0.45s ease ${i*0.04}s both`,
+                  overflow:'hidden',
+                  minHeight:140,
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
                   boxShadow: isActive
-                    ? `0 0 28px ${mood.color}30, 0 8px 24px rgba(0,0,0,0.5)`
-                    : '0 2px 10px rgba(0,0,0,0.3)',
-                  transition: 'box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  fontFamily: 'inherit',
-                  textAlign: 'left',
-                  background: mood.bg,
+                    ? `0 0 30px ${mood.color}25, 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)`
+                    : isHovered
+                    ? `0 0 20px ${mood.color}18, 0 4px 16px rgba(0,0,0,0.3)`
+                    : '0 2px 8px rgba(0,0,0,0.2)',
+                  transform: isActive ? 'scale(1.02)' : 'scale(1)',
                 }}
               >
-                {/* Background image */}
-                {bg && (
-                  <div style={{
-                    position:'absolute',inset:0,
-                    backgroundImage:`url(${bg})`,
-                    backgroundSize:'cover',
-                    backgroundPosition:'center',
-                    opacity: 0.25,
-                    transition:'opacity 0.3s ease',
-                  }}/>
-                )}
-
-                {/* Dark overlay gradient */}
+                {/* Radial glow bg */}
                 <div style={{
                   position:'absolute',inset:0,
-                  background:`linear-gradient(160deg, ${mood.bg}ee 0%, ${mood.bg}99 40%, rgba(0,0,0,0.3) 100%)`,
+                  background:`radial-gradient(circle at 25% 25%, ${mood.color}${highlight?'22':'12'} 0%, transparent 65%)`,
+                  transition:'opacity 0.3s ease',
                   pointerEvents:'none',
+                  borderRadius:20,
                 }}/>
 
-                {/* Radial glow */}
+                {/* Icon */}
                 <div style={{
-                  position:'absolute',inset:0,
-                  background:`radial-gradient(circle at 20% 20%, ${mood.color}20 0%, transparent 60%)`,
-                  pointerEvents:'none',
-                }}/>
+                  width:46,height:46,borderRadius:13,
+                  background:`linear-gradient(145deg, ${mood.color}25, ${mood.color}10)`,
+                  border:`1px solid ${mood.color}${highlight?'50':'25'}`,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  position:'relative',zIndex:1,
+                  flexShrink:0,
+                  boxShadow: highlight ? `0 4px 16px ${mood.color}30` : 'none',
+                  transition:'all 0.2s ease',
+                }}>
+                  <MoodIcon mood={mood.label} size={24} color={mood.color}/>
+                </div>
 
-                {/* Content */}
-                <div style={{position:'relative',zIndex:1,padding:'16px 14px 14px',display:'flex',flexDirection:'column',gap:0,height:'100%'}}>
-                  {/* Icon badge — horizontal layout like reference */}
-                  <div style={{
-                    width:44,height:44,borderRadius:12,
-                    background:`${mood.color}22`,
-                    border:`1px solid ${mood.color}40`,
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                    marginBottom:12,flexShrink:0,
-                    boxShadow:`0 4px 14px ${mood.color}25`,
-                  }}>
-                    <MoodIcon mood={mood.label} size={22} color={mood.color}/>
-                  </div>
-
-                  {/* Label — NOT italic, bold, matches reference */}
+                {/* Text */}
+                <div style={{position:'relative',zIndex:1,flex:1}}>
                   <div style={{
                     fontSize:16,fontWeight:700,
-                    color:'#ffffff',
-                    fontFamily:"'DM Sans',sans-serif",
-                    fontStyle:'normal',
-                    marginBottom:6,
-                    lineHeight:1.2,
+                    color: highlight ? '#fff' : 'rgba(255,255,255,0.8)',
+                    fontFamily:"'Playfair Display',serif",
+                    fontStyle:'italic',
+                    marginBottom:5,
+                    transition:'color 0.2s ease',
                   }}>
                     {mood.label}
                   </div>
-
-                  {/* Description */}
                   <div style={{
                     fontSize:11,
-                    color:'rgba(255,255,255,0.45)',
+                    color: highlight ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.25)',
                     lineHeight:1.45,
-                    flex:1,
+                    transition:'color 0.2s ease',
                   }}>
                     {mood.desc}
                   </div>
+                </div>
 
-                  {/* Arrow */}
-                  <div style={{
-                    position:'absolute',right:12,bottom:12,
-                    width:28,height:28,borderRadius:'50%',
-                    border:`1px solid ${isActive ? mood.color+'66' : 'rgba(255,255,255,0.12)'}`,
-                    background:isActive?`${mood.color}18`:'rgba(0,0,0,0.2)',
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                    backdropFilter:'blur(4px)',
-                    transition:'all 0.2s ease',
-                  }}>
-                    {isLoadingThis
-                      ? <div style={{width:10,height:10,border:`1.5px solid ${mood.color}44`,borderTop:`1.5px solid ${mood.color}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
-                      : <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <path d="M2 5h6M6 2.5l2.5 2.5L6 7.5" stroke={isActive?mood.color:'rgba(255,255,255,0.45)'} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    }
-                  </div>
+                {/* Arrow */}
+                <div style={{
+                  position:'absolute',right:12,bottom:12,
+                  width:28,height:28,borderRadius:'50%',
+                  border:`1px solid ${highlight ? mood.color+'55' : 'rgba(255,255,255,0.1)'}`,
+                  background: highlight ? mood.color+'18' : 'transparent',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  transition:'all 0.2s ease',
+                }}>
+                  {isLoadingThis
+                    ? <div style={{width:10,height:10,border:`1.5px solid ${mood.color}44`,borderTop:`1.5px solid ${mood.color}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
+                    : <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5h6M6 2.5l2.5 2.5L6 7.5" stroke={highlight?mood.color:'rgba(255,255,255,0.35)'} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                  }
                 </div>
 
                 {/* Bottom accent bar */}
                 <div style={{
-                  position:'absolute',bottom:0,left:'15%',right:'15%',
+                  position:'absolute',bottom:0,left:'18%',right:'18%',
                   height:2,borderRadius:1,
-                  background:`linear-gradient(to right,transparent,${mood.color},transparent)`,
-                  opacity:isActive?0.8:0.25,
+                  background:`linear-gradient(to right, transparent, ${mood.color}, transparent)`,
+                  opacity: isActive ? 0.7 : isHovered ? 0.4 : 0.15,
                   transition:'opacity 0.2s ease',
                 }}/>
-
-                {/* Active top border glow */}
-                {isActive&&<div style={{position:'absolute',top:0,left:'10%',right:'10%',height:2,borderRadius:1,background:`linear-gradient(to right,transparent,${mood.color},transparent)`,opacity:0.7}}/>}
               </button>
             );
           })}
@@ -736,45 +631,33 @@ function MoodScreen({ onClose, onMoodSelect, accent }) {
           background:'rgba(255,255,255,0.025)',
           backdropFilter:'blur(12px)',
           border:'1px solid rgba(255,255,255,0.06)',
-          borderRadius:20,padding:'22px 16px',
+          borderRadius:20,
+          padding:'22px 16px',
         }}>
-          <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,marginBottom:18,textTransform:'uppercase',opacity:0.85}}>How it works</div>
+          <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,marginBottom:18,textTransform:'uppercase',opacity:0.8}}>How it works</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
             {[
               {
-                icon:(
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round">
-                    <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-                  </svg>
-                ),
+                icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
                 title:'Pick your mood',
                 desc:'Choose how you want to feel.',
               },
               {
-                icon:(
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z"/>
-                  </svg>
-                ),
+                icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z"/></svg>,
                 title:'We do the magic',
-                desc:'Films curated to your vibe.',
+                desc:'Curated films matched to your vibe.',
               },
               {
-                icon:(
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M10 8l6 4-6 4V8z" fill={accent} fillOpacity="0.3"/>
-                  </svg>
-                ),
+                icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4V8z" fill={accent} fillOpacity="0.3"/></svg>,
                 title:'Press play & enjoy',
-                desc:'The perfect scene awaits.',
+                desc:'The perfect scene is waiting.',
               },
             ].map((s,i)=>(
               <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,textAlign:'center'}}>
                 <div style={{width:40,height:40,borderRadius:'50%',background:`${accent}12`,border:`1px solid ${accent}28`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                   {s.icon}
                 </div>
-                <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.8)',lineHeight:1.3,fontFamily:"'DM Sans',sans-serif"}}>{s.title}</div>
+                <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.8)',lineHeight:1.3}}>{s.title}</div>
                 <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',lineHeight:1.4}}>{s.desc}</div>
               </div>
             ))}
@@ -1054,7 +937,7 @@ function SimilarSheet({ movie, onClose, accent, onSelect }) {
     if(!movie)return;
     setLoading(true);
     const genreIds=(movie.genreIds||movie.genre_ids||[]).join(',');
-    fetch(`/api/movies?similar=\( {movie.id}&similarType= \){movie.mediaType||'movie'}&similarGenres=${genreIds}`)
+    fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${genreIds}`)
       .then(r=>r.json()).then(d=>{setItems(d.movies||[]);setLoading(false);}).catch(()=>setLoading(false));
   },[movie]);
   return (
@@ -1435,7 +1318,7 @@ export default function CineScroll() {
           </div>
         ):(
           movies.map((m,i)=>(
-            <div key={`\( {m.id}- \){i}`} style={{width:'100%',height:'100dvh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
+            <div key={`${m.id}-${i}`} style={{width:'100%',height:'100dvh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
               <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} onTrailer={setTrailerMovie}/>
             </div>
           ))
