@@ -214,34 +214,50 @@ function StreamingBadges({movieId,mediaType}){
 }
 
 // ─── WORLD CLASS INLINE PLAYER ────────────────────────────────────────────────
-function InlinePlayer({ movie, onClose, accent }) {
+function InlinePlayer({ movie, onClose, accent, onSave, isSaved }) {
   const [trailerKey, setTrailerKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [activeTab, setActiveTab] = useState('about'); // about, comments
+  const [activeTab, setActiveTab] = useState('about');
+  const [movieDetails, setMovieDetails] = useState(null);
+  const [cast, setCast] = useState([]);
+  const [userRating, setUserRating] = useState(0);
+  const [hoverStar, setHoverStar] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState([
-    { id:1, user:'filmcritic99', avatar:'F', text:'The opening sequence is stunning.', time:'2:34', likes:42, liked:false },
+    { id:1, user:'filmcritic99', avatar:'F', text:'The opening sequence is stunning — one continuous take.', time:'0:45', likes:42, liked:false },
     { id:2, user:'cinebuff', avatar:'C', text:'That score at 1:15 gives me chills every time', time:'1:15', likes:31, liked:false },
-    { id:3, user:'movieholic', avatar:'M', text:'The cinematography here is world class', time:'0:45', likes:18, liked:false },
+    { id:3, user:'movieholic', avatar:'M', text:'The cinematography here is world class. Lubezki at his best.', time:'2:30', likes:18, liked:false },
   ]);
   const [commentInput, setCommentInput] = useState('');
   const [timestampMode, setTimestampMode] = useState(false);
   const [manualTimestamp, setManualTimestamp] = useState('');
   const { isSignedIn, user } = useUser();
   const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
-  const panelRef = useRef(null);
 
   useEffect(() => {
     if (!movie || !TMDB_KEY) { setNotFound(true); setLoading(false); return; }
-    fetch(`https://api.themoviedb.org/3/${movie.mediaType||'movie'}/${movie.id}/videos?api_key=${TMDB_KEY}`)
-      .then(r => r.json())
-      .then(data => {
-        const videos = data.results || [];
-        const trailer = videos.find(v=>v.type==='Trailer'&&v.site==='YouTube') || videos.find(v=>v.type==='Teaser'&&v.site==='YouTube') || videos.find(v=>v.site==='YouTube');
-        if (trailer) setTrailerKey(trailer.key); else setNotFound(true);
-        setLoading(false);
-      })
-      .catch(() => { setNotFound(true); setLoading(false); });
+    const mediaType = movie.mediaType || 'movie';
+
+    // Fetch trailer + full details + credits in parallel
+    Promise.all([
+      fetch(`https://api.themoviedb.org/3/${mediaType}/${movie.id}/videos?api_key=${TMDB_KEY}`).then(r=>r.json()),
+      fetch(`https://api.themoviedb.org/3/${mediaType}/${movie.id}?api_key=${TMDB_KEY}&append_to_response=credits,release_dates,content_ratings`).then(r=>r.json()),
+    ]).then(([videoData, detailData]) => {
+      // Trailer
+      const videos = videoData.results || [];
+      const trailer = videos.find(v=>v.type==='Trailer'&&v.site==='YouTube') || videos.find(v=>v.type==='Teaser'&&v.site==='YouTube') || videos.find(v=>v.site==='YouTube');
+      if (trailer) setTrailerKey(trailer.key); else setNotFound(true);
+
+      // Details
+      setMovieDetails(detailData);
+
+      // Cast — top 10
+      const credits = detailData.credits || {};
+      setCast((credits.cast || []).slice(0, 10));
+
+      setLoading(false);
+    }).catch(() => { setNotFound(true); setLoading(false); });
   }, [movie, TMDB_KEY]);
 
   const postComment = () => {
@@ -251,51 +267,56 @@ function InlinePlayer({ movie, onClose, accent }) {
       id: Date.now(),
       user: user?.username || user?.firstName || 'you',
       avatar: (user?.firstName || user?.username || 'Y')[0].toUpperCase(),
-      text: commentInput,
-      time: ts,
-      likes: 0,
-      liked: false,
+      text: commentInput, time: ts, likes: 0, liked: false,
     }, ...p]);
-    setCommentInput('');
-    setManualTimestamp('');
+    setCommentInput(''); setManualTimestamp('');
   };
 
   const toggleLike = id => setComments(p => p.map(c => c.id===id ? {...c, liked:!c.liked, likes:c.liked?c.likes-1:c.likes+1} : c));
 
+  // Parse details
+  const runtime = movieDetails?.runtime;
+  const runtimeStr = runtime ? `${Math.floor(runtime/60)}h ${runtime%60}m` : movieDetails?.episode_run_time?.[0] ? `${movieDetails.episode_run_time[0]}m` : null;
+  const director = (movieDetails?.credits?.crew || []).find(c => c.job === 'Director');
+  const language = movieDetails?.spoken_languages?.[0]?.english_name || movieDetails?.original_language?.toUpperCase();
+  const releaseDate = movieDetails?.release_date || movieDetails?.first_air_date;
+  const releaseDateFormatted = releaseDate ? new Date(releaseDate).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : null;
+  const voteCount = movieDetails?.vote_count;
+  const voteCountStr = voteCount >= 1000 ? `${(voteCount/1000).toFixed(0)}K` : String(voteCount || 0);
+  const overview = movieDetails?.overview || movie?.overview || '';
+  const shortOverview = overview.length > 180 ? overview.slice(0, 180) + '…' : overview;
+
+  // Certification
+  const cert = (() => {
+    if (!movieDetails) return movie?.certification || '';
+    if (movie.mediaType === 'tv') {
+      const cr = movieDetails.content_ratings?.results || [];
+      return cr.find(r=>r.iso_3166_1==='US')?.rating || '';
+    } else {
+      const rd = movieDetails.release_dates?.results || [];
+      const us = rd.find(r=>r.iso_3166_1==='US');
+      return us?.release_dates?.find(d=>d.certification)?.certification || movie?.certification || '';
+    }
+  })();
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 90,
-      background: '#07070F',
+      background: '#08080F',
       display: 'flex', flexDirection: 'column',
       animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)',
+      overflowY: 'auto', WebkitOverflowScrolling: 'touch',
     }}>
       <style>{`
         @keyframes playerSlideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
         div::-webkit-scrollbar { display:none; }
+        .cast-scroll::-webkit-scrollbar { display:none; }
       `}</style>
 
-      {/* ── Header ── */}
-      <div style={{display:'flex',alignItems:'center',gap:12,padding:'52px 16px 12px',flexShrink:0,background:'linear-gradient(to bottom,rgba(7,7,15,0.95),rgba(7,7,15,0.8))'}}>
-        <button onClick={onClose} style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        </button>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title}</div>
-          <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
-            <span style={{fontSize:11,color:'rgba(255,255,255,0.4)'}}>{movie?.year}</span>
-            {movie?.certification && <CertBadge cert={movie.certification}/>}
-            {(movie?.genre||[]).slice(0,2).map(g=><span key={g} style={{fontSize:10,color:accent,fontWeight:600}}>{g}</span>).reduce((prev,curr,i)=>i===0?[curr]:[prev,<span key={i} style={{color:'rgba(255,255,255,0.2)',fontSize:10}}> · </span>,curr],[])}
-          </div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:4,background:`${accent}18`,border:`1px solid ${accent}33`,borderRadius:8,padding:'4px 8px'}}>
-          <SvgIcon name="star" size={10} color={accent} filled/>
-          <span style={{fontSize:12,fontWeight:700,color:accent}}>{movie?.rating}</span>
-        </div>
-      </div>
-
       {/* ── Video Player ── */}
-      <div style={{flexShrink:0,background:'#000',position:'relative'}}>
+      <div style={{position:'relative',background:'#000',flexShrink:0}}>
         {loading && (
           <div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}>
             <div style={{width:32,height:32,border:`3px solid rgba(255,255,255,0.1)`,borderTop:`3px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
@@ -303,7 +324,7 @@ function InlinePlayer({ movie, onClose, accent }) {
           </div>
         )}
         {!loading && notFound && (
-          <div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10}}>
+          <div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
             <div style={{fontSize:32}}>🎬</div>
             <div style={{fontSize:14,color:'rgba(255,255,255,0.4)'}}>No trailer available</div>
           </div>
@@ -311,7 +332,7 @@ function InlinePlayer({ movie, onClose, accent }) {
         {!loading && trailerKey && (
           <div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}>
             <iframe
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}}
@@ -319,103 +340,217 @@ function InlinePlayer({ movie, onClose, accent }) {
             />
           </div>
         )}
+
+        {/* Back button overlay */}
+        <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:10,width:34,height:34,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+      </div>
+
+      {/* ── Title + meta ── */}
+      <div style={{padding:'16px 16px 0',flexShrink:0}}>
+        <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:'clamp(20px,5vw,28px)',fontWeight:900,color:'#fff',margin:'0 0 8px',lineHeight:1.15,letterSpacing:-0.5}}>
+          {movie?.title}
+        </h1>
+        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+          <span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>{movie?.year}</span>
+          {cert && <CertBadge cert={cert}/>}
+          {(movie?.genre||[]).map((g,i)=>(
+            <span key={g} style={{fontSize:13,color:accent,fontWeight:500}}>
+              {i > 0 && <span style={{color:'rgba(255,255,255,0.2)',marginRight:4}}>·</span>}
+              {g}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0,background:'rgba(7,7,15,0.95)'}}>
-        {[['about','About'],['comments',`Comments (${comments.length})`]].map(([tab,label])=>(
-          <button key={tab} onClick={()=>setActiveTab(tab)} style={{flex:1,background:'none',border:'none',cursor:'pointer',padding:'12px 0',fontSize:13,fontWeight:activeTab===tab?700:400,color:activeTab===tab?accent:'rgba(255,255,255,0.35)',borderBottom:`2px solid ${activeTab===tab?accent:'transparent'}`,fontFamily:'inherit',transition:'all 0.2s ease'}}>
+      <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.07)',marginTop:14,flexShrink:0}}>
+        {[['about','About'],[`comments`,`Comments (${comments.length})`]].map(([tab,label])=>(
+          <button key={tab} onClick={()=>setActiveTab(tab)} style={{flex:1,background:'none',border:'none',cursor:'pointer',padding:'10px 0 12px',fontSize:14,fontWeight:activeTab===tab?700:400,color:activeTab===tab?accent:'rgba(255,255,255,0.35)',borderBottom:`2px solid ${activeTab===tab?accent:'transparent'}`,fontFamily:'inherit',transition:'all 0.2s ease'}}>
             {label}
           </button>
         ))}
       </div>
 
-      {/* ── Scrollable Content ── */}
-      <div ref={panelRef} style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',background:'rgba(7,7,15,0.95)'}}>
+      {/* ── About Tab ── */}
+      {activeTab==='about'&&(
+        <div style={{padding:'16px',animation:'fadeIn 0.2s ease'}}>
 
-        {/* About tab */}
-        {activeTab==='about'&&(
-          <div style={{padding:'16px'}}>
-            {/* Streaming */}
-            <StreamingBadges movieId={movie?.id} mediaType={movie?.mediaType}/>
-
-            {/* Overview */}
-            <p style={{fontSize:14,color:'rgba(255,255,255,0.65)',lineHeight:1.7,margin:'0 0 16px'}}>{movie?.overview}</p>
-
-            {/* Meta pills */}
-            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
-              {movie?.certification&&<CertBadge cert={movie.certification}/>}
-              {(movie?.genre||[]).map(g=><span key={g} style={{fontSize:10,color:accent,border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontWeight:600}}>{g}</span>)}
-              {movie?.isTV&&<span style={{fontSize:10,color:'#7BC8FF',border:'1px solid #7BC8FF44',borderRadius:20,padding:'3px 10px',fontWeight:600}}>TV Series</span>}
+          {/* Poster + description */}
+          <div style={{display:'flex',gap:14,marginBottom:16}}>
+            {/* Poster */}
+            <div style={{width:110,flexShrink:0,borderRadius:12,overflow:'hidden',aspectRatio:'2/3',background:movie?.gradient||'rgba(255,255,255,0.05)'}}>
+              {movie?.poster && <img src={movie.poster} alt={movie.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
             </div>
+            {/* Description */}
+            <div style={{flex:1}}>
+              <p style={{fontSize:14,color:'rgba(255,255,255,0.7)',lineHeight:1.65,margin:'0 0 8px'}}>
+                {expanded ? overview : shortOverview}
+              </p>
+              {overview.length > 180 && (
+                <button onClick={()=>setExpanded(p=>!p)} style={{background:'none',border:'none',cursor:'pointer',color:accent,fontSize:13,fontWeight:600,padding:0,fontFamily:'inherit'}}>
+                  {expanded ? 'Show less' : 'Read more'}
+                </button>
+              )}
 
-            {/* Stats */}
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-              <div style={{background:'rgba(255,255,255,0.04)',borderRadius:12,padding:'12px'}}>
-                <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',letterSpacing:1,marginBottom:4}}>TMDB RATING</div>
-                <div style={{fontSize:22,fontWeight:800,color:accent,fontFamily:"'Playfair Display',serif"}}>{movie?.rating}<span style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>/10</span></div>
-              </div>
-              <div style={{background:'rgba(255,255,255,0.04)',borderRadius:12,padding:'12px'}}>
-                <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',letterSpacing:1,marginBottom:4}}>VOTES</div>
-                <div style={{fontSize:22,fontWeight:800,color:'rgba(255,255,255,0.7)',fontFamily:"'Playfair Display',serif"}}>{movie?.votes}</div>
+              {/* Cert + genres as pills */}
+              <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:10}}>
+                {cert && <CertBadge cert={cert}/>}
+                {(movie?.genre||[]).map(g=>(
+                  <span key={g} style={{fontSize:10,color:'rgba(255,255,255,0.5)',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,padding:'2px 8px'}}>{g}</span>
+                ))}
               </div>
             </div>
           </div>
-        )}
 
-        {/* Comments tab */}
-        {activeTab==='comments'&&(
-          <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
-            <div style={{flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:12,overflowY:'auto'}}>
-              {comments.map(c=>(
-                <div key={c.id} style={{display:'flex',gap:10}}>
-                  <div style={{width:32,height:32,borderRadius:'50%',background:`${accent}20`,border:`1px solid ${accent}40`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:accent,flexShrink:0}}>{c.avatar}</div>
-                  <div style={{flex:1}}>
-                    <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
-                      <span style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>@{c.user}</span>
-                      {c.time&&(
-                        <span style={{fontSize:10,color:accent,background:`${accent}18`,border:`1px solid ${accent}33`,borderRadius:10,padding:'1px 7px',fontWeight:700,display:'flex',alignItems:'center',gap:3}}>
-                          <SvgIcon name="clock" size={9} color={accent}/>
-                          {c.time}
-                        </span>
-                      )}
-                    </div>
-                    <p style={{fontSize:13,color:'rgba(255,255,255,0.6)',lineHeight:1.5,margin:'0 0 6px'}}>{c.text}</p>
-                    <button onClick={()=>toggleLike(c.id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
-                      <SvgIcon name="heart" size={12} color={c.liked?'#FF6B8A':'rgba(255,255,255,0.2)'} filled={c.liked}/>
-                      <span style={{fontSize:11,color:c.liked?'#FF6B8A':'rgba(255,255,255,0.25)'}}>{c.likes}</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+          {/* Rating + User rating */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+            <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'14px'}}>
+              <div style={{fontSize:10,letterSpacing:1.5,color:'rgba(255,255,255,0.3)',fontWeight:700,marginBottom:8}}>TMDB RATING</div>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                <SvgIcon name="star" size={18} color={accent} filled/>
+                <span style={{fontSize:24,fontWeight:800,color:'#fff',fontFamily:"'Playfair Display',serif"}}>{movie?.rating}</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>/10</span>
+              </div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>{voteCountStr} votes</div>
+            </div>
+            <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:14,padding:'14px'}}>
+              <div style={{fontSize:10,letterSpacing:1.5,color:'rgba(255,255,255,0.3)',fontWeight:700,marginBottom:8}}>YOUR RATING</div>
+              <div style={{display:'flex',gap:4,marginBottom:4}}>
+                {[1,2,3,4,5].map(s=>(
+                  <button key={s} onMouseEnter={()=>setHoverStar(s)} onMouseLeave={()=>setHoverStar(0)} onClick={()=>setUserRating(s)} style={{background:'none',border:'none',cursor:'pointer',padding:0,transition:'transform 0.1s ease',transform:hoverStar===s?'scale(1.2)':'scale(1)'}}>
+                    <SvgIcon name="star" size={18} color={s<=(hoverStar||userRating)?accent:'rgba(255,255,255,0.2)'} filled={s<=(hoverStar||userRating)}/>
+                  </button>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>{userRating > 0 ? `${userRating}/5 stars` : 'Rate this movie'}</div>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* ── Comment Input (only on comments tab) ── */}
-      {activeTab==='comments'&&(
-        <div style={{flexShrink:0,background:'rgba(7,7,15,0.98)',borderTop:'1px solid rgba(255,255,255,0.06)',padding:'10px 16px 32px'}}>
-          {/* Timestamp toggle */}
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-            <button onClick={()=>setTimestampMode(p=>!p)} style={{display:'flex',alignItems:'center',gap:5,background:timestampMode?`${accent}18`:'rgba(255,255,255,0.04)',border:`1px solid ${timestampMode?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'4px 10px',cursor:'pointer',fontFamily:'inherit',fontSize:11,color:timestampMode?accent:'rgba(255,255,255,0.4)',fontWeight:600}}>
-              <SvgIcon name="clock" size={11} color={timestampMode?accent:'rgba(255,255,255,0.4)'}/>
-              Timestamp
+          {/* Add to Watchlist */}
+          {onSave && (
+            <button onClick={()=>onSave(movie)} style={{width:'100%',background:isSaved?`${accent}18`:'rgba(255,255,255,0.05)',border:`1px solid ${isSaved?accent+'55':'rgba(255,255,255,0.1)'}`,borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',marginBottom:16,transition:'all 0.2s ease'}}>
+              <SvgIcon name={isSaved?'check':'plus'} size={17} color={isSaved?accent:'rgba(255,255,255,0.7)'}/>
+              <span style={{fontSize:14,fontWeight:600,color:isSaved?accent:'rgba(255,255,255,0.7)'}}>{isSaved ? 'Saved to Watchlist' : 'Add to Watchlist'}</span>
             </button>
-            {timestampMode&&(
-              <input value={manualTimestamp} onChange={e=>setManualTimestamp(e.target.value)} placeholder="e.g. 1:23" style={{background:'rgba(255,255,255,0.06)',border:`1px solid ${accent}44`,borderRadius:10,padding:'4px 10px',color:accent,fontSize:12,outline:'none',fontFamily:'inherit',width:70}}/>
+          )}
+
+          {/* Streaming */}
+          <StreamingBadges movieId={movie?.id} mediaType={movie?.mediaType}/>
+
+          {/* Metadata grid */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,background:'rgba(255,255,255,0.05)',borderRadius:14,overflow:'hidden',marginBottom:20,marginTop:8}}>
+            {[
+              {
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="7" width="4" height="10"/><path d="M6 7l4-4 4 4M14 7v10M18 7l2 2v6l-2 2"/></svg>,
+                label:'DIRECTOR',
+                value: director?.name || '—',
+              },
+              {
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+                label:'RELEASE DATE',
+                value: releaseDateFormatted || '—',
+              },
+              {
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>,
+                label:'RUNTIME',
+                value: runtimeStr || '—',
+              },
+              {
+                icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>,
+                label:'LANGUAGE',
+                value: language || '—',
+              },
+            ].map((m,i)=>(
+              <div key={i} style={{background:'rgba(8,8,15,0.98)',padding:'14px 14px',display:'flex',alignItems:'center',gap:12,borderRight:i%2===0?'1px solid rgba(255,255,255,0.05)':'none',borderBottom:i<2?'1px solid rgba(255,255,255,0.05)':'none'}}>
+                <div style={{flexShrink:0}}>{m.icon}</div>
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.25)',fontWeight:700,marginBottom:3}}>{m.label}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.8)',lineHeight:1.3}}>{m.value}</div>
+                </div>
+                <svg style={{marginLeft:'auto',flexShrink:0}} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5"><path d="M9 18l6-6-6-6"/></svg>
+              </div>
+            ))}
+          </div>
+
+          {/* Cast */}
+          {cast.length > 0 && (
+            <div style={{marginBottom:24}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                <span style={{fontSize:18,fontWeight:800,color:'#fff',fontFamily:"'Playfair Display',serif"}}>Cast</span>
+                <span style={{fontSize:13,color:accent,fontWeight:600,cursor:'pointer'}}>See all</span>
+              </div>
+              <div style={{display:'flex',gap:16,overflowX:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',paddingBottom:4}}>
+                {cast.map(person=>(
+                  <div key={person.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,flexShrink:0,width:68}}>
+                    <div style={{width:62,height:62,borderRadius:'50%',overflow:'hidden',background:'rgba(255,255,255,0.08)',border:'2px solid rgba(255,255,255,0.08)',flexShrink:0}}>
+                      {person.profile_path
+                        ? <img src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} alt={person.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                        : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,color:'rgba(255,255,255,0.3)'}}>{person.name[0]}</div>
+                      }
+                    </div>
+                    <div style={{textAlign:'center'}}>
+                      <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.8)',lineHeight:1.3,wordBreak:'break-word'}}>{person.name}</div>
+                      <div style={{fontSize:9,color:'rgba(255,255,255,0.3)',lineHeight:1.3,marginTop:2,wordBreak:'break-word'}}>{person.character}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Comments Tab ── */}
+      {activeTab==='comments'&&(
+        <div style={{display:'flex',flexDirection:'column',animation:'fadeIn 0.2s ease'}}>
+          <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:14}}>
+            {comments.map(c=>(
+              <div key={c.id} style={{display:'flex',gap:10}}>
+                <div style={{width:34,height:34,borderRadius:'50%',background:`${accent}20`,border:`1px solid ${accent}40`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:accent,flexShrink:0}}>{c.avatar}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.8)'}}>@{c.user}</span>
+                    {c.time&&(
+                      <span style={{fontSize:10,color:accent,background:`${accent}18`,border:`1px solid ${accent}33`,borderRadius:10,padding:'1px 8px',fontWeight:700,display:'inline-flex',alignItems:'center',gap:3}}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+                        {c.time}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{fontSize:13.5,color:'rgba(255,255,255,0.65)',lineHeight:1.55,margin:'0 0 7px'}}>{c.text}</p>
+                  <button onClick={()=>toggleLike(c.id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
+                    <SvgIcon name="heart" size={13} color={c.liked?'#FF6B8A':'rgba(255,255,255,0.2)'} filled={c.liked}/>
+                    <span style={{fontSize:11,color:c.liked?'#FF6B8A':'rgba(255,255,255,0.25)',fontWeight:600}}>{c.likes}</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Comment input */}
+          <div style={{padding:'12px 16px 32px',borderTop:'1px solid rgba(255,255,255,0.06)',marginTop:8}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+              <button onClick={()=>setTimestampMode(p=>!p)} style={{display:'flex',alignItems:'center',gap:5,background:timestampMode?`${accent}18`:'rgba(255,255,255,0.04)',border:`1px solid ${timestampMode?accent+'44':'rgba(255,255,255,0.08)'}`,borderRadius:20,padding:'5px 12px',cursor:'pointer',fontFamily:'inherit',fontSize:11,color:timestampMode?accent:'rgba(255,255,255,0.4)',fontWeight:600,transition:'all 0.2s ease'}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+                Timestamp
+              </button>
+              {timestampMode&&(
+                <input value={manualTimestamp} onChange={e=>setManualTimestamp(e.target.value)} placeholder="e.g. 1:23" style={{background:'rgba(255,255,255,0.06)',border:`1px solid ${accent}44`,borderRadius:10,padding:'5px 10px',color:accent,fontSize:12,outline:'none',fontFamily:'inherit',width:72}}/>
+              )}
+            </div>
+            {isSignedIn?(
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <input value={commentInput} onChange={e=>setCommentInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&postComment()} placeholder="Comment on this trailer..." style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:22,padding:'12px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+                <button onClick={postComment} style={{background:accent,border:'none',borderRadius:'50%',width:42,height:42,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <SvgIcon name="send" size={15} color="#000"/>
+                </button>
+              </div>
+            ):(
+              <div style={{textAlign:'center',padding:'10px 0',fontSize:13,color:'rgba(255,255,255,0.3)'}}>Sign in to comment</div>
             )}
           </div>
-          {isSignedIn?(
-            <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              <input value={commentInput} onChange={e=>setCommentInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&postComment()} placeholder="Comment on this trailer..." style={{flex:1,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
-              <button onClick={postComment} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <SvgIcon name="send" size={14} color="#000"/>
-              </button>
-            </div>
-          ):(
-            <div style={{textAlign:'center',padding:'8px 0',fontSize:13,color:'rgba(255,255,255,0.3)'}}>Sign in to comment</div>
-          )}
         </div>
       )}
     </div>
