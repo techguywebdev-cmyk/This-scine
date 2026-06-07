@@ -676,7 +676,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
 
   return(
     <>
-    {playerMovie&&<InlinePlayer movie={playerMovie} onClose={()=>setPlayerMovie(null)} accent={playerMovie.accent||accent}/>}
+{playerMovie&&<InlinePlayer movie={playerMovie} onClose={()=>setPlayerMovie(null)} accent={playerMovie.accent||accent}/>}
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(16px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       {toast&&<Toast message={toast} accent={accent}/>}
       <div onClick={e=>e.stopPropagation()} style={{width:'100%',height:'92%',background:'rgba(8,8,16,0.99)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.35s cubic-bezier(0.22,1,0.36,1)'}}>
