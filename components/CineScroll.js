@@ -70,8 +70,10 @@ const GENRE_OPTIONS = [
 ];
 
 const FEED_MOODS = [
-  {label:'Trending',icon:'flame'},{label:'Top Rated',icon:'star'},
-  {label:'New',icon:'sparkle'},{label:'Hidden Gems',icon:'gem'},
+  { label:'Trending',    icon:'flame',   desc:"What's hot right now" },
+  { label:'Top Rated',   icon:'star',    desc:'Highest rated picks' },
+  { label:'New',         icon:'sparkle', desc:'Fresh out this week' },
+  { label:'Hidden Gems', icon:'gem',     desc:'Underrated classics' },
 ];
 
 const FEEL_MOODS = [
