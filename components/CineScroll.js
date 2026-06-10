@@ -433,7 +433,9 @@ function InlinePlayer({ movie, onClose, accent, onSave, isSaved }) {
         </div>
       )}
     </div>
-  );// MOOD SCREEN
+  );
+}
+// MOOD SCREEN
 function MoodScreen({onClose,onMoodSelect,accent}){
   const[activeMood,setActiveMood]=useState(null);const[loading,setLoading]=useState(false);const[moodInput,setMoodInput]=useState('');const[showInput,setShowInput]=useState(false);const[timeGreeting,setTimeGreeting]=useState('tonight');
   useEffect(()=>{const h=new Date().getHours();if(h>=5&&h<12)setTimeGreeting('this morning');else if(h>=12&&h<17)setTimeGreeting('this afternoon');else if(h>=17&&h<21)setTimeGreeting('this evening');else setTimeGreeting('tonight');},[]);
@@ -1134,6 +1136,4 @@ export default function CineScroll(){
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-}
-
 }
