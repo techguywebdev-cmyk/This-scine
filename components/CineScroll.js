@@ -772,23 +772,23 @@ function SimilarSheet({movie,onClose,accent,onSelect}){
 }
 
 // DISCOVER / FILTER SHEET
-function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
+          function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
   const [searchQ, setSearchQ] = useState('');
   const [activeQuickFilter, setActiveQuickFilter] = useState(null);
   const [activePlatform, setActivePlatform] = useState(null);
 
   const MOODS_WITH_DESC = [
-    { label:'Trending',    icon:'flame',   desc:"What's hot right now",  color:'#F5A623' },
-    { label:'Top Rated',   icon:'star',    desc:'Highest rated picks',   color:'#FFD700' },
-    { label:'New',         icon:'sparkle', desc:'Fresh out this week',   color:'#B07FEF' },
-    { label:'Hidden Gems', icon:'gem',     desc:'Underrated classics',   color:'#FF6BAE' },
+    { label:'Trending',    icon:'flame',   desc:"What's hot right now",  color:'#F5A623', apiMood:'trending'     },
+    { label:'Top Rated',   icon:'star',    desc:'Highest rated picks',   color:'#FFD700', apiMood:'top rated'    },
+    { label:'New',         icon:'sparkle', desc:'Fresh out this week',   color:'#B07FEF', apiMood:'new'          },
+    { label:'Hidden Gems', icon:'gem',     desc:'Underrated classics',   color:'#FF6BAE', apiMood:'hidden gems'  },
   ];
 
   const QUICK_FILTERS = [
-    { label:'Recently Added', icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01"/></svg> },
-    { label:'Coming Soon',    icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg> },
-    { label:'International',  icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg> },
-    { label:'Award Winners',  icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4"/><path d="M17 4h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4"/><path d="M12 14a5 5 0 0 0 5-5V4H7v5a5 5 0 0 0 5 5z"/></svg> },
+    { label:'Recently Added', icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01"/></svg>, apiMood:'trending', apiGenre:'' },
+    { label:'Coming Soon',    icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/><path d="M5.05 5.05l1.41 1.41M17.54 5.05l-1.41 1.41"/></svg>, apiMood:'new', apiGenre:'' },
+    { label:'International',  icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>, apiMood:'trending', apiGenre:'10749' },
+    { label:'Award Winners',  icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4"/><path d="M17 4h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4"/><path d="M12 14a5 5 0 0 0 5-5V4H7v5a5 5 0 0 0 5 5z"/></svg>, apiMood:'top rated', apiGenre:'' },
   ];
 
   const PLATFORMS = [
@@ -801,11 +801,27 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
   ];
 
   const POPULAR = [
-    { title:'Dune: Part Two', poster:'https://image.tmdb.org/t/p/w300/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg' },
-    { title:'The Boys',       poster:'https://image.tmdb.org/t/p/w300/mY7SeH4HFFxW1hiI6cWuwCRKptN.jpg' },
-    { title:'Oppenheimer',    poster:'https://image.tmdb.org/t/p/w300/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg' },
-    { title:'Spider-Man',     poster:'https://image.tmdb.org/t/p/w300/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg' },
+    { title:'Dune: Part Two', poster:'https://image.tmdb.org/t/p/w300/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg', apiMood:'trending', apiGenre:'878' },
+    { title:'The Boys',       poster:'https://image.tmdb.org/t/p/w300/mY7SeH4HFFxW1hiI6cWuwCRKptN.jpg', apiMood:'trending', apiGenre:'28'  },
+    { title:'Oppenheimer',    poster:'https://image.tmdb.org/t/p/w300/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', apiMood:'top rated', apiGenre:'18' },
+    { title:'Spider-Man',     poster:'https://image.tmdb.org/t/p/w300/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg', apiMood:'trending', apiGenre:'28'  },
   ];
+
+  const handleQuickFilter = (qf) => {
+    const isActive = activeQuickFilter === qf.label;
+    setActiveQuickFilter(isActive ? null : qf.label);
+    if (!isActive) {
+      onMood(qf.apiMood === 'trending' ? 'Trending' : qf.apiMood === 'top rated' ? 'Top Rated' : qf.apiMood === 'new' ? 'New' : 'Hidden Gems');
+      onGenre(qf.apiGenre);
+      onClose();
+    }
+  };
+
+  const handlePopular = (p) => {
+    onMood(p.apiMood === 'trending' ? 'Trending' : p.apiMood === 'top rated' ? 'Top Rated' : 'New');
+    onGenre(p.apiGenre);
+    onClose();
+  };
 
   if (!show) return null;
 
@@ -816,38 +832,55 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
         <style>{`@keyframes bfade{from{opacity:0}to{opacity:1}}@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}.disc-mood:active{transform:scale(0.96)!important}div::-webkit-scrollbar{display:none}`}</style>
         <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.12)',margin:'12px auto 0',flexShrink:0}}/>
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',paddingBottom:32}}>
+
           {/* Cinematic header */}
           <div style={{position:'relative',padding:'16px 18px 20px',backgroundImage:'url(https://image.tmdb.org/t/p/w780/rAiYTfKGqDCRIIqo664sY9XMIfl.jpg)',backgroundSize:'cover',backgroundPosition:'center 30%',overflow:'hidden',borderRadius:'20px 20px 0 0'}}>
             <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(13,13,20,0.85) 0%,rgba(13,13,20,0.95) 100%)'}}/>
             <div style={{position:'relative',zIndex:1}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
                 <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:900,fontStyle:'italic',color:'#fff',margin:0}}>Discover</h2>
-                <button onClick={onClose} style={{background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:34,height:34,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="close" size={14} color="rgba(255,255,255,0.7)"/></button>
+                <button onClick={onClose} style={{background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:34,height:34,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <SvgIcon name="close" size={14} color="rgba(255,255,255,0.7)"/>
+                </button>
               </div>
               <div style={{position:'relative'}}>
                 <div style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',zIndex:1}}><SvgIcon name="search" size={16} color="rgba(255,255,255,0.3)"/></div>
-                <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search movies, shows, people..." style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:28,padding:'13px 48px 13px 42px',color:'#fff',fontSize:15,outline:'none',fontFamily:'inherit'}}/>
-                <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)'}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg></div>
+                <input
+                  value={searchQ}
+                  onChange={e => setSearchQ(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && searchQ.trim()) { onClose(); } }}
+                  placeholder="Search movies, shows, people..."
+                  style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:28,padding:'13px 48px 13px 42px',color:'#fff',fontSize:15,outline:'none',fontFamily:'inherit'}}
+                />
+                <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)'}}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
+                </div>
               </div>
             </div>
           </div>
 
           <div style={{padding:'20px 18px 0'}}>
+
             {/* MOOD */}
             <div style={{marginBottom:24}}>
               <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Mood</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                {MOODS_WITH_DESC.map(m=>{
-                  const on=activeMood===m.label;
-                  return(
-                    <button key={m.label} className="disc-mood" onClick={()=>{onMood(m.label);onClose();}} style={{display:'flex',alignItems:'center',gap:12,background:on?'rgba(255,255,255,0.08)':'rgba(255,255,255,0.04)',border:`1px solid ${on?m.color+'55':'rgba(255,255,255,0.07)'}`,borderRadius:14,padding:'14px',cursor:'pointer',fontFamily:'inherit',textAlign:'left',transition:'all 0.18s ease',boxShadow:on?`0 0 16px ${m.color}20`:'none',position:'relative',overflow:'hidden'}}>
-                      {on&&<div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 20% 50%,${m.color}12,transparent 65%)`,pointerEvents:'none'}}/>}
+                {MOODS_WITH_DESC.map(m => {
+                  const on = activeMood === m.label;
+                  return (
+                    <button
+                      key={m.label}
+                      className="disc-mood"
+                      onClick={() => { onMood(m.label); onClose(); }}
+                      style={{display:'flex',alignItems:'center',gap:12,background:on?'rgba(255,255,255,0.08)':'rgba(255,255,255,0.04)',border:`1px solid ${on?m.color+'55':'rgba(255,255,255,0.07)'}`,borderRadius:14,padding:'14px',cursor:'pointer',fontFamily:'inherit',textAlign:'left',transition:'all 0.18s ease',boxShadow:on?`0 0 16px ${m.color}20`:'none',position:'relative',overflow:'hidden'}}
+                    >
+                      {on && <div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 20% 50%,${m.color}12,transparent 65%)`,pointerEvents:'none'}}/>}
                       <div style={{width:38,height:38,borderRadius:10,flexShrink:0,background:on?`${m.color}20`:'rgba(255,255,255,0.06)',border:`1px solid ${on?m.color+'40':'rgba(255,255,255,0.08)'}`,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.18s ease'}}>
-                        <SvgIcon name={m.icon} size={16} color={on?m.color:'rgba(255,255,255,0.5)'} filled={on}/>
+                        <SvgIcon name={m.icon} size={16} color={on ? m.color : 'rgba(255,255,255,0.5)'} filled={on}/>
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:14,fontWeight:700,color:on?'#fff':'rgba(255,255,255,0.8)',marginBottom:2,lineHeight:1.2}}>{m.label}</div>
-                        <div style={{fontSize:11,color:'rgba(255,255,255,0.3)',lineHeight:1.3}}>{m.desc}</div>
+                        <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',lineHeight:1.3}}>{m.desc}</div>
                       </div>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={on?m.color:'rgba(255,255,255,0.2)'} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
@@ -855,6 +888,89 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
                 })}
               </div>
             </div>
+
+            {/* GENRE */}
+            <div style={{marginBottom:24}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,textTransform:'uppercase'}}>Genre</div>
+                <span style={{fontSize:13,color:accent,fontWeight:600,cursor:'pointer'}}>See all</span>
+              </div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {GENRE_OPTIONS.map(g => {
+                  const on = activeGenre === g.id;
+                  return (
+                    <button key={g.id} onClick={() => { onGenre(g.id); onClose(); }}
+                      style={{background:on?accent:'rgba(255,255,255,0.05)',border:`1px solid ${on?accent:'rgba(255,255,255,0.08)'}`,borderRadius:24,padding:'8px 16px',cursor:'pointer',fontFamily:'inherit',fontSize:13,color:on?'#0A0A10':'rgba(255,255,255,0.6)',fontWeight:on?700:400,transition:'all 0.18s ease'}}>
+                      {g.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* QUICK FILTERS */}
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Quick Filters</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
+                {QUICK_FILTERS.map(qf => {
+                  const on = activeQuickFilter === qf.label;
+                  return (
+                    <button key={qf.label} onClick={() => handleQuickFilter(qf)}
+                      style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,background:on?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${on?accent+'44':'rgba(255,255,255,0.07)'}`,borderRadius:14,padding:'14px 6px',cursor:'pointer',fontFamily:'inherit',transition:'all 0.18s ease'}}>
+                      <div style={{color:on?accent:'rgba(255,255,255,0.4)',transition:'color 0.18s ease'}}>{qf.icon}</div>
+                      <span style={{fontSize:10,color:on?accent:'rgba(255,255,255,0.45)',fontWeight:600,textAlign:'center',lineHeight:1.3}}>{qf.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* PLATFORMS */}
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,marginBottom:12,textTransform:'uppercase'}}>Platforms</div>
+              <div style={{display:'flex',gap:10,overflowX:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',paddingBottom:4}}>
+                {PLATFORMS.map(p => {
+                  const on = activePlatform === p.name;
+                  return (
+                    <button key={p.name} onClick={() => { setActivePlatform(on ? null : p.name); if (!on) { onMood('Trending'); onClose(); } }}
+                      style={{flexShrink:0,width:56,height:56,borderRadius:14,background:on?p.bg:'rgba(255,255,255,0.04)',border:`1px solid ${on?p.color+'55':'rgba(255,255,255,0.07)'}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:p.logo.length<=2?18:12,fontWeight:800,color:on?p.color:'rgba(255,255,255,0.4)',fontFamily:'inherit',transition:'all 0.18s ease',boxShadow:on?`0 0 12px ${p.color}30`:'none',letterSpacing:p.logo.length>2?-0.5:0}}>
+                      {p.logo}
+                    </button>
+                  );
+                })}
+                <button style={{flexShrink:0,width:56,height:56,borderRadius:14,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1}}>
+                  <span style={{fontSize:10,color:'rgba(255,255,255,0.3)',letterSpacing:1}}>...</span>
+                  <span style={{fontSize:9,color:'rgba(255,255,255,0.3)',fontWeight:600,fontFamily:'inherit'}}>More</span>
+                </button>
+              </div>
+            </div>
+
+            {/* POPULAR SEARCHES */}
+            <div style={{marginBottom:8}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                <div style={{fontSize:10,letterSpacing:3,color:accent,fontWeight:700,textTransform:'uppercase'}}>Popular Searches</div>
+                <span style={{fontSize:13,color:accent,fontWeight:600,cursor:'pointer'}}>See all</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+                {POPULAR.map((p, i) => (
+                  <button key={i} onClick={() => handlePopular(p)}
+                    style={{position:'relative',height:130,borderRadius:14,overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)',cursor:'pointer',padding:0,background:'rgba(255,255,255,0.04)'}}>
+                    <div style={{position:'absolute',inset:0,backgroundImage:`url(${p.poster})`,backgroundSize:'cover',backgroundPosition:'center',opacity:0.85}}/>
+                    <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.1) 50%,transparent 100%)'}}/>
+                    <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'8px 10px'}}>
+                      <div style={{fontSize:12,fontWeight:800,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',lineHeight:1.2,textShadow:'0 1px 8px rgba(0,0,0,0.8)'}}>{p.title}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
             {/* GENRE */}
             <div style={{marginBottom:24}}>
