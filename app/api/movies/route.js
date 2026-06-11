@@ -171,10 +171,15 @@ export async function GET(request) {
         movieUrls = [`${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${base}&sort_by=vote_average.desc&page=${p1}`,`${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${base}&sort_by=vote_average.desc&page=${p2}`];
         tvUrls = [`${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${base}&sort_by=vote_average.desc&page=${p1}`];
       } else if (mood === 'new') {
-        const year = new Date().getFullYear();
-        movieUrls = [`${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&primary_release_year=${year}&page=${p1}`];
-        tvUrls = [`${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&sort_by=popularity.desc&first_air_date_year=${year}&page=${p1}`];
-      } else if (mood === 'hidden gems') {
+  const year = new Date().getFullYear();
+  movieUrls = [
+    `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}&page=${p1}`,
+    `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&sort_by=popularity.desc&primary_release_year=${year}&page=${p2}`,
+  ];
+  tvUrls = [
+    `${TMDB_BASE}/tv/on_the_air?api_key=${TMDB_KEY}&page=${p1}`,
+    `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&sort_by=popularity.desc&first_air_date_year=${year}&page=${p2}`,
+  ];
         movieUrls = [`${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7.5&vote_count.lte=5000&vote_count.gte=200&sort_by=vote_average.desc&page=${p1}`];
         tvUrls = [`${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&with_genres=${genre}&vote_average.gte=7.5&vote_count.lte=2000&vote_count.gte=100&sort_by=vote_average.desc&page=${p1}`];
       } else {
