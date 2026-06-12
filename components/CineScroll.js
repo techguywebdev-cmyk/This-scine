@@ -1113,6 +1113,300 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
   );
 }
 
+// ─── FRIENDS SCREEN ───────────────────────────────────────────────────────────
+function FriendsScreen({ onClose, accent, onWatchTrailer }) {
+  const { isSignedIn, user } = useUser();
+  const [tab, setTab] = useState('feed'); // feed, friends, discover
+  const [feedItems, setFeedItems] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchRes, setSearchRes] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+  const [toast, setToast] = useState(null);
+  const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    // Load feed
+    fetch('/api/activity?type=feed')
+      .then(r => r.json()).then(d => { setFeedItems(d.items || []); setLoadingFeed(false); })
+      .catch(() => setLoadingFeed(false));
+    // Load friends
+    fetch('/api/follows?type=following')
+      .then(r => r.json()).then(d => { setFriends(d.users || []); setLoadingFriends(false); })
+      .catch(() => setLoadingFriends(false));
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!searchQ.trim()) { setSearchRes([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/follows?type=search&q=${encodeURIComponent(searchQ)}`);
+        const data = await res.json();
+        setSearchRes(data.users || []);
+      } catch {}
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchQ]);
+
+  const handleFollow = async (targetUser) => {
+    const isFollowing = targetUser.isFollowing;
+    // Optimistic update
+    setSearchRes(p => p.map(u => u.user_id === targetUser.user_id ? { ...u, isFollowing: !isFollowing } : u));
+    if (isFollowing) {
+      setFriends(p => p.filter(f => f.user_id !== targetUser.user_id));
+      await fetch('/api/follows', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: targetUser.user_id }) });
+      showToast('Unfollowed');
+    } else {
+      setFriends(p => [{ ...targetUser, isFollowing: true }, ...p]);
+      await fetch('/api/follows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: targetUser.user_id }) });
+      showToast(`Now following @${targetUser.username}`);
+    }
+  };
+
+  const timeAgo = (ts) => {
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const activityIcon = (type) => {
+    if (type === 'saved') return { icon: '🔖', label: 'saved to watchlist', color: '#7BFF9E' };
+    if (type === 'watched') return { icon: '👁', label: 'marked as watched', color: '#7BC8FF' };
+    if (type === 'reviewed') return { icon: '✍️', label: 'reviewed', color: '#B07FEF' };
+    return { icon: '🎬', label: 'interacted with', color: accent };
+  };
+
+  const EMPTY_FEED = [
+    { icon: '🎬', text: 'Avengers: Endgame', sub: '@filmcritic saved to watchlist', time: '2h ago', color: '#FF4444' },
+    { icon: '👁', text: 'The Dark Knight', sub: '@cinebuff marked as watched', time: '5h ago', color: '#F5A623' },
+    { icon: '✍️', text: 'Interstellar', sub: '@movieholic left a review', time: '1d ago', color: '#B07FEF' },
+    { icon: '🔖', text: 'Parasite', sub: '@reelcritic saved to watchlist', time: '2d ago', color: '#7BFF9E' },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: '#08080F', display: 'flex', flexDirection: 'column', animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
+      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}div::-webkit-scrollbar{display:none}`}</style>
+      {toast && <Toast message={toast} accent={accent} />}
+
+      {/* Header */}
+      <div style={{ padding: '52px 16px 0', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
+        </button>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 900, fontStyle: 'italic', color: '#fff', margin: 0 }}>Friends</h1>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: 0 }}>{friends.length} following</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', padding: '14px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        {[['feed', '📡 Feed'], ['friends', '👥 Friends'], ['discover', '🔍 Discover']].map(([t, label]) => (
+          <button key={t} onClick={() => setTab(t)} style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0 12px', fontFamily: 'inherit', fontSize: 13, fontWeight: tab === t ? 700 : 400, color: tab === t ? accent : 'rgba(255,255,255,0.35)', borderBottom: `2px solid ${tab === t ? accent : 'transparent'}`, transition: 'all 0.2s ease' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+
+        {/* FEED TAB */}
+        {tab === 'feed' && (
+          <div style={{ padding: '16px' }}>
+            {!isSignedIn ? (
+              <div style={{ textAlign: 'center', padding: '48px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                <div style={{ fontSize: 48 }}>👥</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>Sign in to see your friends feed</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Follow friends to see what they are watching</div>
+              </div>
+            ) : loadingFeed ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: 40 }}>
+                <div style={{ width: 24, height: 24, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Loading feed...</span>
+              </div>
+            ) : feedItems.length === 0 ? (
+              <div>
+                {/* Empty state with sample activity */}
+                <div style={{ background: `${accent}10`, border: `1px solid ${accent}30`, borderRadius: 14, padding: '12px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 18 }}>💡</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: accent, marginBottom: 2 }}>Follow friends to see their activity</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Search for users in the Discover tab</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase' }}>Sample activity</div>
+                {EMPTY_FEED.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: 0.5 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: `${item.color}20`, border: `1px solid ${item.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{item.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.6)', fontFamily: "'Playfair Display',serif", fontStyle: 'italic', marginBottom: 3 }}>{item.text}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{item.sub}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>{item.time}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {feedItems.map((item, i) => {
+                  const act = activityIcon(item.type);
+                  return (
+                    <div key={item.id || i} style={{ display: 'flex', gap: 12, padding: '14px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', animation: 'fadeIn 0.3s ease' }}>
+                      {/* Avatar */}
+                      <div style={{ width: 42, height: 42, borderRadius: '50%', background: `${accent}20`, border: `1px solid ${accent}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
+                        {item.avatar_url ? <img src={item.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (item.username || 'U')[0].toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>@{item.username || 'user'}</span>
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{act.label}</span>
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginLeft: 'auto' }}>{timeAgo(item.created_at)}</span>
+                        </div>
+                        {/* Movie card */}
+                        {item.movie_title && (
+                          <button onClick={() => onWatchTrailer({ id: item.movie_id, title: item.movie_title, poster: item.movie_poster, year: item.movie_year, rating: item.movie_rating, accent: item.movie_accent || accent, mediaType: 'movie' })}
+                            style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '10px 12px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' }}>
+                            {item.movie_poster && (
+                              <div style={{ width: 38, height: 52, borderRadius: 7, overflow: 'hidden', flexShrink: 0 }}>
+                                <img src={item.movie_poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: "'Playfair Display',serif", fontStyle: 'italic', marginBottom: 3 }}>{item.movie_title}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{item.movie_year}</span>
+                                {item.movie_rating && <><span style={{ fontSize: 10 }}>⭐</span><span style={{ fontSize: 11, color: item.movie_accent || accent, fontWeight: 600 }}>{item.movie_rating}</span></>}
+                              </div>
+                              {item.review_text && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: '4px 0 0', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.review_text}</p>}
+                            </div>
+                            <div style={{ fontSize: 12 }}>▶</div>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FRIENDS TAB */}
+        {tab === 'friends' && (
+          <div style={{ padding: '16px' }}>
+            {!isSignedIn ? (
+              <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Sign in to manage friends</div>
+              </div>
+            ) : loadingFriends ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                <div style={{ width: 24, height: 24, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              </div>
+            ) : friends.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                <div style={{ fontSize: 48 }}>🎬</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>No friends yet</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Search for users in the Discover tab</div>
+                <button onClick={() => setTab('discover')} style={{ background: accent, border: 'none', borderRadius: 22, padding: '10px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#07070F', fontFamily: 'inherit' }}>Find Friends</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase' }}>Following {friends.length}</div>
+                {friends.map((f, i) => (
+                  <div key={f.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '12px 14px' }}>
+                    <div style={{ width: 46, height: 46, borderRadius: '50%', background: `${accent}20`, border: `1px solid ${accent}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
+                      {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (f.username || 'U')[0].toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>@{f.username || 'User'}</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{f.watchlistCount || 0} in watchlist</div>
+                    </div>
+                    <button onClick={() => handleFollow(f)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '5px 14px', cursor: 'pointer', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'inherit', fontWeight: 600 }}>
+                      Following
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DISCOVER TAB */}
+        {tab === 'discover' && (
+          <div style={{ padding: '16px' }}>
+            <div style={{ position: 'relative', marginBottom: 16 }}>
+              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}>
+                <SvgIcon name="search" size={16} color="rgba(255,255,255,0.3)" />
+              </div>
+              <input
+                autoFocus
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+                placeholder="Search by username..."
+                style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.09)`, borderRadius: 14, padding: '13px 16px 13px 42px', color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'inherit' }}
+              />
+              {searchQ && <button onClick={() => setSearchQ('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><SvgIcon name="close" size={14} color="rgba(255,255,255,0.3)" /></button>}
+            </div>
+
+            {searching && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+                <div style={{ width: 22, height: 22, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              </div>
+            )}
+
+            {!searching && searchQ && searchRes.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 24, color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>No users found for "{searchQ}"</div>
+            )}
+
+            {!searching && !searchQ && (
+              <div style={{ textAlign: 'center', padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: `${accent}15`, border: `1px solid ${accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🔍</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Find film lovers</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Search by username to find and follow friends</div>
+              </div>
+            )}
+
+            {!searching && searchRes.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase' }}>{searchRes.length} users found</div>
+                {searchRes.map((u, i) => (
+                  <div key={u.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '12px 14px' }}>
+                    <div style={{ width: 46, height: 46, borderRadius: '50%', background: `${accent}20`, border: `1px solid ${accent}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
+                      {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.username || 'U')[0].toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>@{u.username || 'User'}</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>CineScroll member</div>
+                    </div>
+                    {isSignedIn ? (
+                      <button onClick={() => handleFollow(u)}
+                        style={{ background: u.isFollowing ? 'rgba(255,255,255,0.06)' : accent, border: `1px solid ${u.isFollowing ? 'rgba(255,255,255,0.1)' : accent}`, borderRadius: 20, padding: '6px 16px', cursor: 'pointer', fontSize: 12, color: u.isFollowing ? 'rgba(255,255,255,0.5)' : '#07070F', fontFamily: 'inherit', fontWeight: 700, transition: 'all 0.2s ease' }}>
+                        {u.isFollowing ? 'Following' : 'Follow'}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>Sign in to follow</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 // MAIN APP
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
