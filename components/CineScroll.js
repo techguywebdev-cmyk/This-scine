@@ -1036,7 +1036,22 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
   const fmt=n=>n>=1000?`${(n/1000).toFixed(0)}K`:n;
   const accent=movie.accent||'#F5A623';const bgImage=movie.backdrop||movie.poster;
   const handleLike=()=>{if(!isSignedIn){onAuthRequired();return;}setLiked(p=>!p);};
-  const handleSave=()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);};
+  const handleSave = async (movie) => {
+  const already = watchlistIds.has(movie.id);
+  if (already) {
+    setWatchlistIds(p => { const n = new Set(p); n.delete(movie.id); return n; });
+    setWatchlist(p => p.filter(m => m.movie_id !== movie.id));
+    await fetch('/api/watchlist', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ movieId: movie.id }) });
+  } else {
+    setWatchlistIds(p => new Set([...p, movie.id]));
+    setWatchlist(p => [{ movie_id: movie.id, title: movie.title, year: movie.year, rating: movie.rating, poster: movie.poster, backdrop: movie.backdrop, genre: movie.genre, overview: movie.overview, accent: movie.accent, gradient: movie.gradient, is_tv: movie.isTV || false, watched: false, saved_at: Date.now(), certification: movie.certification || '' }, ...p]);
+    await fetch('/api/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(movie) });
+    // Log to activity feed
+    if (isSignedIn) {
+      fetch('/api/activity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'saved', username: user?.username || user?.firstName || 'User', avatarUrl: user?.imageUrl || null, movie }) }).catch(() => {});
+    }
+  }
+};
   const handleRate=()=>{if(!isSignedIn){onAuthRequired();return;}setShowStars(p=>!p);};
   const onPressStart=()=>{isPressingRef.current=true;longPressTimer.current=setTimeout(()=>{if(isPressingRef.current){if(navigator.vibrate)navigator.vibrate(40);onTrailer(movie);setShowHint(false);}},600);};
   const onPressEnd=()=>{isPressingRef.current=false;clearTimeout(longPressTimer.current);};
