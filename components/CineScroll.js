@@ -458,9 +458,7 @@ function MoodScreen({onClose,onMoodSelect,accent}){
         <div style={{position:'absolute',inset:0,backgroundImage:`url(${heroBg})`,backgroundSize:'cover',backgroundPosition:'center 30%'}}/>
         <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(7,7,15,0.4) 0%,rgba(7,7,15,0.2) 30%,rgba(7,7,15,0.85) 70%,rgba(7,7,15,1) 100%)'}}/>
         <div style={{position:'absolute',inset:0,background:'linear-gradient(to right,rgba(7,7,15,0.6) 0%,transparent 60%)'}}/>
-        <button onClick={onClose} style={{position:'absolute',top:52,right:18,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:'50%',width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
-          <SvgIcon name="close" size={14} color="rgba(255,255,255,0.8)"/>
-        </button>
+        <button onClick={onClose} style={{position:'absolute',top:52,right:18,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:'50%',width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}><SvgIcon name="close" size={14} color="rgba(255,255,255,0.8)"/></button>
         <div style={{position:'relative',zIndex:1,padding:'52px 20px 28px'}}>
           <div style={{fontSize:10,letterSpacing:4,color:accent,fontWeight:700,textTransform:'uppercase',marginBottom:14}}>Mood Discovery</div>
           <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:'clamp(28px,8vw,46px)',fontWeight:900,color:'#fff',margin:'0 0 10px',lineHeight:1.05,letterSpacing:'-0.5px',maxWidth:460,textShadow:'0 2px 20px rgba(0,0,0,0.5)'}}>How do you want<br/>to feel {timeGreeting}?</h1>
@@ -474,15 +472,13 @@ function MoodScreen({onClose,onMoodSelect,accent}){
               </div>
             ):(
               <button onClick={()=>setShowInput(true)} style={{display:'flex',alignItems:'center',gap:8,background:'rgba(0,0,0,0.35)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:14,padding:'12px 16px',cursor:'pointer',fontFamily:'inherit',fontSize:13,color:'rgba(255,255,255,0.45)',width:'100%',textAlign:'left',maxWidth:400}}>
-                <SvgIcon name="chat" size={15} color="rgba(255,255,255,0.35)"/>
-                Describe what you are in the mood for...
+                <SvgIcon name="chat" size={15} color="rgba(255,255,255,0.35)"/>Describe what you are in the mood for...
               </button>
             )}
           </div>
           <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
             <button onClick={handleSurprise} disabled={loading} style={{display:'flex',alignItems:'center',gap:8,background:`linear-gradient(135deg,${accent},${accent}bb)`,border:'none',borderRadius:28,padding:'12px 22px',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,color:'#07070F',boxShadow:`0 4px 18px ${accent}35`,opacity:loading?0.7:1}}>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="#07070F"><path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4.5L8 1z"/></svg>
-              Surprise Me
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="#07070F"><path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4.5L8 1z"/></svg>Surprise Me
             </button>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <div style={{display:'flex'}}>{[{bg:'linear-gradient(135deg,#F5C842,#E8A020)',e:'🎬'},{bg:'linear-gradient(135deg,#B07FEF,#7040C0)',e:'🎭'},{bg:'linear-gradient(135deg,#4DA8FF,#2060C0)',e:'🎞'},{bg:'linear-gradient(135deg,#FF6BAE,#C04070)',e:'📽'}].map((a,i)=>(<div key={i} style={{width:28,height:28,borderRadius:'50%',background:a.bg,border:'2px solid rgba(7,7,15,0.8)',marginLeft:i>0?-9:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,zIndex:4-i,position:'relative'}}>{a.e}</div>))}</div>
@@ -500,9 +496,9 @@ function MoodScreen({onClose,onMoodSelect,accent}){
                 {bg&&<div style={{position:'absolute',inset:0,backgroundImage:`url(${bg})`,backgroundSize:'cover',backgroundPosition:'center',opacity:0.28}}/>}
                 <div style={{position:'absolute',inset:0,background:`linear-gradient(160deg,${mood.bg}ee 0%,${mood.bg}99 40%,rgba(0,0,0,0.2) 100%)`,pointerEvents:'none'}}/>
                 <div style={{position:'absolute',inset:0,background:`radial-gradient(circle at 20% 20%,${mood.color}18 0%,transparent 60%)`,pointerEvents:'none'}}/>
-                <div style={{position:'relative',zIndex:1,padding:'16px 14px 40px',display:'flex',flexDirection:'column',gap:0,height:'100%'}}>
+                <div style={{position:'relative',zIndex:1,padding:'16px 14px 40px',display:'flex',flexDirection:'column',height:'100%'}}>
                   <div style={{width:44,height:44,borderRadius:12,background:`${mood.color}22`,border:`1px solid ${mood.color}40`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:12,flexShrink:0}}><MoodIcon mood={mood.label} size={22} color={mood.color}/></div>
-                  <div style={{fontSize:16,fontWeight:700,color:'#ffffff',fontFamily:"'DM Sans',sans-serif",fontStyle:'normal',marginBottom:5,lineHeight:1.2}}>{mood.label}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:"'DM Sans',sans-serif",marginBottom:5,lineHeight:1.2}}>{mood.label}</div>
                   <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',lineHeight:1.45,flex:1}}>{mood.desc}</div>
                 </div>
                 <div style={{position:'absolute',right:12,bottom:12,width:28,height:28,borderRadius:'50%',border:`1px solid ${isActive?mood.color+'66':'rgba(255,255,255,0.12)'}`,background:isActive?`${mood.color}18`:'rgba(0,0,0,0.2)',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}}>
@@ -590,7 +586,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                     <div style={{fontSize:11,letterSpacing:2,color:'rgba(255,255,255,0.35)',fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>CineScore</div>
                     <div style={{fontSize:12,color:'rgba(255,255,255,0.5)',lineHeight:1.5,marginBottom:8}}>{cineScore<100?'Just getting started!':cineScore<300?'Casual viewer.':cineScore<600?'Dedicated cinephile.':'Elite connoisseur. 🏆'}</div>
                     <button onClick={async()=>{setSharing(true);try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{background:'none',border:`1px solid ${accent}44`,borderRadius:20,padding:'4px 12px',cursor:'pointer',fontSize:10,color:accent,fontWeight:600,fontFamily:'inherit',display:'flex',alignItems:'center',gap:4,opacity:sharing?0.6:1}}>
-                      <SvgIcon name="share" size={10} color={accent}/> {sharing?'...':'Share Score'}
+                      <SvgIcon name="share" size={10} color={accent}/>{sharing?'...':'Share Score'}
                     </button>
                   </div>
                 </div>
@@ -770,6 +766,9 @@ function SimilarSheet({movie,onClose,accent,onSelect}){
     </div></>
   );
 }
+
+
+
 
 // DISCOVER / FILTER SHEET
           function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent }) {
