@@ -435,6 +435,186 @@ function InlinePlayer({ movie, onClose, accent, onSave, isSaved }) {
     </div>
   );
 }
+={{display:'flex',gap:8,alignItems:'center'}}>
+            <button style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="settings" size={14} color="rgba(255,255,255,0.4)"/></button>
+            <button onClick={onClose} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={14} color="rgba(255,255,255,0.4)"/></button>
+          </div>
+        </div>
+        <div style={{display:'flex',padding:'12px 16px 0',flexShrink:0,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+          {['profile','watchlist','reviews'].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{flex:1,background:'none',border:'none',cursor:'pointer',padding:'8px 0 12px',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:400,color:tab===t?accent:'rgba(255,255,255,0.35)',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,transition:'all 0.2s ease',textTransform:'capitalize'}}>
+              {t}{t==='watchlist'&&watchlist.length>0?` (${watchlist.length})`:''}
+            </button>
+          ))}
+        </div>
+        <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
+          {tab==='profile'&&(
+            <div style={{padding:'16px'}}>
+              {loadingData&&<div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:12}}><div style={{width:14,height:14,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite',flexShrink:0}}/><span style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>Loading...</span></div>}
+              <div style={{background:'linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))',border:'1px solid rgba(255,255,255,0.07)',borderRadius:20,padding:'16px',marginBottom:14,display:'flex',alignItems:'center',gap:14}}>
+                <div style={{width:68,height:68,borderRadius:'50%',background:`linear-gradient(135deg,${accent}44,${accent}22)`,border:`2px solid ${accent}66`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
+                  {user?.imageUrl?<img src={user.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:26,fontWeight:700,color:accent,fontFamily:"'Playfair Display',serif"}}>{(user?.firstName||user?.username||'?')[0].toUpperCase()}</span>}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',marginBottom:2}}>{user?.firstName||user?.username||'Cinephile'}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.3)',marginBottom:6}}>{user?.primaryEmailAddress?.emailAddress}</div>
+                  <div style={{display:'inline-flex',alignItems:'center',gap:5,background:`${accent}14`,border:`1px solid ${accent}30`,borderRadius:20,padding:'2px 8px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent}}/><span style={{fontSize:10,color:accent,fontWeight:600}}>Active Member</span></div>
+                </div>
+              </div>
+              <div style={{background:'linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))',border:`1px solid ${accent}20`,borderRadius:20,padding:'16px',marginBottom:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:14}}>
+                  <CineScoreRing score={cineScore} accent={accent}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:11,letterSpacing:2,color:'rgba(255,255,255,0.35)',fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>CineScore</div>
+                    <div style={{fontSize:12,color:'rgba(255,255,255,0.5)',lineHeight:1.5,marginBottom:8}}>{cineScore<100?'Just getting started!':cineScore<300?'Casual viewer.':cineScore<600?'Dedicated cinephile.':'Elite connoisseur. 🏆'}</div>
+                    <button onClick={async()=>{setSharing(true);try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{background:'none',border:`1px solid ${accent}44`,borderRadius:20,padding:'4px 12px',cursor:'pointer',fontSize:10,color:accent,fontWeight:600,fontFamily:'inherit',display:'flex',alignItems:'center',gap:4,opacity:sharing?0.6:1}}>
+                      <SvgIcon name="share" size={10} color={accent}/>{sharing?'...':'Share Score'}
+                    </button>
+                  </div>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                  {[{label:'TITLES',value:saved,icon:'📚'},{label:'WATCHED',value:watched,icon:'👁'},{label:'REVIEWS',value:reviews,icon:'✍️'}].map(s=>(
+                    <div key={s.label} style={{background:'rgba(255,255,255,0.04)',borderRadius:10,padding:'10px 6px',textAlign:'center'}}>
+                      <div style={{fontSize:16,marginBottom:3}}>{s.icon}</div>
+                      <div style={{fontSize:20,fontWeight:800,color:accent,fontFamily:"'Playfair Display',serif",lineHeight:1}}>{s.value}</div>
+                      <div style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.25)',fontWeight:700,marginTop:2}}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
+                {[{label:'Avg Rating',value:avgRating,icon:'star'},{label:'Genres Explored',value:Object.keys(topGenres).length,icon:'gem'}].map(s=>(
+                  <div key={s.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:12,padding:'12px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><SvgIcon name={s.icon} size={12} color="rgba(255,255,255,0.3)"/><span style={{fontSize:9,color:'rgba(255,255,255,0.3)',letterSpacing:0.5}}>{s.label}</span></div>
+                    <div style={{fontSize:24,fontWeight:800,color:accent,fontFamily:"'Playfair Display',serif"}}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+              {sortedGenres.length>0&&(
+                <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px',marginBottom:14}}>
+                  <div style={{fontSize:9,letterSpacing:2,color:'rgba(255,255,255,0.3)',fontWeight:700,marginBottom:10,textTransform:'uppercase'}}>Top Genres</div>
+                  {sortedGenres.map(([genre,count])=>(
+                    <div key={genre} style={{marginBottom:8}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}><span style={{fontSize:12,color:'rgba(255,255,255,0.65)',fontWeight:500}}>{genre}</span><span style={{fontSize:11,color:'rgba(255,255,255,0.25)'}}>{count} films</span></div>
+                      <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.06)'}}><div style={{height:'100%',borderRadius:2,background:`linear-gradient(to right,${accent}88,${accent})`,width:`${(count/sortedGenres[0][1])*100}%`,transition:'width 0.8s ease'}}/></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:signedOut?`${accent}10`:'rgba(255,255,255,0.03)',border:`1px solid ${signedOut?accent+'44':'rgba(255,255,255,0.07)'}`,borderRadius:14,padding:'13px',cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',transition:'all 0.3s ease'}}>
+                {signedOut?(<><div style={{width:16,height:16,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={10} color="#000"/></div><span style={{fontSize:13,color:accent,fontWeight:600}}>Signed out</span></>):signingOut?(<><div style={{width:14,height:14,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/><span style={{fontSize:13,color:'rgba(255,255,255,0.5)'}}>Signing out...</span></>):(<><SvgIcon name="logout" size={15} color="rgba(255,255,255,0.4)"/><span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Sign out</span></>)}
+              </button>
+            </div>
+          )}
+          {tab==='watchlist'&&(
+            <div>
+              <div style={{margin:'12px 16px 0',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center'}}>
+                <div style={{flex:1,textAlign:'center',borderRight:'1px solid rgba(255,255,255,0.06)'}}><div style={{fontSize:18,fontWeight:800,color:'#fff',fontFamily:"'Playfair Display',serif"}}>{watchlist.length}</div><div style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.3)',fontWeight:700}}>TITLES</div></div>
+                <div style={{flex:1,textAlign:'center',borderRight:'1px solid rgba(255,255,255,0.06)'}}><div style={{fontSize:18,fontWeight:800,color:accent,fontFamily:"'Playfair Display',serif"}}>{avgRating}</div><div style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.3)',fontWeight:700}}>AVG RATING</div></div>
+                <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:18,fontWeight:800,color:'#7BC8FF',fontFamily:"'Playfair Display',serif"}}>{watched}</div><div style={{fontSize:9,letterSpacing:1.5,color:'rgba(255,255,255,0.3)',fontWeight:700}}>WATCHED</div></div>
+              </div>
+              <div style={{padding:'10px 16px 6px',display:'flex',flexDirection:'column',gap:8}}>
+                <div style={{position:'relative'}}><div style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}><SvgIcon name="search" size={14} color="rgba(255,255,255,0.25)"/></div><input value={watchlistSearch} onChange={e=>setWatchlistSearch(e.target.value)} placeholder="Search watchlist..." style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:12,padding:'9px 12px 9px 34px',color:'#fff',fontSize:13,outline:'none',fontFamily:'inherit'}}/></div>
+                <div style={{display:'flex',gap:5,alignItems:'center'}}>
+                  <div style={{display:'flex',gap:4,flex:1}}>{[['all','All'],['movies','Movies'],['tv','TV']].map(([val,label])=>(<button key={val} onClick={()=>setWatchlistFilter(val)} style={{flex:1,background:watchlistFilter===val?accent:'rgba(255,255,255,0.04)',border:`1px solid ${watchlistFilter===val?accent:'rgba(255,255,255,0.07)'}`,borderRadius:20,padding:'5px 6px',cursor:'pointer',fontSize:11,fontWeight:watchlistFilter===val?700:400,color:watchlistFilter===val?'#07070F':'rgba(255,255,255,0.4)',fontFamily:'inherit',transition:'all 0.2s ease'}}>{label}</button>))}</div>
+                  <select value={watchlistSort} onChange={e=>setWatchlistSort(e.target.value)} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:20,padding:'5px 8px',color:'rgba(255,255,255,0.5)',fontSize:11,outline:'none',fontFamily:'inherit',cursor:'pointer'}}><option value="date">Date added</option><option value="rating">Rating</option><option value="title">A-Z</option></select>
+                </div>
+              </div>
+              {loadingData?(<div style={{textAlign:'center',padding:24,color:'rgba(255,255,255,0.3)',fontSize:13,display:'flex',flexDirection:'column',alignItems:'center',gap:8}}><div style={{width:20,height:20,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>Loading...</div>)
+              :filteredWatchlist.length===0?(<div style={{textAlign:'center',padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}><SvgIcon name="bookmark" size={28} color="rgba(255,255,255,0.1)"/><div style={{fontSize:14,color:'rgba(255,255,255,0.3)'}}>{watchlistSearch?'No matches':'Your watchlist is empty'}</div></div>)
+              :(
+                <div style={{display:'flex',flexDirection:'column',padding:'0 16px 12px'}}>
+                  {filteredWatchlist.map((m,i)=>(
+                    <div key={m.movie_id} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'12px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                      <div style={{width:20,height:20,borderRadius:5,background:i<3?`${accent}20`:'rgba(255,255,255,0.04)',border:`1px solid ${i<3?accent+'44':'rgba(255,255,255,0.07)'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:3}}><span style={{fontSize:9,fontWeight:800,color:i<3?accent:'rgba(255,255,255,0.3)'}}>{i+1}</span></div>
+                      <button onClick={()=>handleWatchlistItemClick(m)} style={{width:52,height:72,borderRadius:10,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],position:'relative',border:'none',cursor:'pointer',padding:0}}>
+                        {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+                        {m.watched&&<div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={14} color={accent}/></div>}
+                        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{width:22,height:22,borderRadius:'50%',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="play" size={10} color="#fff" filled/></div></div>
+                      </button>
+                      <div style={{flex:1,minWidth:0}}>
+                        <button onClick={()=>handleWatchlistItemClick(m)} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'left',width:'100%'}}>
+                          <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:3}}><span style={{fontSize:14,fontWeight:700,color:m.watched?'rgba(255,255,255,0.45)':'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic',lineHeight:1.2,textDecoration:m.watched?'line-through':'none'}}>{m.title}</span>{m.is_tv&&<span style={{fontSize:9,color:'#7BC8FF',border:'1px solid #7BC8FF44',borderRadius:4,padding:'1px 4px',flexShrink:0,marginTop:2,fontWeight:700}}>TV</span>}</div>
+                        </button>
+                        <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:5}}><span style={{fontSize:11,color:'rgba(255,255,255,0.28)'}}>{m.year}</span><SvgIcon name="star" size={10} color={accent} filled/><span style={{fontSize:11,color:accent,fontWeight:600}}>{m.rating}</span>{m.watched&&<span style={{fontSize:9,color:accent,background:`${accent}15`,borderRadius:10,padding:'1px 6px',fontWeight:700}}>Watched</span>}</div>
+                        {m.genre&&m.genre.length>0&&<div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:7}}>{m.genre.slice(0,3).map(g=><span key={g} style={{fontSize:9,color:'rgba(255,255,255,0.3)',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:20,padding:'2px 6px'}}>{g}</span>)}</div>}
+                        <div style={{display:'flex',gap:5}}>
+                          <button onClick={()=>toggleWatched(m)} style={{display:'flex',alignItems:'center',gap:3,background:m.watched?`${accent}15`:'rgba(255,255,255,0.04)',border:`1px solid ${m.watched?accent+'44':'rgba(255,255,255,0.07)'}`,borderRadius:20,padding:'3px 9px',cursor:'pointer',fontSize:10,color:m.watched?accent:'rgba(255,255,255,0.4)',fontFamily:'inherit',fontWeight:600}}><SvgIcon name="check" size={9} color={m.watched?accent:'rgba(255,255,255,0.4)'}/>{m.watched?'Watched':'Mark watched'}</button>
+                          <button onClick={()=>handleWatchlistItemClick(m)} style={{display:'flex',alignItems:'center',gap:3,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:20,padding:'3px 9px',cursor:'pointer',fontSize:10,color:'rgba(255,255,255,0.4)',fontFamily:'inherit',fontWeight:600}}><SvgIcon name="play" size={9} color="rgba(255,255,255,0.4)" filled/>Trailer</button>
+                          <button onClick={()=>removeFromWatchlist(m)} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,padding:'3px 7px',cursor:'pointer',display:'flex',alignItems:'center'}}><SvgIcon name="trash" size={10} color="rgba(255,255,255,0.25)"/></button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{display:'flex',alignItems:'center',gap:10,padding:'14px 0',border:'1px dashed rgba(255,255,255,0.07)',borderRadius:12,justifyContent:'center',marginTop:6}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:'rgba(255,255,255,0.04)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={14} color="rgba(255,255,255,0.3)"/></div>
+                    <div><div style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontWeight:500}}>Add something to your watchlist</div><div style={{fontSize:10,color:'rgba(255,255,255,0.2)'}}>Find your next great watch</div></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {tab==='reviews'&&(
+            <div style={{padding:'14px 16px'}}>
+              {loadingData?<div style={{textAlign:'center',padding:30,color:'rgba(255,255,255,0.3)',fontSize:13}}>Loading...</div>
+              :userReviews.length===0?(<div style={{textAlign:'center',padding:'32px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}><SvgIcon name="chat" size={28} color="rgba(255,255,255,0.1)"/><div style={{fontSize:14,color:'rgba(255,255,255,0.3)'}}>No reviews yet</div></div>)
+              :(<div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {userReviews.map(r=>(
+                  <div key={r.id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Playfair Display',serif",fontStyle:'italic'}}>{r.movie_title}</span><span style={{fontSize:11,color:'rgba(255,255,255,0.25)'}}>{r.time}</span></div>
+                    {r.rating>0&&<div style={{display:'flex',gap:2,marginBottom:6}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={11} color={s<=r.rating?accent:'rgba(255,255,255,0.12)'} filled={s<=r.rating}/>)}</div>}
+                    <p style={{fontSize:13,color:'rgba(255,255,255,0.6)',lineHeight:1.55,margin:0}}>{r.text}</p>
+                  </div>
+                ))}
+              </div>)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
+// AUTH GATE
+function AuthGate({onClose,accent}){
+  const{openSignIn}=useClerk();
+  return(
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',justifyContent:'center',animation:'fadeIn 0.2s ease'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:'rgba(5,5,12,0.98)',borderRadius:'24px 24px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',padding:'0 24px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+        <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'12px auto 24px'}}/>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:900,fontStyle:'italic',color:'#fff',marginBottom:8}}>Join CineScroll</div>
+          <div style={{fontSize:13,color:'rgba(255,255,255,0.45)',lineHeight:1.6}}>Sign in to leave reviews, save your watchlist, and discover films with friends.</div>
+        </div>
+        <button onClick={()=>{openSignIn();onClose();}} style={{width:'100%',background:'#fff',border:'none',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:10,fontFamily:'inherit'}}>
+          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <span style={{fontSize:14,fontWeight:700,color:'#1a1a1a'}}>Continue with Google</span>
+        </button>
+        <button onClick={()=>{openSignIn();onClose();}} style={{width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,fontFamily:'inherit'}}>
+          <SvgIcon name="user" size={16} color="rgba(255,255,255,0.7)"/>
+          <span style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.7)'}}>Sign in with Email</span>
+        </button>
+      </div>
+      <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+    </div>
+  );
+}
+
+// COMMENT PANEL
+function CommentPanel({movie,onClose,accent,onAuthRequired}){
+  const{isSignedIn,user}=useUser();
+  const[comments,setComments]=useState([{id:1,user:'reelcritic',avatar:'R',text:'One of the defining films of the decade.',likes:84,time:'2h',liked:false,replies:[]},{id:2,user:'filmbuff_mx',avatar:'F',text:'Slow burn but worth every second.',likes:31,time:'5h',liked:false,replies:[]},{id:3,user:'popcorn.wav',avatar:'P',text:'Gorgeous visually.',likes:12,time:'1d',liked:false,replies:[]}]);
+  const[input,setInput]=useState('');const[replyingTo,setReplyingTo]=useState(null);const inputRef=useRef(null);
+  const toggleLike=id=>setComments(p=>p.map(c=>c.id===id?{...c,liked:!c.liked,likes:c.liked?c.likes-1:c.likes+1}:c));
+  const startReply=(comment)=>{if(!isSignedIn){onAuthRequired();return;}setReplyingTo(comment);setInput(`@${comment.user} `);setTimeout(()=>inputRef.current?.focus(),100);};
+  const post=async()=>{if(!isSignedIn){onAuthRequired();return;}if(!input.trim())return;const username=user?.username||user?.firstName||'you';const avatar=(user?.firstName||user?.username||'Y')[0].toUpperCase();if(replyingTo){setComments(p=>p.map(c=>c.id===replyingTo.id?{...c,replies:[...(c.replies||[]),{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false}]}:c));}else{setComments(p=>[{id:Date.now(),user:username,avatar,text:input,likes:0,time:'now',liked:false,replies:[]},...p]);await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie?.id,movieTitle:movie?.title,text:input,rating:0})});}setInput('');setReplyingTo(null);};
+  return(
+    <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:'rgba(4,4,8,0.98)',backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:'1px solid rgba(255,255,255,0.07)',borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+      <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+      <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.1)',margin:'10px auto 0',flexShrink:0}}/>
+      <div style={{padding:'12px 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid rgba(255,255,255,0.05)',flexShrink:0}}>
+        <div><span style={{fontSize:15,fontWeight:700,color:'#fff'}}>Reviews</span><span style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginLeft:8}}>{movie?.title}</span></div>
 // MOOD SCREEN
 function MoodScreen({onClose,onMoodSelect,accent}){
   const[activeMood,setActiveMood]=useState(null);const[loading,setLoading]=useState(false);const[moodInput,setMoodInput]=useState('');const[showInput,setShowInput]=useState(false);const[timeGreeting,setTimeGreeting]=useState('tonight');
