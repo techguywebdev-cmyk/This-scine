@@ -1,11 +1,15 @@
-// app/api/notifications/route.js
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
+
+const db = (path) => `${SUPABASE_URL}/rest/v1/${path}`;
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation',
+};
 
 async function getUserMap(userIds) {
   const uniqueIds = [...new Set(userIds.filter(Boolean))];
@@ -37,24 +41,18 @@ export async function GET() {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { data: rows, error } = await supabase
-      .from('notifications')
-      .select('id,type,from_user_id,read,created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const res = await fetch(`${db('notifications')}?user_id=eq.${userId}&order=created_at.desc&limit=50&select=id,type,from_user_id,read,created_at`, { headers });
+    const rows = await res.json();
+    const allRows = Array.isArray(rows) ? rows : [];
 
-    if (error) throw error;
-
-    const fromIds = (rows || []).map(r => r.from_user_id);
+    const fromIds = allRows.map(r => r.from_user_id);
     const userMap = await getUserMap(fromIds);
 
-    // figure out which "follow" notifications I've already followed back
-    const { data: myFollowing } = await supabase
-      .from('follows').select('following_id').eq('follower_id', userId);
-    const followingSet = new Set((myFollowing || []).map(r => r.following_id));
+    const myFollowingRes = await fetch(`${db('follows')}?follower_id=eq.${userId}&select=following_id`, { headers });
+    const myFollowingRows = await myFollowingRes.json();
+    const followingSet = new Set((Array.isArray(myFollowingRows) ? myFollowingRows : []).map(r => r.following_id));
 
-    const items = (rows || []).map(r => ({
+    const items = allRows.map(r => ({
       id: r.id,
       type: r.type,
       user_id: r.from_user_id,
@@ -73,21 +71,19 @@ export async function GET() {
 }
 
 // PATCH /api/notifications { id } -> mark a single notification as read
-export async function PATCH(req) {
+export async function PATCH(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { id } = await req.json();
+    const { id } = await request.json();
     if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
 
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', id)
-      .eq('user_id', userId);
-
-    if (error) throw error;
+    await fetch(`${db('notifications')}?id=eq.${id}&user_id=eq.${userId}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ read: true }),
+    });
 
     return Response.json({ success: true });
   } catch (err) {
