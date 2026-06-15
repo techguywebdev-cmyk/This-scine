@@ -42,7 +42,34 @@ async function getUserMap(userIds) {
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const movieId = searchParams.get('movieId');
+  const profileUserId = searchParams.get('userId');
   const { userId: viewerId } = auth();
+
+  // ─── PROFILE REVIEWS: all reviews by a given user, across movies ───
+  if (profileUserId) {
+    try {
+      const res = await fetch(`${db('reviews')}?user_id=eq.${profileUserId}&parent_id=is.null&order=created_at.desc&select=id,user_id,movie_id,movie_title,text,rating,time,created_at,parent_id&limit=50`, { headers });
+      const rows = await res.json();
+      const allRows = Array.isArray(rows) ? rows : [];
+
+      const comments = allRows.map(row => ({
+        id: row.id,
+        user_id: row.user_id,
+        movie_id: row.movie_id,
+        movie_title: row.movie_title,
+        text: row.text,
+        rating: row.rating || 0,
+        time: row.time || null,
+        created_at: row.created_at,
+        isSelf: viewerId === row.user_id,
+      }));
+
+      return Response.json({ comments });
+    } catch (err) {
+      console.error('GET /api/reviews?userId error:', err);
+      return Response.json({ error: 'Failed to load reviews' }, { status: 500 });
+    }
+  }
 
   if (!movieId) {
     return Response.json({ error: 'Missing movieId' }, { status: 400 });
