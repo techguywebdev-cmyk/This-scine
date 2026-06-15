@@ -1,75 +1,89 @@
-import { createClient } from '@supabase/supabase-js';
 import { auth } from '@clerk/nextjs/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
 
-// GET — get activity feed for current user's friends
-export async function GET(request) {
+const db = (path) => `${SUPABASE_URL}/rest/v1/${path}`;
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation',
+};
+
+// GET /api/activity?type=feed -> activity from people the current user follows
+// GET /api/activity?type=user&userId=X -> activity for a specific user's profile
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const type = searchParams.get('type') || 'feed';
   const { userId } = auth();
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type'); // 'feed' or 'user'
-  const targetId = searchParams.get('targetId') || '';
 
   try {
-    if (type === 'user' && targetId) {
-      const { data } = await supabase
-        .from('activity')
-        .select('*')
-        .eq('user_id', targetId)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      return Response.json({ items: data || [] });
+    // ─── PROFILE ACTIVITY (any user, public) ───────────────────
+    if (type === 'user') {
+      const targetId = searchParams.get('userId');
+      if (!targetId) return Response.json({ error: 'Missing userId' }, { status: 400 });
+
+      const res = await fetch(`${db('activity')}?user_id=eq.${targetId}&order=created_at.desc&limit=30&select=id,user_id,username,avatar_url,type,movie_id,movie_title,movie_poster,movie_year,movie_rating,movie_accent,created_at`, { headers });
+      const rows = await res.json();
+
+      return Response.json({ items: Array.isArray(rows) ? rows : [] });
     }
 
-    if (type === 'feed' && userId) {
-      // Get who I follow
-      const { data: followData } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId);
-      const ids = (followData || []).map(f => f.following_id);
-      if (ids.length === 0) return Response.json({ items: [] });
-      const { data } = await supabase
-        .from('activity')
-        .select('*')
-        .in('user_id', ids)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      return Response.json({ items: data || [] });
-    }
+    // ─── FRIENDS FEED (people I follow) ────────────────────────
+    if (!userId) return Response.json({ items: [] });
 
-    return Response.json({ items: [] });
-  } catch (e) {
-    console.error(e);
-    return Response.json({ items: [] });
+    const followingRes = await fetch(`${db('follows')}?follower_id=eq.${userId}&select=following_id`, { headers });
+    const followingRows = await followingRes.json();
+    const followingIds = (Array.isArray(followingRows) ? followingRows : []).map(r => r.following_id);
+
+    if (followingIds.length === 0) return Response.json({ items: [] });
+
+    const inList = followingIds.join(',');
+    const res = await fetch(`${db('activity')}?user_id=in.(${inList})&order=created_at.desc&limit=50&select=id,user_id,username,avatar_url,type,movie_id,movie_title,movie_poster,movie_year,movie_rating,movie_accent,created_at`, { headers });
+    const rows = await res.json();
+
+    return Response.json({ items: Array.isArray(rows) ? rows : [] });
+  } catch (err) {
+    console.error('GET /api/activity error:', err);
+    return Response.json({ error: 'Failed to load activity' }, { status: 500 });
   }
 }
 
-// POST — log an activity event
+// POST /api/activity { type, movieId, movieTitle, moviePoster, movieYear, movieRating, movieAccent }
+// Records an activity event for the current user (saved/watched/reviewed)
 export async function POST(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const body = await request.json();
-    const { type, username, avatarUrl, movie } = body;
-    await supabase.from('activity').insert({
-      user_id: userId,
-      username: username || 'User',
-      avatar_url: avatarUrl || null,
-      type,
-      movie_id: movie?.id || null,
-      movie_title: movie?.title || null,
-      movie_poster: movie?.poster || null,
-      movie_year: movie?.year || null,
-      movie_rating: movie?.rating || null,
-      movie_accent: movie?.accent || null,
-      review_text: body.reviewText || null,
+    const { type, movieId, movieTitle, moviePoster, movieYear, movieRating, movieAccent, username, avatarUrl } = body;
+
+    if (!type || !movieId) {
+      return Response.json({ error: 'type and movieId are required' }, { status: 400 });
+    }
+
+    await fetch(db('activity'), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        user_id: userId,
+        username: username || null,
+        avatar_url: avatarUrl || null,
+        type,
+        movie_id: movieId,
+        movie_title: movieTitle || null,
+        movie_poster: moviePoster || null,
+        movie_year: movieYear || null,
+        movie_rating: movieRating || null,
+        movie_accent: movieAccent || null,
+      }),
     });
+
     return Response.json({ success: true });
-  } catch (e) {
-    return Response.json({ error: e.message }, { status: 500 });
+  } catch (err) {
+    console.error('POST /api/activity error:', err);
+    return Response.json({ error: 'Failed to record activity' }, { status: 500 });
   }
-      }
+}
