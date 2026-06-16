@@ -171,3 +171,38 @@ export async function POST(request) {
     return Response.json({ error: 'Failed to post review' }, { status: 500 });
   }
 }
+
+// DELETE /api/reviews { id } -> delete a comment/review owned by the current user
+// (replies are removed automatically via the parent_id ON DELETE CASCADE constraint)
+export async function DELETE(request) {
+  const { userId } = auth();
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const { id } = await request.json();
+    if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
+
+    const res = await fetch(`${db('reviews')}?id=eq.${id}&user_id=eq.${userId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Supabase delete error:', res.status, errText);
+      return Response.json({ error: 'Failed to delete' }, { status: 500 });
+    }
+
+    const data = await res.json();
+    const deletedRows = Array.isArray(data) ? data : [];
+    if (deletedRows.length === 0) {
+      // either it didn't exist or it belonged to someone else
+      return Response.json({ error: 'Comment not found or not yours to delete' }, { status: 404 });
+    }
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/reviews error:', err);
+    return Response.json({ error: 'Failed to delete review' }, { status: 500 });
+  }
+}
