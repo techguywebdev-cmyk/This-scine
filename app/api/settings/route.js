@@ -54,11 +54,17 @@ export async function PATCH(request) {
 
     // upsert via Prefer: resolution=merge-duplicates (requires user_id primary key / unique constraint)
     // columns not present in payload are left untouched on existing rows
-    await fetch(db('user_settings'), {
+    const upsertRes = await fetch(db('user_settings'), {
       method: 'POST',
       headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=representation' },
       body: JSON.stringify(payload),
     });
+
+    if (!upsertRes.ok) {
+      const errText = await upsertRes.text();
+      console.error('Supabase upsert error:', upsertRes.status, errText);
+      return Response.json({ error: 'Database update failed' }, { status: 500 });
+    }
 
     return Response.json({ success: true, ...payload });
   } catch (err) {
