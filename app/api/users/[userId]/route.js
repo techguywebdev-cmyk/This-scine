@@ -53,10 +53,13 @@ export async function GET(req, { params }) {
       isFollowing = Array.isArray(data) && data.length > 0;
     }
 
-    // 4. Watchlist privacy setting (defaults to public if no row exists)
-    const settingsRes = await fetch(`${db('user_settings')}?user_id=eq.${targetId}&select=watchlist_public`, { headers });
+    // 4. Watchlist privacy setting, bio, and cover photo (defaults applied if no row exists)
+    const settingsRes = await fetch(`${db('user_settings')}?user_id=eq.${targetId}&select=watchlist_public,bio,cover_url`, { headers });
     const settingsData = await settingsRes.json();
-    const watchlistPublic = Array.isArray(settingsData) && settingsData.length > 0 ? settingsData[0].watchlist_public : true;
+    const settingsRow = Array.isArray(settingsData) && settingsData.length > 0 ? settingsData[0] : null;
+    const watchlistPublic = settingsRow ? settingsRow.watchlist_public : true;
+    const bio = settingsRow?.bio || '';
+    const coverUrl = settingsRow?.cover_url || null;
 
     // 5. Watchlist rows + count + top genres
     const watchlistRes = await fetch(`${db('watchlist')}?user_id=eq.${targetId}&order=saved_at.desc&select=movie_id,title,year,rating,poster,backdrop,genre,overview,accent,gradient,is_tv,watched,saved_at`, { headers: countHeaders });
@@ -80,6 +83,8 @@ export async function GET(req, { params }) {
       username,
       display_name,
       avatar_url,
+      bio,
+      cover_url: coverUrl,
       followers: followerCount || 0,
       following: followingCount || 0,
       watchlistCount: watchlistCount || 0,
