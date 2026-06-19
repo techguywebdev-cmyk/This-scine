@@ -57,15 +57,17 @@ export async function POST(request) {
 
     if (!uploadRes.ok) {
       const errText = await uploadRes.text();
-      console.error('Storage upload error:', errText);
-      return Response.json({ error: 'Failed to upload image' }, { status: 500 });
+      console.error('Storage upload error:', uploadRes.status, errText);
+      let detail = errText;
+      try { detail = JSON.parse(errText)?.message || JSON.parse(errText)?.error || errText; } catch {}
+      return Response.json({ error: `Storage error (${uploadRes.status}): ${detail}`.slice(0, 300) }, { status: 500 });
     }
 
     // cache-bust so the new image shows immediately even though the path is stable
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/profile-covers/${path}?t=${Date.now()}`;
 
     // save the URL to user_settings
-    await fetch(db('user_settings'), {
+    const settingsRes = await fetch(db('user_settings'), {
       method: 'POST',
       headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=representation' },
       body: JSON.stringify({
@@ -74,6 +76,12 @@ export async function POST(request) {
         updated_at: new Date().toISOString(),
       }),
     });
+
+    if (!settingsRes.ok) {
+      const errText = await settingsRes.text();
+      console.error('Failed to save cover_url to user_settings:', settingsRes.status, errText);
+      return Response.json({ error: 'Image uploaded but failed to save to your profile — try again' }, { status: 500 });
+    }
 
     return Response.json({ cover_url: publicUrl });
   } catch (err) {
