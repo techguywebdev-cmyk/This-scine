@@ -34,6 +34,17 @@ async function getUserMap(userIds) {
   for (const id of uniqueIds) {
     if (!map[id]) map[id] = { username: 'user', display_name: 'user', avatar_url: null };
   }
+  // overlay custom nicknames (override display_name only, never the @username handle)
+  try {
+    const inList = uniqueIds.join(',');
+    const res = await fetch(`${db('user_settings')}?user_id=in.(${inList})&select=user_id,nickname`, { headers });
+    const rows = await res.json();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      if (row.nickname && map[row.user_id]) map[row.user_id].display_name = row.nickname;
+    }
+  } catch (err) {
+    console.error('getUserMap nickname overlay error:', err);
+  }
   return map;
 }
 
@@ -194,10 +205,24 @@ export async function GET(req) {
       const myFollowingRows = await myFollowingRes.json();
       const followingSet = new Set((Array.isArray(myFollowingRows) ? myFollowingRows : []).map(r => r.following_id));
 
+      let nicknameMap = {};
+      if (foundUsers.length > 0) {
+        try {
+          const inList = foundUsers.map(u => u.id).join(',');
+          const nickRes = await fetch(`${db('user_settings')}?user_id=in.(${inList})&select=user_id,nickname`, { headers });
+          const nickRows = await nickRes.json();
+          for (const row of Array.isArray(nickRows) ? nickRows : []) {
+            if (row.nickname) nicknameMap[row.user_id] = row.nickname;
+          }
+        } catch (err) {
+          console.error('search nickname overlay error:', err);
+        }
+      }
+
       const users = foundUsers.map(u => ({
         user_id: u.id,
         username: u.username || u.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user',
-        display_name: u.firstName ? `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}` : (u.username || 'user'),
+        display_name: nicknameMap[u.id] || (u.firstName ? `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}` : (u.username || 'user')),
         avatar_url: u.imageUrl || null,
         isFollowing: followingSet.has(u.id),
       }));
