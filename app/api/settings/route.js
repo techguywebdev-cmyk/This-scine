@@ -17,17 +17,18 @@ export async function GET() {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const res = await fetch(`${db('user_settings')}?user_id=eq.${userId}&select=watchlist_public,bio,cover_url`, { headers });
+    const res = await fetch(`${db('user_settings')}?user_id=eq.${userId}&select=watchlist_public,bio,cover_url,nickname`, { headers });
     const data = await res.json();
 
     if (!Array.isArray(data) || data.length === 0) {
-      return Response.json({ watchlist_public: true, bio: '', cover_url: null });
+      return Response.json({ watchlist_public: true, bio: '', cover_url: null, nickname: '' });
     }
 
     return Response.json({
       watchlist_public: data[0].watchlist_public,
       bio: data[0].bio || '',
       cover_url: data[0].cover_url || null,
+      nickname: data[0].nickname || '',
     });
   } catch (err) {
     console.error('GET /api/settings error:', err);
@@ -35,7 +36,7 @@ export async function GET() {
   }
 }
 
-// PATCH /api/settings { watchlist_public?, bio?, cover_url? } -> partial update, at least one field required
+// PATCH /api/settings { watchlist_public?, bio?, cover_url?, nickname? } -> partial update, at least one field required
 export async function PATCH(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -47,6 +48,7 @@ export async function PATCH(request) {
     if (typeof body.watchlist_public === 'boolean') payload.watchlist_public = body.watchlist_public;
     if (typeof body.bio === 'string') payload.bio = body.bio.slice(0, 160); // cap bio length
     if (typeof body.cover_url === 'string' || body.cover_url === null) payload.cover_url = body.cover_url;
+    if (typeof body.nickname === 'string') payload.nickname = body.nickname.trim().slice(0, 40); // cap nickname length
 
     if (Object.keys(payload).length <= 2) {
       return Response.json({ error: 'No valid fields provided' }, { status: 400 });
@@ -71,4 +73,4 @@ export async function PATCH(request) {
     console.error('PATCH /api/settings error:', err);
     return Response.json({ error: 'Failed to update settings' }, { status: 500 });
   }
-}
+  }
