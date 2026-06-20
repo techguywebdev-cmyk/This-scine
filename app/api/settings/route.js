@@ -73,4 +73,4 @@ export async function PATCH(request) {
     console.error('PATCH /api/settings error:', err);
     return Response.json({ error: 'Failed to update settings' }, { status: 500 });
   }
-  }
+}
