@@ -97,13 +97,19 @@ export async function GET(req) {
       return Response.json({ following: following || 0, followers: followers || 0, pending: 0 });
     }
 
-    // ─── FOLLOWING (people I follow) ────────────────────────
+    // ─── FOLLOWING (people targetUser follows; defaults to caller) ─
     if (type === 'following') {
-      const res = await fetch(`${db('follows')}?follower_id=eq.${userId}&select=following_id`, { headers });
+      const targetUserId = searchParams.get('targetUserId') || userId;
+      const res = await fetch(`${db('follows')}?follower_id=eq.${targetUserId}&select=following_id`, { headers });
       const rows = await res.json();
       const ids = (Array.isArray(rows) ? rows : []).map(r => r.following_id);
       const userMap = await getUserMap(ids);
       const wlMeta = await getWatchlistMeta(ids);
+
+      // also fetch the caller's own following list, to correctly mark isFollowing per row
+      const myFollowingRes = await fetch(`${db('follows')}?follower_id=eq.${userId}&select=following_id`, { headers });
+      const myFollowingRows = await myFollowingRes.json();
+      const myFollowingSet = new Set((Array.isArray(myFollowingRows) ? myFollowingRows : []).map(r => r.following_id));
 
       const users = ids.map(id => ({
         user_id: id,
@@ -112,15 +118,16 @@ export async function GET(req) {
         avatar_url: userMap[id]?.avatar_url || null,
         watchlistCount: wlMeta[id]?.watchlistCount || 0,
         topGenres: wlMeta[id]?.topGenres || [],
-        isFollowing: true,
+        isFollowing: targetUserId === userId ? true : myFollowingSet.has(id),
       }));
 
       return Response.json({ users });
     }
 
-    // ─── FOLLOWERS (people who follow me) ───────────────────
+    // ─── FOLLOWERS (people who follow targetUser; defaults to caller) ─
     if (type === 'followers') {
-      const res = await fetch(`${db('follows')}?following_id=eq.${userId}&select=follower_id`, { headers });
+      const targetUserId = searchParams.get('targetUserId') || userId;
+      const res = await fetch(`${db('follows')}?following_id=eq.${targetUserId}&select=follower_id`, { headers });
       const rows = await res.json();
       const ids = (Array.isArray(rows) ? rows : []).map(r => r.follower_id);
       const userMap = await getUserMap(ids);
