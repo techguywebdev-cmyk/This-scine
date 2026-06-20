@@ -13,8 +13,10 @@ const headers = {
 const countHeaders = { ...headers, 'Prefer': 'count=exact' };
 
 // GET /api/users/[userId] -> public profile info for any user
+// targetId may be a real Clerk user ID (always starts with "user_") OR a plain @username
+// (used by the public /u/[username] share page) - usernames are resolved to a Clerk ID first.
 export async function GET(req, { params }) {
-  const { userId: targetId } = params;
+  let { userId: targetId } = params;
   const { userId: viewerId } = auth();
 
   if (!targetId) {
@@ -22,6 +24,19 @@ export async function GET(req, { params }) {
   }
 
   try {
+    if (!targetId.startsWith('user_')) {
+      try {
+        const { data: matches } = await clerkClient.users.getUserList({ username: [targetId], limit: 1 });
+        if (!matches || matches.length === 0) {
+          return Response.json({ error: 'User not found' }, { status: 404 });
+        }
+        targetId = matches[0].id;
+      } catch (err) {
+        console.error('username lookup error:', err);
+        return Response.json({ error: 'User not found' }, { status: 404 });
+      }
+    }
+
     // 1. Clerk profile info
     let username = 'user';
     let avatar_url = null;
