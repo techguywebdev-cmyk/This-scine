@@ -39,11 +39,40 @@ async function getUserMap(userIds) {
 }
 
 // GET /api/reviews?movieId=123 -> top-level reviews + nested replies, enriched with user info
+// GET /api/reviews?listId=abc -> top-level discussion comments on a community list (no replies/threading)
+// GET /api/reviews?userId=abc -> all reviews by a given user, across movies
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const movieId = searchParams.get('movieId');
+  const listId = searchParams.get('listId');
   const profileUserId = searchParams.get('userId');
   const { userId: viewerId } = auth();
+
+  // ─── LIST DISCUSSION: comments on a community list (flat, no threading) ───
+  if (listId) {
+    try {
+      const res = await fetch(`${db('reviews')}?list_id=eq.${listId}&order=created_at.desc&select=id,user_id,list_id,text,created_at`, { headers });
+      const rows = await res.json();
+      const allRows = Array.isArray(rows) ? rows : [];
+      const userIds = allRows.map(r => r.user_id);
+      const userMap = await getUserMap(userIds);
+
+      const comments = allRows.map(row => ({
+        id: row.id,
+        user_id: row.user_id,
+        username: userMap[row.user_id]?.username || 'user',
+        avatar_url: userMap[row.user_id]?.avatar_url || null,
+        text: row.text,
+        created_at: row.created_at,
+        isSelf: viewerId === row.user_id,
+      }));
+
+      return Response.json({ comments });
+    } catch (err) {
+      console.error('GET /api/reviews?listId error:', err);
+      return Response.json({ error: 'Failed to load discussion' }, { status: 500 });
+    }
+  }
 
   // ─── PROFILE REVIEWS: all reviews by a given user, across movies ───
   if (profileUserId) {
@@ -117,37 +146,67 @@ export async function GET(req) {
   }
 }
 
-// POST /api/reviews { movieId, movieTitle, text, rating, parentId? }
+// POST /api/reviews { movieId, movieTitle, text, rating, parentId? } -> movie review/comment
+// POST /api/reviews { listId, text } -> community list discussion comment
 export async function POST(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await request.json();
-    const { movieId, movieTitle, text, rating, parentId, time } = body;
+    const { movieId, movieTitle, text, rating, parentId, time, listId } = body;
 
-    if (!movieId || !text || !text.trim()) {
-      return Response.json({ error: 'movieId and text are required' }, { status: 400 });
+    if (!text || !text.trim()) {
+      return Response.json({ error: 'Text is required' }, { status: 400 });
+    }
+    if (!movieId && !listId) {
+      return Response.json({ error: 'movieId or listId is required' }, { status: 400 });
+    }
+
+    const payload = {
+      user_id: userId,
+      text: text.trim(),
+      list_id: listId || null,
+    };
+    if (movieId) {
+      payload.movie_id = movieId;
+      payload.movie_title = movieTitle || null;
+      payload.rating = rating || 0;
+      payload.time = time || 'just now';
+      payload.parent_id = parentId || null;
     }
 
     const res = await fetch(db('reviews'), {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        user_id: userId,
-        movie_id: movieId,
-        movie_title: movieTitle || null,
-        text: text.trim(),
-        rating: rating || 0,
-        time: time || 'just now',
-        parent_id: parentId || null,
-      }),
+      body: JSON.stringify(payload),
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Supabase insert error:', res.status, errText);
+      return Response.json({ error: `Failed to post: ${errText.slice(0, 200)}` }, { status: 500 });
+    }
 
     const data = await res.json();
     const row = Array.isArray(data) ? data[0] : data;
 
     const userMap = await getUserMap([userId]);
+
+    if (listId) {
+      return Response.json({
+        comment: {
+          id: row?.id,
+          user_id: userId,
+          list_id: row?.list_id,
+          text: row?.text,
+          created_at: row?.created_at,
+          username: userMap[userId]?.username || 'user',
+          avatar_url: userMap[userId]?.avatar_url || null,
+          isSelf: true,
+        },
+      });
+    }
 
     return Response.json({
       comment: {
@@ -168,7 +227,7 @@ export async function POST(request) {
     });
   } catch (err) {
     console.error('POST /api/reviews error:', err);
-    return Response.json({ error: 'Failed to post review' }, { status: 500 });
+    return Response.json({ error: 'Failed to post' }, { status: 500 });
   }
 }
 
@@ -205,4 +264,4 @@ export async function DELETE(request) {
     console.error('DELETE /api/reviews error:', err);
     return Response.json({ error: 'Failed to delete review' }, { status: 500 });
   }
-                  }
+}
