@@ -2649,134 +2649,15 @@ function CreateListSheet({onClose,accent,onCreated}){
     </div>
   );
 }
-
-function ListPlaylistPlayer({movies,startIndex=0,onClose,accent,onSave,watchlistIds}){
-  const[currentIdx,setCurrentIdx]=useState(startIndex);
-  const[trailerKey,setTrailerKey]=useState(null);
-  const[loadingTrailer,setLoadingTrailer]=useState(true);
-  const[showQueue,setShowQueue]=useState(false);
-  const TMDB_KEY=process.env.NEXT_PUBLIC_TMDB_KEY;
-  const current=movies[currentIdx];
-
-  useEffect(()=>{
-    if(!current||!TMDB_KEY)return;
-    setLoadingTrailer(true);setTrailerKey(null);
-    const mediaType=current.is_tv?'tv':'movie';
-    fetch(`https://api.themoviedb.org/3/${mediaType}/${current.movie_id}/videos?api_key=${TMDB_KEY}`)
-      .then(r=>r.json())
-      .then(d=>{
-        const vids=d.results||[];
-        const t=vids.find(v=>v.type==='Trailer'&&v.site==='YouTube')||vids.find(v=>v.site==='YouTube');
-        setTrailerKey(t?.key||null);setLoadingTrailer(false);
-      }).catch(()=>setLoadingTrailer(false));
-  },[currentIdx,current?.movie_id]);
-
-  const goNext=()=>{if(currentIdx<movies.length-1)setCurrentIdx(p=>p+1);else onClose();};
-  const goPrev=()=>{if(currentIdx>0)setCurrentIdx(p=>p-1);};
-
-  if(!current)return null;
-  const accent2=current.movie_accent||accent;
-
-  return(
-    <div style={{position:'fixed',inset:0,zIndex:200,background:'#000',display:'flex',flexDirection:'column',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)'}}>
-      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-
-      <div style={{position:'relative',width:'100%',paddingBottom:'56.25%',background:'#000',flexShrink:0}}>
-        {loadingTrailer&&(
-          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10}}>
-            <div style={{width:24,height:24,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent2}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
-            <span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>Loading trailer...</span>
-          </div>
-        )}
-        {!loadingTrailer&&trailerKey&&(
-          <iframe
-            key={trailerKey}
-            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}}
-            title={current.movie_title}
-          />
-        )}
-        {!loadingTrailer&&!trailerKey&&(
-          <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10}}>
-            <SvgIcon name="play" size={32} color="rgba(255,255,255,0.2)" filled/>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>No trailer available</div>
-            <button onClick={goNext} style={{background:accent2,border:'none',borderRadius:20,padding:'8px 20px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit',marginTop:6}}>Next film →</button>
-          </div>
-        )}
-        <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        </button>
-        <div style={{position:'absolute',top:12,left:'50%',transform:'translateX(-50%)',display:'flex',gap:4,zIndex:5}}>
-          {movies.map((_,i)=>(
-            <button key={i} onClick={()=>setCurrentIdx(i)} style={{height:3,width:i===currentIdx?18:6,borderRadius:2,background:i===currentIdx?accent2:i<currentIdx?'rgba(255,255,255,0.5)':'rgba(255,255,255,0.2)',border:'none',cursor:'pointer',padding:0,transition:'all 0.3s ease'}}/>
-          ))}
-        </div>
-      </div>
-
-      <div style={{flex:1,background:T.bg,display:'flex',flexDirection:'column',overflowY:'auto',WebkitOverflowScrolling:'touch'}}>
-        <div style={{padding:'16px 18px 12px',position:'relative',overflow:'hidden'}}>
-          <AccentGlow accent={accent2} size={150} style={{right:-30,top:-40}}/>
-          <div style={{position:'relative',display:'flex',alignItems:'flex-start',gap:12,marginBottom:14}}>
-            <div style={{width:52,height:72,borderRadius:10,overflow:'hidden',flexShrink:0,background:T.surface2}}>
-              {current.movie_poster&&<img src={current.movie_poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:17,fontWeight:800,fontStyle:'italic',fontFamily:T.serif,color:T.text,marginBottom:4,lineHeight:1.2}}>{current.movie_title}</div>
-              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
-                <span style={{fontSize:12,color:T.text3}}>{current.movie_year}</span>
-                {current.movie_rating&&<><SvgIcon name="star" size={10} color={accent2} filled/><span style={{fontSize:12,color:accent2,fontWeight:600}}>{current.movie_rating}</span></>}
-                {current.is_tv&&<span style={{fontSize:9,color:'#7BC8FF',border:'1px solid #7BC8FF44',borderRadius:4,padding:'1px 4px',fontWeight:700}}>TV</span>}
-              </div>
-              <button onClick={()=>onSave&&onSave({id:current.movie_id,title:current.movie_title,poster:current.movie_poster,year:current.movie_year,rating:current.movie_rating,accent:current.movie_accent,isTV:current.is_tv})}
-                style={{display:'flex',alignItems:'center',gap:5,background:watchlistIds?.has(current.movie_id)?`${accent2}14`:'transparent',border:`1px solid ${watchlistIds?.has(current.movie_id)?accent2+'40':T.hairlineStrong}`,borderRadius:20,padding:'6px 12px',cursor:'pointer',fontSize:11,color:watchlistIds?.has(current.movie_id)?accent2:T.text2,fontFamily:'inherit',fontWeight:600}}>
-                <SvgIcon name={watchlistIds?.has(current.movie_id)?'check':'plus'} size={10} color={watchlistIds?.has(current.movie_id)?accent2:T.text2}/>
-                {watchlistIds?.has(current.movie_id)?'Saved':'Save'}
-              </button>
-            </div>
-          </div>
-
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <button onClick={goPrev} disabled={currentIdx===0} style={{flex:1,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:14,padding:'11px',cursor:currentIdx===0?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7,opacity:currentIdx===0?0.35:1,fontFamily:'inherit'}}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-              <span style={{fontSize:12,fontWeight:600,color:T.text2}}>Prev</span>
-            </button>
-            <button onClick={()=>setShowQueue(p=>!p)} style={{background:showQueue?`${accent2}18`:T.surface2,border:`1px solid ${showQueue?accent2+'40':T.hairline}`,borderRadius:14,padding:'11px 14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6,fontFamily:'inherit'}}>
-              <SvgIcon name="list" size={14} color={showQueue?accent2:T.text2}/>
-              <span style={{fontSize:11,fontWeight:600,color:showQueue?accent2:T.text2}}>{currentIdx+1}/{movies.length}</span>
-            </button>
-            <button onClick={goNext} disabled={currentIdx===movies.length-1} style={{flex:1,background:currentIdx<movies.length-1?accent2:T.surface2,border:'none',borderRadius:14,padding:'11px',cursor:currentIdx===movies.length-1?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7,opacity:currentIdx===movies.length-1?0.35:1,fontFamily:'inherit'}}>
-              <span style={{fontSize:12,fontWeight:700,color:currentIdx<movies.length-1?'#07070F':T.text2}}>Next</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={currentIdx<movies.length-1?'#07070F':T.text2} strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-
-        {showQueue&&(
-          <div style={{flex:1,padding:'0 18px 24px',animation:'fadeIn 0.2s ease'}}>
-            <Eyebrow color={T.text3} style={{marginBottom:10,paddingTop:4}}>Up Next</Eyebrow>
-            <div style={{display:'flex',flexDirection:'column'}}>
-              {movies.map((m,i)=>(
-                <button key={m.movie_id} onClick={()=>setCurrentIdx(i)} style={{display:'flex',gap:10,alignItems:'center',background:'none',border:'none',borderTop:i>0?`1px solid ${T.hairline}`:'none',padding:'11px 0',cursor:'pointer',textAlign:'left',fontFamily:'inherit',opacity:i<currentIdx?0.4:1,transition:'opacity 0.2s'}}>
-                  <div style={{width:8,height:8,borderRadius:'50%',flexShrink:0,background:i===currentIdx?accent2:i<currentIdx?T.hairlineStrong:'transparent',border:i===currentIdx?'none':`1px solid ${T.hairlineStrong}`,transition:'all 0.2s'}}/>
-                  <div style={{width:38,height:52,borderRadius:7,overflow:'hidden',flexShrink:0,background:T.surface2}}>
-                    {m.movie_poster&&<img src={m.movie_poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover',opacity:i<currentIdx?0.4:1}}/>}
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:i===currentIdx?700:500,color:i===currentIdx?accent2:T.text,fontFamily:T.serif,fontStyle:'italic',marginBottom:2}}>{m.movie_title}</div>
-                    <div style={{fontSize:10,color:T.text3}}>{m.movie_year}{m.movie_rating?` · ★${m.movie_rating}`:''}</div>
-                  </div>
-                  {i===currentIdx&&<SvgIcon name="play" size={12} color={accent2} filled/>}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+<ListPlaylistPlayer
+  listId={listId}
+  movies={movies}
+  startIndex={playlistStartIdx}
+  onClose={() => setShowPlaylist(false)}
+  accent={accentColor}
+  onSave={onSave}
+  watchlistIds={watchlistIds}
+/>
 
 function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistIds}){
   const{isSignedIn,user}=useUser();
