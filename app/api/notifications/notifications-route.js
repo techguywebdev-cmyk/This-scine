@@ -35,24 +35,32 @@ async function getUserMap(userIds) {
   return map;
 }
 
-// GET /api/notifications -> recent notifications for the current user
+// GET /api/notifications
 export async function GET() {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const res = await fetch(`${db('notifications')}?user_id=eq.${userId}&order=created_at.desc&limit=50&select=id,type,from_user_id,read,created_at`, { headers });
+    const res = await fetch(
+      `${db('notifications')}?user_id=eq.${userId}&order=created_at.desc&limit=50&select=id,type,from_user_id,read,created_at`,
+      { headers }
+    );
     const rows = await res.json();
     const allRows = Array.isArray(rows) ? rows : [];
 
-    const fromIds = allRows.map(r => r.from_user_id);
+    const fromIds = allRows.map((r) => r.from_user_id);
     const userMap = await getUserMap(fromIds);
 
-    const myFollowingRes = await fetch(`${db('follows')}?follower_id=eq.${userId}&select=following_id`, { headers });
+    const myFollowingRes = await fetch(
+      `${db('follows')}?follower_id=eq.${userId}&select=following_id`,
+      { headers }
+    );
     const myFollowingRows = await myFollowingRes.json();
-    const followingSet = new Set((Array.isArray(myFollowingRows) ? myFollowingRows : []).map(r => r.following_id));
+    const followingSet = new Set(
+      (Array.isArray(myFollowingRows) ? myFollowingRows : []).map((r) => r.following_id)
+    );
 
-    const items = allRows.map(r => ({
+    const items = allRows.map((r) => ({
       id: r.id,
       type: r.type,
       user_id: r.from_user_id,
@@ -70,7 +78,49 @@ export async function GET() {
   }
 }
 
-// PATCH /api/notifications { id } -> mark a single notification as read
+// POST /api/notifications { targetId, type? } -> send a message / connect request
+export async function POST(request) {
+  const { userId } = auth();
+  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const body = await request.json();
+    const targetId = body.targetId || body.userId;
+    const type = body.type || 'message_request';
+
+    if (!targetId || targetId === userId) {
+      return Response.json({ error: 'Invalid targetId' }, { status: 400 });
+    }
+
+    // Avoid spamming identical open requests
+    const existingRes = await fetch(
+      `${db('notifications')}?user_id=eq.${targetId}&from_user_id=eq.${userId}&type=eq.${type}&read=eq.false&select=id&limit=1`,
+      { headers }
+    );
+    const existing = await existingRes.json();
+    if (Array.isArray(existing) && existing.length > 0) {
+      return Response.json({ success: true, alreadySent: true });
+    }
+
+    await fetch(db('notifications'), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        user_id: targetId,
+        from_user_id: userId,
+        type,
+        read: false,
+      }),
+    });
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error('POST /api/notifications error:', err);
+    return Response.json({ error: 'Failed to send request' }, { status: 500 });
+  }
+}
+
+// PATCH /api/notifications { id } -> mark read
 export async function PATCH(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
