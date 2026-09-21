@@ -3266,8 +3266,10 @@ function MessagesInbox({ onClose, accent, onOpenChat }) {
                     <span
                       style={{
                         fontSize: 15,
-                        fontWeight: isUnread ? 700 : 500,
+                        fontWeight: isUnread ? 700 : 600,
                         color: 'rgba(255,255,255,0.95)',
+                        fontFamily: T.serif,
+                        fontStyle: 'italic',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -3329,6 +3331,8 @@ function ChatWidget({ peer, onClose, accent }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [showStickers, setShowStickers] = useState(false);
+  const [showChatSettings, setShowChatSettings] = useState(false);
+  const [chatThemeId, setChatThemeId] = useState('classic');
   const [mediaTab, setMediaTab] = useState('stickers'); // stickers | gifs
   const [gifQuery, setGifQuery] = useState('');
   const [gifs, setGifs] = useState([]);
@@ -3341,6 +3345,13 @@ function ChatWidget({ peer, onClose, accent }) {
   const chunksRef = useRef([]);
   const recordTimerRef = useRef(null);
   const peerId = peer?.user_id || peer?.id;
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`cine_chat_theme_${peerId || 'default'}`);
+      if (saved && CHAT_THEMES[saved]) setChatThemeId(saved);
+    } catch {}
+  }, [peerId]);
 
   const STICKER_PACKS = {
     Cinema: ['🎬','🍿','🎥','🎞️','📽️','🎦','🏆','⭐','🌟','💫','🔥','💥'],
@@ -3655,6 +3666,19 @@ function ChatWidget({ peer, onClose, accent }) {
 
   const name = peerInfo?.display_name || peerInfo?.username || 'friend';
   const handle = peerInfo?.username ? `@${peerInfo.username}` : '';
+  const theme = CHAT_THEMES[chatThemeId] || CHAT_THEMES.classic;
+  const themeAccent = theme.accent;
+
+  const applyTheme = (id) => {
+    setChatThemeId(id);
+    try {
+      localStorage.setItem(`cine_chat_theme_${peerId || 'default'}`, id);
+    } catch {}
+    setShowChatSettings(false);
+  };
+
+  // restore saved theme for this peer
+  // (lazy once on mount via effect below)
 
   return (
     <>
@@ -3678,9 +3702,9 @@ function ChatWidget({ peer, onClose, accent }) {
           zIndex: 131,
           height: '82vh',
           maxHeight: 680,
-          background: T.bg,
+          background: theme.bg,
           borderRadius: '24px 24px 0 0',
-          border: `1px solid ${T.hairline}`,
+          border: `1px solid ${themeAccent}22`,
           borderBottom: 'none',
           display: 'flex',
           flexDirection: 'column',
@@ -3700,75 +3724,88 @@ function ChatWidget({ peer, onClose, accent }) {
         />
         <div
           style={{
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            borderBottom: `1px solid ${T.hairline}`,
+            padding: '10px 14px 14px',
+            borderBottom: `1px solid ${themeAccent}22`,
             flexShrink: 0,
+            position: 'relative',
           }}
         >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              background: `${accent}22`,
-              border: `1px solid ${accent}40`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {peerInfo?.avatar_url ? (
-              <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e)=>{e.currentTarget.style.display='none';}} />
-            ) : null}
-            {!(peerInfo?.avatar_url) && (
-              <span style={{ fontSize: 15, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>
-            )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '50%',
+                width: 34,
+                height: 34,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SvgIcon name="close" size={14} color="rgba(255,255,255,0.55)" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowChatSettings((v) => !v)}
+              title="Chat theme"
+              style={{
+                background: showChatSettings ? `${themeAccent}22` : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${showChatSettings ? themeAccent + '55' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '50%',
+                width: 34,
+                height: 34,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SvgIcon name="settings" size={14} color={showChatSettings ? themeAccent : 'rgba(255,255,255,0.55)'} />
+            </button>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: theme.text, fontFamily: T.serif, fontStyle: 'italic' }}>{name}</div>
-            <div style={{ fontSize: 11, color: theme.textMuted }}>{handle || 'Direct message'}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                background: `${themeAccent}22`,
+                border: `2px solid ${themeAccent}55`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 0 20px ${themeAccent}33`,
+              }}
+            >
+              {peerInfo?.avatar_url ? (
+                <img
+                  src={peerInfo.avatar_url}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <span style={{ fontSize: 22, fontWeight: 700, color: themeAccent, fontFamily: T.serif }}>
+                  {(name || 'U')[0].toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: theme.text, fontFamily: T.serif, fontStyle: 'italic' }}>
+                {name}
+              </div>
+              {handle ? (
+                <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2, fontFamily: 'inherit' }}>
+                  {handle}
+                </div>
+              ) : null}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowChatSettings((v) => !v)}
-            title="Chat theme"
-            style={{
-              background: showChatSettings ? `${themeAccent}22` : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${showChatSettings ? themeAccent + '55' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: '50%',
-              width: 32,
-              height: 32,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 6,
-            }}
-          >
-            <SvgIcon name="settings" size={14} color={showChatSettings ? themeAccent : 'rgba(255,255,255,0.55)'} />
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '50%',
-              width: 32,
-              height: 32,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <SvgIcon name="close" size={14} color="rgba(255,255,255,0.55)" />
-          </button>
         </div>
 
         {showChatSettings && (
