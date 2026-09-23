@@ -77,14 +77,17 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     edit:     ['M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7','M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'],
     trophy:   ['M8 21h8','M12 17v4','M7 4h10v6a5 5 0 0 1-10 0V4z','M7 5H4a1 1 0 0 0-1 1v1a3 3 0 0 0 3 3','M17 5h3a1 1 0 0 1 1 1v1a3 3 0 0 1-3 3'],
     masks:    ['M9 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6z','M5 8c-2 0-3 1.5-3 3.5S4 16 7 16','M15 6a3 3 0 1 1 0 6 3 3 0 0 1 0-6z','M19 8c2 0 3 1.5 3 3.5S20 16 17 16','M9 9.5c.5.5 1.5.5 2 0M15 9.5c-.5.5-1.5.5-2 0'],
-    mic:      ['M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z','M19 10v2a7 7 0 0 1-14 0v-2','M12 19v4','M8 23h8'],
     plus:     ['M12 5v14','M5 12h14'],
     gif:      ['M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z','M7 12h2.5a1.5 1.5 0 0 1 0 3H8v2','M13 9v6','M13 12h2.5','M17 9v6'],
-    phone:    ['M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'],
-    video:    ['M16 10l6-3v10l-6-3','M3 7h11a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z'],
-    speaker:  ['M11 5L6 9H2v6h4l5 4V5z','M19.07 4.93a10 10 0 0 1 0 14.14','M15.54 8.46a5 5 0 0 1 0 7.07'],
+    phone:     ['M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z'],
+    phoneEnd:  ['M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07','M1 1l22 22'],
+    video:     ['M23 7l-7 5 7 5V7z','M14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z'],
+    videoOff:  ['M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10','M1 1l22 22'],
+    mic:       ['M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z','M19 10v2a7 7 0 0 1-14 0v-2','M12 19v4','M8 23h8'],
+    micOff:    ['M1 1l22 22','M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6','M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23','M12 19v4','M8 23h8'],
+    speaker:   ['M11 5L6 9H2v6h4l5 4V5z','M15.54 8.46a5 5 0 0 1 0 7.07','M19.07 4.93a10 10 0 0 1 0 14.14'],
     speakerOff:['M11 5L6 9H2v6h4l5 4V5z','M23 9l-6 6','M17 9l6 6'],
-    phoneOff: ['M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07','M1 1l22 22','M6.5 6.5A16 16 0 0 0 3.07 14.5'],
+    flipCam:   ['M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5','M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5','M16 11l2-2-2-2','M8 13l-2 2 2 2'],
   };
   const def = icons[name];
   if (!def) return null;
@@ -3574,6 +3577,9 @@ function ChatWidget({ peer, onClose, accent }) {
   const [remoteSpeaking, setRemoteSpeaking] = useState(false);
   const [upgradePrompt, setUpgradePrompt] = useState(false); // peer asked to go video
   const [remoteStreamTick, setRemoteStreamTick] = useState(0);
+  const [facingMode, setFacingMode] = useState('user'); // user | environment
+  const [switchingCam, setSwitchingCam] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const [showAttach, setShowAttach] = useState(false);
   const [mediaTab, setMediaTab] = useState('stickers'); // stickers | gifs
   const [gifQuery, setGifQuery] = useState('');
@@ -3600,6 +3606,8 @@ function ChatWidget({ peer, onClose, accent }) {
   const reconnectTimerRef = useRef(null);
   const isCallerRef = useRef(false);
   const makingOfferRef = useRef(false);
+  const callModeRef = useRef(null);
+  const callStatusRef = useRef('idle');
   const peerId = peer?.user_id || peer?.id;
 
   const ICE_SERVERS =
@@ -4049,6 +4057,8 @@ function ChatWidget({ peer, onClose, accent }) {
     try { dialToneRef.current?.stop?.(); } catch {}
     dialToneRef.current = null;
     isCallerRef.current = false;
+    callModeRef.current = null;
+    callStatusRef.current = 'idle';
     setCallMode(null);
     setCallStatus('idle');
     setCallSecs(0);
@@ -4058,6 +4068,9 @@ function ChatWidget({ peer, onClose, accent }) {
     setCamOff(false);
     setRemoteSpeaking(false);
     setUpgradePrompt(false);
+    setFacingMode('user');
+    setSwitchingCam(false);
+    setControlsVisible(true);
   };
 
   const attemptIceRestart = async () => {
@@ -4255,8 +4268,15 @@ function ChatWidget({ peer, onClose, accent }) {
     const pc = pcRef.current;
 
     if (signal.kind === 'offer') {
-      if (callMode || callStatus === 'incoming') {
-        // already in a call — ignore extra offers
+      const busy =
+        !!callModeRef.current ||
+        callStatusRef.current === 'incoming' ||
+        callStatusRef.current === 'ringing' ||
+        callStatusRef.current === 'connecting' ||
+        callStatusRef.current === 'connected';
+      if (busy) {
+        // already in a call — politely tell peer we're busy
+        sendSignal({ kind: 'end', reason: 'busy' });
         return;
       }
       setIncomingCall({
@@ -4311,7 +4331,7 @@ function ChatWidget({ peer, onClose, accent }) {
     }
 
     if (signal.kind === 'upgrade_request') {
-      if (callMode === 'audio') setUpgradePrompt(true);
+      if (callModeRef.current === 'audio') setUpgradePrompt(true);
       return;
     }
 
@@ -4479,6 +4499,50 @@ function ChatWidget({ peer, onClose, accent }) {
     }
   };
 
+  const switchCamera = async () => {
+    if (callMode !== 'video' || switchingCam) return;
+    const nextFacing = facingMode === 'user' ? 'environment' : 'user';
+    setSwitchingCam(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: nextFacing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      const newTrack = stream.getVideoTracks()[0];
+      if (!newTrack) throw new Error('No camera');
+      const sender = pcRef.current?.getSenders?.()?.find((s) => s.track && s.track.kind === 'video');
+      if (sender) await sender.replaceTrack(newTrack);
+      // swap local stream video track
+      if (localStreamRef.current) {
+        localStreamRef.current.getVideoTracks().forEach((tr) => {
+          try {
+            tr.stop();
+            localStreamRef.current.removeTrack(tr);
+          } catch {}
+        });
+        localStreamRef.current.addTrack(newTrack);
+      } else {
+        localStreamRef.current = stream;
+      }
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+        localVideoRef.current.muted = true;
+        localVideoRef.current.play?.().catch(() => {});
+      }
+      setFacingMode(nextFacing);
+      setCamOff(false);
+    } catch (e) {
+      console.error('[call] switchCamera', e);
+      setError('Unable to switch camera.');
+      setTimeout(() => setError(null), 2500);
+    }
+    setSwitchingCam(false);
+  };
+
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -4526,6 +4590,10 @@ function ChatWidget({ peer, onClose, accent }) {
     }
     setSending(false);
   };
+
+  // keep refs in sync for signal handlers (avoid stale closures)
+  useEffect(() => { callModeRef.current = callMode; }, [callMode]);
+  useEffect(() => { callStatusRef.current = callStatus; }, [callStatus]);
 
   // call timer
   useEffect(() => {
@@ -4623,6 +4691,14 @@ function ChatWidget({ peer, onClose, accent }) {
       try { audioCtx?.close(); } catch {}
     };
   }, [callMode, callStatus, remoteStreamTick]);
+
+  // auto-hide controls on video after idle
+  useEffect(() => {
+    if (callMode !== 'video' || !controlsVisible) return;
+    if (callStatus !== 'connected') return;
+    const id = setTimeout(() => setControlsVisible(false), 4200);
+    return () => clearTimeout(id);
+  }, [callMode, callStatus, controlsVisible, micMuted, camOff, speakerOn]);
 
   // poll signals — faster during active call, moderate otherwise
   useEffect(() => {
@@ -4817,129 +4893,178 @@ function ChatWidget({ peer, onClose, accent }) {
           <button
             type="button"
             onClick={() => startCall('audio')}
+            aria-label="Start audio call"
             title="Audio call"
+            disabled={!!callMode || callStatus === 'incoming'}
             style={{
               width: 40,
               height: 40,
               borderRadius: '50%',
               background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              cursor: 'pointer',
+              border: 'none',
+              cursor: callMode ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              opacity: callMode ? 0.4 : 1,
+              transition: 'background 0.15s ease, opacity 0.15s ease',
             }}
           >
-            <SvgIcon name="phone" size={18} color="rgba(255,255,255,0.85)" />
+            <SvgIcon name="phone" size={18} color="rgba(255,255,255,0.88)" />
           </button>
           <button
             type="button"
             onClick={() => startCall('video')}
+            aria-label="Start video call"
             title="Video call"
+            disabled={!!callMode || callStatus === 'incoming'}
             style={{
               width: 40,
               height: 40,
               borderRadius: '50%',
               background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              cursor: 'pointer',
+              border: 'none',
+              cursor: callMode ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              opacity: callMode ? 0.4 : 1,
+              transition: 'background 0.15s ease, opacity 0.15s ease',
             }}
           >
-            <SvgIcon name="video" size={18} color="rgba(255,255,255,0.85)" />
+            <SvgIcon name="video" size={18} color="rgba(255,255,255,0.88)" />
           </button>
         </div>
 
-        {/* Incoming call banner */}
+        {/* Incoming call */}
         {callStatus === 'incoming' && incomingCall && (
           <div
             style={{
               position: 'fixed',
               inset: 0,
               zIndex: 200,
-              background: '#0B0B10',
+              background: '#06060B',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: 18,
-              padding: 28,
+              justifyContent: 'space-between',
+              padding: 'max(48px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom))',
+              animation: 'fadeIn 0.35s ease',
             }}
           >
+            <style>{`
+              @keyframes callRipple{0%{transform:scale(1);opacity:0.45}100%{transform:scale(1.55);opacity:0}}
+              @keyframes callPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+              @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+              @media (prefers-reduced-motion: reduce){
+                .cine-call-ripple,.cine-call-pulse{animation:none!important}
+              }
+            `}</style>
+            {/* soft ambient from accent */}
             <div
+              aria-hidden
               style={{
-                width: 110,
-                height: 110,
-                borderRadius: '50%',
-                overflow: 'hidden',
-                background: `${accent}33`,
-                border: `2px solid ${accent}66`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: `0 0 48px ${accent}44`,
+                position: 'absolute',
+                inset: 0,
+                background: `radial-gradient(ellipse at 50% 28%, ${accent}33 0%, transparent 55%)`,
+                pointerEvents: 'none',
               }}
-            >
-              {peerInfo?.avatar_url ? (
-                <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ fontFamily: T.serif, fontSize: 40, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>
-              )}
+            />
+            <div style={{ textAlign: 'center', zIndex: 1, marginTop: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                Incoming {incomingCall.type === 'video' ? 'video' : 'audio'} call
+              </div>
             </div>
-            <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 700, fontStyle: 'italic', color: '#fff' }}>{name}</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
-              Incoming {incomingCall.type === 'video' ? 'video' : 'audio'} call…
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 1 }}>
+              <div style={{ position: 'relative', width: 148, height: 148 }}>
+                <div className="cine-call-ripple" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1.5px solid ${accent}88`, animation: 'callRipple 2.2s ease-out infinite' }} />
+                <div className="cine-call-ripple" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1.5px solid ${accent}55`, animation: 'callRipple 2.2s ease-out 0.7s infinite' }} />
+                <div
+                  className="cine-call-pulse"
+                  style={{
+                    width: 148,
+                    height: 148,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    background: `${accent}28`,
+                    border: `2px solid ${accent}66`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    animation: 'callPulse 2.8s ease-in-out infinite',
+                    boxShadow: `0 12px 48px ${accent}33`,
+                  }}
+                >
+                  {peerInfo?.avatar_url ? (
+                    <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontFamily: T.serif, fontSize: 52, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 700, fontStyle: 'italic', color: '#fff', textAlign: 'center' }}>{name}</div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+                {incomingCall.type === 'video' ? 'Video' : 'Audio'} · CineScroll
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 28, marginTop: 28 }}>
-              <button
-                type="button"
-                onClick={async () => {
-                  await sendSignal({ kind: 'end' });
-                  setIncomingCall(null);
-                  setCallStatus('idle');
-                }}
-                style={{
-                  width: 68,
-                  height: 68,
-                  borderRadius: '50%',
-                  background: '#E50914',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <SvgIcon name="phone" size={24} color="#fff" />
-              </button>
-              <button
-                type="button"
-                onClick={() => acceptCall(incomingCall)}
-                style={{
-                  width: 68,
-                  height: 68,
-                  borderRadius: '50%',
-                  background: '#22C55E',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <SvgIcon name="phone" size={24} color="#fff" />
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: 48, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
-              <span>Decline</span>
-              <span>Accept</span>
+
+            <div style={{ display: 'flex', gap: 48, alignItems: 'center', zIndex: 1, marginBottom: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  aria-label="Decline call"
+                  onClick={async () => {
+                    await sendSignal({ kind: 'end' });
+                    setIncomingCall(null);
+                    setCallStatus('idle');
+                  }}
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: '50%',
+                    background: '#E50914',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 28px rgba(229,9,20,0.4)',
+                    transition: 'transform 0.15s ease',
+                  }}
+                >
+                  <SvgIcon name="phoneEnd" size={26} color="#fff" />
+                </button>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Decline</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  aria-label="Answer call"
+                  onClick={() => acceptCall(incomingCall)}
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: '50%',
+                    background: '#22C55E',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 28px rgba(34,197,94,0.4)',
+                    transition: 'transform 0.15s ease',
+                  }}
+                >
+                  <SvgIcon name={incomingCall.type === 'video' ? 'video' : 'phone'} size={26} color="#fff" />
+                </button>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Answer</span>
+              </div>
             </div>
           </div>
         )}
 
-                {/* Full-screen active call */}
+        {/* Active call */}
         {callMode && (
           <div
             style={{
@@ -4948,24 +5073,41 @@ function ChatWidget({ peer, onClose, accent }) {
               zIndex: 200,
               display: 'flex',
               flexDirection: 'column',
-              background: callMode === 'audio' ? '#0B0B10' : '#050508',
+              background: callMode === 'audio' ? '#06060B' : '#050508',
+              animation: 'fadeIn 0.3s ease',
+            }}
+            onClick={() => {
+              if (callMode === 'video') setControlsVisible(true);
             }}
           >
-            {/* Top bar */}
+            <style>{`
+              @keyframes callRipple{0%{transform:scale(1);opacity:0.4}100%{transform:scale(1.5);opacity:0}}
+              @keyframes callPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+              @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+              @media (prefers-reduced-motion: reduce){
+                .cine-call-ripple,.cine-call-pulse{animation:none!important}
+              }
+            `}</style>
+
+            {/* Top status */}
             <div
               style={{
-                padding: '16px 18px',
-                paddingTop: 'max(18px, env(safe-area-inset-top))',
+                padding: '14px 16px',
+                paddingTop: 'max(16px, env(safe-area-inset-top))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                zIndex: 5,
+                zIndex: 6,
+                opacity: callMode === 'video' && !controlsVisible ? 0 : 1,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: callMode === 'video' && !controlsVisible ? 'none' : 'auto',
                 background: callMode === 'video' ? 'linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)' : 'transparent',
               }}
             >
               <button
                 type="button"
-                onClick={endCall}
+                aria-label="Minimize call"
+                onClick={(e) => { e.stopPropagation(); endCall(); }}
                 style={{
                   width: 36,
                   height: 36,
@@ -4992,6 +5134,7 @@ function ChatWidget({ peer, onClose, accent }) {
                     : callStatus === 'connecting'
                     ? 'Connecting…'
                     : 'Calling…'}
+                  {error && callStatus === 'connected' ? ' · Reconnecting…' : ''}
                 </div>
               </div>
               <div style={{ width: 36 }} />
@@ -5015,25 +5158,48 @@ function ChatWidget({ peer, onClose, accent }) {
                       background: '#0B0B10',
                     }}
                   />
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
+                  {/* local PiP */}
+                  <div
                     style={{
                       position: 'absolute',
-                      bottom: 24,
-                      right: 16,
-                      width: 110,
-                      height: 150,
-                      objectFit: 'cover',
+                      bottom: controlsVisible ? 110 : 24,
+                      right: 14,
+                      width: 108,
+                      height: 152,
                       borderRadius: 16,
-                      border: '1.5px solid rgba(255,255,255,0.25)',
+                      overflow: 'hidden',
+                      border: '1.5px solid rgba(255,255,255,0.2)',
+                      boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
                       background: '#111',
                       zIndex: 4,
-                      opacity: camOff ? 0.35 : 1,
+                      transition: 'bottom 0.3s ease',
+                      opacity: camOff ? 0.4 : 1,
                     }}
-                  />
+                  >
+                    {camOff ? (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a22' }}>
+                        <SvgIcon name="videoOff" size={22} color="rgba(255,255,255,0.4)" />
+                      </div>
+                    ) : (
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
+                        }}
+                      />
+                    )}
+                    {switchingCam && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 11, color: '#fff', fontWeight: 600 }}>Switching…</span>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <div
@@ -5044,52 +5210,44 @@ function ChatWidget({ peer, onClose, accent }) {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 20,
-                    background: `radial-gradient(ellipse at 50% 38%, ${accent}40 0%, ${accent}18 32%, #0B0B10 68%, #08080C 100%)`,
+                    gap: 18,
+                    background: `radial-gradient(ellipse at 50% 40%, ${accent}38 0%, ${accent}14 36%, #06060B 70%)`,
                   }}
                 >
-                  <div
-                    style={{
-                      width: 148,
-                      height: 148,
-                      borderRadius: '50%',
-                      padding: 4,
-                      background: remoteSpeaking
-                        ? `radial-gradient(circle, ${accent}aa 0%, ${accent}55 45%, transparent 72%)`
-                        : 'transparent',
-                      boxShadow: remoteSpeaking
-                        ? `0 0 0 6px ${accent}44, 0 0 40px ${accent}77, 0 0 80px ${accent}44`
-                        : 'none',
-                      transition: 'box-shadow 0.15s ease, background 0.15s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
+                  <div style={{ position: 'relative', width: 156, height: 156 }}>
+                    {remoteSpeaking && (
+                      <>
+                        <div className="cine-call-ripple" style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `2px solid ${accent}99`, animation: 'callRipple 1.6s ease-out infinite' }} />
+                        <div className="cine-call-ripple" style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `2px solid ${accent}55`, animation: 'callRipple 1.6s ease-out 0.5s infinite' }} />
+                      </>
+                    )}
                     <div
                       style={{
-                        width: 132,
-                        height: 132,
+                        width: 156,
+                        height: 156,
                         borderRadius: '50%',
                         overflow: 'hidden',
-                        background: `${accent}33`,
+                        background: `${accent}28`,
                         border: `2px solid ${accent}66`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        boxShadow: remoteSpeaking ? `0 0 48px ${accent}55` : `0 12px 40px ${accent}22`,
+                        transition: 'box-shadow 0.2s ease',
                       }}
                     >
                       {peerInfo?.avatar_url ? (
                         <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontFamily: T.serif, fontSize: 48, fontWeight: 700, color: accent }}>
-                          {(name || 'U')[0].toUpperCase()}
-                        </span>
+                        <span style={{ fontFamily: T.serif, fontSize: 52, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>
                       )}
                     </div>
                   </div>
-                  {remoteSpeaking && (
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.3 }}>Speaking…</div>
+                  {callStatus === 'ringing' && (
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Ringing…</div>
+                  )}
+                  {callStatus === 'connecting' && (
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Connecting…</div>
                   )}
                 </div>
               )}
@@ -5102,14 +5260,16 @@ function ChatWidget({ peer, onClose, accent }) {
                   position: 'absolute',
                   left: 16,
                   right: 16,
-                  bottom: 140,
-                  zIndex: 10,
-                  background: 'rgba(20,20,28,0.95)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  bottom: 130,
+                  zIndex: 12,
+                  background: 'rgba(15,15,24,0.96)',
+                  border: `1px solid ${T.hairlineStrong}`,
                   borderRadius: 18,
                   padding: '16px 18px',
                   textAlign: 'center',
+                  backdropFilter: 'blur(12px)',
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, marginBottom: 6 }}>Switch to video?</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 14 }}>
@@ -5123,8 +5283,8 @@ function ChatWidget({ peer, onClose, accent }) {
                       flex: 1,
                       padding: '12px',
                       borderRadius: 14,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      background: 'rgba(255,255,255,0.06)',
+                      border: `1px solid ${T.hairline}`,
+                      background: 'rgba(255,255,255,0.05)',
                       color: 'rgba(255,255,255,0.7)',
                       fontWeight: 600,
                       fontSize: 13,
@@ -5159,18 +5319,23 @@ function ChatWidget({ peer, onClose, accent }) {
             {/* Controls */}
             <div
               style={{
-                padding: '20px 28px max(28px, env(safe-area-inset-bottom))',
+                padding: '18px 24px max(26px, env(safe-area-inset-bottom))',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                gap: 22,
-                zIndex: 5,
-                background: callMode === 'video' ? 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)' : 'transparent',
+                gap: 16,
+                zIndex: 6,
+                opacity: callMode === 'video' && !controlsVisible ? 0 : 1,
+                transform: callMode === 'video' && !controlsVisible ? 'translateY(12px)' : 'translateY(0)',
+                transition: 'opacity 0.3s ease, transform 0.3s ease',
+                pointerEvents: callMode === 'video' && !controlsVisible ? 'none' : 'auto',
+                background: callMode === 'video' ? 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' : 'transparent',
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Speaker */}
               <button
                 type="button"
+                aria-label={speakerOn ? 'Speaker on' : 'Speaker off'}
                 onClick={() => {
                   setSpeakerOn((v) => {
                     const next = !v;
@@ -5182,10 +5347,10 @@ function ChatWidget({ peer, onClose, accent }) {
                   });
                 }}
                 style={{
-                  width: 54,
-                  height: 54,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
-                  background: speakerOn ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.08)',
+                  background: speakerOn ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.9)',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -5193,12 +5358,12 @@ function ChatWidget({ peer, onClose, accent }) {
                   justifyContent: 'center',
                 }}
               >
-                <SvgIcon name={speakerOn ? 'speaker' : 'speakerOff'} size={20} color="#fff" />
+                <SvgIcon name={speakerOn ? 'speaker' : 'speakerOff'} size={20} color={speakerOn ? '#fff' : '#0A0A0F'} />
               </button>
 
-              {/* Mic */}
               <button
                 type="button"
+                aria-label={micMuted ? 'Unmute microphone' : 'Mute microphone'}
                 onClick={() => {
                   setMicMuted((v) => {
                     const next = !v;
@@ -5208,8 +5373,8 @@ function ChatWidget({ peer, onClose, accent }) {
                   });
                 }}
                 style={{
-                  width: 54,
-                  height: 54,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
                   background: micMuted ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.14)',
                   border: 'none',
@@ -5219,20 +5384,26 @@ function ChatWidget({ peer, onClose, accent }) {
                   justifyContent: 'center',
                 }}
               >
-                <SvgIcon name="mic" size={20} color={micMuted ? '#0A0A0F' : '#fff'} />
+                <SvgIcon name={micMuted ? 'micOff' : 'mic'} size={20} color={micMuted ? '#0A0A0F' : '#fff'} />
               </button>
 
-              {/* Audio ↔ Video switch (WhatsApp-style) */}
-              {callMode === 'video' ? (
+              {callMode === 'video' && (
                 <button
                   type="button"
-                  onClick={switchToAudio}
-                  title="Switch to audio"
+                  aria-label={camOff ? 'Turn camera on' : 'Turn camera off'}
+                  onClick={() => {
+                    setCamOff((v) => {
+                      const next = !v;
+                      const track = localStreamRef.current?.getVideoTracks()?.[0];
+                      if (track) track.enabled = !next;
+                      return next;
+                    });
+                  }}
                   style={{
-                    width: 54,
-                    height: 54,
+                    width: 52,
+                    height: 52,
                     borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.14)',
+                    background: camOff ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.14)',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
@@ -5240,16 +5411,41 @@ function ChatWidget({ peer, onClose, accent }) {
                     justifyContent: 'center',
                   }}
                 >
-                  <SvgIcon name="phone" size={20} color="#fff" />
+                  <SvgIcon name={camOff ? 'videoOff' : 'video'} size={20} color={camOff ? '#0A0A0F' : '#fff'} />
                 </button>
-              ) : (
+              )}
+
+              {callMode === 'video' && (
                 <button
                   type="button"
-                  onClick={requestVideoUpgrade}
-                  title="Switch to video"
+                  aria-label="Switch camera"
+                  disabled={switchingCam || camOff}
+                  onClick={switchCamera}
                   style={{
-                    width: 54,
-                    height: 54,
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.14)',
+                    border: 'none',
+                    cursor: switchingCam || camOff ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: camOff ? 0.4 : 1,
+                  }}
+                >
+                  <SvgIcon name="flipCam" size={20} color="#fff" />
+                </button>
+              )}
+
+              {callMode === 'audio' && (
+                <button
+                  type="button"
+                  aria-label="Switch to video"
+                  onClick={requestVideoUpgrade}
+                  style={{
+                    width: 52,
+                    height: 52,
                     borderRadius: '50%',
                     background: 'rgba(255,255,255,0.14)',
                     border: 'none',
@@ -5263,13 +5459,34 @@ function ChatWidget({ peer, onClose, accent }) {
                 </button>
               )}
 
-              {/* End */}
+              {callMode === 'video' && (
+                <button
+                  type="button"
+                  aria-label="Switch to audio"
+                  onClick={switchToAudio}
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.14)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <SvgIcon name="phone" size={20} color="#fff" />
+                </button>
+              )}
+
               <button
                 type="button"
+                aria-label="End call"
                 onClick={endCall}
                 style={{
-                  width: 64,
-                  height: 64,
+                  width: 60,
+                  height: 60,
                   borderRadius: '50%',
                   background: '#E50914',
                   border: 'none',
@@ -5280,7 +5497,7 @@ function ChatWidget({ peer, onClose, accent }) {
                   boxShadow: '0 8px 28px rgba(229,9,20,0.45)',
                 }}
               >
-                <SvgIcon name="phone" size={24} color="#fff" />
+                <SvgIcon name="phoneEnd" size={24} color="#fff" />
               </button>
             </div>
           </div>
