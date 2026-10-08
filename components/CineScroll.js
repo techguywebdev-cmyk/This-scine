@@ -3063,11 +3063,11 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
         </div>
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
       </div>
-      <div style={{position:'absolute',right:10,bottom:76,zIndex:10,display:'flex',flexDirection:'column',gap:7,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
+      <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)}].map(btn=>(
-          <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:20,padding:'13px 0 11px',cursor:'pointer',width:60,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
-            <SvgIcon name={btn.icon} size={25} color={btn.active?btn.color:'rgba(255,255,255,0.85)'} filled={btn.filled}/>
-            <span style={{fontSize:10,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
+          <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
+            <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
+            <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
           </button>
         ))}
       </div>
@@ -8016,17 +8016,17 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
 }
 
 // A real folder: back panel with a tab, the newest title's poster tucked inside, and a frosted
-// front flap in the page colour. Scales to any width (height follows the 5:4 shape).
+// front flap in the page colour. Scales to any width (height follows the 7:5 shape).
 function FolderArt({poster,accent,locked,count,small=false}){
   const r=small?5:10;
   return(
-    <div style={{position:'relative',width:'100%',aspectRatio:'5/4'}}>
+    <div style={{position:'relative',width:'100%',aspectRatio:'7/5'}}>
       {/* back panel + tab */}
       <div style={{position:'absolute',left:0,top:0,width:'44%',height:'22%',borderRadius:`${r}px ${r}px 0 0`,background:`linear-gradient(180deg,${accent}b3,${accent}80)`,clipPath:'polygon(0 0, 82% 0, 100% 100%, 0 100%)'}}/>
       <div style={{position:'absolute',left:0,right:0,top:'12%',bottom:0,borderRadius:r,background:`linear-gradient(180deg,${accent}99,${accent}55)`,boxShadow:'0 10px 26px rgba(0,0,0,0.38)'}}/>
       {/* the title inside, peeking out */}
       {poster&&(
-        <div style={{position:'absolute',left:'50%',top:small?'16%':'14%',width:'38%',aspectRatio:'2/3',transform:'translateX(-50%) rotate(-4deg)',borderRadius:small?2:4,overflow:'hidden',boxShadow:'0 4px 14px rgba(0,0,0,0.45)',border:'1px solid rgba(255,255,255,0.18)'}}>
+        <div style={{position:'absolute',left:'50%',top:small?'15%':'13%',width:'33%',aspectRatio:'2/3',transform:'translateX(-50%) rotate(-4deg)',borderRadius:small?2:4,overflow:'hidden',boxShadow:'0 4px 14px rgba(0,0,0,0.45)',border:'1px solid rgba(255,255,255,0.18)'}}>
           <img src={poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
         </div>
       )}
@@ -8269,7 +8269,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const FolderTile=({title,sub,posters,locked,onClick,dashed,count})=>(
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
       {dashed?(
-        <div style={{position:'relative',width:'100%',aspectRatio:'5/4'}}>
+        <div style={{position:'relative',width:'100%',aspectRatio:'7/5'}}>
           <div style={{position:'absolute',left:0,top:0,width:'40%',height:'16%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
           <div style={{position:'absolute',left:0,right:0,top:'12%',bottom:0,borderRadius:10,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
         </div>
