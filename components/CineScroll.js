@@ -2093,11 +2093,11 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                   <div style={{display:'flex',flexDirection:'column',gap:1,borderBottom:`1px solid ${T.hairline}`,overflow:'hidden'}}>
                     {userLists.map(list=>(
                       <button key={list.id} onClick={()=>setViewingList(list.id)} style={{display:'flex',gap:12,alignItems:'center',background:'transparent',boxShadow:`0 -1px 0 ${T.hairline}`,border:'none',padding:'13px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
-                        <div style={{width:52,height:34,borderRadius:8,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accentColor}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center'}}/>
+                        <FolderCover posters={list.posters?.length?list.posters:(list.cover_poster?[list.cover_poster]:[])} accent={accentColor} size={56} locked={list.is_public===false}/>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:2}}>{list.title}</div>
                           <div style={{fontSize:11,color:T.text3,display:'flex',alignItems:'center',gap:6}}>
-                            <span>{list.movie_count} film{list.movie_count!==1?'s':''}</span>
+                            <span>{list.movie_count} title{list.movie_count!==1?'s':''}</span>
                             {list.avg_rating&&<><SvgIcon name="star" size={9} color={accentColor} filled/><span style={{color:accentColor,fontWeight:600}}>{list.avg_rating}</span></>}
                             <span>· {list.follower_count} follower{list.follower_count!==1?'s':''}</span>
                           </div>
@@ -2674,7 +2674,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                   <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
                     {folders.map(f => (
                       <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ flexShrink: 0, width: 132, cursor: 'pointer' }}>
-                        <div style={{ width: 128 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={f.cover_accent || accent} count={f.movie_count || 0} /></div>
+                        <div style={{ width: 128 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} /></div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
                         <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
                       </div>
@@ -7823,7 +7823,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
     }catch{}
   };
 
-  const accentColor=list?.cover_accent||accent;
+  const accentColor=accent; // folders always follow the page colour
 
   return(
     <>
@@ -7854,9 +7854,8 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
       <div style={{minHeight:'100%',background:ambient(accent),paddingBottom:48}}>
         {/* COVER HEADER */}
-        <div style={{position:'relative',width:'100%',aspectRatio:'2.2',background:list?.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${accentColor}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center',flexShrink:0}}>
-          <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(6,6,11,0.2) 0%,rgba(6,6,11,0.98) 100%)'}}/>
-          <AccentGlow accent={accentColor} size={200} style={{right:0,top:0}}/>
+        <div style={{position:'relative',width:'100%',padding:'60px 0 52px',display:'flex',justifyContent:'center',flexShrink:0}}>
+          {!loading&&list&&<div style={{width:150}}><FolderArt poster={list.cover_url||movies[movies.length-1]?.movie_poster||list.cover_poster} accent={accentColor} locked={list.is_public===false} count={movies.length}/></div>}
           <button onClick={onClose} style={{position:'absolute',top:14,left:14,background:'rgba(0,0,0,0.5)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
           </button>
@@ -7878,7 +7877,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
         {!loading&&!loadError&&list&&(
           <div style={{padding:'0 20px'}}>
             {/* TITLE + META */}
-            <div style={{marginTop:-32,position:'relative',zIndex:2,marginBottom:18}}>
+            <div style={{marginTop:0,position:'relative',zIndex:2,marginBottom:18}}>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
                 <div style={{width:30,height:30,borderRadius:'50%',background:`${accentColor}20`,border:`1px solid ${accentColor}40`,overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:accentColor}}>
                   {list.avatar_url?<img src={list.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(list.display_name||'U')[0].toUpperCase()}
@@ -8329,7 +8328,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
 
   const PublicRow=({l})=>(
     <div role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} onKeyDown={e=>e.key==='Enter'&&onOpenList&&onOpenList(l.id)} style={{display:'flex',gap:14,alignItems:'center',padding:'13px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer'}}>
-      <FolderCover posters={l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[])} accent={l.cover_accent||accent} size={60}/>
+      <FolderCover posters={l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[])} accent={accent} size={60}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:14,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
         <div style={{fontSize:11,color:T.text2,marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>by {l.display_name||l.username} · {l.movie_count||0} titles{l.follower_count?` · ${l.follower_count} following`:''}</div>
