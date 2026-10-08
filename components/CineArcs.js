@@ -319,12 +319,12 @@ function Staircase({ posters = [], ids = [], watchedSet, accent, height = 150 })
   const steps = posters.slice(0, 6);
   const n = Math.max(steps.length, 1);
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height }}>
       {steps.map((src, i) => {
-        const h = Math.round(height * (0.5 + (0.5 * (i + 1)) / n));
+        const h = Math.round(height * (0.45 + (0.55 * (i + 1)) / n));
         const done = watchedSet?.has(String(ids[i]));
         return (
-          <div key={i} style={{ position: 'relative', flex: 1, height: h, borderRadius: 8, overflow: 'hidden', background: 'rgba(255,255,255,0.06)', boxShadow: i === n - 1 ? `0 0 28px ${accent}55` : '0 6px 18px rgba(0,0,0,0.45)', border: `1px solid ${i === n - 1 ? accent + '88' : 'rgba(255,255,255,0.1)'}` }}>
+          <div key={i} style={{ position: 'relative', flex: 1, height: h, borderRadius: 3, overflow: 'hidden', background: 'rgba(255,255,255,0.06)', borderBottom: `2px solid ${i === n - 1 ? accent : 'transparent'}` }}>
             {src && <img src={src} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
             {done && (
               <div style={{ position: 'absolute', inset: 0, background: `${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -365,52 +365,37 @@ function ArcRow({ arc, progress, rating, onOpen }) {
   const accent = meta.accent || '#F5A623';
   const total = arc.item_count || arc.items?.length || 0;
   const watchedSet = new Set(progress?.watched || []);
-  const watched = (arc.sample_ids || []).filter((id) => watchedSet.has(id)).length || progress?.watched?.length || 0;
+  const watched = Math.min(total, (arc.sample_ids || []).filter((id) => watchedSet.has(id)).length || progress?.watched?.length || 0);
   const done = total > 0 && watched >= total;
-  const stage = stageFor(meta, Math.min(watched, total), total);
+  const stage = stageFor(meta, watched, total);
   const kind = arc.media_type === 'tv' ? 'series' : 'films';
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(arc)}
-      style={{ display: 'block', width: '100%', textAlign: 'left', padding: 0, border: `1px solid ${T.hairline}`, borderRadius: 22, overflow: 'hidden', background: T.surface, cursor: 'pointer', fontFamily: 'inherit', color: 'inherit' }}
-    >
-      <div style={{ position: 'relative', padding: '22px 18px 0', overflow: 'hidden' }}>
-        {arc.cover_backdrop && (
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${arc.cover_backdrop})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.22, filter: 'blur(14px) saturate(1.2)', transform: 'scale(1.15)' }} />
+    <div role="button" tabIndex={0} onClick={() => onOpen(arc)} onKeyDown={(e) => e.key === 'Enter' && onOpen(arc)}
+      style={{ padding: '18px 4px', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 21, lineHeight: 1.2, color: '#fff', minWidth: 0 }}>{shortTitle(arc.title)}</div>
+        {rating?.avg != null && rating.count > 0 && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}><span style={{ color: '#FFD166' }}>★</span>{Number(rating.avg).toFixed(1)}</span>
         )}
-        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(120% 90% at 100% 100%, ${accent}30 0%, transparent 60%)` }} />
-        <div style={{ position: 'relative' }}>
-          <Staircase posters={arc.sample_posters || []} ids={arc.sample_ids || []} watchedSet={watchedSet} accent={accent} height={150} />
-        </div>
+      </div>
+      <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+        <span style={{ color: accent, fontWeight: 700 }}>{meta.label || arc.theme}</span> · {total} {kind}
       </div>
 
-      <div style={{ padding: '16px 18px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: accent }}>{meta.label || arc.theme} {arc.media_type === 'tv' ? 'series' : ''}</span>
-          <span style={{ fontSize: 12.5, color: T.text2 }}>
-            {total} {kind}
-            {rating?.avg != null && rating.count > 0 && (
-              <span style={{ marginLeft: 10, color: T.text }}>
-                <span style={{ color: '#FFD166' }}>★</span> {Number(rating.avg).toFixed(1)}
-              </span>
-            )}
-          </span>
-        </div>
-        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 23, lineHeight: 1.15, color: '#fff', marginTop: 6 }}>{shortTitle(arc.title)}</div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginTop: 6 }}>{arc.subtitle}</div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
-          <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-            <div style={{ width: `${total ? (Math.min(watched, total) / total) * 100 : 0}%`, height: '100%', background: accent, borderRadius: 2 }} />
-          </div>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: watched ? accent : T.text2, whiteSpace: 'nowrap' }}>
-            {done ? 'Completed' : watched ? `${Math.min(watched, total)} of ${total} · ${stage.label}` : 'Start the climb'}
-          </span>
-        </div>
+      <div style={{ marginTop: 12 }}>
+        <Staircase posters={arc.sample_posters || []} ids={arc.sample_ids || []} watchedSet={watchedSet} accent={accent} height={112} />
       </div>
-    </button>
+
+      <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.68)', lineHeight: 1.5, margin: '12px 0 0', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{arc.summary || arc.subtitle}</p>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: watched ? accent : 'rgba(255,255,255,0.5)' }}>
+          {done ? 'Completed' : watched ? `${watched} of ${total} watched · ${stage.label}` : 'Not started'}
+        </span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#fff' }}>{done ? 'View' : watched ? 'Continue' : 'Start'}</span>
+      </div>
+    </div>
   );
 }
 
@@ -501,8 +486,8 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
         {/* Primary action */}
         {next ? (
           <button type="button" onClick={() => play(next)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, background: accent, color: '#06060B', border: 'none', borderRadius: 16, padding: '10px 12px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-            <div style={{ width: 38, height: 54, borderRadius: 7, overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }}>
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, background: accent, color: '#06060B', border: 'none', borderRadius: 6, padding: '10px 12px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+            <div style={{ width: 38, height: 54, borderRadius: 3, overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }}>
               {next.poster && <img src={next.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -514,12 +499,12 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
             </div>
           </button>
         ) : total > 0 ? (
-          <div style={{ padding: 18, borderRadius: 18, background: `${accent}16`, border: `1px solid ${accent}44`, textAlign: 'center' }}>
+          <div style={{ padding: '18px 0', borderTop: `2px solid ${accent}`, borderBottom: `1px solid ${T.hairline}` }}>
             <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 22, color: '#fff' }}>You finished the climb</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>{meta.stageCopy?.[meta.stageCopy.length - 1] || 'Every step, done.'}</div>
             {onShareComplete && (
               <button type="button" onClick={() => onShareComplete(arc)} disabled={shareStatus === 'shared' || shareStatus === 'sharing'}
-                style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, background: shareStatus === 'shared' ? 'transparent' : accent, border: `1px solid ${accent}`, borderRadius: 999, padding: '10px 18px', fontSize: 14, fontWeight: 800, color: shareStatus === 'shared' ? accent : '#06060B', cursor: shareStatus === 'shared' ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, background: shareStatus === 'shared' ? 'transparent' : accent, border: `1px solid ${accent}`, borderRadius: 6, padding: '10px 18px', fontSize: 14, fontWeight: 800, color: shareStatus === 'shared' ? accent : '#06060B', cursor: shareStatus === 'shared' ? 'default' : 'pointer', fontFamily: 'inherit' }}>
                 <Icon name={shareStatus === 'shared' ? 'check' : 'share'} size={14} color={shareStatus === 'shared' ? accent : '#06060B'} stroke={2.2} />
                 {shareStatus === 'sharing' ? 'Sharing…' : shareStatus === 'shared' ? 'Shared with friends' : 'Share with friends'}
               </button>
@@ -542,41 +527,39 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
         {/* The path */}
         <div ref={pathRef} style={{ marginTop: 28 }}>
           <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', marginBottom: 4 }}>The path</div>
-          <div style={{ fontSize: 13, color: T.text2, marginBottom: 14 }}>Gentlest first, most intense last. Tap a poster for the trailer, tap the circle once you've watched it.</div>
+          <div style={{ fontSize: 13, color: T.text2, marginBottom: 12 }}>Gentlest first, most intense last.</div>
 
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', left: 15, top: 20, bottom: 20, width: 2, background: `linear-gradient(to bottom, ${accent}22, ${accent})`, borderRadius: 1 }} />
+          <div>
             {items.map((item, i) => {
               const done = watchedSet.has(String(item.movie_id));
               const isNext = i === nextIdx;
               const stepName = meta.stages?.[Math.max(0, (item.intensity || 1) - 1)] || '';
               return (
-                <div key={item.movie_id} style={{ position: 'relative', display: 'flex', gap: 14, paddingBottom: 14 }}>
-                  <button type="button" onClick={() => onToggleWatched(arc.id, item.movie_id)} aria-label={done ? `Mark ${item.title} as not watched` : `Mark ${item.title} as watched`}
-                    style={{ position: 'relative', zIndex: 1, width: 32, height: 32, marginTop: 34, borderRadius: '50%', flexShrink: 0, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: done ? accent : T.bg, border: `2px solid ${done || isNext ? accent : 'rgba(255,255,255,0.18)'}`, boxShadow: isNext ? `0 0 0 4px ${accent}22` : 'none', fontFamily: 'inherit' }}>
-                    {done ? <Icon name="check" size={15} color="#06060B" stroke={3} /> : <span style={{ fontSize: 12.5, fontWeight: 800, color: isNext ? accent : T.text2 }}>{i + 1}</span>}
-                  </button>
-
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: 12, padding: 10, borderRadius: 16, background: isNext ? `${accent}10` : T.surface, border: `1px solid ${isNext ? accent + '55' : T.hairline}` }}>
-                    <button type="button" onClick={() => play(item)} aria-label={`Play trailer for ${item.title}`}
-                      style={{ position: 'relative', width: 68, height: 100, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', border: 'none', padding: 0, cursor: 'pointer' }}>
-                      {item.poster && <img src={item.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: done ? 0.55 : 1 }} />}
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(6,6,11,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Icon name="play" size={12} color="#fff" filled />
-                        </div>
+                <div key={item.movie_id} role="button" tabIndex={0} onClick={() => play(item)} onKeyDown={(e) => e.key === 'Enter' && play(item)}
+                  style={{ display: 'flex', gap: 14, padding: '16px 0 16px 10px', borderTop: `1px solid ${T.hairline}`, borderLeft: `2px solid ${isNext ? accent : 'transparent'}`, cursor: 'pointer' }}>
+                  <div style={{ width: 22, flexShrink: 0, fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 22, lineHeight: 1, color: done || isNext ? accent : 'rgba(255,255,255,0.3)', paddingTop: 2 }}>{i + 1}</div>
+                  <div style={{ position: 'relative', width: 70, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)' }}>
+                    {item.poster && <img src={item.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: done ? 0.5 : 1 }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 18, lineHeight: 1.2, color: done ? 'rgba(255,255,255,0.55)' : '#fff' }}>{item.title}</div>
+                    <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+                      {item.year || (item.release_date || '').slice(0, 4)}
+                      {item.vote_average ? <> · <span style={{ color: '#FFD166' }}>★</span> <span style={{ color: 'rgba(255,255,255,0.85)' }}>{Number(item.vote_average).toFixed(1)}</span></> : null}
+                    </div>
+                    {item.overview && (
+                      <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.68)', lineHeight: 1.5, margin: '7px 0 0', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.overview}</p>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: accent, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isNext ? 'Up next' : stepName}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onToggleWatched(arc.id, item.movie_id); }}
+                          aria-label={done ? `Mark ${item.title} as not watched` : `Mark ${item.title} as watched`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', padding: 4, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', color: done ? accent : 'rgba(255,255,255,0.7)' }}>
+                          <Icon name="check" size={14} color={done ? accent : 'rgba(255,255,255,0.7)'} stroke={2.4} />{done ? 'Seen' : 'Mark seen'}
+                        </button>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, fontWeight: 700, color: '#fff' }}><Icon name="play" size={11} color="#fff" filled />Trailer</span>
                       </div>
-                    </button>
-                    <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: accent }}>{isNext ? 'Up next' : stepName}</div>
-                      <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 17, lineHeight: 1.2, color: done ? T.text2 : '#fff', marginTop: 3 }}>{item.title}</div>
-                      <div style={{ fontSize: 12.5, color: T.text2, marginTop: 4 }}>
-                        {item.year || (item.release_date || '').slice(0, 4)}
-                        {item.vote_average ? <>  <span style={{ color: '#FFD166' }}>★</span> {Number(item.vote_average).toFixed(1)}</> : null}
-                      </div>
-                      {item.overview && (
-                        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.45, marginTop: 5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.overview}</div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -588,7 +571,7 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
         {/* Rating + discussion — only for shared, official arcs */}
         {!isUserArc && (
           <>
-            <div style={{ marginTop: 18, padding: 16, borderRadius: 18, background: T.surface, border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ marginTop: 8, padding: '18px 0', borderTop: `1px solid ${T.hairline}`, borderBottom: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{engage.myRating ? 'Your rating' : 'Rate this arc'}</div>
                 <div style={{ marginTop: 8 }}>
@@ -609,9 +592,9 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
               {user ? (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                   <input value={commentText} onChange={(e) => setCommentText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder="Which step hit hardest?"
-                    style={{ flex: 1, minWidth: 0, background: T.surface, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '12px 14px', color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none' }} />
+                    style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', borderBottom: `1px solid ${T.hairlineStrong || 'rgba(255,255,255,0.15)'}`, borderRadius: 0, padding: '12px 2px', color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none' }} />
                   <button type="button" onClick={postComment} disabled={posting || !commentText.trim()}
-                    style={{ background: commentText.trim() ? accent : T.surface, border: `1px solid ${commentText.trim() ? accent : T.hairline}`, borderRadius: 14, padding: '0 16px', fontWeight: 800, fontSize: 14, color: commentText.trim() ? '#06060B' : T.text3, cursor: commentText.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+                    style={{ background: commentText.trim() ? accent : T.surface, border: `1px solid ${commentText.trim() ? accent : T.hairline}`, borderRadius: 6, padding: '0 16px', fontWeight: 800, fontSize: 14, color: commentText.trim() ? '#06060B' : T.text3, cursor: commentText.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
                     Post
                   </button>
                 </div>
@@ -774,12 +757,6 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
     });
   };
 
-  const chip = (active, a = accent) => ({
-    flexShrink: 0, background: active ? a : 'rgba(255,255,255,0.05)', border: `1px solid ${active ? a : T.hairline}`,
-    color: active ? '#06060B' : 'rgba(255,255,255,0.8)', borderRadius: 999, padding: '8px 15px', fontSize: 14,
-    fontWeight: active ? 800 : 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-  });
-
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: T.bg, display: 'flex', flexDirection: 'column', animation: 'arcsIn 0.35s cubic-bezier(0.22,1,0.36,1)' }}>
       <style>{`@keyframes arcsIn{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes arcsSpin{to{transform:rotate(360deg)}}@keyframes arcsShimmer{0%{background-position:-300px 0}100%{background-position:300px 0}}@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}`}</style>
@@ -808,37 +785,43 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
           </div>
 
           {/* Filters */}
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 20px 4px', scrollbarWidth: 'none' }}>
-            {filterOptions.map((o) => (
-              <button key={o.id} type="button" onClick={() => setFilter(o.id)} style={chip(filter === o.id, themes[o.id]?.accent || accent)}>{o.label}</button>
-            ))}
+          <div style={{ display: 'flex', gap: 22, overflowX: 'auto', padding: '20px 20px 0', scrollbarWidth: 'none', borderBottom: `1px solid ${T.hairline}` }}>
+            {filterOptions.map((o) => {
+              const on = filter === o.id;
+              const c = themes[o.id]?.accent || accent;
+              return (
+                <button key={o.id} type="button" onClick={() => setFilter(o.id)}
+                  style={{ flexShrink: 0, background: 'none', border: 'none', borderBottom: `2px solid ${on ? c : 'transparent'}`, padding: '0 0 10px', marginBottom: -1, fontSize: 14.5, fontWeight: on ? 800 : 600, color: on ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                  {o.label}
+                </button>
+              );
+            })}
           </div>
 
-          <div style={{ padding: '14px 16px 0' }}>
+          <div style={{ padding: '6px 16px 0' }}>
             {/* Continue */}
             {filter === 'all' && inProgress.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', margin: '4px 4px 10px' }}>Keep climbing</div>
-                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -16px', padding: '0 16px' }}>
-                  {inProgress.map(({ a, w, t }) => {
-                    const ac = a.theme_meta?.accent || accent;
-                    return (
-                      <button key={a.id} type="button" onClick={() => openArc(a)}
-                        style={{ flexShrink: 0, width: 250, display: 'flex', gap: 12, alignItems: 'center', padding: 10, borderRadius: 16, background: T.surface, border: `1px solid ${ac}44`, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                        <div style={{ width: 44, height: 64, borderRadius: 8, overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0 }}>
-                          {a.sample_posters?.[w] && <img src={a.sample_posters[w]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', margin: '14px 4px 8px' }}>Keep climbing</div>
+                {inProgress.map(({ a, w, t }) => {
+                  const ac = a.theme_meta?.accent || accent;
+                  return (
+                    <div key={a.id} role="button" tabIndex={0} onClick={() => openArc(a)} onKeyDown={(e) => e.key === 'Enter' && openArc(a)}
+                      style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '12px 4px', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
+                      <div style={{ width: 44, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                        {a.sample_posters?.[w] && <img src={a.sample_posters[w]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 17, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortTitle(a.title)}</div>
+                        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}><span style={{ color: ac, fontWeight: 700 }}>Step {w + 1} of {t}</span> · {stageFor(a.theme_meta, w, t).label}</div>
+                        <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginTop: 8 }}>
+                          <div style={{ width: `${(w / t) * 100}%`, height: '100%', background: ac }} />
                         </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortTitle(a.title)}</div>
-                          <div style={{ fontSize: 12.5, color: ac, fontWeight: 700, marginTop: 3 }}>Step {w + 1} of {t}</div>
-                          <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginTop: 8 }}>
-                            <div style={{ width: `${(w / t) * 100}%`, height: '100%', background: ac, borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </div>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: '#fff' }}>Continue</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -846,19 +829,20 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
             {loading ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[0, 1].map((i) => (
-                  <div key={i} style={{ height: 330, borderRadius: 22, background: 'linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.07),rgba(255,255,255,0.03))', backgroundSize: '600px 100%', animation: 'arcsShimmer 1.3s linear infinite' }} />
+                  <div key={i} style={{ height: 260, borderRadius: 3, background: 'linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.07),rgba(255,255,255,0.03))', backgroundSize: '600px 100%', animation: 'arcsShimmer 1.3s linear infinite' }} />
                 ))}
               </div>
             ) : loadError ? (
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{ fontSize: 16, color: '#fff', fontWeight: 700 }}>Arcs didn’t load</div>
                 <div style={{ fontSize: 14, color: T.text2, marginTop: 6 }}>Check your connection and try again.</div>
-                <button type="button" onClick={loadArcs} style={{ ...chip(false), marginTop: 14 }}>Try again</button>
+                <button type="button" onClick={loadArcs} style={{ marginTop: 14, background: 'none', border: `1px solid ${T.hairline}`, borderRadius: 6, padding: '9px 18px', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Try again</button>
               </div>
             ) : filtered.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', fontSize: 15, color: T.text2 }}>No arcs here yet. Try another filter.</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                {filter === 'all' && <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', margin: '14px 4px 8px' }}>All arcs</div>}
                 {filtered.map((arc) => (
                   <ArcRow key={arc.id} arc={arc} progress={progressMap[arc.id]} rating={ratingsMap[arc.id]} onOpen={openArc} />
                 ))}
@@ -867,7 +851,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
 
             {/* Build your own */}
             {filter === 'all' && !loading && (
-              <div style={{ marginTop: 28, padding: '20px 18px', borderRadius: 22, background: T.surface, border: `1px dashed ${accent}55` }}>
+              <div style={{ marginTop: 10, padding: '22px 4px 0', borderTop: `1px solid ${T.hairline}` }}>
                 <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 23, color: '#fff' }}>Make one from your saves</div>
                 <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginTop: 6 }}>
                   {!user ? 'Sign in and save a few titles. We’ll line them up from easy watch to big finish.'
@@ -877,9 +861,9 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
 
                 {user && watchlist?.length >= 2 && (
                   <>
-                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', margin: '14px -18px 0', padding: '0 18px' }}>
+                    <div style={{ display: 'flex', gap: 18, overflowX: 'auto', scrollbarWidth: 'none', marginTop: 14, borderBottom: `1px solid ${T.hairline}` }}>
                       {genreOptions.map((g) => (
-                        <button key={g.id} type="button" onClick={() => setMyGenre(g.id)} style={{ ...chip(myGenre === g.id, GENRE_ARC_THEMES[g.id]?.accent || accent), padding: '7px 13px', fontSize: 13.5 }}>
+                        <button key={g.id} type="button" onClick={() => setMyGenre(g.id)} style={{ flexShrink: 0, background: 'none', border: 'none', borderBottom: `2px solid ${myGenre === g.id ? (GENRE_ARC_THEMES[g.id]?.accent || accent) : 'transparent'}`, padding: '0 0 9px', marginBottom: -1, fontSize: 14, fontWeight: myGenre === g.id ? 800 : 600, color: myGenre === g.id ? '#fff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                           {g.label} <span style={{ opacity: 0.6 }}>{g.count}</span>
                         </button>
                       ))}
@@ -893,7 +877,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
                 )}
 
                 <button type="button" disabled={!myArcReady} onClick={() => myArcReady && openArc({ id: myArc.id, genre_key: myGenre })}
-                  style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, padding: '14px 16px', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: myArcReady ? 'pointer' : 'default', border: 'none', background: myArcReady ? (myArc.theme_meta?.accent || accent) : 'rgba(255,255,255,0.06)', color: myArcReady ? '#06060B' : T.text2 }}>
+                  style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 6, padding: '14px 16px', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: myArcReady ? 'pointer' : 'default', border: 'none', background: myArcReady ? (myArc.theme_meta?.accent || accent) : 'rgba(255,255,255,0.06)', color: myArcReady ? '#06060B' : T.text2 }}>
                   <Icon name="layers" size={16} color={myArcReady ? '#06060B' : T.text2} stroke={2} />
                   {myArcReady
                     ? `Build my ${myGenre === 'all' ? '' : myGenre + ' '}arc · ${myArc.items.length} titles`
