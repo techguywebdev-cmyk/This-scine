@@ -67,6 +67,7 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     settings: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z','M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
     list:     ['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01'],
     plus:     ['M12 5v14','M5 12h14'],
+    calendar: ['M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z','M16 2v4','M8 2v4','M3 10h18'],
     clock:    ['M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z','M12 6v6l4 2'],
     bell:     ['M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
     userPlus: ['M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2','M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z','M19 8v6','M22 11h-6'],
@@ -2898,8 +2899,26 @@ function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProfile, ac
   );
 }
 
-function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer}){
+function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T00:00:00').setHours(0,0,0,0)-new Date().setHours(0,0,0,0);return Math.round(ms/86400000);}
+function formatReleaseCountdown(dateStr){const d=daysUntil(dateStr);if(d===null)return'';if(d<=0)return'Out now';if(d===1)return'Tomorrow';if(d<=30)return`${d} days`;return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function formatReleaseDate(dateStr){if(!dateStr)return'';return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
+
+function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder}){
   const{isSignedIn}=useUser();
+  const isUpcoming=!!movie.isUpcoming;
+  const reminderBusyRef=useRef(false);
+  const toggleReminder=async()=>{
+    if(!isSignedIn){onAuthRequired();return;}
+    if(reminderBusyRef.current)return;reminderBusyRef.current=true;
+    const next=!isReminded;
+    if(navigator.vibrate)navigator.vibrate(15);
+    onToggleReminder?.(movie,next);
+    try{
+      const res=await fetch('/api/reminders',{method:next?'POST':'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie.id,mediaType:movie.mediaType||(movie.isTV?'tv':'movie'),title:movie.title,poster:movie.poster,releaseDate:movie.releaseDate})});
+      if(!res.ok)throw new Error('reminder failed');
+    }catch{onToggleReminder?.(movie,!next);}
+    finally{reminderBusyRef.current=false;}
+  };
   const[liked,setLiked]=useState(false);const[userRating,setUserRating]=useState(0);const[showComments,setShowComments]=useState(false);const[imgLoaded,setImgLoaded]=useState(false);const[likeCount]=useState(Math.floor(Math.random()*60+8)*100);const[showHint,setShowHint]=useState(false);const[showAddToList,setShowAddToList]=useState(false);
   const longPressTimer=useRef(null);const isPressingRef=useRef(false);
   const fmt=n=>n>=1000?`${(n/1000).toFixed(0)}K`:n;
@@ -2964,11 +2983,14 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         <div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/><span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:1}}>{String(index+1).padStart(2,'0')}</span>{movie.isTV&&<span style={{fontSize:9,color:accent,fontWeight:700,marginLeft:2}}>TV</span>}</div>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           {movie.certification&&<CertBadge cert={movie.certification}/>}
-          <div style={{display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:`1px solid ${accent}30`,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="star" size={11} color={accent} filled/><span style={{fontSize:13,fontWeight:800,color:'#fff'}}>{movie.rating}</span><span style={{fontSize:10,color:'rgba(255,255,255,0.25)'}}>/10</span></div>
+          {isUpcoming
+            ?<div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:`1px solid ${accent}30`,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="calendar" size={12} color={accent}/><span style={{fontSize:12.5,fontWeight:800,color:'#fff'}}>{formatReleaseCountdown(movie.releaseDate)}</span></div>
+            :<div style={{display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:`1px solid ${accent}30`,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="star" size={11} color={accent} filled/><span style={{fontSize:13,fontWeight:800,color:'#fff'}}>{movie.rating}</span><span style={{fontSize:10,color:'rgba(255,255,255,0.25)'}}>/10</span></div>}
         </div>
       </div>
       <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
         <div style={{display:'flex',gap:6,marginBottom:9,flexWrap:'wrap',alignItems:'center'}}>
+          {isUpcoming&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:9,letterSpacing:2.2,color:'#06060B',fontWeight:800,textTransform:'uppercase',padding:'4px 9px',background:accent,borderRadius:4,boxShadow:`0 0 18px ${accent}55`}}><span style={{width:5,height:5,borderRadius:'50%',background:'#06060B',animation:'csPulse 1.6s ease-in-out infinite'}}/>Coming Soon</span>}
           {(movie.genre||[]).map(g=>(<span key={g} style={{fontSize:9,letterSpacing:2.2,color:accent,fontWeight:700,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}38`,borderRadius:4}}>{g}</span>))}
           {movie.isTV&&<span style={{fontSize:9,color:'rgba(255,255,255,0.35)',fontWeight:600,padding:'3px 8px',border:'1px solid rgba(255,255,255,0.1)',borderRadius:4}}>SERIES</span>}
         </div>
@@ -2977,21 +2999,23 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:13}}>
           <span style={{fontFamily:T.serif,fontSize:13,color:`${accent}bb`,fontStyle:'italic'}}>{movie.year}</span>
           <span style={{width:3,height:3,borderRadius:'50%',background:'rgba(255,255,255,0.18)'}}/>
-          <div style={{display:'flex',alignItems:'center',gap:4}}><SvgIcon name="eye" size={11} color="rgba(255,255,255,0.28)"/><span style={{fontSize:12,color:'rgba(255,255,255,0.35)'}}>{movie.votes} ratings</span></div>
+          {isUpcoming
+            ?<div style={{display:'flex',alignItems:'center',gap:5}}><SvgIcon name="calendar" size={11} color="rgba(255,255,255,0.4)"/><span style={{fontSize:12,color:'rgba(255,255,255,0.5)'}}>In theaters {formatReleaseDate(movie.releaseDate)}</span></div>
+            :<div style={{display:'flex',alignItems:'center',gap:4}}><SvgIcon name="eye" size={11} color="rgba(255,255,255,0.28)"/><span style={{fontSize:12,color:'rgba(255,255,255,0.35)'}}>{movie.votes} ratings</span></div>}
         </div>
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
       </div>
       <div style={{position:'absolute',right:12,bottom:72,zIndex:10,display:'flex',flexDirection:'column',gap:4,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
-        {[{icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},{icon:'check',label:isWatched?'Seen':'Seen',active:!!isWatched,color:'#7BFFB0',filled:!!isWatched,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}},{icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{icon:'list',label:'List',active:showAddToList,color:'#B07FEF',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}setShowAddToList(true);}},{icon:'bookmark',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:isSaved,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}}].map(btn=>(
+        {[{icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{icon:'check',label:'Seen',active:!!isWatched,color:'#7BFFB0',filled:!!isWatched,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{icon:'list',label:'List',active:showAddToList,color:'#B07FEF',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}setShowAddToList(true);}},{icon:'bookmark',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:isSaved,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}}].map(btn=>(
           <button key={btn.icon} onClick={btn.fn} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}14`:'rgba(0,0,0,0.38)',backdropFilter:'blur(18px)',border:`1px solid ${btn.active?btn.color+'45':'rgba(255,255,255,0.08)'}`,borderRadius:16,padding:'9px 8px',cursor:'pointer',minWidth:46,transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
             <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.6)'} filled={btn.filled}/>
-            <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.25)',letterSpacing:0.3,fontWeight:700,marginTop:1}}>{btn.label}</span>
+            <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.3,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)'}}>{btn.label}</span>
           </button>
         ))}
       </div>
       {showComments&&<CommentPanel movie={movie} onClose={()=>setShowComments(false)} accent={accent} onAuthRequired={()=>{setShowComments(false);onAuthRequired();}} onWatchTrailer={onTrailer} onAddToWatchlist={onSave}/>}
       {showAddToList&&<AddToListSheet movie={movie} onClose={()=>setShowAddToList(false)} accent={accent}/>}
-      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes csPulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
     </div>
   );
 }
@@ -6145,6 +6169,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
     if(type==='follow_request')return{icon:'userPlus',color:accent};
     if(type==='like')return{icon:'heart',color:'#FF6B8A'};
     if(type==='message_request'||type==='message')return{icon:'chat',color:'#7BC8FF'};
+    if(type==='release_reminder')return{icon:'calendar',color:'#FFD166'};
     return{icon:'bell',color:accent};
   };
   return(
@@ -6172,13 +6197,20 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
               return(
                 <div key={n.id||i} onClick={()=>{if(!n.read)onMarkRead(n.id);if((n.type==='message_request'||n.type==='message')&&onOpenChat){onOpenChat({user_id:n.user_id,username:n.username,avatar_url:n.avatar_url});onClose();}}} style={{display:'flex',gap:12,alignItems:'center',padding:'12px 0',borderBottom:i<notifications.length-1?`1px solid ${T.hairline}`:'none',cursor:n.read?'default':'pointer',opacity:n.read?0.5:1,transition:'opacity 0.2s ease'}}>
                   <div style={{width:38,height:38,borderRadius:'50%',background:`${ni.color}16`,border:`1px solid ${ni.color}38`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative',overflow:'hidden'}}>
-                    {n.avatar_url?<img src={n.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<SvgIcon name={ni.icon} size={16} color={ni.color}/>}
+                    {n.type==='release_reminder'&&n.data?.poster?<img src={n.data.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:n.avatar_url&&n.type!=='release_reminder'?<img src={n.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<SvgIcon name={ni.icon} size={16} color={ni.color}/>}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
+                    {n.type==='release_reminder'?(
+                    <div style={{fontSize:13,color:T.text,lineHeight:1.4}}>
+                      <span style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700}}>{n.data?.title||'A film you saved'}</span>{' '}
+                      {n.data?.when==='tomorrow'?'releases tomorrow':'is out today'}
+                    </div>
+                    ):(
                     <div style={{fontSize:13,color:T.text,lineHeight:1.4}}>
                       <span style={{fontWeight:700}}>@{n.username||'someone'}</span>{' '}
                       {n.type==='follow'?'started following you':n.type==='follow_request'?'requested to follow you':n.type==='message_request'?'sent you a message request':n.type==='message'?'sent you a message':n.type==='like'?'liked your review':'sent a notification'}
                     </div>
+                    )}
                     <div style={{fontSize:11,color:T.text3,marginTop:2}}>{timeAgo(n.created_at)} ago</div>
                   </div>
                   {n.type==='follow'&&!n.followedBack&&(
@@ -8252,16 +8284,16 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
   const{openSignIn}=useClerk();
-  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);
+  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);
   const[showTonightNudge,setShowTonightNudge]=useState(false);const[feedToast,setFeedToast]=useState(null);
   const containerRef=useRef(null);const pageRef=useRef(1);const loadingMoreRef=useRef(false);const profileLoadedRef=useRef(false);
 
   useEffect(()=>{
     if(!isLoaded)return;
-    if(!isSignedIn){setWatchlist([]);setUserReviews([]);setWatchlistIds(new Set());profileLoadedRef.current=false;return;}
+    if(!isSignedIn){setWatchlist([]);setUserReviews([]);setWatchlistIds(new Set());setReminderIds(new Set());profileLoadedRef.current=false;return;}
     if(profileLoadedRef.current)return;
     profileLoadedRef.current=true;
-    const load=async()=>{setLoadingProfileData(true);try{const[wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);const[wData,rData]=await Promise.all([wRes.json(),rRes.json()]);const items=wData.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));setUserReviews(rData.items||[]);}catch(e){console.error(e);}setLoadingProfileData(false);};
+    const load=async()=>{setLoadingProfileData(true);try{const[wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);const[wData,rData]=await Promise.all([wRes.json(),rRes.json()]);const items=wData.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));setUserReviews(rData.items||[]);}catch(e){console.error(e);}setLoadingProfileData(false);fetch('/api/reminders').then(r=>r.ok?r.json():{items:[]}).then(d=>setReminderIds(new Set((d.items||[]).map(r=>r.movie_id)))).catch(()=>{});};
     load();
   },[isLoaded,isSignedIn]);
 
@@ -8478,7 +8510,7 @@ export default function CineScroll(){
         </div>
       )}
 
-      <div ref={containerRef} style={{position:'fixed',inset:0,overflowY:'scroll',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',msOverflowStyle:'none'}}>
+      <div ref={containerRef} style={{position:'fixed',inset:0,height:'100%',overflowY:'scroll',overscrollBehavior:'none',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',msOverflowStyle:'none'}}>
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}::-webkit-scrollbar{display:none}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         {loading?(
           <div style={{height:'100dvh',display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'start',flexDirection:'column',gap:12}}>
@@ -8487,8 +8519,8 @@ export default function CineScroll(){
           </div>
         ):(
           movies.map((m,i)=>(
-            <div key={`${m.id}-${i}`} style={{width:'100%',height:'100dvh',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
-              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} isWatched={!!watchlist.find(w=>w.movie_id===m.id&&w.watched)} onMarkWatched={handleMarkWatched} onTrailer={setTrailerMovie}/>
+            <div key={`${m.id}-${i}`} style={{width:'100%',height:'100%',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
+              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} isWatched={!!watchlist.find(w=>w.movie_id===m.id&&w.watched)} onMarkWatched={handleMarkWatched} onTrailer={setTrailerMovie} isReminded={reminderIds.has(m.id)} onToggleReminder={(mv,next)=>setReminderIds(p=>{const n=new Set(p);if(next)n.add(mv.id);else n.delete(mv.id);return n;})}/>
             </div>
           ))
         )}

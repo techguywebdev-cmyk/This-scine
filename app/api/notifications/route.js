@@ -42,7 +42,7 @@ export async function GET() {
 
   try {
     const res = await fetch(
-      `${db('notifications')}?user_id=eq.${userId}&order=created_at.desc&limit=50&select=id,type,from_user_id,read,created_at`,
+      `${db('notifications')}?user_id=eq.${userId}&order=created_at.desc&limit=50&select=*`,
       { headers }
     );
     const rows = await res.json();
@@ -69,6 +69,7 @@ export async function GET() {
       read: r.read,
       created_at: r.created_at,
       followedBack: r.type === 'follow' ? followingSet.has(r.from_user_id) : undefined,
+      data: r.data || null, // e.g. { title, poster, movie_id, when } for release_reminder
     }));
 
     return Response.json({ items });

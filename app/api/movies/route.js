@@ -56,8 +56,13 @@ function shuffle(arr) {
   return a;
 }
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function formatItem(m, i, cert = '') {
   const isTV = !m.title;
+  const releaseDate = m.release_date || m.first_air_date || '';
   const genreIds = m.genre_ids || (m.genres || []).map((g) => g.id) || [];
   return {
     id: m.id,
@@ -75,6 +80,9 @@ function formatItem(m, i, cert = '') {
     isTV,
     mediaType: isTV ? 'tv' : 'movie',
     certification: cert,
+    releaseDate: releaseDate || null,
+    // Anything releasing after today gets the "Coming Soon" card treatment in the feed
+    isUpcoming: !!releaseDate && releaseDate > todayISO(),
   };
 }
 
@@ -360,7 +368,32 @@ export async function GET(request) {
       if (ti < shows.length) interleaved.push(shows[ti++]);
     }
 
-    const certPromises = interleaved.slice(0, 6).map((m) => getMovieCert(m.id, !m.title));
+    // ── Mix a couple of upcoming releases into the default feed ──
+    // Only for the plain Trending feed (no platform/genre filter), so filtered feeds stay pure.
+    if (!providerId && !genre && mood === 'trending') {
+      try {
+        const upPage = 1 + Math.floor(Math.random() * 3);
+        const upRes = await fetch(
+          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&primary_release_date.gte=${todayISO()}&sort_by=popularity.desc&with_original_language=en&page=${upPage}`
+        );
+        const upData = await upRes.json();
+        const seen = new Set(interleaved.map((m) => m.id));
+        const picks = shuffle(
+          (upData.results || []).filter(
+            (m) => m.backdrop_path && m.overview && m.release_date > todayISO() && !seen.has(m.id)
+          )
+        ).slice(0, 2);
+        // Positions 3 and 8 — far enough apart to feel like a surprise, not an ad block
+        picks.forEach((m, idx) => {
+          const pos = Math.min(3 + idx * 5, interleaved.length);
+          interleaved.splice(pos, 0, m);
+        });
+      } catch (e) {
+        console.error('upcoming injection failed', e);
+      }
+    }
+
+    const certPromises = interleaved.slice(0, 8).map((m) => getMovieCert(m.id, !m.title));
     const certs = await Promise.all(certPromises);
     const formatted = interleaved.map((m, i) => formatItem(m, i, certs[i] || ''));
     return Response.json({ movies: formatted });
