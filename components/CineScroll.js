@@ -16,6 +16,7 @@ const T = {
   text:      'rgba(255,255,255,0.92)',  // primary text, off-white not pure white
   text2:     'rgba(255,255,255,0.45)',  // secondary text
   text3:     'rgba(255,255,255,0.25)',  // tertiary / caption / placeholder
+  page:      "var(--font-page), 'Instrument Serif', Georgia, serif",
   serif:     "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
@@ -658,7 +659,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
           {cast.length>0&&(
             <div style={{marginBottom:32}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-                <span style={{fontSize:17,fontWeight:700,color:T.text,fontFamily:T.serif}}>Cast</span>
+                <span style={{fontSize:20,fontWeight:400,color:'rgba(255,255,255,0.88)',fontFamily:T.page}}>Cast</span>
                 <span style={{fontSize:12.5,color:accent,fontWeight:600}}>See all</span>
               </div>
               <div className="cast-scroll" style={{display:'flex',gap:16,overflowX:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',paddingBottom:4}}>
@@ -1209,7 +1210,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 18px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:21,fontWeight:700,color:T.text}}>My Profile</span>
+          <span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:25,fontWeight:400,color:'rgba(255,255,255,0.88)'}}>My Profile</span>
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
             <button onClick={()=>setShowOwnPreview(true)} title="Preview public profile" style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="eye" size={15} color={T.text2}/></button>
             <button onClick={()=>{bioRef.current?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>bioRef.current?.focus(),300);}} title="Edit Profile" style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="edit" size={15} color={T.text2}/></button>
@@ -1668,7 +1669,7 @@ function AuthGate({onClose,accent}){
         <AccentGlow accent={accent} size={200} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 26px',position:'relative'}}/>
         <div style={{position:'relative',textAlign:'center',marginBottom:26}}>
-          <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:25,fontWeight:700,color:T.text,marginBottom:9}}>Join CineScroll</div>
+          <div style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:30,fontWeight:400,color:'rgba(255,255,255,0.88)',marginBottom:9}}>Join CineScroll</div>
           <div style={{fontSize:13,color:T.text2,lineHeight:1.6}}>Sign in to leave reviews, save your watchlist, and discover films with friends.</div>
         </div>
         <button onClick={()=>{openSignIn();onClose();}} style={{position:'relative',width:'100%',background:'#fff',border:'none',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:10,fontFamily:'inherit'}}>
@@ -1704,7 +1705,7 @@ function FollowListModal({targetUserId,type,accent,onClose,onSelectUser}){
         <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 18px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,borderBottom:`1px solid ${T.hairline}`}}>
-          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:17,fontWeight:700,color:T.text,textTransform:'capitalize'}}>{type}</span>
+          <span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:20,fontWeight:400,color:'rgba(255,255,255,0.88)',textTransform:'capitalize'}}>{type}</span>
           <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
         </div>
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'4px 18px 24px'}}>
@@ -2196,7 +2197,7 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
       <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
-        <div><span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:T.text}}>Reviews</span><span style={{fontSize:12,color:T.text3,marginLeft:8}}>{movie?.title}</span></div>
+        <div><span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:19,fontWeight:400,color:'rgba(255,255,255,0.88)'}}>Reviews</span><span style={{fontSize:12,color:T.text3,marginLeft:8}}>{movie?.title}</span></div>
         <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
       </div>
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'4px 20px',display:'flex',flexDirection:'column',scrollbarWidth:'none',minHeight:0}}>
@@ -2293,7 +2294,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}>
               <div style={{minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:accent}}>Because you liked</div>
-                <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:28,lineHeight:1.08,color:'#fff',marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
+                <div style={{fontFamily:T.page,letterSpacing:'-0.005em',fontWeight:400,fontSize:33,lineHeight:1.08,color:'rgba(255,255,255,0.88)',marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
               </div>
               <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:`1px solid ${T.hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="close" size={14} color="#fff"/></button>
             </div>
@@ -2329,7 +2330,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
         {!loading&&items.length>0&&(
           <div style={{padding:'4px 16px calc(28px + env(safe-area-inset-bottom))'}}>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',padding:'0 4px 10px'}}>
-              <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:19,color:'#fff'}}>Closest first</span>
+              <span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontWeight:400,fontSize:22,color:'rgba(255,255,255,0.88)'}}>Closest first</span>
               <span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>{items.length} {contentLabel==='Series'?'series':'titles'}</span>
             </div>
             <div>
@@ -2514,7 +2515,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
 
   const H = ({ children, right }) => (
     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '30px 0 6px' }}>
-      <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 19, fontWeight: 700, color: '#fff' }}>{children}</span>
+      <span style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontSize:22, fontWeight:400, color:'rgba(255,255,255,0.88)' }}>{children}</span>
       {right}
     </div>
   );
@@ -2552,7 +2553,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
         {/* Header + search */}
         <div style={{ padding: '12px 20px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 28, fontWeight: 700, color: '#fff' }}>Discover</span>
+            <span style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontSize:33, fontWeight:400, color:'rgba(255,255,255,0.88)' }}>Discover</span>
             <button onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="close" size={14} color="#fff" /></button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingBottom: 10, borderBottom: `1.5px solid ${focused ? accent : 'rgba(255,255,255,0.14)'}`, transition: 'border-color 0.2s ease' }}>
@@ -3293,7 +3294,7 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
 
         {/* Title row */}
         <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 26, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>
+          <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontSize:31, fontWeight:400, color:'rgba(255,255,255,0.88)' }}>
             Messages
           </div>
           <button
@@ -3436,7 +3437,7 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '56px 28px' }}>
-              <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 18, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
+              <div style={{ fontWeight:400,fontFamily: T.page, letterSpacing:'-0.005em', fontSize:21, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
                 {filter === 'spam' ? 'No spam' : filter === 'unread' ? 'All caught up' : filter === 'requests' ? 'No requests' : 'No conversations yet'}
               </div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
@@ -6218,7 +6219,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
     <div style={{position:'fixed',top:0,left:0,right:0,zIndex:106,background:T.bg,borderRadius:'0 0 24px 24px',border:`1px solid ${T.hairline}`,borderTop:'none',maxHeight:'70vh',display:'flex',flexDirection:'column',animation:'notifDrop 0.32s cubic-bezier(0.22,1,0.36,1)',paddingTop:'env(safe-area-inset-top,0px)'}}>
       <style>{`@keyframes notifDrop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{padding:'18px 18px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
-        <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:18,fontWeight:700,color:T.text}}>Notifications</span>
+        <span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:21,fontWeight:400,color:'rgba(255,255,255,0.88)'}}>Notifications</span>
         <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
       </div>
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
@@ -6473,7 +6474,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   );
   const H = ({ children, right, top = 28 }) => (
     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: `${top}px 0 8px` }}>
-      <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 19, fontWeight: 700, color: '#fff' }}>{children}</span>
+      <span style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontSize:22, fontWeight:400, color:'rgba(255,255,255,0.88)' }}>{children}</span>
       {right}
     </div>
   );
@@ -6603,7 +6604,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
           <button onClick={onClose} aria-label="Back" style={{ background: 'none', border: 'none', width: 36, height: 36, marginLeft: -8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-          <h1 style={{ flex: 1, fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 28, fontWeight: 700, color: '#fff', margin: 0 }}>Friends</h1>
+          <h1 style={{ flex: 1, fontFamily: T.page, letterSpacing:'-0.005em', fontSize:33, fontWeight:400, color:'rgba(255,255,255,0.88)', margin: 0 }}>Friends</h1>
           <button onClick={() => setShowMessages(true)} aria-label="Messages" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <SvgIcon name="chat" size={20} color="#fff" />
             {stats.pending > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{stats.pending}</span>}
@@ -6630,7 +6631,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', padding: '0 20px calc(40px + env(safe-area-inset-bottom))' }}>
         {!isSignedIn ? (
           <div style={{ textAlign: 'center', padding: '56px 12px' }}>
-            <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 20, fontWeight: 700, color: '#fff' }}>See what your friends are watching</div>
+            <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontSize:24, fontWeight:400, color:'rgba(255,255,255,0.88)' }}>See what your friends are watching</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 8, lineHeight: 1.5 }}>Sign in to follow people, see their saves and reviews, and message them about a film.</div>
           </div>
         ) : (
@@ -6689,7 +6690,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {posts.length === 0 ? (
                     stats.following === 0 || friends.length === 0 ? (
                       <div style={{ paddingTop: 22 }}>
-                        <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 20, fontWeight: 700, color: '#fff' }}>Your feed fills up when you follow people</div>
+                        <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontSize:24, fontWeight:400, color:'rgba(255,255,255,0.88)' }}>Your feed fills up when you follow people</div>
                         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 6, lineHeight: 1.5 }}>You’ll see what they save, watch and review here. Start with a few film lovers:</div>
                         <div style={{ marginTop: 12 }}>
                           {loadingSuggested ? <Spinner /> : suggested.slice(0, 6).map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
@@ -6818,7 +6819,7 @@ function CreateListSheet({onClose,accent,onCreated}){
         <AccentGlow accent={accent} size={180} style={{right:-20,top:-60}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 22px',position:'relative'}}/>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22,position:'relative'}}>
-          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:21,fontWeight:700,color:T.text}}>New List</span>
+          <span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:25,fontWeight:400,color:'rgba(255,255,255,0.88)'}}>New List</span>
           <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',padding:4}}><SvgIcon name="close" size={14} color={T.text2}/></button>
         </div>
         <div style={{position:'relative',marginBottom:14}}>
@@ -7795,7 +7796,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
         {!loading&&loadError&&(
           <div style={{padding:'48px 24px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <SvgIcon name="list" size={28} color={T.hairlineStrong}/>
-            <div style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.serif}}>Couldn't load this list</div>
+            <div style={{fontSize:19,fontWeight:400,color:'rgba(255,255,255,0.88)',fontFamily:T.page}}>Couldn't load this list</div>
             <div style={{fontSize:13,color:T.text3,lineHeight:1.5}}>Check your connection and try again.</div>
             <button onClick={reloadList} style={{marginTop:6,background:accentColor,border:'none',borderRadius:20,padding:'11px 22px',cursor:'pointer',fontSize:13,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Try again</button>
           </div>
@@ -7811,7 +7812,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                 </div>
                 <span style={{fontSize:12,color:T.text2}}>by <span style={{color:accentColor,fontWeight:600}}>{list.display_name}</span></span>
               </div>
-              <h1 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:26,fontWeight:700,color:T.text,margin:'0 0 8px',lineHeight:1.15}}>{list.title}</h1>
+              <h1 style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:31,fontWeight:400,color:'rgba(255,255,255,0.88)',margin:'0 0 8px',lineHeight:1.15}}>{list.title}</h1>
               {list.description&&<p style={{fontSize:13.5,color:T.text2,lineHeight:1.6,margin:'0 0 14px'}}>{list.description}</p>}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden',marginBottom:18}}>
                 {[{label:'Films',value:list.movie_count},{label:'Followers',value:list.follower_count},{label:'Rating',value:list.avg_rating?`${list.avg_rating}/5`:'—'}].map(s=>(
@@ -7865,7 +7866,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
               movies.length===0?(
                 <div style={{textAlign:'center',padding:'32px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
                   <SvgIcon name="bookmark" size={24} color={T.hairlineStrong}/>
-                  <div style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.is_owner?'This list is empty':'No films yet'}</div>
+                  <div style={{fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.88)',fontFamily:T.page}}>{list.is_owner?'This list is empty':'No films yet'}</div>
                   <div style={{fontSize:13,color:T.text3}}>{list.is_owner?'Save films from the feed, then add them here.':'The curator hasn\'t added any titles yet.'}</div>
                 </div>
               ):(
@@ -8044,7 +8045,7 @@ function AddToListSheet({movie,onClose,accent}){
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
           <div style={{minWidth:0,flex:1}}>
-            <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:T.text}}>Add to List</span>
+            <span style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:19,fontWeight:400,color:'rgba(255,255,255,0.88)'}}>Add to List</span>
             <div style={{fontSize:11,color:T.text3,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title||movie?.movie_title}</div>
           </div>
           <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',padding:4,flexShrink:0}}><SvgIcon name="close" size={13} color={T.text2}/></button>
@@ -8163,7 +8164,7 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <div style={{flex:1}}>
-          <h1 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:22,fontWeight:700,color:T.text,margin:0}}>Community Lists</h1>
+          <h1 style={{fontFamily:T.page,letterSpacing:'-0.005em',fontSize:26,fontWeight:400,color:'rgba(255,255,255,0.88)',margin:0}}>Community Lists</h1>
           <p style={{fontSize:11.5,color:T.text3,margin:'2px 0 0'}}>Curated collections by the community</p>
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
@@ -8200,14 +8201,14 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
         ):!isSignedIn&&tab!=='trending'?(
           <div style={{textAlign:'center',padding:'48px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <SvgIcon name="list" size={28} color={T.hairlineStrong}/>
-            <div style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif}}>Sign in to see your lists</div>
+            <div style={{fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.88)',fontFamily:T.page}}>Sign in to see your lists</div>
             <div style={{fontSize:12.5,color:T.text3}}>Create and follow curated film collections</div>
           </div>
         ):lists.length===0?(
           <div style={{textAlign:'center',padding:'48px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <AccentGlow accent={accent} size={120} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
             <div style={{position:'relative',width:58,height:58,borderRadius:'50%',background:T.surface2,border:`1px solid ${T.hairline}`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="list" size={22} color={accent}/></div>
-            <div style={{position:'relative',fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif}}>
+            <div style={{position:'relative',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.88)',fontFamily:T.page}}>
               {tab==='mine'?'You haven\'t created any lists yet':tab==='following'?'You\'re not following any lists yet':'No lists yet — be the first!'}
             </div>
             {tab==='mine'&&isSignedIn&&(

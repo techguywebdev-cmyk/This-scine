@@ -18,6 +18,7 @@ const T = {
   text: 'rgba(255,255,255,0.92)',
   text2: 'rgba(255,255,255,0.45)',
   text3: 'rgba(255,255,255,0.25)',
+  page: "var(--font-page), 'Instrument Serif', Georgia, serif",
   serif: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
@@ -477,7 +478,7 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
           <div style={{ fontSize: 13, fontWeight: 700, color: accent }}>
             {isUserArc ? `Built by ${arc.user_name || 'you'}` : `${meta.label || ''} arc`} · {total} {arc.media_type === 'tv' ? 'series' : 'titles'}
           </div>
-          <h1 style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 34, lineHeight: 1.05, color: '#fff', margin: '8px 0 0' }}>{shortTitle(arc.title)}</h1>
+          <h1 style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:40, lineHeight: 1.05, color:'rgba(255,255,255,0.88)', margin: '8px 0 0' }}>{shortTitle(arc.title)}</h1>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55, margin: '10px 0 0', maxWidth: 560 }}>{arc.summary || arc.subtitle}</p>
         </div>
       </div>
@@ -500,7 +501,7 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
           </button>
         ) : total > 0 ? (
           <div style={{ padding: '18px 0', borderTop: `2px solid ${accent}`, borderBottom: `1px solid ${T.hairline}` }}>
-            <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 22, color: '#fff' }}>You finished the climb</div>
+            <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:26, color:'rgba(255,255,255,0.88)' }}>You finished the climb</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>{meta.stageCopy?.[meta.stageCopy.length - 1] || 'Every step, done.'}</div>
             {onShareComplete && (
               <button type="button" onClick={() => onShareComplete(arc)} disabled={shareStatus === 'shared' || shareStatus === 'sharing'}
@@ -516,7 +517,7 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
         {total > 0 && (
           <div style={{ marginTop: 22 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 19, color: '#fff' }}>{stage.label}</div>
+              <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:22, color:'rgba(255,255,255,0.88)' }}>{stage.label}</div>
               <div style={{ fontSize: 13, color: T.text2 }}>{watchedCount} of {total} watched</div>
             </div>
             <StageMeter meta={meta} watched={watchedCount} total={total} accent={accent} />
@@ -526,7 +527,7 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
 
         {/* The path */}
         <div ref={pathRef} style={{ marginTop: 28 }}>
-          <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 19, color: '#fff', marginBottom: 4 }}>The path</div>
+          <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:22, color:'rgba(255,255,255,0.88)', marginBottom: 4 }}>The path</div>
           <div style={{ fontSize: 13, color: T.text2, marginBottom: 12 }}>Gentlest first, most intense last.</div>
 
           <div>
@@ -586,7 +587,7 @@ function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, acc
             </div>
 
             <div style={{ marginTop: 26 }}>
-              <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 19, color: '#fff', marginBottom: 12 }}>
+              <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:22, color:'rgba(255,255,255,0.88)', marginBottom: 12 }}>
                 Discussion {engage.comments?.length ? <span style={{ fontFamily: 'inherit', fontStyle: 'normal', fontSize: 14, color: T.text2, fontWeight: 500 }}>{engage.comments.length}</span> : null}
               </div>
               {user ? (
@@ -775,7 +776,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
           {/* Header */}
           <div style={{ padding: 'max(16px, env(safe-area-inset-top)) 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
             <div>
-              <h1 style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 34, lineHeight: 1.05, color: '#fff', margin: 0 }}>Cine Arcs</h1>
+              <h1 style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:40, lineHeight: 1.05, color:'rgba(255,255,255,0.88)', margin: 0 }}>Cine Arcs</h1>
               <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: '8px 0 0', maxWidth: 420 }}>Watchlists that build. Each one starts easy and gets more intense with every title.</p>
             </div>
             <button type="button" onClick={onClose} aria-label="Close"
@@ -802,7 +803,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
             {/* Continue */}
             {filter === 'all' && inProgress.length > 0 && (
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 19, color: '#fff', margin: '14px 4px 8px' }}>Keep climbing</div>
+                <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:22, color:'rgba(255,255,255,0.88)', margin: '14px 4px 8px' }}>Keep climbing</div>
                 {inProgress.map(({ a, w, t }) => {
                   const ac = a.theme_meta?.accent || accent;
                   return (
@@ -842,7 +843,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
               <div style={{ textAlign: 'center', padding: '40px 20px', fontSize: 15, color: T.text2 }}>No arcs here yet. Try another filter.</div>
             ) : (
               <div>
-                {filter === 'all' && <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 19, color: '#fff', margin: '14px 4px 8px' }}>All arcs</div>}
+                {filter === 'all' && <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:22, color:'rgba(255,255,255,0.88)', margin: '14px 4px 8px' }}>All arcs</div>}
                 {filtered.map((arc) => (
                   <ArcRow key={arc.id} arc={arc} progress={progressMap[arc.id]} rating={ratingsMap[arc.id]} onOpen={openArc} />
                 ))}
@@ -852,7 +853,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
             {/* Build your own */}
             {filter === 'all' && !loading && (
               <div style={{ marginTop: 10, padding: '22px 4px 0', borderTop: `1px solid ${T.hairline}` }}>
-                <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 23, color: '#fff' }}>Make one from your saves</div>
+                <div style={{ fontFamily: T.page, letterSpacing:'-0.005em', fontWeight:400, fontSize:27, color:'rgba(255,255,255,0.88)' }}>Make one from your saves</div>
                 <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginTop: 6 }}>
                   {!user ? 'Sign in and save a few titles. We’ll line them up from easy watch to big finish.'
                     : !watchlist?.length ? 'Save a few titles from your feed first. We’ll line them up from easy watch to big finish.'
