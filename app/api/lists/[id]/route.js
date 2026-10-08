@@ -31,6 +31,10 @@ export async function GET(req, { params }) {
       return Response.json({ error: 'Not found' }, { status: 404 });
     }
     const list = listRows[0];
+    // Private folders are only visible to their owner
+    if (list.is_public === false && list.user_id !== userId) {
+      return Response.json({ error: 'Not found' }, { status: 404 });
+    }
     const movieList = Array.isArray(movies) ? movies : [];
 
     let creator = { username: 'user', display_name: 'user', avatar_url: null };
@@ -87,7 +91,7 @@ export async function GET(req, { params }) {
   }
 }
 
-// PATCH /api/lists/[id] { title?, description?, cover_url? }
+// PATCH /api/lists/[id] { title?, description?, cover_url?, is_public? }
 export async function PATCH(req, { params }) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -98,6 +102,7 @@ export async function PATCH(req, { params }) {
     if (body.title?.trim()) patch.title = body.title.trim();
     if (typeof body.description === 'string') patch.description = body.description.trim() || null;
     if (typeof body.cover_url === 'string' || body.cover_url === null) patch.cover_url = body.cover_url;
+    if (typeof body.is_public === 'boolean') patch.is_public = body.is_public;
     const res = await fetch(`${db('community_lists')}?id=eq.${id}&user_id=eq.${userId}`, {
       method: 'PATCH',
       headers,

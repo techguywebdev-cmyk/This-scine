@@ -89,6 +89,12 @@ export async function GET(req) {
     if (tab==='mine') {
       if (!userId) return Response.json({lists:[]});
       listsRes=await fetch(`${db('community_lists')}?user_id=eq.${userId}&order=updated_at.desc&limit=50`,{headers});
+    } else if (tab==='user') {
+      // A profile's folders: everything if it's you, otherwise only public ones
+      const target=searchParams.get('userId');
+      if (!target) return Response.json({lists:[]});
+      const pub = target===userId ? '' : '&or=(is_public.eq.true,is_public.is.null)';
+      listsRes=await fetch(`${db('community_lists')}?user_id=eq.${target}${pub}&order=updated_at.desc&limit=50`,{headers});
     } else if (tab==='following') {
       if (!userId) return Response.json({lists:[]});
       const followRows=await fetch(`${db('community_list_follows')}?user_id=eq.${userId}&select=list_id`,{headers}).then(r=>r.json());
@@ -105,10 +111,24 @@ export async function GET(req) {
     const raw=await listsRes.json();
     let lists=Array.isArray(raw)?raw:[];
     // Client-side safety filter for public tabs
-    if (tab!=='mine') {
+    if (tab!=='mine' && !(tab==='user' && searchParams.get('userId')===userId)) {
       lists = lists.filter(l => l.is_public !== false);
     }
     const enriched=await enrichLists(lists,userId);
+    // ?movieId=123 on the "mine" tab marks which of my folders already hold that title
+    const movieId=searchParams.get('movieId');
+    if (tab==='mine' && movieId && enriched.length) {
+      const rows=await fetch(`${db('community_list_movies')}?list_id=in.(${enriched.map(l=>l.id).join(',')})&movie_id=eq.${movieId}&select=list_id`,{headers}).then(r=>r.json()).catch(()=>[]);
+      const has=new Set((Array.isArray(rows)?rows:[]).map(r=>r.list_id));
+      enriched.forEach(l=>{ l.contains=has.has(l.id); });
+    }
+    // Up to 4 posters per folder for the folder-cover collage
+    if (enriched.length) {
+      const pr=await fetch(`${db('community_list_movies')}?list_id=in.(${enriched.map(l=>l.id).join(',')})&select=list_id,movie_poster&order=added_at.desc`,{headers}).then(r=>r.json()).catch(()=>[]);
+      const pm={};
+      for (const r of Array.isArray(pr)?pr:[]) { if(!r.movie_poster) continue; (pm[r.list_id]=pm[r.list_id]||[]); if(pm[r.list_id].length<4) pm[r.list_id].push(r.movie_poster); }
+      enriched.forEach(l=>{ l.posters=pm[l.id]||[]; });
+    }
     if (tab==='trending') {
       enriched.sort((a,b)=>((b.follower_count*2)+(b.avg_rating||0)*3+b.movie_count)-((a.follower_count*2)+(a.avg_rating||0)*3+a.movie_count));
     }
@@ -125,7 +145,8 @@ export async function POST(req) {
   try {
     const body=await req.json();
     const {title,description}=body;
-    const isPublic = body.is_public !== false && body.isPublic !== false;
+    // Folders are private unless the owner explicitly makes them public
+    const isPublic = body.is_public === true || body.isPublic === true;
     if (!title?.trim()) return Response.json({error:'Title is required'},{status:400});
     const payload={user_id:userId,title:title.trim(),is_public:!!isPublic};
     if (description?.trim()) payload.description=description.trim();

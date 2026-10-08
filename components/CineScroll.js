@@ -75,6 +75,8 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     list:     ['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01'],
     plus:     ['M12 5v14','M5 12h14'],
     globe:    ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z','M2 12h20','M12 2a15 15 0 0 1 0 20','M12 2a15 15 0 0 0 0 20'],
+    folder:   'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+    lock:     ['M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z','M8 11V8a4 4 0 0 1 8 0v3'],
     calendar: ['M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z','M16 2v4','M8 2v4','M3 10h18'],
     clock:    ['M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z','M12 6v6l4 2'],
     bell:     ['M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
@@ -632,7 +634,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
               <div style={{fontSize:11,color:T.text3}}>{userRating>0?`${userRating}/5 stars`:'Rate this movie'}</div>
             </div>
           </div>
-          {showAddToList&&<AddToListSheet movie={movie} onClose={()=>setShowAddToList(false)} accent={accent}/>}
+          {showAddToList&&<AddToListSheet movie={movie} onClose={()=>setShowAddToList(false)} accent={accent} isSaved={isSaved} onEnsureSaved={onSave}/>}
           {onSave&&(
             <div style={{display:'flex',gap:8,marginBottom:18}}>
               <button onClick={()=>onSave(movie)} style={{flex:1,background:isSaved?`${accent}16`:T.surface2,border:`1px solid ${isSaved?accent+'4a':T.hairline}`,borderRadius:14,padding:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit',transition:'all 0.2s ease'}}>
@@ -1826,12 +1828,10 @@ export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWa
   useEffect(()=>{
     if(tab!=='lists'||!userId||userLists.length>0)return;
     setLoadingLists(true);
-    fetch(`/api/lists?tab=mine`)
+    fetch(`/api/lists?tab=user&userId=${encodeURIComponent(profile?.user_id||userId)}`)
       .then(r=>r.json())
       .then(d=>{
-        // filter to this user's lists if viewing someone else's profile
-        const allLists=d.lists||[];
-        setUserLists(allLists.filter(l=>l.user_id===userId));
+        setUserLists(d.lists||[]);
         setLoadingLists(false);
       })
       .catch(()=>setLoadingLists(false));
@@ -1983,7 +1983,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
 
               {/* TABS */}
               <div style={{display:'flex',gap:20,borderBottom:`1px solid ${T.hairline}`,marginBottom:18}}>
-                {[['activity','flame','Activity'],['watchlist','bookmark','Watchlist'],['reviews','star','Reviews'],['lists','list','Lists']].map(([t,icon,label])=>(
+                {[['activity','flame','Activity'],['watchlist','bookmark','Watchlist'],['reviews','star','Reviews'],['lists','folder','Folders']].map(([t,icon,label])=>(
                   <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',cursor:'pointer',padding:'0 0 12px',fontFamily:'inherit',fontSize:12,fontWeight:tab===t?700:500,color:tab===t?accentColor:T.text3,borderBottom:`2px solid ${tab===t?accentColor:'transparent'}`,transition:'all 0.2s ease',display:'flex',alignItems:'center',gap:5}}>
                     <SvgIcon name={icon} size={11} color={tab===t?accentColor:T.text3} filled={t==='activity'&&tab===t}/>
                     {label}
@@ -2381,7 +2381,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
 
 
 // DISCOVER / FILTER SHEET
-export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent, onSearchSelect, activeProvider, onProvider }) {
+export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent, onSearchSelect, activeProvider, onProvider, onOpenFolder, onOpenFolders }) {
   const [searchQ, setSearchQ] = useState('');
   const [searchRes, setSearchRes] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -2391,6 +2391,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
   const [tonight, setTonight] = useState([]);
   const [loadingTonight, setLoadingTonight] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [folders, setFolders] = useState([]);
 
   const MOOD_SIGNALS = [
     ['happy','cheerful','funny','laugh','comedy','light','feel good'],
@@ -2441,6 +2442,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
   useEffect(() => {
     if (!show) return;
     loadPopular();
+    fetch('/api/lists?tab=trending').then(r => r.json()).then(d => setFolders((d.lists || []).filter(l => (l.movie_count || 0) > 0).slice(0, 8))).catch(() => {});
     setLoadingTonight(true);
     let preferred = '';
     try { preferred = localStorage.getItem('cine_preferred_provider') || ''; } catch {}
@@ -2663,6 +2665,22 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                   );
                 })}
               </div>
+
+              {/* Public folders from the community */}
+              {folders.length>0&&(
+                <>
+                  <H right={onOpenFolders?<button onClick={()=>{onClose();onOpenFolders();}} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>See all</button>:null}>Popular folders</H>
+                  <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
+                    {folders.map(f => (
+                      <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ flexShrink: 0, width: 132, cursor: 'pointer' }}>
+                        <div style={{ width: 132, height: 132 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={f.cover_accent || accent} /></div>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Popular */}
               <H right={<button onClick={loadPopular} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Refresh</button>}>Popular right now</H>
@@ -3046,7 +3064,7 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
       </div>
       <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
-        {[{icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{icon:'check',label:'Seen',active:!!isWatched,color:'#7BFFB0',filled:!!isWatched,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{icon:'list',label:'List',active:showAddToList,color:'#B07FEF',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}setShowAddToList(true);}},{icon:'bookmark',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:isSaved,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}}].map(btn=>(
+        {[{icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{icon:'check',label:'Seen',active:!!isWatched,color:'#7BFFB0',filled:!!isWatched,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{icon:'bookmark',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:isSaved,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}}].map(btn=>(
           <button key={btn.icon} onClick={btn.fn} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
             <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
             <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
@@ -6396,7 +6414,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
 
   const VERB = {
     saved: 'saved', watched: 'watched', reviewed: 'reviewed',
-    list_follow: 'followed the list', arc_complete: 'finished the arc',
+    list_follow: 'followed the folder', arc_complete: 'finished the arc',
   };
   const isTitle = (t) => t === 'saved' || t === 'watched' || t === 'reviewed';
 
@@ -6405,7 +6423,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     { id: 'reviewed', label: 'Reviews' },
     { id: 'watched', label: 'Watched' },
     { id: 'saved', label: 'Saved' },
-    { id: 'list_follow', label: 'Lists' },
+    { id: 'list_follow', label: 'Folders' },
     { id: 'arc_complete', label: 'Arcs' },
   ];
 
@@ -6802,17 +6820,17 @@ function CreateListSheet({onClose,accent,onCreated}){
   const{isSignedIn}=useUser();
   const[title,setTitle]=useState('');
   const[description,setDescription]=useState('');
-  const[isPublic,setIsPublic]=useState(true);
+  const[isPublic,setIsPublic]=useState(false);
   const[saving,setSaving]=useState(false);
   const[error,setError]=useState('');
 
   const handleCreate=async()=>{
-    if(!title.trim()){setError('Give your list a name');return;}
+    if(!title.trim()){setError('Give your folder a name');return;}
     setSaving(true);setError('');
     try{
       const res=await fetch('/api/lists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description,is_public:isPublic})});
       const data=await res.json();
-      if(!res.ok||data.error){throw new Error(data.error||'Failed to create list');}
+      if(!res.ok||data.error){throw new Error(data.error||'Couldn’t create the folder');}
       onCreated(data.list);
       onClose();
     }catch(err){setError(err.message);}
@@ -6825,24 +6843,24 @@ function CreateListSheet({onClose,accent,onCreated}){
         <AccentGlow accent={accent} size={180} style={{right:-20,top:-60}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 22px',position:'relative'}}/>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22,position:'relative'}}>
-          <span style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>New List</span>
+          <span style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>New folder</span>
           <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',padding:4}}><SvgIcon name="close" size={14} color={T.text2}/></button>
         </div>
         <div style={{position:'relative',marginBottom:14}}>
-          <Eyebrow color={T.text3} style={{marginBottom:8}}>List Name</Eyebrow>
-          <input autoFocus value={title} onChange={e=>{setTitle(e.target.value);setError('');}} maxLength={60} placeholder="e.g. Action-Packed, Best Heist Films..." style={{width:'100%',boxSizing:'border-box',background:T.surface2,border:`1px solid ${error?'#FF6B6B44':T.hairline}`,borderRadius:12,padding:'13px 14px',color:T.text,fontSize:15,outline:'none',fontFamily:'inherit'}}/>
+          <Eyebrow color={accent} style={{marginBottom:8}}>Folder name</Eyebrow>
+          <input autoFocus value={title} onChange={e=>{setTitle(e.target.value);setError('');}} maxLength={60} placeholder="e.g. Date night, Crime series, Cartoons for the kids" style={{width:'100%',boxSizing:'border-box',background:T.surface2,border:`1px solid ${error?'#FF6B6B44':T.hairline}`,borderRadius:12,padding:'13px 14px',color:T.text,fontSize:15,outline:'none',fontFamily:'inherit'}}/>
           <div style={{fontSize:10,color:T.text3,marginTop:5,textAlign:'right'}}>{title.length}/60</div>
         </div>
         <div style={{marginBottom:22}}>
           <Eyebrow color={T.text3} style={{marginBottom:8}}>Description <span style={{color:T.text3,fontWeight:400,fontSize:9,letterSpacing:0}}>(optional)</span></Eyebrow>
-          <textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={200} placeholder="What's the vibe of this list?" rows={2} style={{width:'100%',boxSizing:'border-box',background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:12,padding:'13px 14px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5}}/>
+          <textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={200} placeholder="What's in this folder?" rows={2} style={{width:'100%',boxSizing:'border-box',background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:12,padding:'13px 14px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5}}/>
         </div>
         <div style={{marginBottom:18}}>
           <Eyebrow color={T.text3} style={{marginBottom:10}}>Visibility</Eyebrow>
           <div style={{display:'flex',gap:8}}>
             <button type="button" onClick={()=>setIsPublic(true)} style={{flex:1,background:isPublic?`${accent}18`:T.surface2,border:`1px solid ${isPublic?accent+'55':T.hairline}`,borderRadius:12,padding:'12px 10px',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
               <div style={{fontSize:13,fontWeight:700,color:isPublic?accent:T.text}}>Public</div>
-              <div style={{fontSize:10,color:T.text3,marginTop:3}}>Anyone can find & follow</div>
+              <div style={{fontSize:11,color:T.text3,marginTop:3}}>Anyone can find, follow and rate it</div>
             </button>
             <button type="button" onClick={()=>setIsPublic(false)} style={{flex:1,background:!isPublic?`${accent}18`:T.surface2,border:`1px solid ${!isPublic?accent+'55':T.hairline}`,borderRadius:12,padding:'12px 10px',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
               <div style={{fontSize:13,fontWeight:700,color:!isPublic?accent:T.text}}>Private</div>
@@ -6853,7 +6871,7 @@ function CreateListSheet({onClose,accent,onCreated}){
         {error&&<div style={{fontSize:12,color:'#FF6B6B',marginBottom:14}}>{error}</div>}
         <button onClick={handleCreate} disabled={saving||!title.trim()} style={{width:'100%',background:saving||!title.trim()?'rgba(255,255,255,0.08)':accent,border:'none',borderRadius:16,padding:'15px',cursor:saving||!title.trim()?'default':'pointer',fontSize:15,fontWeight:700,color:saving||!title.trim()?T.text3:'#07070F',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,transition:'all 0.2s ease'}}>
           {saving&&<div style={{width:14,height:14,border:'2px solid rgba(7,7,15,0.3)',borderTop:'2px solid #07070F',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>}
-          {saving?'Creating...':(isPublic?'Create public list':'Create private list')}
+          {saving?'Creating…':(isPublic?'Create public folder':'Create private folder')}
         </button>
       </div>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
@@ -7626,7 +7644,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
 }
 
 
-function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistIds}){
+function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistIds,watchedIds}){
   const{isSignedIn,user}=useUser();
   const[list,setList]=useState(null);
   const[movies,setMovies]=useState([]);
@@ -7645,6 +7663,19 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
   const[replyingTo,setReplyingTo]=useState(null);
   const[activeTab,setActiveTab]=useState('films');
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),3000);};
+  const[savingPrivacy,setSavingPrivacy]=useState(false);
+  const togglePrivacy=async()=>{
+    if(!list||savingPrivacy)return;
+    const next=list.is_public===false;
+    setSavingPrivacy(true);
+    setList(p=>({...p,is_public:next}));
+    try{
+      const r=await fetch(`/api/lists/${listId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({is_public:next})});
+      if(!r.ok)throw new Error();
+      showToast(next?'Folder is public — anyone can find it':'Folder is private — only you can see it');
+    }catch{setList(p=>({...p,is_public:!next}));showToast('Couldn’t change privacy — try again');}
+    setSavingPrivacy(false);
+  };
 
   const[loadError,setLoadError]=useState(false);
   const reloadList=()=>{
@@ -7802,7 +7833,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
         {!loading&&loadError&&(
           <div style={{padding:'48px 24px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <SvgIcon name="list" size={28} color={T.hairlineStrong}/>
-            <div style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>Couldn't load this list</div>
+            <div style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>Couldn't load this folder</div>
             <div style={{fontSize:13,color:T.text3,lineHeight:1.5}}>Check your connection and try again.</div>
             <button onClick={reloadList} style={{marginTop:6,background:accentColor,border:'none',borderRadius:20,padding:'11px 22px',cursor:'pointer',fontSize:13,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Try again</button>
           </div>
@@ -7821,7 +7852,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
               <h1 style={{fontFamily:T.serif,fontSize:26,letterSpacing:'-0.02em',fontWeight:700,color:T.text,margin:'0 0 8px',lineHeight:1.15}}>{list.title}</h1>
               {list.description&&<p style={{fontSize:13.5,color:T.text2,lineHeight:1.6,margin:'0 0 14px'}}>{list.description}</p>}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden',marginBottom:18}}>
-                {[{label:'Films',value:list.movie_count},{label:'Followers',value:list.follower_count},{label:'Rating',value:list.avg_rating?`${list.avg_rating}/5`:'—'}].map(s=>(
+                {(list.is_public===false?[{label:'Titles',value:list.movie_count},{label:'Watched',value:movies.filter(m=>watchedIds?.has(m.movie_id)).length},{label:'To watch',value:movies.filter(m=>!watchedIds?.has(m.movie_id)).length}]:[{label:'Titles',value:list.movie_count},{label:'Followers',value:list.follower_count},{label:'Rating',value:list.avg_rating?`${list.avg_rating}/5`:'—'}]).map(s=>(
                   <div key={s.label} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'12px 6px',textAlign:'center'}}>
                     <SerifStat size={18} color={s.label==='Rating'&&list.avg_rating?accentColor:T.text}>{s.value}</SerifStat>
                     <Eyebrow style={{marginTop:3,fontSize:8.5}}>{s.label}</Eyebrow>
@@ -7829,8 +7860,22 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                 ))}
               </div>
 
+              {/* OWNER: privacy switch */}
+              {list.is_owner&&(
+                <div role="button" tabIndex={0} onClick={togglePrivacy} onKeyDown={e=>e.key==='Enter'&&togglePrivacy()} style={{display:'flex',alignItems:'center',gap:12,padding:'4px 0 18px',cursor:'pointer'}}>
+                  <SvgIcon name={list.is_public===false?'lock':'people'} size={18} color={accentColor}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{list.is_public===false?'Private folder':'Public folder'}</div>
+                    <div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:2}}>{list.is_public===false?'Only you can see it. Make it public to let people follow and rate it.':'Anyone can find, follow and rate it.'}</div>
+                  </div>
+                  <span style={{width:42,height:24,borderRadius:12,background:list.is_public===false?'rgba(255,255,255,0.15)':accentColor,position:'relative',transition:'background 0.2s ease',flexShrink:0,opacity:savingPrivacy?0.6:1}}>
+                    <span style={{position:'absolute',top:2,left:list.is_public===false?2:20,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
+                  </span>
+                </div>
+              )}
+
               {/* ACTIONS */}
-              <div style={{display:'flex',gap:9,marginBottom:22}}>
+              {(list.is_public!==false)&&<div style={{display:'flex',gap:9,marginBottom:22}}>
                 {!list.is_owner&&(
                   <button onClick={handleFollow} disabled={savingFollow} style={{flex:1,background:following?'transparent':accentColor,border:`1px solid ${following?T.hairlineStrong:accentColor}`,borderRadius:14,padding:'12px',cursor:'pointer',fontSize:13,fontWeight:700,color:following?T.text2:'#07070F',fontFamily:'inherit',transition:'all 0.2s ease',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
                     <SvgIcon name={following?'check':'plus'} size={14} color={following?T.text2:'#07070F'}/>
@@ -7849,7 +7894,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
                   <span style={{fontSize:12,fontWeight:600,color:T.text2}}>Share</span>
                 </button>
-              </div>
+              </div>}
             </div>
 
             {/* TABS + PLAY ALL */}
@@ -7872,8 +7917,8 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
               movies.length===0?(
                 <div style={{textAlign:'center',padding:'32px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
                   <SvgIcon name="bookmark" size={24} color={T.hairlineStrong}/>
-                  <div style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.is_owner?'This list is empty':'No films yet'}</div>
-                  <div style={{fontSize:13,color:T.text3}}>{list.is_owner?'Save films from the feed, then add them here.':'The curator hasn\'t added any titles yet.'}</div>
+                  <div style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.is_owner?'This folder is empty':'No titles yet'}</div>
+                  <div style={{fontSize:13,color:T.text3}}>{list.is_owner?'Tap Save on any film in your feed, then choose this folder.':'Nothing has been added yet.'}</div>
                 </div>
               ):(
                 <div style={{display:'flex',flexDirection:'column'}}>
@@ -7886,7 +7931,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                         <div style={{position:'absolute',bottom:3,left:'50%',transform:'translateX(-50%)',fontSize:8,fontWeight:800,color:'rgba(255,255,255,0.6)',background:'rgba(0,0,0,0.5)',borderRadius:4,padding:'1px 4px',whiteSpace:'nowrap'}}>{i+1}</div>
                       </button>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:4,lineHeight:1.2}}>{m.movie_title}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:watchedIds?.has(m.movie_id)?'rgba(255,255,255,0.6)':T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:4,lineHeight:1.2,display:'flex',alignItems:'center',gap:6}}>{m.movie_title}{watchedIds?.has(m.movie_id)&&<span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:11,fontWeight:700,color:accentColor,fontFamily:'inherit',letterSpacing:0}}><SvgIcon name="check" size={11} color={accentColor}/>Watched</span>}</div>
                         <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:8}}>
                           <span style={{fontSize:11,color:T.text3}}>{m.movie_year}</span>
                           {m.movie_rating&&<><SvgIcon name="star" size={10} color={m.movie_accent||accentColor} filled/><span style={{fontSize:11,color:m.movie_accent||accentColor,fontWeight:600}}>{m.movie_rating}</span></>}
@@ -7970,23 +8015,37 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
   );
 }
 
-function AddToListSheet({movie,onClose,accent}){
+// 2×2 poster collage used as a folder cover
+function FolderCover({posters=[],accent,size=56,radius=6,locked=false}){
+  const p=posters.filter(Boolean).slice(0,4);
+  return(
+    <div style={{position:'relative',width:size,height:size,borderRadius:radius,overflow:'hidden',flexShrink:0,background:`linear-gradient(135deg,${accent}38,rgba(255,255,255,0.04))`,display:'grid',gridTemplateColumns:p.length>1?'1fr 1fr':'1fr',gridTemplateRows:p.length>2?'1fr 1fr':'1fr',gap:1}}>
+      {p.length===0?(
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="folder" size={size*0.38} color={accent}/></div>
+      ):p.map((src,i)=>(<div key={i} style={{backgroundImage:`url(${src})`,backgroundSize:'cover',backgroundPosition:'center',gridColumn:p.length===3&&i===0?'1 / span 2':undefined}}/>))}
+      {locked&&<div style={{position:'absolute',right:4,bottom:4,width:18,height:18,borderRadius:'50%',background:'rgba(6,6,11,0.75)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={10} color="#fff"/></div>}
+    </div>
+  );
+}
+
+// Pick which folders a title lives in. Tapping a folder adds or removes it; you can also make a new folder here.
+function AddToListSheet({movie,onClose,accent,isSaved,onEnsureSaved}){
   const{isSignedIn}=useUser();
   const[lists,setLists]=useState([]);
   const[loading,setLoading]=useState(true);
-  const[saving,setSaving]=useState(null);
-  const[added,setAdded]=useState(new Set());
+  const[busy,setBusy]=useState(null);
   const[toast,setToast]=useState(null);
   const[showCreate,setShowCreate]=useState(false);
   const[newTitle,setNewTitle]=useState('');
+  const[newPublic,setNewPublic]=useState(false);
   const[creating,setCreating]=useState(false);
-  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),2500);};
+  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),2200);};
+  const movieId=movie?.id||movie?.movie_id||movie?.tmdb_id;
 
   const moviePayload=()=>{
-    const id=movie?.id||movie?.movie_id||movie?.tmdb_id;
-    if(!id)return null;
+    if(!movieId)return null;
     return{
-      id,
+      id:movieId,
       title:movie.title||movie.movie_title||'Untitled',
       poster:movie.poster||movie.movie_poster||null,
       year:movie.year||movie.movie_year||null,
@@ -7998,130 +8057,110 @@ function AddToListSheet({movie,onClose,accent}){
 
   useEffect(()=>{
     if(!isSignedIn){setLoading(false);return;}
-    fetch('/api/lists?tab=mine').then(r=>r.json()).then(d=>{setLists(d.lists||[]);setLoading(false);}).catch(()=>setLoading(false));
-  },[isSignedIn]);
+    fetch(`/api/lists?tab=mine${movieId?`&movieId=${movieId}`:''}`).then(r=>r.json()).then(d=>{setLists(d.lists||[]);setLoading(false);}).catch(()=>setLoading(false));
+  },[isSignedIn,movieId]);
 
-  const handleAdd=async(list)=>{
-    if(saving||added.has(list.id))return;
+  const toggle=async(list)=>{
+    if(busy)return;
     const payload=moviePayload();
-    if(!payload){showToast('Missing movie info');return;}
-    setSaving(list.id);
+    if(!payload){showToast('Missing title info');return;}
+    setBusy(list.id);
+    const adding=!list.contains;
+    setLists(p=>p.map(l=>l.id===list.id?{...l,contains:adding,movie_count:Math.max(0,(l.movie_count||0)+(adding?1:-1)),posters:adding&&payload.poster?[payload.poster,...(l.posters||[])].slice(0,4):(l.posters||[]).filter(x=>x!==payload.poster)}:l));
     try{
-      const res=await fetch(`/api/lists/${list.id}/movies`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie:payload})});
-      const data=await res.json().catch(()=>({}));
-      if(res.ok){
-        setAdded(p=>new Set([...p,list.id]));
-        setLists(prev=>prev.map(l=>l.id===list.id?{...l,movie_count:(l.movie_count||0)+1}:l));
-        showToast(`Added to "${list.title}"`);
-      }else showToast(data.error||'Failed to add');
-    }catch{showToast('Something went wrong');}
-    setSaving(null);
+      const res=adding
+        ?await fetch(`/api/lists/${list.id}/movies`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie:payload})})
+        :await fetch(`/api/lists/${list.id}/movies`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:payload.id})});
+      if(!res.ok)throw new Error();
+      if(adding&&!isSaved&&onEnsureSaved)onEnsureSaved(movie);
+      showToast(adding?`Added to ${list.title}`:`Removed from ${list.title}`);
+    }catch{
+      setLists(p=>p.map(l=>l.id===list.id?{...l,contains:!adding,movie_count:Math.max(0,(l.movie_count||0)+(adding?-1:1))}:l));
+      showToast('Couldn’t update that folder — try again');
+    }
+    setBusy(null);
   };
 
-  const handleCreateAndAdd=async()=>{
+  const createAndAdd=async()=>{
     if(!newTitle.trim()||creating)return;
     const payload=moviePayload();
-    if(!payload){showToast('Missing movie info');return;}
     setCreating(true);
     try{
-      const res=await fetch('/api/lists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:newTitle.trim(),description:'',is_public:true})});
+      const res=await fetch('/api/lists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:newTitle.trim(),description:'',is_public:newPublic})});
       const data=await res.json();
-      if(!res.ok||data.error){showToast(data.error||'Could not create list');setCreating(false);return;}
+      if(!res.ok||data.error){showToast(data.error||'Couldn’t create the folder');setCreating(false);return;}
       const list=data.list;
-      // Add current title into the new list
-      const addRes=await fetch(`/api/lists/${list.id}/movies`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie:payload})});
-      if(addRes.ok){
-        setLists(p=>[{...list,movie_count:1},...p]);
-        setAdded(p=>new Set([...p,list.id]));
-        showToast(`Created "${list.title}" · added`);
-      }else{
-        setLists(p=>[{...list,movie_count:0},...p]);
-        showToast(`List created — add failed, try +`);
+      let added=false;
+      if(payload){
+        const addRes=await fetch(`/api/lists/${list.id}/movies`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie:payload})});
+        added=addRes.ok;
+        if(added&&!isSaved&&onEnsureSaved)onEnsureSaved(movie);
       }
-      setShowCreate(false);
-      setNewTitle('');
+      setLists(p=>[{...list,is_public:newPublic,contains:added,movie_count:added?1:0,posters:added&&payload?.poster?[payload.poster]:[]},...p]);
+      showToast(added?`Created ${list.title} and added it`:`Created ${list.title}`);
+      setShowCreate(false);setNewTitle('');setNewPublic(false);
     }catch{showToast('Something went wrong');}
     setCreating(false);
   };
 
   return(
-    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.82)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(14px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       {toast&&<Toast message={toast} accent={accent}/>}
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'75vh',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
-        <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
-        <div style={{padding:'16px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'80vh',background:ambient(accent),borderRadius:'22px 22px 0 0',borderTop:`1px solid ${T.hairline}`,display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+        <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.18)',margin:'10px auto 0',flexShrink:0}}/>
+        <div style={{padding:'14px 20px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <div style={{minWidth:0,flex:1}}>
-            <span style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>Add to List</span>
-            <div style={{fontSize:11,color:T.text3,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title||movie?.movie_title}</div>
+            <div style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>Add to folder</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.55)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title||movie?.movie_title}</div>
           </div>
-          <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',padding:4,flexShrink:0}}><SvgIcon name="close" size={13} color={T.text2}/></button>
+          <button onClick={onClose} aria-label="Done" style={{background:'none',border:'none',cursor:'pointer',padding:4,fontFamily:'inherit',fontSize:14,fontWeight:700,color:accent,flexShrink:0}}>Done</button>
         </div>
-        <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'8px 20px 28px'}}>
+        <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'0 20px calc(28px + env(safe-area-inset-bottom))'}}>
           {!isSignedIn?(
-            <div style={{textAlign:'center',padding:'24px 0',color:T.text3,fontSize:13}}>Sign in to add to your lists</div>
+            <div style={{padding:'24px 0',color:'rgba(255,255,255,0.55)',fontSize:14}}>Sign in to organise your watchlist into folders.</div>
           ):loading?(
-            <div style={{display:'flex',justifyContent:'center',padding:24}}><div style={{width:20,height:20,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>
+            <div style={{display:'flex',justifyContent:'center',padding:24}}><div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.1)',borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>
           ):(
             <>
-              {/* Create new list */}
               {!showCreate?(
-                <button
-                  type="button"
-                  onClick={()=>setShowCreate(true)}
-                  style={{display:'flex',alignItems:'center',gap:12,width:'100%',background:`${accent}12`,border:`1px dashed ${accent}55`,borderRadius:14,padding:'12px 14px',cursor:'pointer',fontFamily:'inherit',marginBottom:8}}
-                >
-                  <div style={{width:36,height:36,borderRadius:10,background:`${accent}22`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <SvgIcon name="plus" size={16} color={accent}/>
-                  </div>
-                  <div style={{textAlign:'left'}}>
-                    <div style={{fontSize:13.5,fontWeight:700,color:accent,fontFamily:T.serif}}>New list</div>
-                    <div style={{fontSize:11,color:T.text3}}>Create and add this title</div>
-                  </div>
-                </button>
+                <div role="button" tabIndex={0} onClick={()=>setShowCreate(true)} onKeyDown={e=>e.key==='Enter'&&setShowCreate(true)} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer'}}>
+                  <div style={{width:48,height:48,borderRadius:6,border:`1.5px dashed ${accent}88`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="plus" size={18} color={accent}/></div>
+                  <div style={{fontSize:15,fontWeight:700,color:accent}}>New folder</div>
+                </div>
               ):(
-                <div style={{background:T.surface,border:`1px solid ${T.hairline}`,borderRadius:14,padding:'12px 14px',marginBottom:10}}>
-                  <div style={{fontSize:11,color:T.text3,marginBottom:8}}>Name your list</div>
-                  <input
-                    autoFocus
-                    value={newTitle}
-                    onChange={e=>setNewTitle(e.target.value)}
-                    onKeyDown={e=>{if(e.key==='Enter')handleCreateAndAdd();}}
-                    placeholder="e.g. Weekend thrillers"
-                    style={{width:'100%',background:T.surface,border:`1px solid ${T.hairline}`,borderRadius:10,padding:'10px 12px',color:T.text,fontSize:14,fontFamily:'inherit',outline:'none',marginBottom:10,boxSizing:'border-box'}}
-                  />
-                  <div style={{display:'flex',gap:8}}>
-                    <button type="button" onClick={()=>{setShowCreate(false);setNewTitle('');}} style={{flex:1,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:12,padding:'10px',cursor:'pointer',fontSize:12,fontWeight:600,color:T.text2,fontFamily:'inherit'}}>Cancel</button>
-                    <button type="button" onClick={handleCreateAndAdd} disabled={creating||!newTitle.trim()} style={{flex:1.4,background:accent,border:'none',borderRadius:12,padding:'10px',cursor:creating||!newTitle.trim()?'default':'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit',opacity:creating||!newTitle.trim()?0.5:1}}>
-                      {creating?'Creating…':'Create & add'}
+                <div style={{padding:'14px 0',borderTop:`1px solid ${T.hairline}`}}>
+                  <input autoFocus value={newTitle} onChange={e=>setNewTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')createAndAdd();}} maxLength={60} placeholder="Folder name, e.g. Slow-burn thrillers"
+                    style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',borderBottom:`1.5px solid ${accent}`,padding:'8px 2px',color:'#fff',fontSize:16,fontFamily:'inherit',outline:'none'}}/>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:14,gap:12}}>
+                    <button type="button" onClick={()=>setNewPublic(p=>!p)} style={{display:'flex',alignItems:'center',gap:10,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit'}}>
+                      <span style={{width:38,height:22,borderRadius:11,background:newPublic?accent:'rgba(255,255,255,0.15)',position:'relative',transition:'background 0.2s ease',flexShrink:0}}>
+                        <span style={{position:'absolute',top:2,left:newPublic?18:2,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
+                      </span>
+                      <span style={{textAlign:'left'}}>
+                        <span style={{display:'block',fontSize:14,fontWeight:700,color:'#fff'}}>{newPublic?'Public':'Private'}</span>
+                        <span style={{display:'block',fontSize:12,color:'rgba(255,255,255,0.5)'}}>{newPublic?'Anyone can find and follow it':'Only you can see it'}</span>
+                      </span>
                     </button>
+                    <div style={{display:'flex',gap:14,alignItems:'center',flexShrink:0}}>
+                      <button type="button" onClick={()=>{setShowCreate(false);setNewTitle('');}} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.6)',fontFamily:'inherit'}}>Cancel</button>
+                      <button type="button" onClick={createAndAdd} disabled={creating||!newTitle.trim()} style={{background:accent,border:'none',borderRadius:6,padding:'9px 14px',cursor:creating||!newTitle.trim()?'default':'pointer',fontSize:14,fontWeight:800,color:'#06060B',fontFamily:'inherit',opacity:creating||!newTitle.trim()?0.5:1}}>{creating?'Creating…':'Create'}</button>
+                    </div>
                   </div>
                 </div>
               )}
-
-              {lists.length===0&&!showCreate?(
-                <div style={{textAlign:'center',padding:'18px 0',color:T.text3,fontSize:13}}>No lists yet — create one above</div>
-              ):(
-                <div style={{display:'flex',flexDirection:'column'}}>
-                  {lists.map((list,i)=>{
-                    const isAdded=added.has(list.id);
-                    const isSaving=saving===list.id;
-                    return(
-                      <button key={list.id} type="button" onClick={()=>handleAdd(list)} disabled={isAdded||isSaving} style={{display:'flex',alignItems:'center',gap:12,background:'none',border:'none',borderTop:i>0?`1px solid ${T.hairline}`:'none',padding:'13px 0',cursor:isAdded?'default':'pointer',fontFamily:'inherit',width:'100%',textAlign:'left',opacity:isAdded?0.6:1,transition:'opacity 0.2s ease'}}>
-                        <div style={{width:46,height:30,borderRadius:8,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accent}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center'}}/>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13.5,fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.title}</div>
-                          <div style={{fontSize:11,color:T.text3}}>{list.movie_count||0} film{(list.movie_count||0)!==1?'s':''}</div>
-                        </div>
-                        <div style={{flexShrink:0}}>
-                          {isSaving?<div style={{width:16,height:16,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
-                          :isAdded?<SvgIcon name="check" size={16} color={accent}/>
-                          :<SvgIcon name="plus" size={16} color={T.text2}/>}
-                        </div>
-                      </button>
-                    );
-                  })}
+              {lists.map(list=>(
+                <div key={list.id} role="button" tabIndex={0} onClick={()=>toggle(list)} onKeyDown={e=>e.key==='Enter'&&toggle(list)} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer',opacity:busy===list.id?0.6:1}}>
+                  <FolderCover posters={list.posters||(list.cover_poster?[list.cover_poster]:[])} accent={accent} size={48} locked={list.is_public===false}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:15,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{list.title}</div>
+                    <div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:2}}>{list.movie_count||0} title{(list.movie_count||0)===1?'':'s'} · {list.is_public===false?'Private':'Public'}</div>
+                  </div>
+                  <span style={{width:24,height:24,borderRadius:'50%',border:`1.5px solid ${list.contains?accent:'rgba(255,255,255,0.3)'}`,background:list.contains?accent:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    {list.contains&&<SvgIcon name="check" size={13} color="#06060B"/>}
+                  </span>
                 </div>
-              )}
+              ))}
             </>
           )}
         </div>
@@ -8131,136 +8170,194 @@ function AddToListSheet({movie,onClose,accent}){
 }
 
 
-function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenList,openListId,onOpenArcs}){
+// WATCHLIST — everything you've saved, organised into folders (private by default, public when you choose).
+// Replaces the old Community Lists screen; public folders are what lists used to be.
+const STARTER_FOLDERS = ['Date night', 'Weekend binge'];
+
+export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,watchlist=[],onMarkWatched,onOpenList,openListId,onOpenArcs}){
   const{isSignedIn}=useUser();
-  const[tab,setTab]=useState('trending');
+  const[tab,setTab]=useState('mine'); // mine | following | trending
   const[lists,setLists]=useState([]);
   const[loading,setLoading]=useState(true);
   const[showCreate,setShowCreate]=useState(false);
+  const[filingMovie,setFilingMovie]=useState(null);
+  const[view,setView]=useState('home'); // home | all
+  const[allFilter,setAllFilter]=useState('towatch');
   const[toast,setToast]=useState(null);
-  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),3000);};
+  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),2600);};
 
   const fetchLists=useCallback(async(t)=>{
     setLoading(true);
     try{
       const res=await fetch(`/api/lists?tab=${t}`);
       const data=await res.json();
-      setLists(data.lists||[]);
+      let got=data.lists||[];
+      // First visit: give people two empty starter folders so the idea is obvious
+      if(t==='mine'&&isSignedIn&&got.length===0){
+        let done=false;try{done=localStorage.getItem('cine_starter_folders')==='1';}catch{}
+        if(!done){
+          try{localStorage.setItem('cine_starter_folders','1');}catch{}
+          const made=await Promise.all(STARTER_FOLDERS.map(title=>fetch('/api/lists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,is_public:false})}).then(r=>r.json()).catch(()=>null)));
+          got=made.filter(m=>m&&m.list).map(m=>({...m.list,is_public:false,movie_count:0,posters:[]}));
+        }
+      }
+      setLists(got);
     }catch{}
     setLoading(false);
-  },[]);
+  },[isSignedIn]);
 
-  useEffect(()=>{fetchLists(tab);},[tab]);
+  useEffect(()=>{fetchLists(tab);},[tab,fetchLists]);
+  // Refresh folder covers/counts when coming back from a folder
+  useEffect(()=>{if(!openListId&&tab==='mine')fetchLists('mine');},[openListId]);
 
-  const handleCreated=(newList)=>{
-    showToast('List created!');
-    setTab('mine');
-    fetchLists('mine');
-  };
+  const saved=watchlist||[];
+  const toWatch=saved.filter(m=>!m.watched);
+  const watchedList=saved.filter(m=>m.watched);
+  const asMovie=(m)=>({id:m.movie_id,title:m.title,poster:m.poster,backdrop:m.backdrop,year:m.year,rating:m.rating,accent:m.accent||accent,overview:m.overview,genre:m.genre,isTV:!!m.is_tv,mediaType:m.is_tv?'tv':'movie'});
+
+  const Tabs=()=>(
+    <div style={{display:'flex',gap:24,borderBottom:`1px solid ${T.hairline}`,marginTop:16}}>
+      {[['mine','My watchlist'],['following','Following'],['trending','Popular folders']].map(([t,label])=>(
+        <button key={t} onClick={()=>{setTab(t);setView('home');}} style={{background:'none',border:'none',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:15,fontWeight:tab===t?700:500,color:tab===t?accent:'rgba(255,255,255,0.5)',whiteSpace:'nowrap'}}>{label}</button>
+      ))}
+    </div>
+  );
+  const Label=({children,right})=>(
+    <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',margin:'26px 0 10px'}}>
+      <span style={{fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',fontWeight:700,color:accent}}>{children}</span>{right}
+    </div>
+  );
+  const Spinner=()=>(<div style={{display:'flex',justifyContent:'center',padding:32}}><div style={{width:22,height:22,border:'2px solid rgba(255,255,255,0.1)',borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>);
+
+  const SavedRow=({m})=>(
+    <div style={{display:'flex',gap:14,padding:'14px 0',borderTop:`1px solid ${T.hairline}`}}>
+      <div role="button" tabIndex={0} onClick={()=>onWatchTrailer(asMovie(m))} style={{width:58,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0,background:m.gradient||T.surface,cursor:'pointer'}}>
+        {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:m.watched?0.55:1}}/>}
+      </div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16.5,fontWeight:700,color:m.watched?'rgba(255,255,255,0.6)':'#fff',lineHeight:1.25,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+        <div style={{display:'flex',alignItems:'center',gap:6,marginTop:3,fontSize:12.5,color:'rgba(255,255,255,0.5)'}}>
+          {m.year&&<span>{m.year}</span>}
+          {m.rating&&m.rating!=='N/A'&&<><span>·</span><SvgIcon name="star" size={10} color="#FFD166" filled/><span style={{color:'rgba(255,255,255,0.85)'}}>{m.rating}</span></>}
+          {m.is_tv&&<><span>·</span><span>Series</span></>}
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:18,marginTop:10}}>
+          <button onClick={()=>onWatchTrailer(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#fff'}}><SvgIcon name="play" size={11} color="#fff" filled/>Trailer</button>
+          <button onClick={()=>setFilingMovie(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.75)'}}><SvgIcon name="folder" size={14} color="rgba(255,255,255,0.75)"/>Folder</button>
+          <button onClick={()=>onMarkWatched&&onMarkWatched(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:m.watched?accent:'rgba(255,255,255,0.75)'}}><SvgIcon name="check" size={14} color={m.watched?accent:'rgba(255,255,255,0.75)'}/>{m.watched?'Watched':'Mark watched'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const FolderTile=({title,sub,posters,locked,onClick,dashed})=>(
+    <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
+      {dashed?(
+        <div style={{width:'100%',aspectRatio:'1',borderRadius:6,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
+      ):(
+        <div style={{width:'100%',aspectRatio:'1'}}><FolderCoverFill posters={posters} accent={accent} locked={locked}/></div>
+      )}
+      <div style={{fontSize:15,fontWeight:700,color:dashed?accent:'#fff',marginTop:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+      {sub&&<div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:2}}>{sub}</div>}
+    </div>
+  );
+
+  const PublicRow=({l})=>(
+    <div role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} onKeyDown={e=>e.key==='Enter'&&onOpenList&&onOpenList(l.id)} style={{display:'flex',gap:14,alignItems:'center',padding:'13px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer'}}>
+      <FolderCover posters={l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[])} accent={l.cover_accent||accent} size={60}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16.5,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
+        <div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>by {l.display_name||l.username} · {l.movie_count||0} titles{l.follower_count?` · ${l.follower_count} following`:''}</div>
+        {l.description&&<div style={{fontSize:13,color:'rgba(255,255,255,0.62)',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:1,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{l.description}</div>}
+      </div>
+      {l.avg_rating!=null&&<span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:13,fontWeight:700,color:'#fff',flexShrink:0}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{l.avg_rating}</span>}
+    </div>
+  );
 
   return(
     <div style={{position:'fixed',inset:0,zIndex:120,background:ambient(accent),display:'flex',flexDirection:'column',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)',visibility:openListId?'hidden':'visible'}}>
-      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       {toast&&<Toast message={toast} accent={accent}/>}
-      {showCreate&&<CreateListSheet onClose={()=>setShowCreate(false)} accent={accent} onCreated={handleCreated}/>}
+      {showCreate&&<CreateListSheet onClose={()=>setShowCreate(false)} accent={accent} onCreated={(l)=>{showToast(`Created ${l?.title||'folder'}`);fetchLists('mine');}}/>}
+      {filingMovie&&<AddToListSheet movie={filingMovie} onClose={()=>{setFilingMovie(null);fetchLists('mine');}} accent={accent} isSaved={watchlistIds?.has(filingMovie.id)} onEnsureSaved={onSave}/>}
 
-      {/* HEADER */}
-      <div style={{padding:'52px 20px 0',display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
-        <button onClick={onClose} style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',marginLeft:-6}}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        </button>
-        <div style={{flex:1}}>
-          <h1 style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text,margin:0}}>Community Lists</h1>
-          <p style={{fontSize:11.5,color:T.text3,margin:'2px 0 0'}}>Curated collections by the community</p>
-        </div>
-        <div style={{display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
-          {onOpenArcs&&(
-            <button type="button" onClick={onOpenArcs} style={{background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:20,padding:'8px 12px',cursor:'pointer',fontSize:11,fontWeight:700,color:T.text2,fontFamily:'inherit'}}>
-              Cine Arcs
-            </button>
-          )}
-          {isSignedIn&&(
-            <button onClick={()=>setShowCreate(true)} style={{background:accent,border:'none',borderRadius:20,padding:'8px 16px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6}}>
-              <SvgIcon name="plus" size={12} color="#07070F"/>New List
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* TABS */}
-      <div style={{display:'flex',gap:24,padding:'18px 20px 0',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
-        {[['trending','flame','Trending'],['following','bookmark','Following'],['mine','user','My Lists']].map(([t,icon,label])=>(
-          <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',cursor:'pointer',padding:'0 0 14px',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:500,color:tab===t?accent:T.text3,borderBottom:`2px solid ${tab===t?accent:'transparent'}`,transition:'all 0.2s ease',display:'flex',alignItems:'center',gap:6}}>
-            <SvgIcon name={icon} size={13} color={tab===t?accent:T.text3} filled={t==='trending'&&tab===t}/>
-            {label}
+      {/* Header */}
+      <div style={{padding:'max(18px, env(safe-area-inset-top)) 20px 0',flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <button onClick={view==='all'?()=>setView('home'):onClose} aria-label="Back" style={{background:'none',border:'none',width:36,height:36,marginLeft:-8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-        ))}
-      </div>
-
-      {/* CONTENT */}
-      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',padding:'16px 20px'}}>
-        {loading?(
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,padding:40}}>
-            <div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
-            <span style={{fontSize:12.5,color:T.text3}}>Loading lists...</span>
-          </div>
-        ):!isSignedIn&&tab!=='trending'?(
-          <div style={{textAlign:'center',padding:'48px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
-            <SvgIcon name="list" size={28} color={T.hairlineStrong}/>
-            <div style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>Sign in to see your lists</div>
-            <div style={{fontSize:12.5,color:T.text3}}>Create and follow curated film collections</div>
-          </div>
-        ):lists.length===0?(
-          <div style={{textAlign:'center',padding:'48px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
-            <AccentGlow accent={accent} size={120} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
-            <div style={{position:'relative',width:58,height:58,borderRadius:'50%',background:T.surface2,border:`1px solid ${T.hairline}`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="list" size={22} color={accent}/></div>
-            <div style={{position:'relative',fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>
-              {tab==='mine'?'You haven\'t created any lists yet':tab==='following'?'You\'re not following any lists yet':'No lists yet — be the first!'}
-            </div>
-            {tab==='mine'&&isSignedIn&&(
-              <button onClick={()=>setShowCreate(true)} style={{position:'relative',background:accent,border:'none',borderRadius:20,padding:'10px 24px',cursor:'pointer',fontSize:13,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Create your first list</button>
-            )}
-          </div>
-        ):(
-          <div style={{display:'flex',flexDirection:'column',gap:1,background:T.hairline,borderRadius:18,overflow:'hidden'}}>
-            {lists.map((list,i)=>(
-              <button key={list.id} onClick={()=>onOpenList&&onOpenList(list.id)} style={{display:'flex',gap:14,alignItems:'center',background:'transparent',border:'none',padding:'14px 16px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
-                {/* COVER THUMBNAIL */}
-                <div style={{width:68,height:44,borderRadius:10,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accent}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center',position:'relative'}}>
-                  <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(0,0,0,0.1),rgba(0,0,0,0.3))'}}/>
-                  {tab==='trending'&&i<3&&(
-                    <div style={{position:'absolute',top:3,left:3,width:17,height:17,borderRadius:'50%',background:i===0?'#FFD66B':i===1?'#D8D8E0':'#E0A468',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                      <span style={{fontSize:9,fontWeight:900,color:'#07070F'}}>{i+1}</span>
-                    </div>
-                  )}
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:3,lineHeight:1.2,display:'flex',alignItems:'center',gap:8}}>{list.title}{list.is_public===false&&<span style={{fontSize:9,fontWeight:700,color:T.text3,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:6,padding:'2px 6px',fontStyle:'normal',fontFamily:T.sans||'inherit'}}>Private</span>}</div>
-                  <div style={{fontSize:11,color:T.text3,marginBottom:5}}>by {list.display_name} · {list.movie_count} film{list.movie_count!==1?'s':''}</div>
-                  <div style={{display:'flex',alignItems:'center',gap:10}}>
-                    {list.avg_rating&&(
-                      <div style={{display:'flex',alignItems:'center',gap:3}}>
-                        <SvgIcon name="star" size={10} color={list.cover_accent||accent} filled/>
-                        <span style={{fontSize:11,color:list.cover_accent||accent,fontWeight:700}}>{list.avg_rating}</span>
-                        <span style={{fontSize:10,color:T.text3}}>({list.rating_count})</span>
-                      </div>
-                    )}
-                    <div style={{display:'flex',alignItems:'center',gap:3}}>
-                      <SvgIcon name="people" size={10} color={T.text3}/>
-                      <span style={{fontSize:11,color:T.text3}}>{list.follower_count}</span>
-                    </div>
-                    {list.is_following&&<span style={{fontSize:9,color:accent,background:`${accent}16`,borderRadius:10,padding:'1px 7px',fontWeight:700}}>Following</span>}
-                  </div>
-                </div>
-                <SvgIcon name="chevron" size={13} color={T.text3}/>
-              </button>
+          <h1 style={{flex:1,fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:21,fontWeight:700,color:T.text,margin:0}}>{view==='all'?'All saved':'Watchlist'}</h1>
+          {view==='home'&&onOpenArcs&&<button onClick={onOpenArcs} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:700,color:accent}}>Cine Arcs</button>}
+        </div>
+        <div style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',marginTop:2}}>
+          {view==='all'?`${toWatch.length} to watch · ${watchedList.length} watched`:`${saved.length} saved · ${tab==='mine'?lists.length:'—'} folders`}
+        </div>
+        {view==='home'?<Tabs/>:(
+          <div style={{display:'flex',gap:24,borderBottom:`1px solid ${T.hairline}`,marginTop:16}}>
+            {[['towatch',`To watch (${toWatch.length})`],['watched',`Watched (${watchedList.length})`]].map(([t,label])=>(
+              <button key={t} onClick={()=>setAllFilter(t)} style={{background:'none',border:'none',borderBottom:`2px solid ${allFilter===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:15,fontWeight:allFilter===t?700:500,color:allFilter===t?accent:'rgba(255,255,255,0.5)'}}>{label}</button>
             ))}
           </div>
+        )}
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',padding:'0 20px calc(40px + env(safe-area-inset-bottom))'}}>
+        {!isSignedIn?(
+          <div style={{padding:'48px 0'}}>
+            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:20,fontWeight:700,color:'#fff'}}>Your watchlist lives here</div>
+            <div style={{fontSize:14,color:'rgba(255,255,255,0.55)',marginTop:6,lineHeight:1.5}}>Sign in to save films and sort them into folders like “Date night” or “Weekend binge”.</div>
+          </div>
+        ):view==='all'?(
+          (allFilter==='towatch'?toWatch:watchedList).length===0?(
+            <div style={{padding:'28px 0',fontSize:14,color:'rgba(255,255,255,0.55)'}}>{allFilter==='towatch'?'Nothing waiting. Tap Save on any film in your feed to add it here.':'Films you mark as watched show up here.'}</div>
+          ):(allFilter==='towatch'?toWatch:watchedList).map(m=><SavedRow key={m.movie_id} m={m}/>)
+        ):tab==='mine'?(
+          <>
+            <Label right={<span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>Private unless you share them</span>}>Folders</Label>
+            {loading?<Spinner/>:(
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'18px 14px'}}>
+                <FolderTile title="All saved" sub={`${saved.length} title${saved.length===1?'':'s'}`} posters={saved.map(m=>m.poster).filter(Boolean).slice(0,4)} onClick={()=>setView('all')}/>
+                {lists.map(l=>(
+                  <FolderTile key={l.id} title={l.title} sub={`${l.movie_count||0} title${(l.movie_count||0)===1?'':'s'} · ${l.is_public===false?'Private':'Public'}`} posters={l.posters||[]} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
+                ))}
+                <FolderTile title="New folder" dashed onClick={()=>setShowCreate(true)}/>
+              </div>
+            )}
+
+            <Label right={saved.length>6?<button onClick={()=>setView('all')} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:accent}}>See all</button>:null}>Recently saved</Label>
+            {toWatch.length===0?(
+              <div style={{fontSize:14,color:'rgba(255,255,255,0.55)',lineHeight:1.5,padding:'4px 0'}}>Tap Save on any film in your feed. It lands here, and you can file it into a folder.</div>
+            ):[...toWatch].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).slice(0,6).map(m=><SavedRow key={m.movie_id} m={m}/>)}
+          </>
+        ):(
+          <>
+            <div style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',padding:'16px 0 6px',lineHeight:1.5}}>
+              {tab==='following'?'Public folders you follow. They update when their owners add titles.':'The most-followed and best-rated public folders right now.'}
+            </div>
+            {loading?<Spinner/>:lists.length===0?(
+              <div style={{padding:'20px 0',fontSize:14,color:'rgba(255,255,255,0.55)'}}>{tab==='following'?'You’re not following any folders yet. Browse Popular folders to find some.':'No public folders yet. Make one of yours public to be the first.'}</div>
+            ):lists.map(l=><PublicRow key={l.id} l={l}/>)}
+          </>
         )}
       </div>
     </div>
   );
 }
+
+// Same collage as FolderCover but fills its parent (used for the big folder tiles)
+function FolderCoverFill({posters=[],accent,locked}){
+  const p=(posters||[]).filter(Boolean).slice(0,4);
+  return(
+    <div style={{position:'relative',width:'100%',height:'100%',borderRadius:6,overflow:'hidden',background:`linear-gradient(135deg,${accent}38,rgba(255,255,255,0.04))`,display:'grid',gridTemplateColumns:p.length>1?'1fr 1fr':'1fr',gridTemplateRows:p.length>2?'1fr 1fr':'1fr',gap:2}}>
+      {p.length===0?(
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="folder" size={30} color={accent}/></div>
+      ):p.map((src,i)=>(<div key={i} style={{backgroundImage:`url(${src})`,backgroundSize:'cover',backgroundPosition:'center',gridColumn:p.length===3&&i===0?'1 / span 2':undefined}}/>))}
+      {locked&&<div style={{position:'absolute',right:8,bottom:8,width:24,height:24,borderRadius:'50%',background:'rgba(6,6,11,0.75)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={12} color="#fff"/></div>}
+    </div>
+  );
+}
+
 
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
@@ -8316,8 +8413,10 @@ export default function CineScroll(){
     return()=>{cancelled=true;clearInterval(interval);};
   },[isLoaded,isSignedIn]);
 
+  const[savePrompt,setSavePrompt]=useState(null);const[folderMovie,setFolderMovie]=useState(null);const savePromptTimer=useRef(null);
   const handleSave=async(movie)=>{
     const already=watchlistIds.has(movie.id);
+    if(!already){clearTimeout(savePromptTimer.current);setSavePrompt(movie);savePromptTimer.current=setTimeout(()=>setSavePrompt(null),4500);}
     if(already){setWatchlistIds(p=>{const n=new Set(p);n.delete(movie.id);return n;});setWatchlist(p=>p.filter(m=>m.movie_id!==movie.id));await fetch('/api/watchlist',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie.id})});}
     else{
       setWatchlistIds(p=>new Set([...p,movie.id]));setWatchlist(p=>[{movie_id:movie.id,title:movie.title,year:movie.year,rating:movie.rating,poster:movie.poster,backdrop:movie.backdrop,genre:movie.genre,overview:movie.overview,accent:movie.accent,gradient:movie.gradient,is_tv:movie.isTV||false,watched:false,saved_at:Date.now(),certification:movie.certification||''},...p]);
@@ -8415,8 +8514,8 @@ export default function CineScroll(){
               </span>
             )}
           </button>
-          <button onClick={()=>setShowLists(true)} style={{background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
-            <SvgIcon name="list" size={17} color="rgba(255,255,255,0.75)"/>
+          <button onClick={()=>setShowLists(true)} aria-label="Watchlist" style={{background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
+            <SvgIcon name="folder" size={17} color="rgba(255,255,255,0.75)"/>
           </button>
           <button onClick={()=>setShowFilter(p=>!p)} style={{background:showFilter?`${accent}18`:'rgba(0,0,0,0.55)',border:`1px solid ${showFilter?accent+'44':'rgba(255,255,255,0.1)'}`,borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)',transition:'all 0.2s ease'}}>
             <SvgIcon name="sliders" size={17} color={showFilter?accent:'rgba(255,255,255,0.7)'}/>
@@ -8511,13 +8610,29 @@ export default function CineScroll(){
       </div>
 
 
-      <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
+      <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData} onWatchTrailer={(m)=>{setShowProfile(false);setTrailerMovie(m);}} onDiscover={()=>{setShowProfile(false);setTimeout(()=>setShowFilter(true),50);}}/>}
       {showArcs&&<CineArcs onClose={()=>setShowArcs(false)} accent={accent} onWatchTrailer={setTrailerMovie} watchlist={watchlist} user={user}/>}
-      {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList} onOpenArcs={()=>{setShowLists(false);setShowArcs(true);}}/>}
-      {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds}/>}
+      {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList} onOpenArcs={()=>{setShowLists(false);setShowArcs(true);}}/>}
+      {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}
+      {folderMovie&&<AddToListSheet movie={folderMovie} onClose={()=>setFolderMovie(null)} accent={folderMovie.accent||accent} isSaved={watchlistIds.has(folderMovie.id)} onEnsureSaved={handleSave}/>}
+      {savePrompt&&!folderMovie&&(
+        <div style={{position:'fixed',left:16,right:16,bottom:'calc(20px + env(safe-area-inset-bottom))',zIndex:300,display:'flex',justifyContent:'center',pointerEvents:'none'}}>
+          <div style={{pointerEvents:'all',display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.82)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'10px 10px 10px 12px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)',animation:'toastIn 0.3s cubic-bezier(0.22,1,0.36,1)'}}>
+            <div style={{width:30,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0,background:T.surface}}>{savePrompt.poster&&<img src={savePrompt.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13.5,fontWeight:700,color:'#fff'}}>Saved to your watchlist</div>
+              <div style={{fontSize:12,color:'rgba(255,255,255,0.55)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{savePrompt.title}</div>
+            </div>
+            <button onClick={()=>{clearTimeout(savePromptTimer.current);setFolderMovie(savePrompt);setSavePrompt(null);}} style={{display:'inline-flex',alignItems:'center',gap:6,background:savePrompt.accent||accent,border:'none',borderRadius:8,padding:'9px 12px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:800,color:'#06060B',flexShrink:0}}>
+              <SvgIcon name="folder" size={14} color="#06060B"/>Add to folder
+            </button>
+          </div>
+          <style>{`@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        </div>
+      )}
       {showFriends&&<FriendsScreen onClose={()=>setShowFriends(false)} accent={accent} onWatchTrailer={setTrailerMovie} onAddToWatchlist={handleSave}/>}
       {trailerMovie&&<InlinePlayer movie={trailerMovie} onClose={()=>setTrailerMovie(null)} accent={trailerMovie.accent||accent} onSave={handleSave} isSaved={watchlistIds.has(trailerMovie.id)} initialTab={trailerMovie.initialTab} highlightCommentId={trailerMovie.highlightCommentId}/>}
 
