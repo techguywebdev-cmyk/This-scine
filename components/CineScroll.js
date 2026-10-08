@@ -2473,7 +2473,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
               {/* TONIGHT FOR YOU — retention loop */}
               <div style={{ marginBottom: 26 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Eyebrow color={T.text3}>Tonight for you</Eyebrow>
+                  <Eyebrow color={T.text3}>{dayPart().title} for you</Eyebrow>
                   <span style={{ fontSize: 11, color: T.text3 }}>
                     {(() => { try { return localStorage.getItem('cine_preferred_provider') || 'Trending'; } catch { return 'Trending'; } })()}
                   </span>
@@ -2485,7 +2485,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
                 ) : tonight.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '14px 8px', background: T.surface2, borderRadius: 14, border: `1px solid ${T.hairline}` }}>
                     <div style={{ fontSize: 13, color: T.text2, fontWeight: 600, marginBottom: 4 }}>No picks yet</div>
-                    <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.45 }}>Choose a platform below — we will build tonight around what you can actually watch.</div>
+                    <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.45 }}>Choose a platform below — we will build {dayPart().phrase} around what you can actually watch.</div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', paddingBottom: 4 }}>
@@ -2713,6 +2713,15 @@ function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProfile, ac
       .then(d => {
         if (cancelled) return;
         const list = (d.items || d.feed || d.activities || []).slice(0, 8);
+        // Only surface when there's something new, and at most once every 4 hours
+        try {
+          const newest = list[0]?.created_at ? new Date(list[0].created_at).getTime() : 0;
+          const lastSeen = Number(localStorage.getItem('cine_pulse_seen_at') || 0);
+          const lastShown = Number(localStorage.getItem('cine_pulse_shown_at') || 0);
+          if (!newest || newest <= lastSeen || Date.now() - lastShown < 4 * 3600000) { setItems([]); return; }
+          localStorage.setItem('cine_pulse_shown_at', String(Date.now()));
+          localStorage.setItem('cine_pulse_seen_at', String(newest));
+        } catch {}
         setItems(list);
       })
       .catch(() => {});
@@ -2899,6 +2908,31 @@ function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProfile, ac
   );
 }
 
+function dayPart(){const h=new Date().getHours();if(h>=5&&h<12)return{key:'morning',title:'This morning',phrase:'this morning'};if(h>=12&&h<17)return{key:'afternoon',title:'This afternoon',phrase:'this afternoon'};if(h>=17&&h<22)return{key:'tonight',title:'Tonight',phrase:'tonight'};return{key:'late',title:'Late night',phrase:'late tonight'};}
+
+function ReleaseCountdown({dateStr,accent}){
+  const target=dateStr?new Date(dateStr+'T00:00:00').getTime():0;
+  const[now,setNow]=useState(()=>Date.now());
+  useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t);},[]);
+  if(!target)return null;
+  let diff=Math.max(0,target-now);
+  const d=Math.floor(diff/86400000);diff-=d*86400000;
+  const h=Math.floor(diff/3600000);diff-=h*3600000;
+  const m=Math.floor(diff/60000);diff-=m*60000;
+  const sec=Math.floor(diff/1000);
+  const cells=[[d,'Days'],[h,'Hrs'],[m,'Min'],[sec,'Sec']];
+  return(
+    <div style={{display:'flex',gap:6,marginBottom:12}}>
+      {cells.map(([v,l],i)=>(
+        <div key={l} style={{minWidth:52,padding:'7px 8px 6px',borderRadius:12,background:'rgba(0,0,0,0.38)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${i===0?accent+'40':'rgba(255,255,255,0.08)'}`,textAlign:'center'}}>
+          <div style={{fontSize:19,fontWeight:800,color:i===0?accent:'#fff',fontVariantNumeric:'tabular-nums',lineHeight:1}}>{String(v).padStart(2,'0')}</div>
+          <div style={{fontSize:8.5,letterSpacing:1.6,textTransform:'uppercase',color:'rgba(255,255,255,0.45)',fontWeight:700,marginTop:4}}>{l}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T00:00:00').setHours(0,0,0,0)-new Date().setHours(0,0,0,0);return Math.round(ms/86400000);}
 function formatReleaseCountdown(dateStr){const d=daysUntil(dateStr);if(d===null)return'';if(d<=0)return'Out now';if(d===1)return'Tomorrow';if(d<=30)return`${d} days`;return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function formatReleaseDate(dateStr){if(!dateStr)return'';return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
@@ -2907,6 +2941,9 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
   const{isSignedIn}=useUser();
   const isUpcoming=!!movie.isUpcoming;
   const reminderBusyRef=useRef(false);
+  const[remindToast,setRemindToast]=useState(null);const remindToastTimer=useRef(null);
+  const flashRemind=(msg,ok=true)=>{clearTimeout(remindToastTimer.current);setRemindToast({msg,ok});remindToastTimer.current=setTimeout(()=>setRemindToast(null),2800);};
+  useEffect(()=>()=>clearTimeout(remindToastTimer.current),[]);
   const toggleReminder=async()=>{
     if(!isSignedIn){onAuthRequired();return;}
     if(reminderBusyRef.current)return;reminderBusyRef.current=true;
@@ -2916,7 +2953,9 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
     try{
       const res=await fetch('/api/reminders',{method:next?'POST':'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie.id,mediaType:movie.mediaType||(movie.isTV?'tv':'movie'),title:movie.title,poster:movie.poster,releaseDate:movie.releaseDate})});
       if(!res.ok)throw new Error('reminder failed');
-    }catch{onToggleReminder?.(movie,!next);}
+      if(next){const d=daysUntil(movie.releaseDate);flashRemind(d<=1?"We'll remind you tomorrow":`We'll remind you in ${d} days`);}
+      else flashRemind('Reminder removed');
+    }catch{onToggleReminder?.(movie,!next);flashRemind("Couldn't set reminder — try again",false);}
     finally{reminderBusyRef.current=false;}
   };
   const[liked,setLiked]=useState(false);const[userRating,setUserRating]=useState(0);const[showComments,setShowComments]=useState(false);const[imgLoaded,setImgLoaded]=useState(false);const[likeCount]=useState(Math.floor(Math.random()*60+8)*100);const[showHint,setShowHint]=useState(false);const[showAddToList,setShowAddToList]=useState(false);
@@ -2980,7 +3019,9 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         </div>
       )}
       <div style={{position:'absolute',top:92,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
-        <div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/><span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:1}}>{String(index+1).padStart(2,'0')}</span>{movie.isTV&&<span style={{fontSize:9,color:accent,fontWeight:700,marginLeft:2}}>TV</span>}</div>
+        {isUpcoming
+          ?<div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`,animation:'csPulse 1.6s ease-in-out infinite'}}/><span style={{fontSize:10.5,fontWeight:700,color:'rgba(255,255,255,0.8)',letterSpacing:1.6,textTransform:'uppercase'}}>Coming Soon</span></div>
+          :<div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/><span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:1}}>{String(index+1).padStart(2,'0')}</span>{movie.isTV&&<span style={{fontSize:9,color:accent,fontWeight:700,marginLeft:2}}>TV</span>}</div>}
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           {movie.certification&&<CertBadge cert={movie.certification}/>}
           {isUpcoming
@@ -2989,8 +3030,8 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         </div>
       </div>
       <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
+        {isUpcoming&&isActive&&<ReleaseCountdown dateStr={movie.releaseDate} accent={accent}/>}
         <div style={{display:'flex',gap:6,marginBottom:9,flexWrap:'wrap',alignItems:'center'}}>
-          {isUpcoming&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:9,letterSpacing:2.2,color:'#06060B',fontWeight:800,textTransform:'uppercase',padding:'4px 9px',background:accent,borderRadius:4,boxShadow:`0 0 18px ${accent}55`}}><span style={{width:5,height:5,borderRadius:'50%',background:'#06060B',animation:'csPulse 1.6s ease-in-out infinite'}}/>Coming Soon</span>}
           {(movie.genre||[]).map(g=>(<span key={g} style={{fontSize:9,letterSpacing:2.2,color:accent,fontWeight:700,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}38`,borderRadius:4}}>{g}</span>))}
           {movie.isTV&&<span style={{fontSize:9,color:'rgba(255,255,255,0.35)',fontWeight:600,padding:'3px 8px',border:'1px solid rgba(255,255,255,0.1)',borderRadius:4}}>SERIES</span>}
         </div>
@@ -3005,14 +3046,22 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         </div>
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
       </div>
-      <div style={{position:'absolute',right:12,bottom:72,zIndex:10,display:'flex',flexDirection:'column',gap:4,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
+      <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[{icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{icon:'check',label:'Seen',active:!!isWatched,color:'#7BFFB0',filled:!!isWatched,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{icon:'list',label:'List',active:showAddToList,color:'#B07FEF',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}setShowAddToList(true);}},{icon:'bookmark',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:isSaved,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}}].map(btn=>(
-          <button key={btn.icon} onClick={btn.fn} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}14`:'rgba(0,0,0,0.38)',backdropFilter:'blur(18px)',border:`1px solid ${btn.active?btn.color+'45':'rgba(255,255,255,0.08)'}`,borderRadius:16,padding:'9px 8px',cursor:'pointer',minWidth:46,transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
-            <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.6)'} filled={btn.filled}/>
+          <button key={btn.icon} onClick={btn.fn} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 9px',cursor:'pointer',minWidth:50,transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
+            <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
             <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.3,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)'}}>{btn.label}</span>
           </button>
         ))}
       </div>
+      {remindToast&&(
+        <div style={{position:'absolute',left:'50%',top:'52%',transform:'translateX(-50%)',zIndex:30,pointerEvents:'none',animation:'fadeUp 0.25s ease'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,whiteSpace:'nowrap',background:'rgba(6,6,11,0.88)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${remindToast.ok?'#FFD16655':'rgba(255,107,138,0.45)'}`,borderRadius:999,padding:'9px 16px',boxShadow:'0 10px 30px rgba(0,0,0,0.45)'}}>
+            <SvgIcon name={remindToast.ok?'bell':'close'} size={14} color={remindToast.ok?'#FFD166':'#FF6B8A'} filled={remindToast.ok}/>
+            <span style={{fontSize:12.5,fontWeight:700,color:'#fff'}}>{remindToast.msg}</span>
+          </div>
+        </div>
+      )}
       {showComments&&<CommentPanel movie={movie} onClose={()=>setShowComments(false)} accent={accent} onAuthRequired={()=>{setShowComments(false);onAuthRequired();}} onWatchTrailer={onTrailer} onAddToWatchlist={onSave}/>}
       {showAddToList&&<AddToListSheet movie={movie} onClose={()=>setShowAddToList(false)} accent={accent}/>}
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes csPulse{0%,100%{opacity:1}50%{opacity:0.35}}`}</style>
@@ -8303,8 +8352,10 @@ export default function CineScroll(){
     try{
       const day=new Date().toISOString().slice(0,10);
       if(localStorage.getItem('cine_tonight_nudge')===day)return;
-      const t=setTimeout(()=>setShowTonightNudge(true),2200);
-      return()=>clearTimeout(t);
+      const t=setTimeout(()=>{setShowTonightNudge(true);try{localStorage.setItem('cine_tonight_nudge',day);}catch{}},2200);
+      // Auto-hide after a few seconds so it never lingers
+      const t2=setTimeout(()=>setShowTonightNudge(false),9000);
+      return()=>{clearTimeout(t);clearTimeout(t2);};
     }catch{}
   },[isLoaded,isSignedIn]);
 
@@ -8480,7 +8531,7 @@ export default function CineScroll(){
               <SvgIcon name="sparkle" size={14} color={accent}/>
             </div>
             <div style={{textAlign:'left',flex:1}}>
-              <div style={{fontSize:12.5,fontWeight:700,color:T.text}}>Tonight for you</div>
+              <div style={{fontSize:12.5,fontWeight:700,color:T.text}}>{dayPart().title} for you</div>
               <div style={{fontSize:10.5,color:T.text3,marginTop:1}}>Fresh picks from your platforms</div>
             </div>
             <button
