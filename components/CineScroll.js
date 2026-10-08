@@ -2276,10 +2276,8 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
   },[movie]);
   useEffect(()=>{load();},[load]);
   useEffect(()=>{const prev=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=prev;};},[]);
-  const hero=items[0];const rest=items.slice(1);
-  const backdrop=source?.backdrop||movie?.backdrop||movie?.poster;
+    const backdrop=source?.backdrop||movie?.backdrop||movie?.poster;
   const play=(m)=>{if(onTrailer){onTrailer(m);}else{onSelect?.(m);onClose();}};
-  const MatchPill=({m,small})=>(<span style={{display:'inline-flex',alignItems:'center',gap:4,background:'rgba(6,6,11,0.72)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:`1px solid ${accent}55`,borderRadius:999,padding:small?'3px 8px':'4px 10px',fontSize:small?10.5:11.5,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums'}}>{m.match||90}% match</span>);
   const SaveBtn=({m,size=30})=>{const saved=savedIds?.has?.(m.id);return(<button aria-label={saved?'Saved':'Save'} onClick={(e)=>{e.stopPropagation();onSave?.(m);}} style={{width:size,height:size,borderRadius:'50%',background:saved?accent:'rgba(6,6,11,0.66)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:`1px solid ${saved?accent:'rgba(255,255,255,0.14)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,flexShrink:0}}><SvgIcon name="bookmark" size={size*0.47} color={saved?'#06060B':'#fff'} filled={saved}/></button>);};
   return(
     <><div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.72)',backdropFilter:'blur(10px)',animation:'simFade 0.2s ease'}}/>
@@ -2294,7 +2292,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
             <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.22)',margin:'10px auto 14px'}}/>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}>
               <div style={{minWidth:0}}>
-                <div style={{fontSize:10.5,letterSpacing:2.4,textTransform:'uppercase',fontWeight:700,color:accent}}>Because you liked</div>
+                <div style={{fontSize:14,fontWeight:700,color:accent}}>Because you liked</div>
                 <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:28,lineHeight:1.08,color:'#fff',marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
               </div>
               <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:`1px solid ${T.hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="close" size={14} color="#fff"/></button>
@@ -2328,47 +2326,51 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
           </div>
         )}
 
-        {!loading&&hero&&(
-          <div style={{padding:'0 20px',animation:'simIn 0.35s ease'}}>
-            <div style={{fontSize:10.5,letterSpacing:2.4,textTransform:'uppercase',fontWeight:700,color:T.text3,marginBottom:10}}>Top match</div>
-            <div onClick={()=>play(hero)} role="button" style={{position:'relative',borderRadius:18,overflow:'hidden',aspectRatio:'16/10',background:hero.gradient,cursor:'pointer',border:`1px solid ${T.hairline}`}}>
-              {(hero.backdrop||hero.poster)&&<img src={hero.backdrop||hero.poster} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
-              <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(6,6,11,0.96) 0%,rgba(6,6,11,0.55) 45%,rgba(6,6,11,0.05) 100%)'}}/>
-              <div style={{position:'absolute',top:12,left:12}}><MatchPill m={hero}/></div>
-              <div style={{position:'absolute',top:10,right:10}}><SaveBtn m={hero} size={34}/></div>
-              <div style={{position:'absolute',left:16,right:16,bottom:14}}>
-                <div style={{fontSize:12,fontWeight:700,color:accent,marginBottom:4}}>{hero.matchReason}</div>
-                <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:24,lineHeight:1.1,color:'#fff'}}>{hero.title}</div>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginTop:6,fontSize:12.5,color:'rgba(255,255,255,0.7)'}}>
-                  <span>{hero.year}</span><span style={{opacity:0.4}}>•</span>
-                  <span style={{display:'inline-flex',alignItems:'center',gap:4}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{hero.rating}</span>
-                  {hero.genre?.[0]&&<><span style={{opacity:0.4}}>•</span><span>{hero.genre.join(', ')}</span></>}
-                </div>
-                <p style={{fontSize:13,color:'rgba(255,255,255,0.68)',lineHeight:1.5,margin:'8px 0 12px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{hero.overview}</p>
-                <div style={{display:'inline-flex',alignItems:'center',gap:7,background:'#fff',color:'#06060B',borderRadius:999,padding:'8px 16px',fontSize:13,fontWeight:800}}><SvgIcon name="play" size={12} color="#06060B" filled/>Watch trailer</div>
-              </div>
+        {!loading&&items.length>0&&(
+          <div style={{padding:'4px 16px calc(28px + env(safe-area-inset-bottom))'}}>
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',padding:'0 4px 12px'}}>
+              <span style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700,fontSize:19,color:'#fff'}}>Closest first</span>
+              <span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>{items.length} {contentLabel==='Series'?'series':'titles'}</span>
             </div>
-          </div>
-        )}
-
-        {!loading&&rest.length>0&&(
-          <div style={{padding:'26px 20px calc(28px + env(safe-area-inset-bottom))'}}>
-            <div style={{fontSize:10.5,letterSpacing:2.4,textTransform:'uppercase',fontWeight:700,color:T.text3,marginBottom:12}}>More like this</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px 14px'}}>
-              {rest.map((m,i)=>(
-                <div key={m.id} onClick={()=>play(m)} role="button" style={{cursor:'pointer',minWidth:0,animation:`simIn 0.35s ease ${Math.min(i,8)*0.03}s both`}}>
-                  <div style={{position:'relative',aspectRatio:'2/3',borderRadius:14,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],border:`1px solid ${T.hairline}`}}>
-                    {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
-                    <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 35%)'}}/>
-                    <div style={{position:'absolute',top:8,left:8}}><MatchPill m={m} small/></div>
-                    <div style={{position:'absolute',top:6,right:6}}><SaveBtn m={m} size={30}/></div>
-                    <div style={{position:'absolute',left:8,bottom:8,display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#fff'}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{m.rating}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {items.map((m,i)=>{
+                const lead=i===0;const art=m.backdrop||m.poster;
+                return(
+                <div key={m.id} role="button" tabIndex={0} onClick={()=>play(m)} onKeyDown={(e)=>{if(e.key==='Enter')play(m);}}
+                  style={{position:'relative',borderRadius:18,overflow:'hidden',cursor:'pointer',border:`1px solid ${lead?accent+'66':T.hairline}`,background:T.surface,animation:`simIn 0.32s ease ${Math.min(i,8)*0.035}s both`}}>
+                  {/* the title's own still bleeds in from the right */}
+                  {art&&<img src={art} alt="" loading="lazy" style={{position:'absolute',top:0,right:0,height:'100%',width:'72%',objectFit:'cover',opacity:lead?0.5:0.28}}/>}
+                  <div style={{position:'absolute',inset:0,background:`linear-gradient(90deg,${T.surface} 30%,rgba(15,15,24,0.82) 58%,rgba(15,15,24,0.35) 100%)`}}/>
+                  <div style={{position:'relative',display:'flex',gap:14,padding:12,alignItems:'stretch'}}>
+                    <div style={{position:'relative',width:lead?92:74,aspectRatio:'2/3',borderRadius:11,overflow:'hidden',flexShrink:0,background:m.gradient||GRADS[i%GRADS.length],boxShadow:'0 8px 22px rgba(0,0,0,0.5)'}}>
+                      {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                      <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(6,6,11,0.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="play" size={12} color="#fff" filled/></div>
+                      </div>
+                    </div>
+                    <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column'}}>
+                      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
+                        <span style={{fontSize:12.5,fontWeight:700,color:accent,paddingTop:2}}>{m.matchReason}</span>
+                        <SaveBtn m={m} size={32}/>
+                      </div>
+                      <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:lead?23:19,lineHeight:1.15,color:'#fff',marginTop:2,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.title}</div>
+                      <div style={{display:'flex',alignItems:'center',gap:6,marginTop:5,fontSize:13,color:'rgba(255,255,255,0.62)',whiteSpace:'nowrap',overflow:'hidden'}}>
+                        <span>{m.year}</span>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:3,color:'#fff',fontWeight:700}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{m.rating}</span>
+                        {m.genre?.[0]&&<span style={{overflow:'hidden',textOverflow:'ellipsis'}}>{m.genre.join(', ')}</span>}
+                      </div>
+                      {lead&&m.overview&&<p style={{fontSize:13.5,color:'rgba(255,255,255,0.7)',lineHeight:1.5,margin:'8px 0 0',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.overview}</p>}
+                      {/* match strength: a line that fills to the score */}
+                      <div style={{marginTop:'auto',paddingTop:10,display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{flex:1,height:3,borderRadius:2,background:'rgba(255,255,255,0.1)',overflow:'hidden'}}>
+                          <div style={{width:`${m.match||80}%`,height:'100%',borderRadius:2,background:accent,opacity:0.35+((m.match||80)-60)/60}}/>
+                        </div>
+                        <span style={{fontSize:12.5,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums'}}>{m.match||80}%</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700,fontSize:15.5,color:'#fff',marginTop:9,lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.title}</div>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,0.5)',marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.year}{m.isTV?' · Series':''}</div>
-                  <div style={{fontSize:11.5,color:accent,fontWeight:700,marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.matchReason}</div>
                 </div>
-              ))}
+              );})}
             </div>
           </div>
         )}
