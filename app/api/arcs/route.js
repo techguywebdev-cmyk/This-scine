@@ -57,10 +57,7 @@ export async function GET(request) {
       if (!arc) return Response.json({ error: 'Arc not found' }, { status: 404 });
 
       const themeMeta = ARC_THEMES[arc.theme] || ARC_THEMES.action;
-      const items = [];
-      for (const it of arc.items) {
-        items.push(await enrichItem(it, arc.media_type));
-      }
+      const items = await Promise.all(arc.items.map((it) => enrichItem(it, arc.media_type)));
 
       const cover =
         items.find((i) => i.poster)?.poster ||
@@ -82,15 +79,14 @@ export async function GET(request) {
       arcs.map(async (a) => {
         const full = getArcById(a.id);
         if (!full?.items?.length) return a;
-        const sample = full.items.slice(0, 4);
-        const enriched = [];
-        for (const it of sample) {
-          enriched.push(await enrichItem(it, full.media_type));
-        }
+        const sample = full.items.slice(0, 6);
+        const enriched = await Promise.all(sample.map((it) => enrichItem(it, full.media_type)));
         const posters = enriched.map((e) => e.poster).filter(Boolean);
         return {
           ...a,
           cover_poster: posters[0] || null,
+          cover_backdrop: enriched.find((e) => e.backdrop)?.backdrop || null,
+          sample_ids: enriched.map((e) => String(e.movie_id)),
           sample_posters: posters,
           sample_titles: enriched.map((e) => e.title).filter(Boolean),
           summary: full.summary || a.summary || a.subtitle,

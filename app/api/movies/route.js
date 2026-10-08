@@ -156,42 +156,112 @@ export async function GET(request) {
     }
 
     // ── SIMILAR ──
+    // Scored blend of: franchise entries, TMDB "recommendations" (what fans watched next),
+    // TMDB "similar", and keyword/genre discovery. Every candidate gets a score + a human reason.
     if (similar) {
       const itemId = parseInt(similar, 10);
-      const [detailRes, keywordRes, recRes] = await Promise.all([
-        fetch(`${TMDB_BASE}/${similarType}/${itemId}?api_key=${TMDB_KEY}`),
-        fetch(`${TMDB_BASE}/${similarType}/${itemId}/keywords?api_key=${TMDB_KEY}`),
-        fetch(`${TMDB_BASE}/${similarType}/${itemId}/recommendations?api_key=${TMDB_KEY}&page=1`),
+      const type = similarType === 'tv' ? 'tv' : 'movie';
+      const get = (url) => fetch(url).then((r) => r.json()).catch(() => ({}));
+
+      const detail = await get(
+        `${TMDB_BASE}/${type}/${itemId}?api_key=${TMDB_KEY}&append_to_response=keywords,recommendations,similar`
+      );
+      const srcGenres = new Set([
+        ...(detail.genres || []).map((g) => g.id),
+        ...similarGenres.split(',').filter(Boolean).map(Number),
       ]);
-      const detail = await detailRes.json().catch(() => ({}));
-      const keywordData = await keywordRes.json().catch(() => ({ results: [] }));
-      const recData = await recRes.json().catch(() => ({ results: [] }));
-      const detailGenreIds = (detail.genres || []).map((g) => g.id);
-      const passedGenreIds = similarGenres.split(',').filter(Boolean).map(Number);
-      const allGenreIds = [...new Set([...detailGenreIds, ...passedGenreIds])];
-      const keywords = (keywordData.keywords || keywordData.results || []).slice(0, 3).map((k) => k.id);
-      const genreParam = allGenreIds.slice(0, 3).join(',');
-      const keywordParam = keywords.join(',');
-      const discoverBase = genreParam
-        ? `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&with_genres=${genreParam}&sort_by=vote_average.desc&vote_count.gte=200`
-        : `${TMDB_BASE}/discover/${similarType}?api_key=${TMDB_KEY}&sort_by=popularity.desc&vote_count.gte=200`;
-      const [disc1, disc2] = await Promise.all([
-        fetch(discoverBase + (keywordParam ? `&with_keywords=${keywordParam}` : '') + `&page=${Math.floor(Math.random() * 3) + 1}`),
-        fetch(discoverBase + `&page=${Math.floor(Math.random() * 3) + 2}`),
+      const srcKeywords = (detail.keywords?.keywords || detail.keywords?.results || []).slice(0, 6);
+      const srcYear = parseInt((detail.release_date || detail.first_air_date || '').slice(0, 4), 10) || null;
+      const srcLang = detail.original_language;
+      const isAnim = srcGenres.has(16);
+      const isDoc = srcGenres.has(99);
+
+      const kwParam = srcKeywords.map((k) => k.id).join('|'); // | = OR
+      const mainGenres = [...srcGenres].filter((g) => g !== 16 && g !== 99).slice(0, 2);
+      const [rec2, kwDisc, genreDisc, collection] = await Promise.all([
+        get(`${TMDB_BASE}/${type}/${itemId}/recommendations?api_key=${TMDB_KEY}&page=2`),
+        kwParam
+          ? get(`${TMDB_BASE}/discover/${type}?api_key=${TMDB_KEY}&with_keywords=${kwParam}&sort_by=popularity.desc&vote_count.gte=80`)
+          : Promise.resolve({}),
+        mainGenres.length
+          ? get(`${TMDB_BASE}/discover/${type}?api_key=${TMDB_KEY}&with_genres=${mainGenres.join(',')}&sort_by=vote_average.desc&vote_count.gte=500${srcYear ? `&${type === 'tv' ? 'first_air_date' : 'primary_release_date'}.gte=${srcYear - 12}-01-01` : ''}`)
+          : Promise.resolve({}),
+        type === 'movie' && detail.belongs_to_collection?.id
+          ? get(`${TMDB_BASE}/collection/${detail.belongs_to_collection.id}?api_key=${TMDB_KEY}`)
+          : Promise.resolve({}),
       ]);
-      const d1 = await disc1.json().catch(() => ({ results: [] }));
-      const d2 = await disc2.json().catch(() => ({ results: [] }));
-      const pool = [...(recData.results || []), ...(d1.results || []), ...(d2.results || [])];
-      const seen = new Set([itemId]);
-      const unique = shuffle(pool).filter((m) => {
-        if (seen.has(m.id)) return false;
-        if (!m.backdrop_path && !m.poster_path) return false;
-        if ((m.vote_average || 0) < 6) return false;
-        if ((m.vote_count || 0) < 100) return false;
-        seen.add(m.id);
-        return true;
+
+      const cands = new Map();
+      const add = (m, source, rank) => {
+        if (!m || m.id === itemId || (!m.poster_path && !m.backdrop_path)) return;
+        const c = cands.get(m.id) || { m, sources: {} };
+        if (c.sources[source] == null || rank < c.sources[source]) c.sources[source] = rank;
+        cands.set(m.id, c);
+      };
+      (collection.parts || []).forEach((m, i) => add(m, 'franchise', i));
+      [...(detail.recommendations?.results || []), ...(rec2.results || [])].forEach((m, i) => add(m, 'rec', i));
+      (detail.similar?.results || []).forEach((m, i) => add(m, 'similar', i));
+      (kwDisc.results || []).forEach((m, i) => add(m, 'keywords', i));
+      (genreDisc.results || []).forEach((m, i) => add(m, 'genre', i));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const scored = [];
+      for (const { m, sources } of cands.values()) {
+        const gIds = m.genre_ids || [];
+        const released = (m.release_date || m.first_air_date || '') <= today;
+        const votes = m.vote_count || 0;
+        if (!sources.franchise && (!released || votes < 40)) continue;
+        const cAnim = gIds.includes(16);
+        if (isAnim !== cAnim && !sources.franchise) continue; // don't mix cartoons with live action
+        if (!isDoc && gIds.includes(99)) continue;
+
+        const shared = gIds.filter((g) => srcGenres.has(g));
+        const genreSim = srcGenres.size ? shared.length / new Set([...srcGenres, ...gIds]).size : 0;
+        let score = 0;
+        if (sources.franchise != null) score += 60;
+        if (sources.rec != null) score += 38 - Math.min(sources.rec, 38) * 0.6;
+        if (sources.similar != null) score += 12;
+        if (sources.keywords != null) score += 18 - Math.min(sources.keywords, 18) * 0.5;
+        if (sources.genre != null) score += 6;
+        score += genreSim * 30;
+        // Bayesian-ish quality so 9.0 with 12 votes doesn't beat 8.2 with 20k
+        const quality = (votes * (m.vote_average || 0) + 200 * 6.5) / (votes + 200);
+        score += (quality - 6.5) * 8;
+        const y = parseInt((m.release_date || m.first_air_date || '').slice(0, 4), 10);
+        if (srcYear && y) score -= Math.min(Math.abs(srcYear - y), 30) * 0.3;
+        if (srcLang && m.original_language === srcLang) score += 4;
+        if (shared.length === 0 && !sources.franchise && !sources.rec) score -= 25;
+
+        let reason;
+        if (sources.franchise != null) reason = 'Same franchise';
+        else if (sources.rec != null && sources.rec < 10) reason = 'Fans also watched';
+        else if (sources.keywords != null) reason = 'Similar story & themes';
+        else if (shared.length) reason = `Also ${shared.map((g) => GENRE_MAP[g]).filter(Boolean).slice(0, 2).join(' · ')}`;
+        else reason = 'Fans also watched';
+
+        scored.push({ m, score, reason });
+      }
+
+      scored.sort((a, b) => b.score - a.score);
+      const top = scored.slice(0, 18);
+      const max = top[0]?.score || 1;
+      const min = top[top.length - 1]?.score || 0;
+      const movies = top.map(({ m, score, reason }, i) => ({
+        ...formatItem(m, i),
+        isTV: type === 'tv',
+        mediaType: type,
+        matchReason: reason,
+        // Spread into a friendly 68–98% range
+        match: Math.round(68 + ((score - min) / Math.max(1, max - min)) * 30),
+      }));
+      return Response.json({
+        source: {
+          title: detail.title || detail.name,
+          backdrop: detail.backdrop_path ? `https://image.tmdb.org/t/p/w780${detail.backdrop_path}` : null,
+          keywords: srcKeywords.slice(0, 4).map((k) => k.name),
+        },
+        movies,
       });
-      return Response.json({ movies: unique.slice(0, 14).map((m, i) => formatItem(m, i)) });
     }
 
     // ── SEARCH ──

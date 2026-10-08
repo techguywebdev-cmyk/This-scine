@@ -8,7 +8,7 @@
  *   {showArcs && <CineArcs accent={accent} onClose={() => setShowArcs(false)} onWatchTrailer={...} watchlist={watchlist} />}
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 const T = {
   bg: '#06060B',
@@ -187,6 +187,8 @@ function buildWatchlistArc(watchlist, accent, genreKey = 'all') {
         poster,
         vote_average: m.vote_average || m.rating || null,
         overview: m.overview || null,
+        backdrop: m.backdrop || m.backdrop_url || null,
+        media_type: m.media_type || m.mediaType || 'movie',
       };
     });
 
@@ -229,91 +231,6 @@ function saveProgress(map) {
   } catch {}
 }
 
-function IntensityMeter({ theme, progress, total, accent, stages = [] }) {
-  const pct = total ? Math.round((progress / total) * 100) : 0;
-  const stageIdx = total ? Math.min(stages.length - 1, Math.floor((progress / total) * stages.length)) : 0;
-  const stageLabel = stages[stageIdx] || '';
-
-  // Genre-tinted fills
-  const fills = {
-    fuse: `linear-gradient(90deg, ${accent}55 0%, ${accent} 100%)`,
-    warmth: `linear-gradient(90deg, #FFB6D9 0%, ${accent} 100%)`,
-    dread: `linear-gradient(90deg, #3a1010 0%, ${accent} 100%)`,
-    fracture: `linear-gradient(90deg, #4a2a7a 0%, ${accent} 100%)`,
-    laugh: `linear-gradient(90deg, #2a6a4a 0%, ${accent} 100%)`,
-  };
-  const fill = fills[theme] || fills.fuse;
-
-  return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: accent, letterSpacing: 0.5 }}>
-          {stageLabel}
-        </span>
-        <span style={{ fontSize: 11, color: T.text3 }}>
-          {progress}/{total} · {pct}%
-        </span>
-      </div>
-      <div
-        style={{
-          height: 6,
-          borderRadius: 6,
-          background: 'rgba(255,255,255,0.06)',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            height: '100%',
-            width: `${pct}%`,
-            borderRadius: 6,
-            background: fill,
-            boxShadow: pct > 0 ? `0 0 12px ${accent}66` : 'none',
-            transition: 'width 0.45s cubic-bezier(0.22,1,0.36,1)',
-          }}
-        />
-      </div>
-      {/* Stage dots */}
-      {stages.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-          {stages.map((s, i) => {
-            const reached = stageIdx >= i && progress > 0;
-            return (
-              <div key={s} style={{ textAlign: 'center', flex: 1 }}>
-                <div
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    margin: '0 auto 4px',
-                    background: reached ? accent : 'rgba(255,255,255,0.12)',
-                    boxShadow: reached ? `0 0 6px ${accent}` : 'none',
-                  }}
-                />
-                <div
-                  style={{
-                    fontSize: 8,
-                    color: reached ? accent : T.text3,
-                    fontWeight: reached ? 700 : 500,
-                    letterSpacing: 0.3,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    padding: '0 2px',
-                  }}
-                >
-                  {s}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function Stars({ value = 0, size = 12, color = '#F5A623', onPick = null }) {
   const v = Number(value) || 0;
   return (
@@ -343,142 +260,199 @@ function Stars({ value = 0, size = 12, color = '#F5A623', onPick = null }) {
   );
 }
 
-/** 2-column grid card — dominant cover image with numbered mini-gallery at bottom */
-function ArcCard({ arc, progress, onOpen, rating }) {
+/* ───────────────────────── shared bits ───────────────────────── */
+
+const ICONS = {
+  close: ['M18 6L6 18', 'M6 6l12 12'],
+  back: ['M15 18l-6-6 6-6'],
+  play: ['M6 4l14 8-14 8V4z'],
+  check: ['M20 6L9 17l-5-5'],
+  share: ['M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8', 'M16 6l-4-4-4 4', 'M12 2v13'],
+  star: ['M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'],
+  layers: ['M12 2L2 7l10 5 10-5-10-5z', 'M2 17l10 5 10-5', 'M2 12l10 5 10-5'],
+  bookmark: ['M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'],
+};
+function Icon({ name, size = 16, color = 'currentColor', filled = false, stroke = 1.8 }) {
+  const paths = ICONS[name] || [];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths.map((d, i) => <path key={i} d={d} />)}
+    </svg>
+  );
+}
+
+/** "Action Arc: Fuse → Detonation" → "Fuse → Detonation" */
+function shortTitle(title = '') {
+  const i = title.indexOf(':');
+  return i > -1 ? title.slice(i + 1).trim() : title;
+}
+
+function stageFor(meta, watched, total) {
+  const stages = meta?.stages || [];
+  if (!stages.length || !total) return { label: '', copy: '' };
+  if (watched === 0) return { label: 'Not started', copy: 'Start at the gentle end. Every title turns it up a notch.' };
+  const idx = Math.min(stages.length - 1, Math.floor((watched / total) * stages.length));
+  return { label: stages[idx], copy: meta.stageCopy?.[idx] || '' };
+}
+
+function toTrailerMovie(item, arc, accent) {
+  const mt = item.media_type || arc.media_type || 'movie';
+  return {
+    id: Number(item.movie_id) || item.movie_id,
+    title: item.title,
+    poster: item.poster || null,
+    backdrop: item.backdrop || null,
+    overview: item.overview || '',
+    year: item.year ? String(item.year) : (item.release_date || '').slice(0, 4),
+    rating: item.vote_average ? Number(item.vote_average).toFixed(1) : 'N/A',
+    mediaType: mt,
+    isTV: mt === 'tv',
+    accent,
+  };
+}
+
+/**
+ * The signature visual: posters stepping up in height, left → right,
+ * so every arc literally shows its climb. Watched steps stay lit, the rest dim.
+ */
+function Staircase({ posters = [], ids = [], watchedSet, accent, height = 150 }) {
+  const steps = posters.slice(0, 6);
+  const n = Math.max(steps.length, 1);
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height }}>
+      {steps.map((src, i) => {
+        const h = Math.round(height * (0.5 + (0.5 * (i + 1)) / n));
+        const done = watchedSet?.has(String(ids[i]));
+        return (
+          <div key={i} style={{ position: 'relative', flex: 1, height: h, borderRadius: 8, overflow: 'hidden', background: 'rgba(255,255,255,0.06)', boxShadow: i === n - 1 ? `0 0 28px ${accent}55` : '0 6px 18px rgba(0,0,0,0.45)', border: `1px solid ${i === n - 1 ? accent + '88' : 'rgba(255,255,255,0.1)'}` }}>
+            {src && <img src={src} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+            {done && (
+              <div style={{ position: 'absolute', inset: 0, background: `${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="check" size={18} color="#fff" stroke={3} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Five segments = five stages. Filled up to where you are. */
+function StageMeter({ meta, watched, total, accent }) {
+  const stages = meta?.stages || [];
+  const reached = total ? Math.ceil((watched / total) * stages.length) : 0;
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {stages.map((s, i) => (
+          <div key={s} style={{ flex: 1, height: 6, borderRadius: 3, background: i < reached ? accent : 'rgba(255,255,255,0.08)', opacity: i < reached ? 0.45 + (0.55 * (i + 1)) / stages.length : 1, transition: 'background 0.3s ease' }} />
+        ))}
+      </div>
+      <div style={{ display: 'flex', marginTop: 7 }}>
+        {stages.map((s, i) => (
+          <div key={s} style={{ flex: 1, fontSize: 10.5, color: i < reached ? accent : T.text3, fontWeight: i === reached - 1 ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── list view ───────────────────────── */
+
+function ArcRow({ arc, progress, rating, onOpen }) {
   const meta = arc.theme_meta || {};
   const accent = meta.accent || '#F5A623';
-  const watched = progress?.watched?.length || 0;
   const total = arc.item_count || arc.items?.length || 0;
-  const pct = total ? Math.round((watched / total) * 100) : 0;
-  const posters = (arc.sample_posters || []).filter(Boolean).slice(0, 4);
-  const cover = arc.cover_poster || posters[0] || null;
-  const stageLabel = pct === 0 ? 'Not started' : pct === 100 ? 'Completed' : (meta.stages?.[0] || 'In progress');
-  const genreLabel = arc.genre_label || arc.theme || '';
-  const mediaLabel = arc.media_type === 'tv' ? 'TV' : null;
+  const watchedSet = new Set(progress?.watched || []);
+  const watched = (arc.sample_ids || []).filter((id) => watchedSet.has(id)).length || progress?.watched?.length || 0;
+  const done = total > 0 && watched >= total;
+  const stage = stageFor(meta, Math.min(watched, total), total);
+  const kind = arc.media_type === 'tv' ? 'series' : 'films';
 
   return (
     <button
       type="button"
       onClick={() => onOpen(arc)}
-      style={{
-        display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left',
-        background: T.bg, border: `1px solid ${T.hairline}`, borderRadius: 18,
-        overflow: 'hidden', cursor: 'pointer', padding: 0, fontFamily: 'inherit',
-      }}
+      style={{ display: 'block', width: '100%', textAlign: 'left', padding: 0, border: `1px solid ${T.hairline}`, borderRadius: 22, overflow: 'hidden', background: T.surface, cursor: 'pointer', fontFamily: 'inherit', color: 'inherit' }}
     >
-      {/* COVER — taller aspect ratio for cinematic feel */}
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '3/4' }}>
-        {/* Main cover image */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: cover ? `url(${cover})` : `linear-gradient(160deg, ${accent}35, ${T.surface} 70%)`,
-          backgroundSize: 'cover', backgroundPosition: 'center top',
-        }}/>
-        {/* Cinematic gradient — heavier at bottom to float the info */}
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, rgba(6,6,11,0.08) 0%, rgba(6,6,11,0.3) 40%, rgba(6,6,11,0.92) 100%)` }}/>
-        {/* Accent glow */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: `radial-gradient(ellipse at 30% 100%, ${accent}18 0%, transparent 70%)`, pointerEvents: 'none' }}/>
-
-        {/* Genre badge top-left */}
-        <div style={{ position: 'absolute', top: 10, left: 10 }}>
-          <span style={{ fontSize: 8.5, fontWeight: 800, color: accent, background: `${accent}20`, border: `1px solid ${accent}50`, borderRadius: 20, padding: '3px 8px', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-            {genreLabel}{mediaLabel ? ` · ${mediaLabel}` : ''}
-          </span>
-        </div>
-
-        {/* Title count top-right */}
-        <div style={{ position: 'absolute', top: 10, right: 10 }}>
-          <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>{total} titles</span>
-        </div>
-
-        {/* Arc title over the image */}
-        <div style={{ position: 'absolute', bottom: 54, left: 10, right: 10 }}>
-          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 800, fontStyle: 'italic', color: '#fff', lineHeight: 1.25, textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>
-            {arc.title}
-          </div>
-        </div>
-
-        {/* Mini poster row at bottom of cover */}
-        <div style={{ position: 'absolute', bottom: 10, left: 10, display: 'flex', gap: 4 }}>
-          {(posters.length ? posters : Array(4).fill(null)).slice(0, 4).map((src, i) => (
-            <div key={i} style={{ position: 'relative', width: 28, height: 40, borderRadius: 6, overflow: 'hidden', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', flexShrink: 0 }}>
-              {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>}
-              <div style={{ position: 'absolute', bottom: 2, left: 2, width: 12, height: 12, borderRadius: '50%', background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 6.5, fontWeight: 900, color: '#fff' }}>{i + 1}</span>
-              </div>
-            </div>
-          ))}
+      <div style={{ position: 'relative', padding: '22px 18px 0', overflow: 'hidden' }}>
+        {arc.cover_backdrop && (
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${arc.cover_backdrop})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.22, filter: 'blur(14px) saturate(1.2)', transform: 'scale(1.15)' }} />
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(120% 90% at 100% 100%, ${accent}30 0%, transparent 60%)` }} />
+        <div style={{ position: 'relative' }}>
+          <Staircase posters={arc.sample_posters || []} ids={arc.sample_ids || []} watchedSet={watchedSet} accent={accent} height={150} />
         </div>
       </div>
 
-      {/* INFO STRIP */}
-      <div style={{ padding: '10px 12px 12px', background: T.bg }}>
-        {/* Progress bar */}
-        <div style={{ height: 2.5, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 6 }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, ${accent}77, ${accent})`, borderRadius: 3, transition: 'width 0.5s ease' }}/>
+      <div style={{ padding: '16px 18px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: accent }}>{meta.label || arc.theme} {arc.media_type === 'tv' ? 'series' : ''}</span>
+          <span style={{ fontSize: 12.5, color: T.text2 }}>
+            {total} {kind}
+            {rating?.avg != null && rating.count > 0 && (
+              <span style={{ marginLeft: 10, color: T.text }}>
+                <span style={{ color: '#FFD166' }}>★</span> {Number(rating.avg).toFixed(1)}
+              </span>
+            )}
+          </span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 9.5, fontWeight: 700, color: pct === 100 ? accent : T.text3 }}>{stageLabel}</span>
-          <span style={{ fontSize: 9, color: T.text3 }}>{watched}/{total}</span>
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 23, lineHeight: 1.15, color: '#fff', marginTop: 6 }}>{shortTitle(arc.title)}</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginTop: 6 }}>{arc.subtitle}</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
+          <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+            <div style={{ width: `${total ? (Math.min(watched, total) / total) * 100 : 0}%`, height: '100%', background: accent, borderRadius: 2 }} />
+          </div>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: watched ? accent : T.text2, whiteSpace: 'nowrap' }}>
+            {done ? 'Completed' : watched ? `${Math.min(watched, total)} of ${total} · ${stage.label}` : 'Start the climb'}
+          </span>
         </div>
       </div>
     </button>
   );
 }
-function ArcDetail({
-  arc,
-  progress,
-  onBack,
-  onToggleWatched,
-  onWatchTrailer,
-  accent: shellAccent,
-  onShareComplete,
-  shareStatus,
-  user,
-}) {
+
+/* ───────────────────────── detail view ───────────────────────── */
+
+function ArcDetail({ arc, progress, onBack, onToggleWatched, onWatchTrailer, accent: shellAccent, onShareComplete, shareStatus, user }) {
   const meta = arc.theme_meta || {};
   const accent = meta.accent || shellAccent || '#FF7A2F';
+  const items = arc.items || [];
   const watchedSet = new Set(progress?.watched || []);
-  const watchedCount = arc.items?.filter((i) => watchedSet.has(String(i.movie_id))).length || 0;
-  const total = arc.items?.length || 0;
-  const pct = total ? watchedCount / total : 0;
-  const stageIdx = Math.min(
-    (meta.stages?.length || 1) - 1,
-    Math.floor(pct * (meta.stages?.length || 1))
-  );
-  const stageCopy = meta.stageCopy?.[stageIdx] || '';
+  const watchedCount = items.filter((i) => watchedSet.has(String(i.movie_id))).length;
+  const total = items.length;
+  const nextIdx = items.findIndex((i) => !watchedSet.has(String(i.movie_id)));
+  const next = nextIdx >= 0 ? items[nextIdx] : null;
+  const stage = stageFor(meta, watchedCount, total);
+  const heroImg = items.find((i) => i.backdrop)?.backdrop || arc.cover_poster;
+  const isUserArc = arc.is_user || String(arc.id || '').startsWith(MY_ARC_ID);
 
   const [engage, setEngage] = useState({ avg: null, count: 0, myRating: null, comments: [] });
   const [commentText, setCommentText] = useState('');
   const [posting, setPosting] = useState(false);
   const [ratingBusy, setRatingBusy] = useState(false);
+  const pathRef = useRef(null);
 
   useEffect(() => {
-    if (!arc?.id) return;
+    if (!arc?.id || isUserArc) return;
     let cancelled = false;
     fetch(`/api/arcs/engage?arcId=${encodeURIComponent(arc.id)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setEngage(d);
-      })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setEngage({ avg: null, count: 0, myRating: null, comments: [], ...d }); })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [arc?.id]);
+    return () => { cancelled = true; };
+  }, [arc?.id, isUserArc]);
 
   const rateArc = async (n) => {
     if (!user || ratingBusy) return;
     setRatingBusy(true);
     setEngage((p) => ({ ...p, myRating: n }));
     try {
-      await fetch('/api/arcs/engage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'rate', arcId: arc.id, rating: n }),
-      });
+      await fetch('/api/arcs/engage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'rate', arcId: arc.id, rating: n }) });
       const d = await fetch(`/api/arcs/engage?arcId=${encodeURIComponent(arc.id)}`).then((r) => r.json());
-      setEngage(d);
+      setEngage((p) => ({ ...p, ...d }));
     } catch {}
     setRatingBusy(false);
   };
@@ -489,581 +463,210 @@ function ArcDetail({
     setPosting(true);
     try {
       const res = await fetch('/api/arcs/engage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'comment',
-          arcId: arc.id,
-          text: body,
-          username: user?.username || user?.firstName || 'user',
-          avatarUrl: user?.imageUrl || null,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'comment', arcId: arc.id, text: body, username: user?.username || user?.firstName || 'user', avatarUrl: user?.imageUrl || null }),
       });
       const d = await res.json();
-      if (d.comment) {
-        setEngage((p) => ({ ...p, comments: [d.comment, ...(p.comments || [])] }));
-        setCommentText('');
-      }
+      if (d.comment) { setEngage((p) => ({ ...p, comments: [d.comment, ...(p.comments || [])] })); setCommentText(''); }
     } catch {}
     setPosting(false);
   };
 
+  const play = (item) => onWatchTrailer && onWatchTrailer(toTrailerMovie(item, arc, accent));
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ position: 'relative', height: 160, flexShrink: 0 }}>
-        {arc.cover_poster || arc.items?.[0]?.backdrop ? (
-          <img
-            src={arc.cover_poster || arc.items[0].backdrop}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
+    <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+      {/* Hero */}
+      <div style={{ position: 'relative', minHeight: 330, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        {heroImg ? (
+          <img src={heroImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <div style={{ width: '100%', height: '100%', background: `linear-gradient(160deg, ${accent}40, #06060B)` }} />
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(160deg, ${accent}40, ${T.bg})` }} />
         )}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(to top, #06060B 5%, transparent 60%)',
-          }}
-        />
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            position: 'absolute',
-            top: 14,
-            left: 14,
-            background: 'rgba(0,0,0,0.5)',
-            border: 'none',
-            borderRadius: 20,
-            padding: '8px 12px',
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          ← Arcs
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, ${T.bg} 4%, rgba(6,6,11,0.72) 45%, rgba(6,6,11,0.25) 100%)` }} />
+        <button type="button" onClick={onBack} aria-label="Back to arcs"
+          style={{ position: 'absolute', top: 'max(14px, env(safe-area-inset-top))', left: 14, width: 40, height: 40, borderRadius: '50%', background: 'rgba(6,6,11,0.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <Icon name="back" size={18} color="#fff" stroke={2.2} />
         </button>
+        <div style={{ position: 'relative', padding: '90px 20px 4px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: accent }}>
+            {isUserArc ? `Built by ${arc.user_name || 'you'}` : `${meta.label || ''} arc`} · {total} {arc.media_type === 'tv' ? 'series' : 'titles'}
+          </div>
+          <h1 style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 34, lineHeight: 1.05, color: '#fff', margin: '8px 0 0' }}>{shortTitle(arc.title)}</h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55, margin: '10px 0 0', maxWidth: 560 }}>{arc.summary || arc.subtitle}</p>
+        </div>
       </div>
 
-      <div style={{ padding: '0 18px 18px', flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 800, fontStyle: 'italic', color: T.text }}>
-          {arc.title}
-        </div>
-        <div style={{ fontSize: 13, color: T.text2, marginTop: 4 }}>{arc.subtitle}</div>
-
-        {(arc.is_user || String(arc.id || '').startsWith(MY_ARC_ID)) && (arc.user_name || user) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-            <img
-              src={arc.user_avatar || user?.imageUrl || ''}
-              alt=""
-              style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', background: T.surface2 }}
-            />
-            <div style={{ fontSize: 12, color: T.text2 }}>
-              by <span style={{ color: T.text, fontWeight: 600 }}>{arc.user_name || user?.username || user?.firstName || 'you'}</span>
+      <div style={{ padding: '18px 20px 0' }}>
+        {/* Primary action */}
+        {next ? (
+          <button type="button" onClick={() => play(next)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, background: accent, color: '#06060B', border: 'none', borderRadius: 16, padding: '10px 12px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+            <div style={{ width: 38, height: 54, borderRadius: 7, overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }}>
+              {next.poster && <img src={next.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.7 }}>{watchedCount === 0 ? 'Start with step 1' : `Up next · step ${nextIdx + 1}`}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{next.title}</div>
+            </div>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#06060B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Icon name="play" size={15} color={accent} filled />
+            </div>
+          </button>
+        ) : total > 0 ? (
+          <div style={{ padding: 18, borderRadius: 18, background: `${accent}16`, border: `1px solid ${accent}44`, textAlign: 'center' }}>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 22, color: '#fff' }}>You finished the climb</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>{meta.stageCopy?.[meta.stageCopy.length - 1] || 'Every step, done.'}</div>
+            {onShareComplete && (
+              <button type="button" onClick={() => onShareComplete(arc)} disabled={shareStatus === 'shared' || shareStatus === 'sharing'}
+                style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8, background: shareStatus === 'shared' ? 'transparent' : accent, border: `1px solid ${accent}`, borderRadius: 999, padding: '10px 18px', fontSize: 14, fontWeight: 800, color: shareStatus === 'shared' ? accent : '#06060B', cursor: shareStatus === 'shared' ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                <Icon name={shareStatus === 'shared' ? 'check' : 'share'} size={14} color={shareStatus === 'shared' ? accent : '#06060B'} stroke={2.2} />
+                {shareStatus === 'sharing' ? 'Sharing…' : shareStatus === 'shared' ? 'Shared with friends' : 'Share with friends'}
+              </button>
+            )}
+          </div>
+        ) : null}
+
+        {/* Where you are */}
+        {total > 0 && (
+          <div style={{ marginTop: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff' }}>{stage.label}</div>
+              <div style={{ fontSize: 13, color: T.text2 }}>{watchedCount} of {total} watched</div>
+            </div>
+            <StageMeter meta={meta} watched={watchedCount} total={total} accent={accent} />
+            {stage.copy && <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 10, lineHeight: 1.5 }}>{stage.copy}</div>}
           </div>
         )}
 
-        <div
-          style={{
-            marginTop: 12,
-            padding: '12px 14px',
-            borderRadius: 14,
-            background: T.surface2,
-            border: `1px solid ${T.hairline}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 9.5, letterSpacing: 1.5, color: T.text3, fontWeight: 700, textTransform: 'uppercase' }}>
-              Rate this arc
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <Stars
-                value={engage.myRating || engage.avg || 0}
-                size={18}
-                color={accent}
-                onPick={user ? rateArc : null}
-              />
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 800, color: T.text }}>
-              {engage.avg != null ? Number(engage.avg).toFixed(1) : '—'}
-            </div>
-            <div style={{ fontSize: 10, color: T.text3 }}>
-              {engage.count ? `${engage.count} rating${engage.count === 1 ? '' : 's'}` : 'No ratings yet'}
-            </div>
-          </div>
-        </div>
+        {/* The path */}
+        <div ref={pathRef} style={{ marginTop: 28 }}>
+          <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', marginBottom: 4 }}>The path</div>
+          <div style={{ fontSize: 13, color: T.text2, marginBottom: 14 }}>Gentlest first, most intense last. Tap a poster for the trailer, tap the circle once you've watched it.</div>
 
-        <div
-          style={{
-            marginTop: 14,
-            padding: 14,
-            borderRadius: 14,
-            background: `${accent}12`,
-            border: `1px solid ${accent}33`,
-          }}
-        >
-          <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 4 }}>
-            {meta.stages?.[stageIdx] || 'Progress'}
-          </div>
-          <div style={{ fontSize: 13, color: T.text, fontStyle: 'italic', fontFamily: T.serif, lineHeight: 1.4 }}>
-            {stageCopy || 'Start the arc. Intensity rises with every title you finish.'}
-          </div>
-          <IntensityMeter
-            theme={meta.meter || 'fuse'}
-            progress={watchedCount}
-            total={total}
-            accent={accent}
-            stages={meta.stages || []}
-          />
-        </div>
-
-        <div
-          style={{
-            fontSize: 9.5,
-            letterSpacing: 2,
-            color: T.text3,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            margin: '20px 0 10px',
-          }}
-        >
-          The path · mild → peak
-        </div>
-
-        {(arc.items || []).map((item, i) => {
-          const done = watchedSet.has(String(item.movie_id));
-          const bars = item.intensity || 1;
-          return (
-            <div
-              key={item.movie_id}
-              style={{
-                display: 'flex',
-                gap: 12,
-                alignItems: 'center',
-                padding: '12px 0',
-                borderTop: i === 0 ? 'none' : `1px solid ${T.hairline}`,
-                opacity: done ? 0.55 : 1,
-              }}
-            >
-              <div
-                style={{
-                  width: 52,
-                  height: 78,
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  background: T.surface2,
-                  flexShrink: 0,
-                  position: 'relative',
-                }}
-              >
-                {item.poster ? (
-                  <img src={item.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : null}
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 4,
-                    left: 4,
-                    background: 'rgba(0,0,0,0.75)',
-                    borderRadius: 6,
-                    padding: '2px 5px',
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: accent,
-                  }}
-                >
-                  {i + 1}
-                </div>
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: T.text,
-                    textDecoration: done ? 'line-through' : 'none',
-                  }}
-                >
-                  {item.title}
-                </div>
-                <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
-                  {item.year || (item.release_date || '').slice(0, 4)}
-                  {item.vote_average ? ` · ★ ${Number(item.vote_average).toFixed(1)}` : ''}
-                </div>
-                {/* Intensity ticks */}
-                <div style={{ display: 'flex', gap: 3, marginTop: 6 }}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <div
-                      key={n}
-                      style={{
-                        width: 14,
-                        height: 4,
-                        borderRadius: 2,
-                        background: n <= bars ? accent : 'rgba(255,255,255,0.1)',
-                      }}
-                    />
-                  ))}
-                  <span style={{ fontSize: 9, color: T.text3, marginLeft: 4 }}>
-                    {['', 'Spark', 'Heat', 'Rise', 'Peak', 'Max'][bars] || ''}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => onToggleWatched(arc.id, item.movie_id)}
-                  style={{
-                    background: done ? `${accent}33` : 'transparent',
-                    border: `1px solid ${done ? accent : T.hairline}`,
-                    borderRadius: 14,
-                    padding: '6px 10px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: done ? accent : T.text2,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  {done ? 'Seen' : 'Mark'}
-                </button>
-                {onWatchTrailer && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onWatchTrailer({
-                        id: item.movie_id,
-                        title: item.title,
-                        poster_path: item.poster,
-                        media_type: arc.media_type,
-                      })
-                    }
-                    style={{
-                      background: 'transparent',
-                      border: `1px solid ${T.hairline}`,
-                      borderRadius: 14,
-                      padding: '6px 10px',
-                      fontSize: 11,
-                      color: T.text3,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    Play
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', left: 15, top: 20, bottom: 20, width: 2, background: `linear-gradient(to bottom, ${accent}22, ${accent})`, borderRadius: 1 }} />
+            {items.map((item, i) => {
+              const done = watchedSet.has(String(item.movie_id));
+              const isNext = i === nextIdx;
+              const stepName = meta.stages?.[Math.max(0, (item.intensity || 1) - 1)] || '';
+              return (
+                <div key={item.movie_id} style={{ position: 'relative', display: 'flex', gap: 14, paddingBottom: 14 }}>
+                  <button type="button" onClick={() => onToggleWatched(arc.id, item.movie_id)} aria-label={done ? `Mark ${item.title} as not watched` : `Mark ${item.title} as watched`}
+                    style={{ position: 'relative', zIndex: 1, width: 32, height: 32, marginTop: 34, borderRadius: '50%', flexShrink: 0, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: done ? accent : T.bg, border: `2px solid ${done || isNext ? accent : 'rgba(255,255,255,0.18)'}`, boxShadow: isNext ? `0 0 0 4px ${accent}22` : 'none', fontFamily: 'inherit' }}>
+                    {done ? <Icon name="check" size={15} color="#06060B" stroke={3} /> : <span style={{ fontSize: 12.5, fontWeight: 800, color: isNext ? accent : T.text2 }}>{i + 1}</span>}
                   </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
 
-        {watchedCount === total && total > 0 && (
-          <div
-            style={{
-              marginTop: 16,
-              padding: 16,
-              borderRadius: 16,
-              background: `${accent}18`,
-              border: `1px solid ${accent}44`,
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontFamily: T.serif, fontSize: 18, fontStyle: 'italic', color: accent, fontWeight: 800 }}>
-              Arc complete
-            </div>
-            <div style={{ fontSize: 12, color: T.text2, marginTop: 6, lineHeight: 1.45 }}>
-              You walked the full intensity path.
-            </div>
-            <button
-              type="button"
-              onClick={() => onShareComplete && onShareComplete(arc)}
-              disabled={shareStatus === 'shared' || shareStatus === 'sharing'}
-              style={{
-                marginTop: 12,
-                background: shareStatus === 'shared' ? `${accent}33` : accent,
-                border: 'none',
-                borderRadius: 16,
-                padding: '10px 18px',
-                fontSize: 13,
-                fontWeight: 700,
-                color: shareStatus === 'shared' ? accent : '#07070F',
-                cursor: shareStatus === 'shared' ? 'default' : 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              {shareStatus === 'sharing'
-                ? 'Sharing…'
-                : shareStatus === 'shared'
-                  ? 'Shared with friends'
-                  : 'Share with friends'}
-            </button>
-          </div>
-        )}
-
-        {/* Discussion */}
-        <div style={{ marginTop: 22, paddingBottom: 8 }}>
-          <div
-            style={{
-              fontSize: 9.5,
-              letterSpacing: 2,
-              color: T.text3,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Discussion
-          </div>
-
-          {user ? (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              {user.imageUrl && (
-                <img
-                  src={user.imageUrl}
-                  alt=""
-                  style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                />
-              )}
-              <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-                <input
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && postComment()}
-                  placeholder="Say something about this arc…"
-                  style={{
-                    flex: 1,
-                    background: T.surface2,
-                    border: `1px solid ${T.hairline}`,
-                    borderRadius: 14,
-                    padding: '10px 12px',
-                    color: T.text,
-                    fontSize: 13,
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={postComment}
-                  disabled={posting || !commentText.trim()}
-                  style={{
-                    background: commentText.trim() ? accent : T.surface2,
-                    border: 'none',
-                    borderRadius: 14,
-                    padding: '0 14px',
-                    fontWeight: 700,
-                    fontSize: 12,
-                    color: commentText.trim() ? '#07070F' : T.text3,
-                    cursor: commentText.trim() ? 'pointer' : 'default',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  Post
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: T.text3, marginBottom: 12 }}>Sign in to rate and comment.</div>
-          )}
-
-          {(engage.comments || []).length === 0 ? (
-            <div style={{ fontSize: 12, color: T.text3, padding: '8px 0 16px' }}>No comments yet — start the conversation.</div>
-          ) : (
-            (engage.comments || []).map((c) => (
-              <div
-                key={c.id}
-                style={{
-                  display: 'flex',
-                  gap: 10,
-                  padding: '12px 0',
-                  borderTop: `1px solid ${T.hairline}`,
-                }}
-              >
-                {c.avatar_url ? (
-                  <img
-                    src={c.avatar_url}
-                    alt=""
-                    style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: '50%',
-                      background: T.surface2,
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{c.body}</div>
-                  <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
-                    {c.username || 'user'}
-                    {c.created_at
-                      ? ` · ${new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
-                      : ''}
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: 12, padding: 10, borderRadius: 16, background: isNext ? `${accent}10` : T.surface, border: `1px solid ${isNext ? accent + '55' : T.hairline}` }}>
+                    <button type="button" onClick={() => play(item)} aria-label={`Play trailer for ${item.title}`}
+                      style={{ position: 'relative', width: 68, height: 100, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', border: 'none', padding: 0, cursor: 'pointer' }}>
+                      {item.poster && <img src={item.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: done ? 0.55 : 1 }} />}
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(6,6,11,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon name="play" size={12} color="#fff" filled />
+                        </div>
+                      </div>
+                    </button>
+                    <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: accent }}>{isNext ? 'Up next' : stepName}</div>
+                      <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 17, lineHeight: 1.2, color: done ? T.text2 : '#fff', marginTop: 3 }}>{item.title}</div>
+                      <div style={{ fontSize: 12.5, color: T.text2, marginTop: 4 }}>
+                        {item.year || (item.release_date || '').slice(0, 4)}
+                        {item.vote_average ? <>  <span style={{ color: '#FFD166' }}>★</span> {Number(item.vote_average).toFixed(1)}</> : null}
+                      </div>
+                      {item.overview && (
+                        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.45, marginTop: 5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.overview}</div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-
-function ArcFilterSheet({ open, onClose, filter, setFilter, accent, themes }) {
-  if (!open) return null;
-  const themeKeys = themes && typeof themes === 'object' ? Object.keys(themes) : [];
-  const options = [
-    { id: 'all', label: 'All genres' },
-    { id: 'movie', label: 'Movies only' },
-    { id: 'tv', label: 'TV only' },
-    ...themeKeys.map((k) => ({
-      id: k,
-      label: (themes[k] && themes[k].label) || k,
-    })),
-  ];
-  // de-dupe by id
-  const seen = new Set();
-  const unique = options.filter((o) => {
-    if (seen.has(o.id)) return false;
-    seen.add(o.id);
-    return true;
-  });
-
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 120,
-        background: 'rgba(0,0,0,0.72)',
-        backdropFilter: 'blur(12px)',
-        display: 'flex',
-        alignItems: 'flex-end',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          background: T.bg,
-          borderRadius: '22px 22px 0 0',
-          border: `1px solid ${T.hairline}`,
-          borderBottom: 'none',
-          padding: '12px 18px 36px',
-        }}
-      >
-        <div
-          style={{
-            width: 32,
-            height: 3,
-            borderRadius: 2,
-            background: 'rgba(255,255,255,0.14)',
-            margin: '0 auto 16px',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 14,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: T.serif,
-              fontSize: 18,
-              fontWeight: 800,
-              fontStyle: 'italic',
-              color: T.text,
-            }}
-          >
-            Filter arcs
+              );
+            })}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: T.text2,
-              fontSize: 18,
-              cursor: 'pointer',
-            }}
-          >
-            ×
-          </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {unique.map((o) => {
-            const active = filter === o.id;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => {
-                  setFilter(o.id);
-                  onClose();
-                }}
-                style={{
-                  textAlign: 'left',
-                  background: active ? `${accent}18` : T.surface2,
-                  border: `1px solid ${active ? accent + '55' : T.hairline}`,
-                  borderRadius: 14,
-                  padding: '12px 14px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? accent : T.text,
-                }}
-              >
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
+
+        {/* Rating + discussion — only for shared, official arcs */}
+        {!isUserArc && (
+          <>
+            <div style={{ marginTop: 18, padding: 16, borderRadius: 18, background: T.surface, border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{engage.myRating ? 'Your rating' : 'Rate this arc'}</div>
+                <div style={{ marginTop: 8 }}>
+                  <Stars value={engage.myRating || 0} size={24} color={accent} onPick={user ? rateArc : null} />
+                </div>
+                {!user && <div style={{ fontSize: 12.5, color: T.text2, marginTop: 6 }}>Sign in to rate</div>}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{engage.avg != null ? Number(engage.avg).toFixed(1) : '–'}</div>
+                <div style={{ fontSize: 12, color: T.text2, marginTop: 4 }}>{engage.count ? `${engage.count} rating${engage.count === 1 ? '' : 's'}` : 'No ratings yet'}</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 26 }}>
+              <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', marginBottom: 12 }}>
+                Discussion {engage.comments?.length ? <span style={{ fontFamily: 'inherit', fontStyle: 'normal', fontSize: 14, color: T.text2, fontWeight: 500 }}>{engage.comments.length}</span> : null}
+              </div>
+              {user ? (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  <input value={commentText} onChange={(e) => setCommentText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postComment()} placeholder="Which step hit hardest?"
+                    style={{ flex: 1, minWidth: 0, background: T.surface, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '12px 14px', color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none' }} />
+                  <button type="button" onClick={postComment} disabled={posting || !commentText.trim()}
+                    style={{ background: commentText.trim() ? accent : T.surface, border: `1px solid ${commentText.trim() ? accent : T.hairline}`, borderRadius: 14, padding: '0 16px', fontWeight: 800, fontSize: 14, color: commentText.trim() ? '#06060B' : T.text3, cursor: commentText.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+                    Post
+                  </button>
+                </div>
+              ) : (
+                <div style={{ fontSize: 14, color: T.text2, marginBottom: 12 }}>Sign in to join the discussion.</div>
+              )}
+              {(engage.comments || []).length === 0 ? (
+                <div style={{ fontSize: 14, color: T.text2, paddingBottom: 8 }}>No comments yet. Finish a step and say how it landed.</div>
+              ) : (
+                (engage.comments || []).map((c) => (
+                  <div key={c.id} style={{ display: 'flex', gap: 12, padding: '12px 0', borderTop: `1px solid ${T.hairline}` }}>
+                    {c.avatar_url ? <img src={c.avatar_url} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      : <div style={{ width: 34, height: 34, borderRadius: '50%', background: T.surface, flexShrink: 0 }} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: T.text2 }}><span style={{ color: '#fff', fontWeight: 700 }}>{c.username || 'user'}</span>{c.created_at ? `  ${new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}</div>
+                      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45, marginTop: 3 }}>{c.body}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+        <div style={{ height: 'calc(32px + env(safe-area-inset-bottom))' }} />
       </div>
     </div>
   );
 }
+
+/* ───────────────────────── page ───────────────────────── */
+
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'movie', label: 'Movies' },
+  { id: 'tv', label: 'Series' },
+];
 
 export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, watchlist = [], user = null }) {
   const [arcs, setArcs] = useState([]);
   const [themes, setThemes] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [active, setActive] = useState(null);
   const [detail, setDetail] = useState(null);
-  const [progressMap, setProgressMap] = useState({});
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [progressMap, setProgressMap] = useState({});
   const [myGenre, setMyGenre] = useState('all');
   const [shareStatus, setShareStatus] = useState({});
-  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [ratingsMap, setRatingsMap] = useState({});
+  const listScrollRef = useRef(null);
+  const listScrollPos = useRef(0);
 
-  useEffect(() => {
-    setProgressMap(loadProgress());
+  const loadArcs = () => {
+    setLoading(true);
+    setLoadError(false);
     fetch('/api/arcs')
       .then((r) => r.json())
       .then(async (d) => {
@@ -1071,21 +674,32 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
         setArcs(list);
         setThemes(d.themes || {});
         setLoading(false);
-        // Light rating prefetch for grid cards
         const map = {};
-        await Promise.all(
-          list.slice(0, 12).map(async (a) => {
-            try {
-              const r = await fetch(`/api/arcs/engage?arcId=${encodeURIComponent(a.id)}`);
-              const j = await r.json();
-              map[a.id] = { avg: j.avg, count: j.count };
-            } catch {}
-          })
-        );
+        await Promise.all(list.slice(0, 12).map(async (a) => {
+          try {
+            const r = await fetch(`/api/arcs/engage?arcId=${encodeURIComponent(a.id)}`);
+            if (!r.ok) return;
+            const j = await r.json();
+            map[a.id] = { avg: j.avg, count: j.count };
+          } catch {}
+        }));
         setRatingsMap((p) => ({ ...p, ...map }));
       })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); setLoadError(true); });
+  };
+
+  useEffect(() => {
+    setProgressMap(loadProgress());
+    loadArcs();
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
   }, []);
+
+  const filterOptions = useMemo(() => {
+    const present = new Set(arcs.map((a) => a.theme));
+    return [...FILTERS, ...Object.keys(themes).filter((k) => present.has(k)).map((k) => ({ id: k, label: themes[k]?.label || k }))];
+  }, [arcs, themes]);
 
   const filtered = useMemo(() => {
     if (filter === 'all') return arcs;
@@ -1093,58 +707,36 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
     return arcs.filter((a) => a.theme === filter);
   }, [arcs, filter]);
 
+  // Arcs you've started but not finished, most progressed first
+  const inProgress = useMemo(() => arcs
+    .map((a) => ({ a, w: (progressMap[a.id]?.watched || []).length, t: a.item_count || 0 }))
+    .filter(({ w, t }) => w > 0 && w < t)
+    .sort((x, y) => y.w / y.t - x.w / x.t), [arcs, progressMap]);
+
   const genreOptions = useMemo(() => {
     const counts = {};
-    (watchlist || []).forEach((m) => {
-      movieGenres(m).forEach((g) => {
-        counts[g] = (counts[g] || 0) + 1;
-      });
-    });
-    const preferred = ['Action', 'Romance', 'Horror', 'Comedy', 'Drama', 'Sci-Fi', 'Thriller'];
-    const opts = [{ id: 'all', label: 'All', count: (watchlist || []).length }];
-    preferred.forEach((g) => {
-      if (counts[g] >= 2) opts.push({ id: g, label: g, count: counts[g] });
-    });
-    Object.keys(counts)
-      .filter((g) => !preferred.includes(g) && counts[g] >= 2)
-      .slice(0, 4)
+    (watchlist || []).forEach((m) => movieGenres(m).forEach((g) => { counts[g] = (counts[g] || 0) + 1; }));
+    const opts = [{ id: 'all', label: 'Everything', count: (watchlist || []).length }];
+    Object.keys(counts).filter((g) => counts[g] >= 2).sort((a, b) => counts[b] - counts[a]).slice(0, 6)
       .forEach((g) => opts.push({ id: g, label: g, count: counts[g] }));
     return opts;
   }, [watchlist]);
 
-  const myArcPreview = useMemo(() => {
-    if (!watchlist || watchlist.length === 0) return null;
-    const built = buildWatchlistArc(watchlist, accent, myGenre);
-    return {
-      id: built.id,
-      title: built.title,
-      subtitle: built.subtitle,
-      theme: built.theme,
-      media_type: 'movie',
-      item_count: built.items.length,
-      cover_poster: built.cover_poster,
-      theme_meta: built.theme_meta,
-      tooSmall: built.items.length < 2,
-    };
-  }, [watchlist, accent, myGenre]);
+  const myArc = useMemo(() => (watchlist?.length ? buildWatchlistArc(watchlist, accent, myGenre) : null), [watchlist, accent, myGenre]);
+  const myArcReady = myArc && myArc.items.length >= 3;
 
   const openArc = async (arc) => {
-    setActive(arc);
+    listScrollPos.current = listScrollRef.current?.scrollTop || 0;
     setLoadingDetail(true);
+    setDetail({ id: arc.id, _loading: true });
     try {
       if (String(arc.id).startsWith(MY_ARC_ID)) {
-        const g = arc.genre_key || myGenre || 'all';
-        const built = buildWatchlistArc(watchlist, accent, g);
-        setDetail({
-          ...built,
-          is_user: true,
-          user_name: user?.username || user?.firstName || 'You',
-          user_avatar: user?.imageUrl || null,
-        });
+        const built = buildWatchlistArc(watchlist, accent, arc.genre_key || myGenre || 'all');
+        setDetail({ ...built, is_user: true, user_name: user?.username || user?.firstName || 'you', user_avatar: user?.imageUrl || null });
       } else {
         const r = await fetch(`/api/arcs?id=${encodeURIComponent(arc.id)}`);
-        const d = await r.json();
-        setDetail(d);
+        if (!r.ok) throw new Error('arc');
+        setDetail(await r.json());
       }
     } catch {
       setDetail(null);
@@ -1152,10 +744,9 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
     setLoadingDetail(false);
   };
 
-  const openMyWatchlistArc = () => {
-    const built = buildWatchlistArc(watchlist, accent, myGenre);
-    if (built.items.length < 2) return;
-    openArc({ id: built.id, genre_key: myGenre });
+  const backToList = () => {
+    setDetail(null);
+    requestAnimationFrame(() => { if (listScrollRef.current) listScrollRef.current.scrollTop = listScrollPos.current; });
   };
 
   const shareArcComplete = async (arc) => {
@@ -1163,17 +754,8 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
     setShareStatus((p) => ({ ...p, [arc.id]: 'sharing' }));
     try {
       await fetch('/api/activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'arc_complete',
-          listId: arc.id,
-          listTitle: arc.title || 'a Cine Arc',
-          listPoster: arc.cover_poster || arc.items?.[0]?.poster || null,
-          listAccent: arc.theme_meta?.accent || accent,
-          username: user?.username || user?.firstName || 'user',
-          avatarUrl: user?.imageUrl || null,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'arc_complete', movieId: arc.id, movieTitle: arc.title || 'a Cine Arc', moviePoster: arc.cover_poster || arc.items?.[0]?.poster || null, movieAccent: arc.theme_meta?.accent || accent, username: user?.username || user?.firstName || 'user', avatarUrl: user?.imageUrl || null }),
       });
       setShareStatus((p) => ({ ...p, [arc.id]: 'shared' }));
     } catch {
@@ -1185,298 +767,145 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
     setProgressMap((prev) => {
       const cur = prev[arcId] || { watched: [] };
       const id = String(movieId);
-      const has = cur.watched.includes(id);
-      const watched = has ? cur.watched.filter((x) => x !== id) : [...cur.watched, id];
+      const watched = cur.watched.includes(id) ? cur.watched.filter((x) => x !== id) : [...cur.watched, id];
       const next = { ...prev, [arcId]: { watched } };
       saveProgress(next);
       return next;
     });
   };
 
-  
+  const chip = (active, a = accent) => ({
+    flexShrink: 0, background: active ? a : 'rgba(255,255,255,0.05)', border: `1px solid ${active ? a : T.hairline}`,
+    color: active ? '#06060B' : 'rgba(255,255,255,0.8)', borderRadius: 999, padding: '8px 15px', fontSize: 14,
+    fontWeight: active ? 800 : 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+  });
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 95,
-        background: T.bg,
-        display: 'flex',
-        flexDirection: 'column',
-        animation: 'playerSlideUp 0.35s cubic-bezier(0.22,1,0.36,1)',
-      }}
-    >
-      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: T.bg, display: 'flex', flexDirection: 'column', animation: 'arcsIn 0.35s cubic-bezier(0.22,1,0.36,1)' }}>
+      <style>{`@keyframes arcsIn{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes arcsSpin{to{transform:rotate(360deg)}}@keyframes arcsShimmer{0%{background-position:-300px 0}100%{background-position:300px 0}}@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}`}</style>
 
-      {!detail ? (
-        <>
-          <div
-            style={{
-              padding: '16px 18px 12px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}
-          >
+      {detail ? (
+        detail._loading || loadingDetail ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 26, height: 26, border: '2px solid rgba(255,255,255,0.1)', borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'arcsSpin 0.8s linear infinite' }} />
+          </div>
+        ) : (
+          <ArcDetail arc={detail} progress={progressMap[detail.id]} onBack={backToList} onToggleWatched={toggleWatched} onWatchTrailer={onWatchTrailer}
+            accent={accent} onShareComplete={shareArcComplete} shareStatus={shareStatus[detail.id]} user={user} />
+        )
+      ) : (
+        <div ref={listScrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+          {/* Header */}
+          <div style={{ padding: 'max(16px, env(safe-area-inset-top)) 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
             <div>
-              <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 800, fontStyle: 'italic', color: T.text }}>
-                Cine Arcs
-              </div>
-              <div style={{ fontSize: 12, color: T.text3, marginTop: 2 }}>
-                {filter === 'all' ? 'All genres · intensity rises as you go' : `Filtered · ${filter}`}
-              </div>
+              <h1 style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 34, lineHeight: 1.05, color: '#fff', margin: 0 }}>Cine Arcs</h1>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: '8px 0 0', maxWidth: 420 }}>Watchlists that build. Each one starts easy and gets more intense with every title.</p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setShowFilterSheet(true)}
-                style={{
-                  background: filter !== 'all' ? `${accent}18` : T.surface2,
-                  border: `1px solid ${filter !== 'all' ? accent : T.hairline}`,
-                  borderRadius: 12,
-                  height: 34,
-                  padding: '0 12px',
-                  cursor: 'pointer',
-                  color: filter !== 'all' ? accent : T.text2,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: 'inherit',
-                }}
-              >
-                Filter
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  background: T.surface2,
-                  border: `1px solid ${T.hairline}`,
-                  borderRadius: '50%',
-                  width: 34,
-                  height: 34,
-                  cursor: 'pointer',
-                  color: T.text2,
-                  fontSize: 16,
-                }}
-              >
-                ×
-              </button>
-            </div>
+            <button type="button" onClick={onClose} aria-label="Close"
+              style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              <Icon name="close" size={16} color="#fff" stroke={2} />
+            </button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 28px', WebkitOverflowScrolling: 'touch' }}>
-            {/* Your arcs with profile */}
-            {user && myArcPreview && !myArcPreview.tooSmall && filter === 'all' && (
-              <div style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    fontSize: 9.5,
-                    letterSpacing: 2,
-                    color: T.text3,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    marginBottom: 10,
-                    paddingLeft: 4,
-                  }}
-                >
-                  Your arcs
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 12,
-                    alignItems: 'center',
-                    padding: 12,
-                    borderRadius: 16,
-                    background: T.surface,
-                    border: `1px solid ${T.hairline}`,
-                    marginBottom: 10,
-                  }}
-                >
-                  {user.imageUrl ? (
-                    <img
-                      src={user.imageUrl}
-                      alt=""
-                      style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: T.surface2 }} />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
-                      {user.username || user.firstName || 'You'}
-                    </div>
-                    <div style={{ fontSize: 11, color: T.text3 }}>
-                      {(watchlist || []).length} saves · build a personal path
-                    </div>
-                  </div>
+          {/* Filters */}
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '18px 20px 4px', scrollbarWidth: 'none' }}>
+            {filterOptions.map((o) => (
+              <button key={o.id} type="button" onClick={() => setFilter(o.id)} style={chip(filter === o.id, themes[o.id]?.accent || accent)}>{o.label}</button>
+            ))}
+          </div>
+
+          <div style={{ padding: '14px 16px 0' }}>
+            {/* Continue */}
+            {filter === 'all' && inProgress.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 700, fontSize: 19, color: '#fff', margin: '4px 4px 10px' }}>Keep climbing</div>
+                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -16px', padding: '0 16px' }}>
+                  {inProgress.map(({ a, w, t }) => {
+                    const ac = a.theme_meta?.accent || accent;
+                    return (
+                      <button key={a.id} type="button" onClick={() => openArc(a)}
+                        style={{ flexShrink: 0, width: 250, display: 'flex', gap: 12, alignItems: 'center', padding: 10, borderRadius: 16, background: T.surface, border: `1px solid ${ac}44`, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                        <div style={{ width: 44, height: 64, borderRadius: 8, overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                          {a.sample_posters?.[w] && <img src={a.sample_posters[w]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortTitle(a.title)}</div>
+                          <div style={{ fontSize: 12.5, color: ac, fontWeight: 700, marginTop: 3 }}>Step {w + 1} of {t}</div>
+                          <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginTop: 8 }}>
+                            <div style={{ width: `${(w / t) * 100}%`, height: '100%', background: ac, borderRadius: 2 }} />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            <div
-              style={{
-                fontSize: 9.5,
-                letterSpacing: 2,
-                color: T.text3,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                marginBottom: 10,
-                paddingLeft: 4,
-              }}
-            >
-              Official arcs
-            </div>
-
+            {/* Official arcs */}
             {loading ? (
-              <div style={{ textAlign: 'center', padding: 48, color: T.text3, fontSize: 13 }}>Loading arcs…</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[0, 1].map((i) => (
+                  <div key={i} style={{ height: 330, borderRadius: 22, background: 'linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.07),rgba(255,255,255,0.03))', backgroundSize: '600px 100%', animation: 'arcsShimmer 1.3s linear infinite' }} />
+                ))}
+              </div>
+            ) : loadError ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 16, color: '#fff', fontWeight: 700 }}>Arcs didn’t load</div>
+                <div style={{ fontSize: 14, color: T.text2, marginTop: 6 }}>Check your connection and try again.</div>
+                <button type="button" onClick={loadArcs} style={{ ...chip(false), marginTop: 14 }}>Try again</button>
+              </div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 48, color: T.text3, fontSize: 13 }}>No arcs in this filter</div>
+              <div style={{ textAlign: 'center', padding: '40px 20px', fontSize: 15, color: T.text2 }}>No arcs here yet. Try another filter.</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: '0 0 8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {filtered.map((arc) => (
-                  <ArcCard
-                    key={arc.id}
-                    arc={arc}
-                    progress={progressMap[arc.id]}
-                    onOpen={openArc}
-                    rating={ratingsMap[arc.id]}
-                  />
+                  <ArcRow key={arc.id} arc={arc} progress={progressMap[arc.id]} rating={ratingsMap[arc.id]} onOpen={openArc} />
                 ))}
               </div>
             )}
 
-            {/* Build Your Arc */}
-            <div style={{ marginTop: 16, position: 'relative', borderRadius: 20, overflow: 'hidden', border: `1px solid ${accent}30` }}>
-              {/* Background glow */}
-              <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}12 0%, ${T.surface} 60%)` }}/>
-              <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle, ${accent}22 0%, transparent 70%)`, pointerEvents: 'none' }}/>
-
-              <div style={{ position: 'relative', padding: 18 }}>
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}20`, border: `1px solid ${accent}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 800, fontStyle: 'italic', color: T.text, lineHeight: 1.2 }}>Build Your Arc</div>
-                    <div style={{ fontSize: 11, color: T.text3, marginTop: 1 }}>Turn your watchlist into a curated journey</div>
-                  </div>
+            {/* Build your own */}
+            {filter === 'all' && !loading && (
+              <div style={{ marginTop: 28, padding: '20px 18px', borderRadius: 22, background: T.surface, border: `1px dashed ${accent}55` }}>
+                <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontWeight: 800, fontSize: 23, color: '#fff' }}>Make one from your saves</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginTop: 6 }}>
+                  {!user ? 'Sign in and save a few titles. We’ll line them up from easy watch to big finish.'
+                    : !watchlist?.length ? 'Save a few titles from your feed first. We’ll line them up from easy watch to big finish.'
+                    : 'We line up your saved titles from easy watch to big finish. Pick a genre to narrow it down.'}
                 </div>
 
-                {/* Watchlist preview strip */}
-                {watchlist && watchlist.length > 0 ? (
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
-                      {watchlist.slice(0, 6).map((m, i) => (
-                        <div key={m.movie_id || i} style={{ width: 36, height: 50, borderRadius: 7, overflow: 'hidden', background: T.surface, border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
-                          {m.poster && <img src={m.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>}
-                        </div>
-                      ))}
-                      {watchlist.length > 6 && (
-                        <div style={{ width: 36, height: 50, borderRadius: 7, background: T.surface2, border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, color: T.text3 }}>+{watchlist.length - 6}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: T.text2 }}>
-                      <span style={{ fontWeight: 700, color: accent }}>{watchlist.length}</span> titles saved · pick a genre to shape your path
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: `1px solid ${T.hairline}` }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                    <span style={{ fontSize: 12, color: T.text3 }}>Save movies to your watchlist first</span>
-                  </div>
-                )}
-
-                {/* Genre chips */}
-                {watchlist && watchlist.length >= 2 && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-                    {genreOptions.map((g) => {
-                      const active = myGenre === g.id;
-                      const chipAccent = g.id !== 'all' && GENRE_ARC_THEMES[g.id]?.accent ? GENRE_ARC_THEMES[g.id].accent : accent;
-                      return (
-                        <button key={g.id} type="button" onClick={() => setMyGenre(g.id)}
-                          style={{ background: active ? `${chipAccent}22` : T.surface2, border: `1px solid ${active ? chipAccent : T.hairline}`, borderRadius: 20, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: active ? chipAccent : T.text2, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s ease' }}>
-                          {g.label}{g.count != null ? ` · ${g.count}` : ''}
+                {user && watchlist?.length >= 2 && (
+                  <>
+                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', margin: '14px -18px 0', padding: '0 18px' }}>
+                      {genreOptions.map((g) => (
+                        <button key={g.id} type="button" onClick={() => setMyGenre(g.id)} style={{ ...chip(myGenre === g.id, GENRE_ARC_THEMES[g.id]?.accent || accent), padding: '7px 13px', fontSize: 13.5 }}>
+                          {g.label} <span style={{ opacity: 0.6 }}>{g.count}</span>
                         </button>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                    {myArc && myArc.items.length > 0 && (
+                      <div style={{ marginTop: 16 }}>
+                        <Staircase posters={myArc.items.map((i) => i.poster)} ids={myArc.items.map((i) => String(i.movie_id))} watchedSet={new Set(progressMap[myArc.id]?.watched || [])} accent={myArc.theme_meta?.accent || accent} height={110} />
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {/* Intensity meter preview */}
-                {myArcPreview && !myArcPreview.tooSmall && (
-                  <div style={{ marginBottom: 14 }}>
-                    <IntensityMeter
-                      theme={myArcPreview.theme_meta?.meter || 'fuse'}
-                      progress={progressMap[myArcPreview.id]?.watched?.length || 0}
-                      total={myArcPreview.item_count}
-                      accent={myArcPreview.theme_meta?.accent || accent}
-                      stages={myArcPreview.theme_meta?.stages || []}
-                    />
-                  </div>
-                )}
-
-                {/* CTA Button */}
-                <button type="button" onClick={openMyWatchlistArc} disabled={!myArcPreview || myArcPreview.tooSmall}
-                  style={{ width: '100%', background: myArcPreview && !myArcPreview.tooSmall ? (myArcPreview.theme_meta?.accent || accent) : 'rgba(255,255,255,0.06)', border: `1px solid ${myArcPreview && !myArcPreview.tooSmall ? 'transparent' : T.hairline}`, borderRadius: 14, padding: '13px 16px', fontSize: 14, fontWeight: 700, color: myArcPreview && !myArcPreview.tooSmall ? '#07070F' : T.text3, cursor: myArcPreview && !myArcPreview.tooSmall ? 'pointer' : 'default', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s ease' }}>
-                  {!watchlist || watchlist.length === 0 ? (
-                    <>Save movies first</>
-                  ) : myArcPreview?.tooSmall ? (
-                    <>{myGenre === 'all' ? 'Need 2+ titles' : `Need 2+ ${myGenre} titles`}</>
-                  ) : (
-                    <>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                      {myGenre === 'all' ? 'Build my Arc' : `Build ${myGenre} Arc`}
-                    </>
-                  )}
+                <button type="button" disabled={!myArcReady} onClick={() => myArcReady && openArc({ id: myArc.id, genre_key: myGenre })}
+                  style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, padding: '14px 16px', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: myArcReady ? 'pointer' : 'default', border: 'none', background: myArcReady ? (myArc.theme_meta?.accent || accent) : 'rgba(255,255,255,0.06)', color: myArcReady ? '#06060B' : T.text2 }}>
+                  <Icon name="layers" size={16} color={myArcReady ? '#06060B' : T.text2} stroke={2} />
+                  {myArcReady
+                    ? `Build my ${myGenre === 'all' ? '' : myGenre + ' '}arc · ${myArc.items.length} titles`
+                    : !user ? 'Sign in to build your arc'
+                    : `Save ${Math.max(1, 3 - (myArc?.items.length || 0))} more ${myGenre === 'all' ? '' : myGenre + ' '}title${3 - (myArc?.items.length || 0) === 1 ? '' : 's'} to build one`}
                 </button>
               </div>
-            </div>
+            )}
+            <div style={{ height: 'calc(36px + env(safe-area-inset-bottom))' }} />
           </div>
-        </>
-      ) : loadingDetail ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              border: '2px solid rgba(255,255,255,0.1)',
-              borderTop: `2px solid ${accent}`,
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-            }}
-          />
         </div>
-      ) : (
-        <ArcDetail
-          arc={detail}
-          progress={progressMap[detail.id]}
-          onBack={() => {
-            setDetail(null);
-            setActive(null);
-          }}
-          onToggleWatched={toggleWatched}
-          onWatchTrailer={onWatchTrailer}
-          accent={accent}
-          onShareComplete={shareArcComplete}
-          shareStatus={shareStatus[detail.id]}
-          user={user}
-        />
       )}
-
-      <ArcFilterSheet
-        open={showFilterSheet}
-        onClose={() => setShowFilterSheet(false)}
-        filter={filter}
-        setFilter={setFilter}
-        accent={accent}
-        themes={themes}
-      />
     </div>
   );
 }

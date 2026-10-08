@@ -2264,22 +2264,114 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
 }
 
 // SIMILAR SHEET
-function SimilarSheet({movie,onClose,accent,onSelect}){
-  const[items,setItems]=useState([]);const[loading,setLoading]=useState(true);const contentLabel=getContentLabel(movie);
-  useEffect(()=>{if(!movie)return;setLoading(true);const genreIds=(movie.genreIds||movie.genre_ids||[]).join(',');fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||'movie'}&similarGenres=${genreIds}`).then(r=>r.json()).then(d=>{setItems(d.movies||[]);setLoading(false);}).catch(()=>setLoading(false));},[movie]);
+export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTrailer,onSave,savedIds}){
+  const[items,setItems]=useState([]);const[source,setSource]=useState(null);const[loading,setLoading]=useState(true);const[err,setErr]=useState(false);
+  const contentLabel=getContentLabel(movie);
+  const load=useCallback(()=>{
+    if(!movie)return;setLoading(true);setErr(false);
+    const genreIds=(movie.genreIds||movie.genre_ids||[]).join(',');
+    fetch(`/api/movies?similar=${movie.id}&similarType=${movie.mediaType||(movie.isTV?'tv':'movie')}&similarGenres=${genreIds}`)
+      .then(r=>r.json()).then(d=>{setItems(d.movies||[]);setSource(d.source||null);setLoading(false);})
+      .catch(()=>{setErr(true);setLoading(false);});
+  },[movie]);
+  useEffect(()=>{load();},[load]);
+  useEffect(()=>{const prev=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=prev;};},[]);
+  const hero=items[0];const rest=items.slice(1);
+  const backdrop=source?.backdrop||movie?.backdrop||movie?.poster;
+  const play=(m)=>{if(onTrailer){onTrailer(m);}else{onSelect?.(m);onClose();}};
+  const MatchPill=({m,small})=>(<span style={{display:'inline-flex',alignItems:'center',gap:4,background:'rgba(6,6,11,0.72)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:`1px solid ${accent}55`,borderRadius:999,padding:small?'3px 8px':'4px 10px',fontSize:small?10.5:11.5,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums'}}>{m.match||90}% match</span>);
+  const SaveBtn=({m,size=30})=>{const saved=savedIds?.has?.(m.id);return(<button aria-label={saved?'Saved':'Save'} onClick={(e)=>{e.stopPropagation();onSave?.(m);}} style={{width:size,height:size,borderRadius:'50%',background:saved?accent:'rgba(6,6,11,0.66)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:`1px solid ${saved?accent:'rgba(255,255,255,0.14)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,flexShrink:0}}><SvgIcon name="bookmark" size={size*0.47} color={saved?'#06060B':'#fff'} filled={saved}/></button>);};
   return(
-    <><div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(10px)'}}/>
-    <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:60,background:T.bg,borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',maxHeight:'75vh',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
-      <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
-      <div style={{padding:'16px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
-        <div><Eyebrow color={T.text3} style={{marginBottom:3}}>Similar {contentLabel}</Eyebrow><div style={{fontSize:15,color:T.text,fontStyle:'italic',fontFamily:T.serif,fontWeight:700}}>{movie?.title}</div></div>
-        <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
-      </div>
-      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'4px 20px 16px',display:'flex',flexDirection:'column',scrollbarWidth:'none'}}>
-        {loading&&<div style={{textAlign:'center',padding:24,display:'flex',flexDirection:'column',alignItems:'center',gap:10}}><div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{color:T.text3,fontSize:13}}>Finding similar...</span></div>}
-        {!loading&&items.length===0&&<div style={{textAlign:'center',padding:24,color:T.text3,fontSize:13}}>None found</div>}
-        {items.map((m,i)=>(<button key={m.id} onClick={()=>{onSelect(m);onClose();}} style={{display:'flex',gap:12,alignItems:'center',background:'none',border:'none',borderTop:i>0?`1px solid ${T.hairline}`:'none',padding:'13px 0',cursor:'pointer',textAlign:'left',fontFamily:'inherit'}}><div style={{width:44,height:60,borderRadius:8,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length]}}>{m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div><div style={{flex:1}}><div style={{display:'flex',alignItems:'center',gap:5,marginBottom:3}}><span style={{fontSize:13,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{m.title}</span>{m.isTV&&<span style={{fontSize:9,color:m.accent,border:`1px solid ${m.accent}44`,borderRadius:3,padding:'1px 4px',fontWeight:700}}>TV</span>}</div><div style={{fontSize:11,color:T.text3,display:'flex',alignItems:'center',gap:4}}><span>{m.year}</span><SvgIcon name="star" size={10} color={m.accent} filled/><span style={{color:m.accent,fontWeight:600}}>{m.rating}</span></div><p style={{fontSize:11,color:T.text3,lineHeight:1.4,margin:'4px 0 0',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.overview}</p></div></button>))}
+    <><div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.72)',backdropFilter:'blur(10px)',animation:'simFade 0.2s ease'}}/>
+    <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:60,background:T.bg,borderRadius:'26px 26px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',height:'90dvh',display:'flex',flexDirection:'column',overflow:'hidden',animation:'sheetUp 0.34s cubic-bezier(0.22,1,0.36,1)'}}>
+      <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes simFade{from{opacity:0}to{opacity:1}}@keyframes simShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}@keyframes simIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',overscrollBehavior:'contain'}}>
+        {/* Header */}
+        <div style={{position:'relative',padding:'0 20px 18px',overflow:'hidden'}}>
+          {backdrop&&<div style={{position:'absolute',inset:0,backgroundImage:`url(${backdrop})`,backgroundSize:'cover',backgroundPosition:'center 30%',opacity:0.32,filter:'blur(2px)'}}/>}
+          <div style={{position:'absolute',inset:0,background:`linear-gradient(to bottom,rgba(6,6,11,0.35) 0%,${T.bg} 100%)`}}/>
+          <div style={{position:'relative'}}>
+            <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.22)',margin:'10px auto 14px'}}/>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:10.5,letterSpacing:2.4,textTransform:'uppercase',fontWeight:700,color:accent}}>Because you liked</div>
+                <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:28,lineHeight:1.08,color:'#fff',marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
+              </div>
+              <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:`1px solid ${T.hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="close" size={14} color="#fff"/></button>
+            </div>
+            {!!source?.keywords?.length&&(
+              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:12}}>
+                {source.keywords.map(k=>(<span key={k} style={{fontSize:11.5,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.06)',border:`1px solid ${T.hairline}`,borderRadius:999,padding:'4px 10px',textTransform:'capitalize'}}>{k}</span>))}
+              </div>
+            )}
+            {!loading&&items.length>0&&onScrollAll&&(
+              <button onClick={()=>{onScrollAll(items);onClose();}} style={{marginTop:16,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accent,color:'#06060B',border:'none',borderRadius:14,padding:'13px 16px',fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>
+                <SvgIcon name="play" size={14} color="#06060B" filled/>Scroll all {items.length} in your feed
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading&&(
+          <div style={{padding:'0 20px 24px'}}>
+            <div style={{aspectRatio:'16/9',borderRadius:18,background:'linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.07),rgba(255,255,255,0.03))',backgroundSize:'400px 100%',animation:'simShimmer 1.2s linear infinite'}}/>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginTop:22}}>
+              {[0,1,2,3].map(i=>(<div key={i} style={{aspectRatio:'2/3',borderRadius:14,background:'linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.07),rgba(255,255,255,0.03))',backgroundSize:'400px 100%',animation:'simShimmer 1.2s linear infinite'}}/>))}
+            </div>
+          </div>
+        )}
+        {!loading&&(err||items.length===0)&&(
+          <div style={{textAlign:'center',padding:'40px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+            <SvgIcon name="similar" size={28} color={T.text3}/>
+            <div style={{fontSize:15,color:T.text,fontWeight:700}}>{err?'Couldn’t load matches':`No close matches for this ${contentLabel==='Series'?'series':'film'} yet`}</div>
+            <button onClick={load} style={{marginTop:6,background:'transparent',border:`1px solid ${T.hairlineStrong}`,color:T.text,borderRadius:999,padding:'8px 18px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Try again</button>
+          </div>
+        )}
+
+        {!loading&&hero&&(
+          <div style={{padding:'0 20px',animation:'simIn 0.35s ease'}}>
+            <div style={{fontSize:10.5,letterSpacing:2.4,textTransform:'uppercase',fontWeight:700,color:T.text3,marginBottom:10}}>Top match</div>
+            <div onClick={()=>play(hero)} role="button" style={{position:'relative',borderRadius:18,overflow:'hidden',aspectRatio:'16/10',background:hero.gradient,cursor:'pointer',border:`1px solid ${T.hairline}`}}>
+              {(hero.backdrop||hero.poster)&&<img src={hero.backdrop||hero.poster} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
+              <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(6,6,11,0.96) 0%,rgba(6,6,11,0.55) 45%,rgba(6,6,11,0.05) 100%)'}}/>
+              <div style={{position:'absolute',top:12,left:12}}><MatchPill m={hero}/></div>
+              <div style={{position:'absolute',top:10,right:10}}><SaveBtn m={hero} size={34}/></div>
+              <div style={{position:'absolute',left:16,right:16,bottom:14}}>
+                <div style={{fontSize:12,fontWeight:700,color:accent,marginBottom:4}}>{hero.matchReason}</div>
+                <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:24,lineHeight:1.1,color:'#fff'}}>{hero.title}</div>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginTop:6,fontSize:12.5,color:'rgba(255,255,255,0.7)'}}>
+                  <span>{hero.year}</span><span style={{opacity:0.4}}>•</span>
+                  <span style={{display:'inline-flex',alignItems:'center',gap:4}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{hero.rating}</span>
+                  {hero.genre?.[0]&&<><span style={{opacity:0.4}}>•</span><span>{hero.genre.join(', ')}</span></>}
+                </div>
+                <p style={{fontSize:13,color:'rgba(255,255,255,0.68)',lineHeight:1.5,margin:'8px 0 12px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{hero.overview}</p>
+                <div style={{display:'inline-flex',alignItems:'center',gap:7,background:'#fff',color:'#06060B',borderRadius:999,padding:'8px 16px',fontSize:13,fontWeight:800}}><SvgIcon name="play" size={12} color="#06060B" filled/>Watch trailer</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!loading&&rest.length>0&&(
+          <div style={{padding:'26px 20px calc(28px + env(safe-area-inset-bottom))'}}>
+            <div style={{fontSize:10.5,letterSpacing:2.4,textTransform:'uppercase',fontWeight:700,color:T.text3,marginBottom:12}}>More like this</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px 14px'}}>
+              {rest.map((m,i)=>(
+                <div key={m.id} onClick={()=>play(m)} role="button" style={{cursor:'pointer',minWidth:0,animation:`simIn 0.35s ease ${Math.min(i,8)*0.03}s both`}}>
+                  <div style={{position:'relative',aspectRatio:'2/3',borderRadius:14,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],border:`1px solid ${T.hairline}`}}>
+                    {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                    <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 35%)'}}/>
+                    <div style={{position:'absolute',top:8,left:8}}><MatchPill m={m} small/></div>
+                    <div style={{position:'absolute',top:6,right:6}}><SaveBtn m={m} size={30}/></div>
+                    <div style={{position:'absolute',left:8,bottom:8,display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#fff'}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{m.rating}</div>
+                  </div>
+                  <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700,fontSize:15.5,color:'#fff',marginTop:9,lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.title}</div>
+                  <div style={{fontSize:12,color:'rgba(255,255,255,0.5)',marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.year}{m.isTV?' · Series':''}</div>
+                  <div style={{fontSize:11.5,color:accent,fontWeight:700,marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.matchReason}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div></>
   );
@@ -8456,6 +8548,8 @@ export default function CineScroll(){
 
   const scrollTo=i=>{containerRef.current?.scrollTo({top:i*containerRef.current.clientHeight,behavior:'smooth'});setActiveIndex(i);};
   const handleSimilarSelect=m=>{setMovies(p=>[m,...p]);setTimeout(()=>scrollTo(0),50);};
+  // Drop the whole similar set right after the current card and jump to it
+  const handleSimilarScrollAll=list=>{const at=activeIndex+1;setMovies(p=>{const ids=new Set(list.map(x=>x.id));const before=p.slice(0,at);const after=p.slice(at).filter(x=>!ids.has(x.id));return[...before,...list,...after];});setTimeout(()=>scrollTo(at),80);};
   const accent=movies[activeIndex]?.accent||'#F5A623';
   const activeGenreLabel=GENRE_OPTIONS.find(g=>g.id===activeGenre)?.label||'All';
 
@@ -8579,7 +8673,7 @@ export default function CineScroll(){
 
 
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
-      {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect}/>}
+      {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData} onWatchTrailer={(m)=>{setShowProfile(false);setTrailerMovie(m);}} onDiscover={()=>{setShowProfile(false);setTimeout(()=>setShowFilter(true),50);}}/>}
       {showArcs&&<CineArcs onClose={()=>setShowArcs(false)} accent={accent} onWatchTrailer={setTrailerMovie} watchlist={watchlist} user={user}/>}
