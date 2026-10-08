@@ -2673,7 +2673,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                   <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
                     {folders.map(f => (
                       <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ flexShrink: 0, width: 132, cursor: 'pointer' }}>
-                        <div style={{ width: 140 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={f.cover_accent || accent} count={f.movie_count || 0} /></div>
+                        <div style={{ width: 128 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={f.cover_accent || accent} count={f.movie_count || 0} /></div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
                         <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
                       </div>
@@ -8015,33 +8015,33 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
   );
 }
 
-// A real folder: back panel with a tab, the newest title's poster tucked inside, and a frosted
-// front flap in the page colour. Scales to any width (height follows the 7:5 shape).
+// A real folder made from the film itself: the newest title's poster forms the folder (tab + body),
+// with a frosted glass pocket across the front. Portrait shape, scales to any width.
 function FolderArt({poster,accent,locked,count,small=false}){
-  const r=small?5:10;
+  const r=small?4:10;
+  const img=poster?`url("${poster}")`:null;
+  const fill=img?{backgroundImage:img,backgroundSize:'cover',backgroundPosition:'center top'}:{background:`linear-gradient(160deg,${accent}40,rgba(255,255,255,0.04))`};
   return(
-    <div style={{position:'relative',width:'100%',aspectRatio:'7/5'}}>
-      {/* back panel + tab */}
-      <div style={{position:'absolute',left:0,top:0,width:'44%',height:'22%',borderRadius:`${r}px ${r}px 0 0`,background:`linear-gradient(180deg,${accent}b3,${accent}80)`,clipPath:'polygon(0 0, 82% 0, 100% 100%, 0 100%)'}}/>
-      <div style={{position:'absolute',left:0,right:0,top:'12%',bottom:0,borderRadius:r,background:`linear-gradient(180deg,${accent}99,${accent}55)`,boxShadow:'0 10px 26px rgba(0,0,0,0.38)'}}/>
-      {/* the title inside, peeking out */}
-      {poster&&(
-        <div style={{position:'absolute',left:'50%',top:small?'15%':'13%',width:'33%',aspectRatio:'2/3',transform:'translateX(-50%) rotate(-4deg)',borderRadius:small?2:4,overflow:'hidden',boxShadow:'0 4px 14px rgba(0,0,0,0.45)',border:'1px solid rgba(255,255,255,0.18)'}}>
-          <img src={poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
-        </div>
-      )}
-      {/* front flap */}
-      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'58%',borderRadius:r,background:`linear-gradient(180deg,${accent}d9 0%,${accent}a6 55%,${accent}8c 100%)`,backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',boxShadow:`inset 0 1px 0 rgba(255,255,255,0.35), 0 -4px 12px rgba(0,0,0,0.18)`}}>
-        {!small&&count!=null&&<div style={{position:'absolute',left:12,bottom:10,fontSize:11,fontWeight:700,color:'rgba(6,6,11,0.78)'}}>{count} title{count===1?'':'s'}</div>}
-        {!small&&!poster&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={18} color="rgba(6,6,11,0.45)"/></div>}
-        {locked&&<div style={{position:'absolute',right:small?3:10,bottom:small?3:9,width:small?14:22,height:small?14:22,borderRadius:'50%',background:'rgba(6,6,11,0.55)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?8:11} color="#fff"/></div>}
+    <div style={{position:'relative',width:'100%',aspectRatio:'4/5'}}>
+      {/* tab */}
+      <div style={{position:'absolute',left:0,top:0,width:'42%',height:'14%',borderRadius:`${r}px ${r}px 0 0`,overflow:'hidden',clipPath:'polygon(0 0, 84% 0, 100% 100%, 0 100%)',...(img?{backgroundImage:img,backgroundSize:'240% auto',backgroundPosition:'left top'}:fill)}}>
+        <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.45)'}}/>
+      </div>
+      {/* body — the poster */}
+      <div style={{position:'absolute',left:0,right:0,top:'8%',bottom:0,borderRadius:r,overflow:'hidden',boxShadow:'0 12px 28px rgba(0,0,0,0.45)',border:'1px solid rgba(255,255,255,0.08)',...fill}}>
+        {!img&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',paddingBottom:'30%'}}><SvgIcon name="folder" size={small?14:26} color={accent}/></div>}
+      </div>
+      {/* frosted front pocket */}
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'46%',borderRadius:r,overflow:'hidden',backdropFilter:'blur(14px) saturate(1.3)',WebkitBackdropFilter:'blur(14px) saturate(1.3)',background:`linear-gradient(180deg,rgba(255,255,255,0.14) 0%,${accent}22 40%,rgba(6,6,11,0.55) 100%)`,boxShadow:'inset 0 1px 0 rgba(255,255,255,0.4), 0 -6px 14px rgba(0,0,0,0.25)',borderTop:`1px solid ${accent}66`}}>
+        {!small&&count!=null&&<div style={{position:'absolute',left:12,bottom:10,fontSize:11,fontWeight:700,color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,0.5)'}}>{count} title{count===1?'':'s'}</div>}
+        {locked&&<div style={{position:'absolute',right:small?3:10,bottom:small?3:9,width:small?14:22,height:small?14:22,borderRadius:'50%',background:'rgba(6,6,11,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?8:11} color="#fff"/></div>}
       </div>
     </div>
   );
 }
 
 function FolderCover({posters=[],accent,size=56,locked=false}){
-  return(<div style={{width:size,flexShrink:0}}><FolderArt poster={(posters||[]).filter(Boolean)[0]} accent={accent} locked={locked} small/></div>);
+  return(<div style={{width:size*0.8,flexShrink:0}}><FolderArt poster={(posters||[]).filter(Boolean)[0]} accent={accent} locked={locked} small/></div>);
 }
 
 // Pick which folders a title lives in. Tapping a folder adds or removes it; you can also make a new folder here.
@@ -8269,9 +8269,9 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const FolderTile=({title,sub,posters,locked,onClick,dashed,count})=>(
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
       {dashed?(
-        <div style={{position:'relative',width:'100%',aspectRatio:'7/5'}}>
-          <div style={{position:'absolute',left:0,top:0,width:'40%',height:'16%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
-          <div style={{position:'absolute',left:0,right:0,top:'12%',bottom:0,borderRadius:10,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
+        <div style={{position:'relative',width:'100%',aspectRatio:'4/5'}}>
+          <div style={{position:'absolute',left:0,top:0,width:'40%',height:'12%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
+          <div style={{position:'absolute',left:0,right:0,top:'8%',bottom:0,borderRadius:10,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
         </div>
       ):(
         <FolderCoverFill posters={posters} accent={accent} locked={locked} count={count}/>
