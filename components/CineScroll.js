@@ -9,7 +9,7 @@ import CineArcs from './CineArcs';
 // whitespace and the serif/sans type pairing rather than bordered containers.
 const T = {
   bg:        '#06060B',            // near-black base, cinematic dim-theater feel
-  surface:   '#0F0F18',            // elevated cards / sheets
+  surface:   'rgba(255,255,255,0.05)', // elevated cards — frosted glass over the page wash
   surface2:  'rgba(255,255,255,0.025)', // subtler inline surface (list rows, inputs)
   hairline:  'rgba(255,255,255,0.06)',  // default border
   hairlineStrong: 'rgba(255,255,255,0.1)',
@@ -1433,7 +1433,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
               </button>
               {showTmdb&&(
                 <div onClick={()=>setShowTmdb(false)} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24,animation:'fadeIn 0.2s ease'}}>
-                  <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:340,background:T.bg,border:`1px solid ${T.hairline}`,borderRadius:18,padding:'22px 20px 20px',position:'relative'}}>
+                  <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:340,background:'rgba(18,18,26,0.82)',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',border:`1px solid ${T.hairline}`,borderRadius:18,padding:'22px 20px 20px',position:'relative'}}>
                     <button type="button" onClick={()=>setShowTmdb(false)} style={{position:'absolute',top:12,right:12,background:'transparent',border:'none',cursor:'pointer',padding:4}}><SvgIcon name="close" size={13} color={T.text2}/></button>
                     <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:17,fontWeight:700,color:T.text,marginBottom:12}}>Data disclaimer</div>
                     <div style={{fontSize:13,color:T.text2,lineHeight:1.55,marginBottom:14}}>
@@ -1547,7 +1547,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
           {tab==='watched'&&(
             <div style={{padding:'16px 18px'}}>
               {/* Summary banner */}
-              <div style={{position:'relative',borderRadius:20,padding:'20px 18px',marginBottom:18,overflow:'hidden',border:`1px solid ${T.hairline}`,background:T.surface}}>
+              <div style={{position:'relative',borderRadius:20,padding:'20px 18px',marginBottom:18,overflow:'hidden',border:`1px solid rgba(255,255,255,0.08)`,background:T.surface,backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)'}}>
                 <AccentGlow accent={accent} size={140} style={{right:-30,top:-40}}/>
                 <div style={{position:'relative',zIndex:1}}>
                   <Eyebrow color={T.text3} style={{marginBottom:8}}>Your history</Eyebrow>
@@ -1671,7 +1671,7 @@ function AuthGate({onClose,accent}){
   const{openSignIn}=useClerk();
   return(
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.82)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',justifyContent:'center',animation:'fadeIn 0.2s ease'}}>
-      <div onClick={e=>e.stopPropagation()} style={{position:'relative',width:'100%',background:T.bg,borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',padding:'0 24px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',width:'100%',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',padding:'0 24px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
         <AccentGlow accent={accent} size={200} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 26px',position:'relative'}}/>
         <div style={{position:'relative',textAlign:'center',marginBottom:26}}>
@@ -7011,7 +7011,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
         position: 'fixed',
         inset: 0,
         zIndex: 200,
-        background: '#000',
+        background: ambient(accent),
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -7168,7 +7168,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
       </div>
 
       {/* CONTROLS + COMMENTS — scrolls under sticky player */}
-      <div style={{ flex: 1, minHeight: 0, background: T.bg, display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ flex: 1, minHeight: 0, background: 'transparent', display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <div style={{ padding: '16px 18px 12px', position: 'relative', overflow: 'hidden' }}>
           <AccentGlow accent={accent2} size={150} style={{ right: -30, top: -40 }} />
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
@@ -7557,7 +7557,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
             style={{
               padding: '10px 18px calc(12px + env(safe-area-inset-bottom, 0px))',
               borderTop: `1px solid ${T.hairline}`,
-              background: T.bg,
+              background: 'rgba(6,6,11,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               flexShrink: 0,
             }}
           >
@@ -8087,7 +8087,7 @@ function AddToListSheet({movie,onClose,accent}){
                     onChange={e=>setNewTitle(e.target.value)}
                     onKeyDown={e=>{if(e.key==='Enter')handleCreateAndAdd();}}
                     placeholder="e.g. Weekend thrillers"
-                    style={{width:'100%',background:T.bg,border:`1px solid ${T.hairline}`,borderRadius:10,padding:'10px 12px',color:T.text,fontSize:14,fontFamily:'inherit',outline:'none',marginBottom:10,boxSizing:'border-box'}}
+                    style={{width:'100%',background:T.surface,border:`1px solid ${T.hairline}`,borderRadius:10,padding:'10px 12px',color:T.text,fontSize:14,fontFamily:'inherit',outline:'none',marginBottom:10,boxSizing:'border-box'}}
                   />
                   <div style={{display:'flex',gap:8}}>
                     <button type="button" onClick={()=>{setShowCreate(false);setNewTitle('');}} style={{flex:1,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:12,padding:'10px',cursor:'pointer',fontSize:12,fontWeight:600,color:T.text2,fontFamily:'inherit'}}>Cancel</button>
@@ -8224,7 +8224,7 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
         ):(
           <div style={{display:'flex',flexDirection:'column',gap:1,background:T.hairline,borderRadius:18,overflow:'hidden'}}>
             {lists.map((list,i)=>(
-              <button key={list.id} onClick={()=>onOpenList&&onOpenList(list.id)} style={{display:'flex',gap:14,alignItems:'center',background:T.bg,border:'none',padding:'14px 16px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
+              <button key={list.id} onClick={()=>onOpenList&&onOpenList(list.id)} style={{display:'flex',gap:14,alignItems:'center',background:'transparent',border:'none',padding:'14px 16px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
                 {/* COVER THUMBNAIL */}
                 <div style={{width:68,height:44,borderRadius:10,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accent}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center',position:'relative'}}>
                   <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(0,0,0,0.1),rgba(0,0,0,0.3))'}}/>

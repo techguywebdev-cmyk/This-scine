@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 
 const T = {
   bg: '#06060B',
-  surface: '#0F0F18',
+  surface: 'rgba(255,255,255,0.05)',
   surface2: 'rgba(255,255,255,0.025)',
   hairline: 'rgba(255,255,255,0.06)',
   text: 'rgba(255,255,255,0.92)',
