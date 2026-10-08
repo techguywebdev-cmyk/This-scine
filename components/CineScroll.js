@@ -2954,7 +2954,7 @@ function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T
 function formatReleaseCountdown(dateStr){const d=daysUntil(dateStr);if(d===null)return'';if(d<=0)return'Out now';if(d===1)return'Tomorrow';if(d<=30)return`${d} days`;return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function formatReleaseDate(dateStr){if(!dateStr)return'';return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
 
-function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder}){
+export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder}){
   const{isSignedIn}=useUser();
   const isUpcoming=!!movie.isUpcoming;
   const reminderBusyRef=useRef(false);
@@ -3063,11 +3063,11 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         </div>
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
       </div>
-      <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
-        {[{icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{icon:'check',label:'Seen',active:!!isWatched,color:'#7BFFB0',filled:!!isWatched,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{icon:'bookmark',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:isSaved,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}}].map(btn=>(
-          <button key={btn.icon} onClick={btn.fn} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
-            <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
-            <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
+      <div style={{position:'absolute',right:10,bottom:76,zIndex:10,display:'flex',flexDirection:'column',gap:7,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
+        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)}].map(btn=>(
+          <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:20,padding:'13px 0 11px',cursor:'pointer',width:60,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
+            <SvgIcon name={btn.icon} size={25} color={btn.active?btn.color:'rgba(255,255,255,0.85)'} filled={btn.filled}/>
+            <span style={{fontSize:10,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
           </button>
         ))}
       </div>
