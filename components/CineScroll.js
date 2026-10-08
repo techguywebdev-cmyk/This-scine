@@ -75,6 +75,7 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     list:     ['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01'],
     plus:     ['M12 5v14','M5 12h14'],
     globe:    ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z','M2 12h20','M12 2a15 15 0 0 1 0 20','M12 2a15 15 0 0 0 0 20'],
+    notFor:   ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z','M4.9 4.9l14.2 14.2'],
     folder:   'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
     lock:     ['M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z','M8 11V8a4 4 0 0 1 8 0v3'],
     calendar: ['M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z','M16 2v4','M8 2v4','M3 10h18'],
@@ -2954,7 +2955,7 @@ function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T
 function formatReleaseCountdown(dateStr){const d=daysUntil(dateStr);if(d===null)return'';if(d<=0)return'Out now';if(d===1)return'Tomorrow';if(d<=30)return`${d} days`;return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function formatReleaseDate(dateStr){if(!dateStr)return'';return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
 
-export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder}){
+export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder,onNotInterested}){
   const{isSignedIn}=useUser();
   const isUpcoming=!!movie.isUpcoming;
   const reminderBusyRef=useRef(false);
@@ -3064,7 +3065,7 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
       </div>
       <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
-        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)}].map(btn=>(
+        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'nope',icon:'notFor',label:'Not for me',active:false,color:'#FF6B8A',filled:false,fn:()=>{if(navigator.vibrate)navigator.vibrate(15);onNotInterested&&onNotInterested(movie);}}].map(btn=>(
           <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
             <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
             <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
@@ -8033,8 +8034,8 @@ function FolderArt({poster,accent,locked,count,small=false}){
       </div>
       {/* frosted front pocket */}
       <div style={{position:'absolute',left:0,right:0,bottom:0,height:'46%',borderRadius:r,overflow:'hidden',backdropFilter:'blur(14px) saturate(1.3)',WebkitBackdropFilter:'blur(14px) saturate(1.3)',background:`linear-gradient(180deg,rgba(255,255,255,0.14) 0%,${accent}22 40%,rgba(6,6,11,0.55) 100%)`,boxShadow:'inset 0 1px 0 rgba(255,255,255,0.4), 0 -6px 14px rgba(0,0,0,0.25)',borderTop:`1px solid ${accent}66`}}>
-        {!small&&count!=null&&<div style={{position:'absolute',left:12,bottom:10,fontSize:11,fontWeight:700,color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,0.5)'}}>{count} title{count===1?'':'s'}</div>}
-        {locked&&<div style={{position:'absolute',right:small?3:10,bottom:small?3:9,width:small?14:22,height:small?14:22,borderRadius:'50%',background:'rgba(6,6,11,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?8:11} color="#fff"/></div>}
+        {!small&&count!=null&&<div style={{position:'absolute',left:8,bottom:7,fontSize:10,fontWeight:700,color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,0.5)'}}>{count} title{count===1?'':'s'}</div>}
+        {locked&&<div style={{position:'absolute',right:small?3:7,bottom:small?3:6,width:small?14:18,height:small?14:18,borderRadius:'50%',background:'rgba(6,6,11,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?8:11} color="#fff"/></div>}
       </div>
     </div>
   );
@@ -8276,8 +8277,8 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
       ):(
         <FolderCoverFill posters={posters} accent={accent} locked={locked} count={count}/>
       )}
-      <div style={{fontSize:13,fontWeight:700,color:dashed?accent:'#fff',marginTop:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
-      {sub&&<div style={{fontSize:11,color:T.text2,marginTop:2}}>{sub}</div>}
+      <div style={{fontSize:12,fontWeight:700,color:dashed?accent:'#fff',marginTop:7,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+      {sub&&<div style={{fontSize:10.5,color:T.text2,marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sub}</div>}
     </div>
   );
 
@@ -8335,8 +8336,8 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
           <>
             <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
             {loading?<Spinner/>:(
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'18px 14px'}}>
-                <FolderTile title="All saved" sub="Everything you've saved" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px 10px'}}>
+                <FolderTile title="All saved" sub="Everything" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
                 {lists.map(l=>(
                   <FolderTile key={l.id} title={l.title} sub={l.is_public===false?'Private':'Public'} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
                 ))}
@@ -8464,6 +8465,23 @@ export default function CineScroll(){
     setTimeout(()=>setFeedToast(null),2500);
   };
 
+  // "Not for me": titles the viewer dismissed never come back on this device
+  const hiddenIdsRef=useRef(new Set());
+  useEffect(()=>{try{hiddenIdsRef.current=new Set(JSON.parse(localStorage.getItem('cine_hidden')||'[]'));}catch{}},[]);
+  const[hiddenToast,setHiddenToast]=useState(null);const hiddenToastTimer=useRef(null);
+  const saveHidden=()=>{try{localStorage.setItem('cine_hidden',JSON.stringify([...hiddenIdsRef.current].slice(-500)));}catch{}};
+  const handleNotInterested=(movie)=>{
+    const idx=movies.findIndex(m=>m.id===movie.id);
+    hiddenIdsRef.current.add(movie.id);saveHidden();
+    setMovies(p=>p.filter(m=>m.id!==movie.id));
+    clearTimeout(hiddenToastTimer.current);setHiddenToast({movie,idx});hiddenToastTimer.current=setTimeout(()=>setHiddenToast(null),4000);
+  };
+  const undoNotInterested=()=>{
+    if(!hiddenToast)return;const{movie,idx}=hiddenToast;
+    hiddenIdsRef.current.delete(movie.id);saveHidden();
+    setMovies(p=>{const n=[...p];n.splice(Math.max(0,idx),0,movie);return n;});
+    clearTimeout(hiddenToastTimer.current);setHiddenToast(null);
+  };
   const fetchMovies=useCallback(async(mood,genre,search='',page=1,append=false,provider='')=>{
     if(loadingMoreRef.current&&append)return;
     if(append){loadingMoreRef.current=true;setLoadingMore(true);}else setLoading(true);
@@ -8472,7 +8490,8 @@ export default function CineScroll(){
       if(provider) params.set('provider', provider);
       const res=await fetch(`/api/movies?${params}`);
       const data=await res.json();
-      const batch=data.movies||[];
+      const hidden=hiddenIdsRef.current;
+      const batch=(data.movies||[]).filter(m=>!hidden.has(m.id));
       if(append){setMovies(p=>[...p,...batch]);}
       else{
         setMovies(batch);
@@ -8612,7 +8631,7 @@ export default function CineScroll(){
         ):(
           movies.map((m,i)=>(
             <div key={`${m.id}-${i}`} style={{width:'100%',height:'100%',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
-              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} isWatched={!!watchlist.find(w=>w.movie_id===m.id&&w.watched)} onMarkWatched={handleMarkWatched} onTrailer={setTrailerMovie} isReminded={reminderIds.has(m.id)} onToggleReminder={(mv,next)=>setReminderIds(p=>{const n=new Set(p);if(next)n.add(mv.id);else n.delete(mv.id);return n;})}/>
+              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onNotInterested={handleNotInterested} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} isWatched={!!watchlist.find(w=>w.movie_id===m.id&&w.watched)} onMarkWatched={handleMarkWatched} onTrailer={setTrailerMovie} isReminded={reminderIds.has(m.id)} onToggleReminder={(mv,next)=>setReminderIds(p=>{const n=new Set(p);if(next)n.add(mv.id);else n.delete(mv.id);return n;})}/>
             </div>
           ))
         )}
@@ -8627,6 +8646,18 @@ export default function CineScroll(){
       {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList} onOpenArcs={()=>{setShowLists(false);setShowArcs(true);}}/>}
       {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}
       {folderMovie&&<AddToListSheet movie={folderMovie} onClose={()=>setFolderMovie(null)} accent={folderMovie.accent||accent} isSaved={watchlistIds.has(folderMovie.id)} onEnsureSaved={handleSave}/>}
+      {hiddenToast&&(
+        <div style={{position:'fixed',left:16,right:16,bottom:'calc(20px + env(safe-area-inset-bottom))',zIndex:301,display:'flex',justifyContent:'center',pointerEvents:'none'}}>
+          <div style={{pointerEvents:'all',display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.82)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'12px 12px 12px 14px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)'}}>
+            <SvgIcon name="notFor" size={16} color="rgba(255,255,255,0.7)"/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12.5,fontWeight:700,color:'#fff'}}>Got it — you won't see this again</div>
+              <div style={{fontSize:11,color:T.text2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{hiddenToast.movie.title}</div>
+            </div>
+            <button onClick={undoNotInterested} style={{background:'none',border:'none',padding:'6px 4px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:800,color:accent,flexShrink:0}}>Undo</button>
+          </div>
+        </div>
+      )}
       {savePrompt&&!folderMovie&&(
         <div style={{position:'fixed',left:16,right:16,bottom:'calc(20px + env(safe-area-inset-bottom))',zIndex:300,display:'flex',justifyContent:'center',pointerEvents:'none'}}>
           <div style={{pointerEvents:'all',display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.82)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'10px 10px 10px 12px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)',animation:'toastIn 0.3s cubic-bezier(0.22,1,0.36,1)'}}>
