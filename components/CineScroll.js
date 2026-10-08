@@ -19,9 +19,12 @@ const T = {
   serif:     "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
-// Soft cinematic page backdrop: the current film's accent washes down the whole screen and
-// melts into rich black at the bottom — one continuous blend, no hard band anywhere.
-const ambient = (a = '#F5A623') => `radial-gradient(110% 55% at 0% 0%, ${a}33 0%, transparent 70%), linear-gradient(180deg, ${a}26 0%, ${a}17 30%, ${a}0b 60%, rgba(0,0,0,0.55) 100%), #050508`;
+// Soft cinematic page backdrop: the current film's accent washes across the whole screen.
+// Noir films (silver accent) get a pure black backdrop instead of a tint.
+const NOIR = '#E6E6EA';
+const ambient = (a = '#F5A623') => a === NOIR
+  ? 'radial-gradient(120% 70% at 0% 0%, rgba(255,255,255,0.06) 0%, transparent 70%), #000000'
+  : `radial-gradient(120% 70% at 0% 0%, ${a}2e 0%, transparent 70%), radial-gradient(120% 70% at 100% 100%, ${a}24 0%, transparent 70%), linear-gradient(165deg, ${a}1f 0%, ${a}12 50%, ${a}1c 100%), #06060B`;
 
 // Tracked-out uppercase eyebrow label, used above stats/sections instead of bordered headers
 const Eyebrow = ({ children, color = T.text3, style = {} }) => (
@@ -2978,7 +2981,7 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
   },[isActive]);
   return(
     <div style={{position:'relative',width:'100%',height:'100%',overflow:'hidden',background:'#04040A',userSelect:'none',WebkitUserSelect:'none'}} onMouseDown={onPressStart} onMouseUp={onPressEnd} onMouseLeave={onPressEnd} onTouchStart={onPressStart} onTouchEnd={onPressEnd} onTouchCancel={onPressEnd}>
-      {bgImage&&(<><div style={{position:'absolute',inset:0,backgroundImage:`url(${bgImage})`,backgroundSize:'cover',backgroundPosition:'center top',opacity:imgLoaded?(isActive?1:0.7):0,transition:'opacity 0.6s ease'}}/><img src={bgImage} alt="" onLoad={()=>setImgLoaded(true)} style={{position:'absolute',opacity:0,width:1,height:1,pointerEvents:'none'}}/></>)}
+      {bgImage&&(<><div style={{position:'absolute',inset:0,backgroundImage:`url(${bgImage})`,backgroundSize:'cover',backgroundPosition:'center top',opacity:imgLoaded?(isActive?1:0.7):0,transition:'opacity 0.6s ease',filter:accent===NOIR?'grayscale(1) contrast(1.12) brightness(0.92)':'none'}}/><img src={bgImage} alt="" onLoad={()=>setImgLoaded(true)} style={{position:'absolute',opacity:0,width:1,height:1,pointerEvents:'none'}}/></>)}
       <div style={{position:'absolute',inset:0,background:movie.gradient||GRADS[index%GRADS.length],opacity:imgLoaded?0:1,transition:'opacity 0.6s ease'}}/>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 60% 25%, transparent 20%, rgba(0,0,0,0.6) 100%)',pointerEvents:'none'}}/>
       <div style={{position:'absolute',bottom:0,left:0,right:0,height:'75%',background:'linear-gradient(to top,rgba(0,0,0,0.98) 0%,rgba(0,0,0,0.85) 28%,rgba(0,0,0,0.3) 60%,transparent 100%)',pointerEvents:'none'}}/>

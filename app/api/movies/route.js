@@ -7,12 +7,13 @@ const GENRE_MAP = {
   80: 'Crime', 14: 'Fantasy', 9648: 'Mystery', 10752: 'War', 37: 'Western',
 };
 
-// Per-title accent colours, ordered so neighbouring cards never share a hue family
+// Per-title accent colours, ordered so neighbouring cards never share a hue family.
+// '#E6E6EA' is the noir look: black card, silver-white highlights.
 const ACCENTS = [
   '#F5A623', '#818CF8', '#2DD4BF', '#FF6B8A',
-  '#A3E635', '#B07FEF', '#38BDF8', '#FDBA74',
+  '#A3E635', '#E6E6EA', '#B07FEF', '#38BDF8', '#FDBA74',
   '#E87AAA', '#50C8D4', '#E8C84A', '#7C9CFF',
-  '#86EFAC', '#F0ABFC', '#FF7A2F', '#7BC8FF',
+  '#86EFAC', '#F0ABFC', '#E6E6EA', '#FF7A2F', '#7BC8FF',
   '#C4922A', '#5EEAD4',
 ];
 

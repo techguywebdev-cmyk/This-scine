@@ -21,9 +21,12 @@ const T = {
   serif: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
-// Soft cinematic page backdrop: the current film's accent washes down the whole screen and
-// melts into rich black at the bottom — one continuous blend, no hard band anywhere.
-const ambient = (a = '#F5A623') => `radial-gradient(110% 55% at 0% 0%, ${a}33 0%, transparent 70%), linear-gradient(180deg, ${a}26 0%, ${a}17 30%, ${a}0b 60%, rgba(0,0,0,0.55) 100%), #050508`;
+// Soft cinematic page backdrop: the current film's accent washes across the whole screen.
+// Noir films (silver accent) get a pure black backdrop instead of a tint.
+const NOIR = '#E6E6EA';
+const ambient = (a = '#F5A623') => a === NOIR
+  ? 'radial-gradient(120% 70% at 0% 0%, rgba(255,255,255,0.06) 0%, transparent 70%), #000000'
+  : `radial-gradient(120% 70% at 0% 0%, ${a}2e 0%, transparent 70%), radial-gradient(120% 70% at 100% 100%, ${a}24 0%, transparent 70%), linear-gradient(165deg, ${a}1f 0%, ${a}12 50%, ${a}1c 100%), #06060B`;
 
 const PROGRESS_KEY = 'cine_arc_progress';
 const MY_ARC_ID = 'my-watchlist-arc';
