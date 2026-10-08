@@ -21,7 +21,7 @@ const T = {
 
 // Soft cinematic page backdrop: the current film's accent bleeds in from the top-left and settles
 // at the bottom-right, so every page feels lit by what you were just watching.
-const ambient = (a = '#F5A623') => `radial-gradient(140% 55% at 0% 0%, ${a}26 0%, ${a}0f 38%, transparent 70%), radial-gradient(120% 45% at 100% 100%, ${a}17 0%, transparent 65%), #06060B`;
+const ambient = (a = '#F5A623') => `radial-gradient(170% 80% at 0% 0%, ${a}2b 0%, ${a}14 40%, ${a}06 62%, transparent 82%), radial-gradient(140% 60% at 100% 100%, ${a}1c 0%, ${a}08 45%, transparent 72%), #06060B`;
 
 // Tracked-out uppercase eyebrow label, used above stats/sections instead of bordered headers
 const Eyebrow = ({ children, color = T.text3, style = {} }) => (
@@ -2290,8 +2290,8 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',overscrollBehavior:'contain'}}>
         {/* Header */}
         <div style={{position:'relative',padding:'0 20px 18px',overflow:'hidden'}}>
-          {backdrop&&<div style={{position:'absolute',inset:0,backgroundImage:`url(${backdrop})`,backgroundSize:'cover',backgroundPosition:'center 30%',opacity:0.32,filter:'blur(2px)'}}/>}
-          <div style={{position:'absolute',inset:0,background:`linear-gradient(to bottom,rgba(6,6,11,0.35) 0%,${T.bg} 100%)`}}/>
+          {backdrop&&<div style={{position:'absolute',inset:0,backgroundImage:`url(${backdrop})`,backgroundSize:'cover',backgroundPosition:'center 30%',opacity:0.22,filter:'blur(2px)',WebkitMaskImage:'linear-gradient(to bottom,#000 40%,transparent 100%)',maskImage:'linear-gradient(to bottom,#000 40%,transparent 100%)'}}/>}
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(6,6,11,0.35) 0%,rgba(6,6,11,0.85) 70%,transparent 100%)'}}/>
           <div style={{position:'relative'}}>
             <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.22)',margin:'10px auto 14px'}}/>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}>

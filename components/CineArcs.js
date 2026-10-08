@@ -23,7 +23,7 @@ const T = {
 
 // Soft cinematic page backdrop: the current film's accent bleeds in from the top-left and settles
 // at the bottom-right, so every page feels lit by what you were just watching.
-const ambient = (a = '#F5A623') => `radial-gradient(140% 55% at 0% 0%, ${a}26 0%, ${a}0f 38%, transparent 70%), radial-gradient(120% 45% at 100% 100%, ${a}17 0%, transparent 65%), #06060B`;
+const ambient = (a = '#F5A623') => `radial-gradient(170% 80% at 0% 0%, ${a}2b 0%, ${a}14 40%, ${a}06 62%, transparent 82%), radial-gradient(140% 60% at 100% 100%, ${a}1c 0%, ${a}08 45%, transparent 72%), #06060B`;
 
 const PROGRESS_KEY = 'cine_arc_progress';
 const MY_ARC_ID = 'my-watchlist-arc';
