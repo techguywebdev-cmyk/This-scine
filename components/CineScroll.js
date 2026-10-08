@@ -16,7 +16,7 @@ const T = {
   text:      'rgba(255,255,255,0.92)',  // primary text, off-white not pure white
   text2:     'rgba(255,255,255,0.45)',  // secondary text
   text3:     'rgba(255,255,255,0.25)',  // tertiary / caption / placeholder
-  serif:     "'Playfair Display',serif",
+  serif:     "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
 // Tracked-out uppercase eyebrow label, used above stats/sections instead of bordered headers
@@ -26,7 +26,7 @@ const Eyebrow = ({ children, color = T.text3, style = {} }) => (
 
 // Large serif numeral, the hero treatment for stats/scores/counts throughout the app
 const SerifStat = ({ children, size = 20, color = T.text, style = {} }) => (
-  <div style={{ fontFamily: T.serif, fontSize: size, fontWeight: 800, color, lineHeight: 1.1, ...style }}>{children}</div>
+  <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: size, fontWeight: 700, color, lineHeight: 1.1, ...style }}>{children}</div>
 );
 
 // Hairline divider replacing bordered-box separation
@@ -201,10 +201,10 @@ async function generateShareCard(type, data, accent) {
   ctx.fillStyle=g1;ctx.fillRect(0,0,W,H);
   ctx.shadowColor=accent;ctx.shadowBlur=20;ctx.strokeStyle=accent+'60';ctx.lineWidth=1.5;
   ctx.beginPath();ctx.roundRect(10,10,W-20,H-20,32);ctx.stroke();ctx.shadowBlur=0;
-  ctx.fillStyle='#ffffff';ctx.font='italic bold 32px Georgia, serif';ctx.textAlign='left';ctx.fillText('CineScroll',66,76);
+  ctx.fillStyle='#ffffff';ctx.font='800 32px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.textAlign='left';ctx.fillText('CineScroll',66,76);
   if(type==='score'){
     ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='600 13px sans-serif';ctx.textAlign='center';ctx.letterSpacing='4px';ctx.fillText('CINEPHILE PROFILE',W/2,152);ctx.letterSpacing='0px';
-    ctx.fillStyle='#ffffff';ctx.font='italic bold 60px Georgia, serif';ctx.fillText(data.name,W/2,224);
+    ctx.fillStyle='#ffffff';ctx.font='800 60px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.fillText(data.name,W/2,224);
     const cx=W/2,cy=460,r=150;
     ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=20;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
     const pct=Math.min(data.score/999,1);
@@ -217,7 +217,7 @@ async function generateShareCard(type, data, accent) {
     ctx.fillStyle=accent+'15';ctx.beginPath();ctx.roundRect(W/2-155,830,310,50,25);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 16px sans-serif';ctx.fillText('this-scine.vercel.app',W/2,860);
   } else if(type==='watchlist'){
     ctx.fillStyle='rgba(255,255,255,0.32)';ctx.font='600 13px sans-serif';ctx.textAlign='center';ctx.letterSpacing='4px';ctx.fillText('WATCHLIST',W/2,148);ctx.letterSpacing='0px';
-    ctx.fillStyle='#ffffff';ctx.font='italic bold 54px Georgia, serif';ctx.fillText(data.name,W/2,210);
+    ctx.fillStyle='#ffffff';ctx.font='800 54px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.fillText(data.name,W/2,210);
     const items=data.items.slice(0,6);const CARD_H=118,POSTER_W=72,POSTER_H=102,startY=296;
     for(let idx=0;idx<items.length;idx++){
       const m=items[idx];const cardY=startY+idx*(CARD_H+8);
@@ -226,7 +226,7 @@ async function generateShareCard(type, data, accent) {
       const posterX=50,posterY=cardY+8;
       if(m.poster){const img=await loadCanvasImage(m.poster);if(img){ctx.save();ctx.beginPath();ctx.roundRect(posterX,posterY,POSTER_W,POSTER_H,10);ctx.clip();const scale=Math.max(POSTER_W/img.width,POSTER_H/img.height);ctx.drawImage(img,posterX+(POSTER_W-img.width*scale)/2,posterY+(POSTER_H-img.height*scale)/2,img.width*scale,img.height*scale);ctx.restore();}}
       const textX=50+POSTER_W+28;const title=m.title.length>22?m.title.slice(0,22)+'...':m.title;
-      ctx.fillStyle='#ffffff';ctx.font='italic bold 21px Georgia, serif';ctx.textAlign='left';ctx.fillText(title,textX,cardY+36);
+      ctx.fillStyle='#ffffff';ctx.font='800 21px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.textAlign='left';ctx.fillText(title,textX,cardY+36);
       if(m.genre&&m.genre.length>0){ctx.fillStyle=accent+'99';ctx.font='12px sans-serif';ctx.fillText(m.genre.slice(0,2).join(' · '),textX,cardY+57);}
       ctx.fillStyle='rgba(255,255,255,0.28)';ctx.font='13px sans-serif';ctx.fillText(m.year||'',textX,cardY+76);
       const ratingX=W-36-76,ratingY=cardY+CARD_H/2-16;
@@ -257,7 +257,7 @@ function CineScoreRing({score,accent}){
         <circle cx="50" cy="50" r={r} fill="none" stroke={accent} strokeWidth="6" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{transition:'stroke-dasharray 1s ease'}}/>
       </svg>
       <div style={{textAlign:'center',zIndex:1}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,color:'#fff',lineHeight:1}}>{score}</div>
+        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:22,fontWeight:800,color:'#fff',lineHeight:1}}>{score}</div>
         <div style={{fontSize:8,letterSpacing:2,color:'rgba(255,255,255,0.35)',fontWeight:700,marginTop:2}}>SCORE</div>
       </div>
     </div>
@@ -582,7 +582,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       </div>
       <div style={{flex:1,minHeight:0,overflowY:'auto',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'18px 18px 0',flexShrink:0}}>
-        <h1 style={{fontFamily:T.serif,fontSize:'clamp(20px,5vw,27px)',fontWeight:800,fontStyle:'italic',color:T.text,margin:'0 0 9px',lineHeight:1.15,letterSpacing:-0.3}}>{movie?.title}</h1>
+        <h1 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:'clamp(20px,5vw,27px)',fontWeight:700,color:T.text,margin:'0 0 9px',lineHeight:1.15,letterSpacing:-0.3}}>{movie?.title}</h1>
         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
           <span style={{fontSize:13,color:T.text2}}>{movie?.year}</span>
           {cert&&<CertBadge cert={cert}/>}
@@ -657,7 +657,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
           {cast.length>0&&(
             <div style={{marginBottom:32}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-                <span style={{fontSize:17,fontWeight:800,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>Cast</span>
+                <span style={{fontSize:17,fontWeight:700,color:T.text,fontFamily:T.serif}}>Cast</span>
                 <span style={{fontSize:12.5,color:accent,fontWeight:600}}>See all</span>
               </div>
               <div className="cast-scroll" style={{display:'flex',gap:16,overflowX:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',paddingBottom:4}}>
@@ -1208,7 +1208,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 18px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-          <span style={{fontFamily:T.serif,fontSize:21,fontWeight:800,fontStyle:'italic',color:T.text}}>My Profile</span>
+          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:21,fontWeight:700,color:T.text}}>My Profile</span>
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
             <button onClick={()=>setShowOwnPreview(true)} title="Preview public profile" style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="eye" size={15} color={T.text2}/></button>
             <button onClick={()=>{bioRef.current?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>bioRef.current?.focus(),300);}} title="Edit Profile" style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="edit" size={15} color={T.text2}/></button>
@@ -1248,7 +1248,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                   </div>
                 </button>
                 <div style={{position:'relative',paddingTop:18}}>
-                  <div style={{fontSize:19,fontWeight:800,color:T.text,fontFamily:T.serif,fontStyle:'italic',lineHeight:1.2}}>{nickname||user?.firstName||user?.username||'Cinephile'}</div>
+                  <div style={{fontSize:19,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',lineHeight:1.2}}>{nickname||user?.firstName||user?.username||'Cinephile'}</div>
                   <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,flexShrink:0}}/><span style={{fontSize:11,color:T.text2,fontWeight:500}}>{user?.primaryEmailAddress?.emailAddress}</span></div>
                 </div>
               </div>
@@ -1427,7 +1427,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 <div onClick={()=>setShowTmdb(false)} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24,animation:'fadeIn 0.2s ease'}}>
                   <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:340,background:T.bg,border:`1px solid ${T.hairline}`,borderRadius:18,padding:'22px 20px 20px',position:'relative'}}>
                     <button type="button" onClick={()=>setShowTmdb(false)} style={{position:'absolute',top:12,right:12,background:'transparent',border:'none',cursor:'pointer',padding:4}}><SvgIcon name="close" size={13} color={T.text2}/></button>
-                    <div style={{fontFamily:T.serif,fontSize:17,fontWeight:800,fontStyle:'italic',color:T.text,marginBottom:12}}>Data disclaimer</div>
+                    <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:17,fontWeight:700,color:T.text,marginBottom:12}}>Data disclaimer</div>
                     <div style={{fontSize:13,color:T.text2,lineHeight:1.55,marginBottom:14}}>
                       This product uses the TMDB API but is not endorsed or certified by TMDB.
                     </div>
@@ -1488,7 +1488,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                           <div style={{width:28,height:40,borderRadius:6,background:T.surface,flexShrink:0}}/>
                         )}
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:12.5,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.title}</div>
+                          <div style={{fontSize:12.5,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.title}</div>
                           <div style={{fontSize:11,color:a.kind==='new'?'#7BFF9E':'#FF8B8B',marginTop:2,fontWeight:600}}>
                             {a.kind==='new'?`Now on ${a.platform}`:`Left ${a.platform}`}
                           </div>
@@ -1504,7 +1504,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 <div style={{display:'flex',flexDirection:'column',padding:'0 18px 12px'}}>
                   {filteredWatchlist.map((m,i)=>(
                     <div key={m.movie_id} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'13px 0',borderTop:i>0?`1px solid ${T.hairline}`:'none'}}>
-                      <div style={{width:18,textAlign:'center',flexShrink:0,marginTop:5}}><span style={{fontSize:11,fontWeight:800,fontFamily:T.serif,color:i<3?accent:T.text3}}>{i+1}</span></div>
+                      <div style={{width:18,textAlign:'center',flexShrink:0,marginTop:5}}><span style={{fontSize:11,fontWeight:700,fontFamily:T.serif,letterSpacing:'-0.02em',color:i<3?accent:T.text3}}>{i+1}</span></div>
                       <button onClick={()=>handleWatchlistItemClick(m)} style={{width:52,height:72,borderRadius:10,flexShrink:0,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],position:'relative',border:'none',cursor:'pointer',padding:0}}>
                         {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
                         {m.watched&&<div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={14} color={accent}/></div>}
@@ -1512,7 +1512,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                       </button>
                       <div style={{flex:1,minWidth:0}}>
                         <button onClick={()=>handleWatchlistItemClick(m)} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'left',width:'100%'}}>
-                          <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:3}}><span style={{fontSize:14,fontWeight:700,color:m.watched?T.text3:T.text,fontFamily:T.serif,fontStyle:'italic',lineHeight:1.2,textDecoration:m.watched?'line-through':'none'}}>{m.title}</span>{m.is_tv&&<span style={{fontSize:9,color:'#7BC8FF',border:'1px solid #7BC8FF44',borderRadius:4,padding:'1px 4px',flexShrink:0,marginTop:2,fontWeight:700}}>TV</span>}</div>
+                          <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:3}}><span style={{fontSize:14,fontWeight:700,color:m.watched?T.text3:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',lineHeight:1.2,textDecoration:m.watched?'line-through':'none'}}>{m.title}</span>{m.is_tv&&<span style={{fontSize:9,color:'#7BC8FF',border:'1px solid #7BC8FF44',borderRadius:4,padding:'1px 4px',flexShrink:0,marginTop:2,fontWeight:700}}>TV</span>}</div>
                         </button>
                         <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><span style={{fontSize:11,color:T.text3}}>{m.year}</span><SvgIcon name="star" size={10} color={accent} filled/><span style={{fontSize:11,color:accent,fontWeight:600}}>{m.rating}</span>{m.watched&&<span style={{fontSize:9,color:accent,background:`${accent}14`,borderRadius:10,padding:'1px 6px',fontWeight:700}}>Watched</span>}</div>
                         {m.genre&&m.genre.length>0&&<div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:8}}>{m.genre.slice(0,3).map(g=><span key={g} style={{fontSize:9,color:T.text3,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:20,padding:'2px 6px'}}>{g}</span>)}</div>}
@@ -1543,7 +1543,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 <AccentGlow accent={accent} size={140} style={{right:-30,top:-40}}/>
                 <div style={{position:'relative',zIndex:1}}>
                   <Eyebrow color={T.text3} style={{marginBottom:8}}>Your history</Eyebrow>
-                  <div style={{fontFamily:T.serif,fontSize:22,fontWeight:800,fontStyle:'italic',color:T.text,lineHeight:1.25,marginBottom:6}}>
+                  <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:22,fontWeight:700,color:T.text,lineHeight:1.25,marginBottom:6}}>
                     {watched===0
                       ? <>You haven&apos;t marked anything as <span style={{color:accent}}>seen</span> yet</>
                       : <>You&apos;ve watched a total of <span style={{color:accent}}>{watched}</span> {watched===1?'title':'titles'}</>}
@@ -1560,17 +1560,17 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                   {watched>0&&(
                     <div style={{display:'flex',gap:16,marginTop:14}}>
                       <div>
-                        <div style={{fontSize:18,fontWeight:800,color:accent,fontFamily:T.serif,fontStyle:'italic'}}>{watched}</div>
+                        <div style={{fontSize:18,fontWeight:700,color:accent,fontFamily:T.serif}}>{watched}</div>
                         <div style={{fontSize:10,color:T.text3,letterSpacing:0.5,textTransform:'uppercase',fontWeight:600}}>Watched</div>
                       </div>
                       <div style={{width:1,background:T.hairline}}/>
                       <div>
-                        <div style={{fontSize:18,fontWeight:800,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{watchlist.filter(m=>!m.watched).length}</div>
+                        <div style={{fontSize:18,fontWeight:700,color:T.text,fontFamily:T.serif}}>{watchlist.filter(m=>!m.watched).length}</div>
                         <div style={{fontSize:10,color:T.text3,letterSpacing:0.5,textTransform:'uppercase',fontWeight:600}}>Still to watch</div>
                       </div>
                       <div style={{width:1,background:T.hairline}}/>
                       <div>
-                        <div style={{fontSize:18,fontWeight:800,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{cineScore}</div>
+                        <div style={{fontSize:18,fontWeight:700,color:T.text,fontFamily:T.serif}}>{cineScore}</div>
                         <div style={{fontSize:10,color:T.text3,letterSpacing:0.5,textTransform:'uppercase',fontWeight:600}}>CineScore</div>
                       </div>
                     </div>
@@ -1610,7 +1610,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                       <div style={{flex:1,minWidth:0}}>
                         <button type="button" onClick={()=>handleWatchlistItemClick(m)} style={{background:'none',border:'none',cursor:'pointer',padding:0,textAlign:'left',width:'100%'}}>
                           <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:3}}>
-                            <span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic',lineHeight:1.2}}>{m.title}</span>
+                            <span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',lineHeight:1.2}}>{m.title}</span>
                             {m.is_tv&&<span style={{fontSize:9,color:'#7BC8FF',border:'1px solid #7BC8FF44',borderRadius:4,padding:'1px 4px',flexShrink:0,marginTop:2,fontWeight:700}}>TV</span>}
                           </div>
                         </button>
@@ -1643,7 +1643,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
               :(<div style={{display:'flex',flexDirection:'column'}}>
                 {userReviews.map((r,i)=>(
                   <div key={r.id} style={{padding:'14px 0',borderTop:i>0?`1px solid ${T.hairline}`:'none'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{r.movie_title}</span><span style={{fontSize:11,color:T.text3}}>{r.time}</span></div>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif}}>{r.movie_title}</span><span style={{fontSize:11,color:T.text3}}>{r.time}</span></div>
                     {r.rating>0&&<div style={{display:'flex',gap:2,marginBottom:7}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={11} color={s<=r.rating?accent:T.hairlineStrong} filled={s<=r.rating}/>)}</div>}
                     <p style={{fontSize:13,color:T.text2,lineHeight:1.55,margin:0}}>{r.text}</p>
                   </div>
@@ -1667,7 +1667,7 @@ function AuthGate({onClose,accent}){
         <AccentGlow accent={accent} size={200} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 26px',position:'relative'}}/>
         <div style={{position:'relative',textAlign:'center',marginBottom:26}}>
-          <div style={{fontFamily:T.serif,fontSize:25,fontWeight:800,fontStyle:'italic',color:T.text,marginBottom:9}}>Join CineScroll</div>
+          <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:25,fontWeight:700,color:T.text,marginBottom:9}}>Join CineScroll</div>
           <div style={{fontSize:13,color:T.text2,lineHeight:1.6}}>Sign in to leave reviews, save your watchlist, and discover films with friends.</div>
         </div>
         <button onClick={()=>{openSignIn();onClose();}} style={{position:'relative',width:'100%',background:'#fff',border:'none',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:10,fontFamily:'inherit'}}>
@@ -1703,7 +1703,7 @@ function FollowListModal({targetUserId,type,accent,onClose,onSelectUser}){
         <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 18px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,borderBottom:`1px solid ${T.hairline}`}}>
-          <span style={{fontFamily:T.serif,fontSize:17,fontWeight:800,fontStyle:'italic',color:T.text,textTransform:'capitalize'}}>{type}</span>
+          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:17,fontWeight:700,color:T.text,textTransform:'capitalize'}}>{type}</span>
           <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
         </div>
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'4px 18px 24px'}}>
@@ -1925,7 +1925,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
               {/* HEADER: name + follow */}
               <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:18}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:19,fontWeight:800,color:T.text,fontFamily:T.serif,fontStyle:'italic',lineHeight:1.2}}>{profile.display_name||profile.username}</div>
+                  <div style={{fontSize:19,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',lineHeight:1.2}}>{profile.display_name||profile.username}</div>
                   <div style={{fontSize:12,color:T.text3,marginTop:2}}>@{profile.username}</div>
                   {profile.bio&&<div style={{fontSize:12,color:T.text2,marginTop:6,lineHeight:1.5}}>{profile.bio}</div>}
                 </div>
@@ -2007,7 +2007,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                               <span style={{fontSize:11,color:T.text2}}>{act.label}</span>
                               <span style={{fontSize:10,color:T.text3,marginLeft:'auto'}}>{timeAgo(item.created_at)}</span>
                             </div>
-                            <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic',marginBottom:3}}>{item.movie_title}</div>
+                            <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:3}}>{item.movie_title}</div>
                             {item.movie_year&&<div style={{fontSize:11,color:T.text3}}>{item.movie_year}</div>}
                             {item.type==='reviewed'&&item.movie_rating&&(
                               <div style={{display:'flex',gap:2,marginTop:5}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={10} color={s<=Math.round(item.movie_rating/2)?accentColor:T.hairlineStrong} filled={s<=Math.round(item.movie_rating/2)}/>)}</div>
@@ -2059,7 +2059,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                     {reviews.map((r,i)=>(
                       <div key={r.id} style={{padding:'14px 0',borderTop:i>0?`1px solid ${T.hairline}`:'none'}}>
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7}}>
-                          <span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{r.movie_title}</span>
+                          <span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif}}>{r.movie_title}</span>
                           <span style={{fontSize:11,color:T.text3}}>{timeAgo(r.created_at)}</span>
                         </div>
                         {r.rating>0&&<div style={{display:'flex',gap:2,marginBottom:7}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={11} color={s<=r.rating?accentColor:T.hairlineStrong} filled={s<=r.rating}/>)}</div>}
@@ -2086,7 +2086,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                       <button key={list.id} onClick={()=>setViewingList(list.id)} style={{display:'flex',gap:12,alignItems:'center',background:T.bg,border:'none',padding:'13px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
                         <div style={{width:52,height:34,borderRadius:8,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accentColor}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center'}}/>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic',marginBottom:2}}>{list.title}</div>
+                          <div style={{fontSize:13,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:2}}>{list.title}</div>
                           <div style={{fontSize:11,color:T.text3,display:'flex',alignItems:'center',gap:6}}>
                             <span>{list.movie_count} film{list.movie_count!==1?'s':''}</span>
                             {list.avg_rating&&<><SvgIcon name="star" size={9} color={accentColor} filled/><span style={{color:accentColor,fontWeight:600}}>{list.avg_rating}</span></>}
@@ -2195,7 +2195,7 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
       <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
-        <div><span style={{fontFamily:T.serif,fontSize:16,fontWeight:800,fontStyle:'italic',color:T.text}}>Reviews</span><span style={{fontSize:12,color:T.text3,marginLeft:8}}>{movie?.title}</span></div>
+        <div><span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:T.text}}>Reviews</span><span style={{fontSize:12,color:T.text3,marginLeft:8}}>{movie?.title}</span></div>
         <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
       </div>
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'4px 20px',display:'flex',flexDirection:'column',scrollbarWidth:'none',minHeight:0}}>
@@ -2292,7 +2292,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}>
               <div style={{minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:accent}}>Because you liked</div>
-                <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:28,lineHeight:1.08,color:'#fff',marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
+                <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:28,lineHeight:1.08,color:'#fff',marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
               </div>
               <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:`1px solid ${T.hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="close" size={14} color="#fff"/></button>
             </div>
@@ -2328,7 +2328,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
         {!loading&&items.length>0&&(
           <div style={{padding:'4px 16px calc(28px + env(safe-area-inset-bottom))'}}>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',padding:'0 4px 10px'}}>
-              <span style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700,fontSize:19,color:'#fff'}}>Closest first</span>
+              <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:19,color:'#fff'}}>Closest first</span>
               <span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>{items.length} {contentLabel==='Series'?'series':'titles'}</span>
             </div>
             <div>
@@ -2342,7 +2342,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:10}}>
-                      <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:19,lineHeight:1.2,color:'#fff',minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                      <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:19,lineHeight:1.2,color:'#fff',minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
                       <span style={{fontSize:13,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums',flexShrink:0}}>{m.match||80}%</span>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4,fontSize:12.5,color:'rgba(255,255,255,0.5)',whiteSpace:'nowrap',overflow:'hidden'}}>
@@ -2530,7 +2530,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.14)', margin: '12px auto 0', flexShrink: 0 }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px 10px', flexShrink: 0 }}>
-          <span style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 800, fontStyle: 'italic', color: T.text }}>Discover</span>
+          <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 26, fontWeight: 700, color: T.text }}>Discover</span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6 }}><SvgIcon name="close" size={16} color={T.text2} /></button>
         </div>
 
@@ -2587,7 +2587,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
                           {m.poster && <img src={m.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 45%)' }} />
                           <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', fontFamily: T.serif, letterSpacing: '-0.02em', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
                             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{m.year}{m.rating ? ` · ★${m.rating}` : ''}</div>
                           </div>
                         </div>
@@ -2730,7 +2730,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
                         <div style={{ position: 'absolute', inset: 0, backgroundImage: p.poster ? `url(${p.poster})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.85 }} />
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.1) 50%,transparent 100%)' }} />
                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px 10px' }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.2, textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{p.title}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', fontFamily: T.serif, letterSpacing: '-0.02em', lineHeight: 1.2, textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{p.title}</div>
                           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{p.year}{p.isTV ? ' · TV' : ''}</div>
                         </div>
                       </button>
@@ -2757,7 +2757,7 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
                         <div style={{ width: 42, height: 58, borderRadius: 8, flexShrink: 0, overflow: 'hidden', background: m.gradient || GRADS[i % GRADS.length] }}>{m.poster && <img src={m.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}</div>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: "'Playfair Display',serif", fontStyle: 'italic' }}>{m.title}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: T.serif }}>{m.title}</span>
                             {m.isTV && <span style={{ fontSize: 9, color: '#7BC8FF', border: '1px solid #7BC8FF44', borderRadius: 3, padding: '1px 4px', fontWeight: 700 }}>TV</span>}
                           </div>
                           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -2971,8 +2971,7 @@ function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProfile, ac
                       fontSize: 12,
                       fontWeight: 700,
                       color: T.text,
-                      fontFamily: T.serif,
-                      fontStyle: 'italic',
+                      fontFamily: T.serif, letterSpacing: '-0.02em',
                       lineHeight: 1.2,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -3120,9 +3119,9 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
           {movie.isTV&&<span style={{fontSize:9,color:'rgba(255,255,255,0.35)',fontWeight:600,padding:'3px 8px',border:'1px solid rgba(255,255,255,0.1)',borderRadius:4}}>SERIES</span>}
         </div>
         {isActive&&<StreamingBadges movieId={movie.id} mediaType={movie.mediaType} title={movie.title} year={movie.year}/>}
-        <h2 style={{fontFamily:T.serif,fontSize:Math.min(50,Math.max(28,54-(movie.title?.length||0)*0.9)),fontWeight:800,fontStyle:'italic',color:'#fff',margin:'0 0 7px',lineHeight:1.02,letterSpacing:-0.5,textShadow:`0 0 50px ${accent}28,0 4px 26px rgba(0,0,0,0.8)`}}>{movie.title}</h2>
+        <h2 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:Math.min(50,Math.max(28,54-(movie.title?.length||0)*0.9)),fontWeight:800,color:'#fff',margin:'0 0 7px',lineHeight:1.02,letterSpacing:-0.5,textShadow:`0 0 50px ${accent}28,0 4px 26px rgba(0,0,0,0.8)`}}>{movie.title}</h2>
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:13}}>
-          <span style={{fontFamily:T.serif,fontSize:13,color:`${accent}bb`,fontStyle:'italic'}}>{movie.year}</span>
+          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:13,color:`${accent}bb`}}>{movie.year}</span>
           <span style={{width:3,height:3,borderRadius:'50%',background:'rgba(255,255,255,0.18)'}}/>
           {isUpcoming
             ?<div style={{display:'flex',alignItems:'center',gap:5}}><SvgIcon name="calendar" size={11} color="rgba(255,255,255,0.4)"/><span style={{fontSize:12,color:'rgba(255,255,255,0.5)'}}>In theaters {formatReleaseDate(movie.releaseDate)}</span></div>
@@ -3166,7 +3165,7 @@ const CHAT_THEMES = {
     bg: '#0a0a0f', surface: 'rgba(255,255,255,0.05)',
     bubbleMe: 'rgba(255,255,255,0.12)', bubbleThem: 'rgba(255,255,255,0.05)',
     accent: '#F5C842', text: 'rgba(255,255,255,0.92)', textMuted: 'rgba(255,255,255,0.4)',
-    font: "'Playfair Display',serif", bodyFont: 'inherit',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'inherit',
     radius: 16, sound: { type: 'click', freq: 880, dur: 0.06 },
   },
   batman: {
@@ -3174,7 +3173,7 @@ const CHAT_THEMES = {
     bg: '#050505', surface: 'rgba(245,200,66,0.07)',
     bubbleMe: 'rgba(245,200,66,0.2)', bubbleThem: 'rgba(30,30,30,0.9)',
     accent: '#F5C842', text: 'rgba(255,255,255,0.95)', textMuted: 'rgba(245,200,66,0.5)',
-    font: "'Playfair Display',serif", bodyFont: 'ui-monospace,monospace',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'ui-monospace,monospace',
     radius: 4, sound: { type: 'deep', freq: 120, dur: 0.12 },
   },
   avatar: {
@@ -3182,7 +3181,7 @@ const CHAT_THEMES = {
     bg: '#021018', surface: 'rgba(0,168,224,0.08)',
     bubbleMe: 'rgba(0,168,224,0.25)', bubbleThem: 'rgba(0,40,60,0.7)',
     accent: '#00A8E0', text: 'rgba(230,248,255,0.95)', textMuted: 'rgba(0,168,224,0.55)',
-    font: "'Playfair Display',serif", bodyFont: 'inherit',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'inherit',
     radius: 20, sound: { type: 'wave', freq: 440, dur: 0.15 },
   },
   action: {
@@ -3190,7 +3189,7 @@ const CHAT_THEMES = {
     bg: '#100808', surface: 'rgba(255,122,47,0.08)',
     bubbleMe: 'rgba(255,122,47,0.28)', bubbleThem: 'rgba(40,20,10,0.85)',
     accent: '#FF7A2F', text: 'rgba(255,245,235,0.95)', textMuted: 'rgba(255,122,47,0.55)',
-    font: "'Playfair Display',serif", bodyFont: 'inherit',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'inherit',
     radius: 8, sound: { type: 'punch', freq: 180, dur: 0.08 },
   },
   love: {
@@ -3198,7 +3197,7 @@ const CHAT_THEMES = {
     bg: '#120810', surface: 'rgba(255,107,174,0.08)',
     bubbleMe: 'rgba(255,107,174,0.26)', bubbleThem: 'rgba(50,20,35,0.85)',
     accent: '#FF6BAE', text: 'rgba(255,240,248,0.95)', textMuted: 'rgba(255,107,174,0.55)',
-    font: "'Playfair Display',serif", bodyFont: 'inherit',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'inherit',
     radius: 22, sound: { type: 'soft', freq: 660, dur: 0.14 },
   },
   horror: {
@@ -3206,7 +3205,7 @@ const CHAT_THEMES = {
     bg: '#0a0404', surface: 'rgba(229,9,20,0.08)',
     bubbleMe: 'rgba(229,9,20,0.28)', bubbleThem: 'rgba(30,5,5,0.9)',
     accent: '#E50914', text: 'rgba(255,230,230,0.95)', textMuted: 'rgba(229,9,20,0.5)',
-    font: "'Playfair Display',serif", bodyFont: 'ui-monospace,monospace',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'ui-monospace,monospace',
     radius: 2, sound: { type: 'horror', freq: 90, dur: 0.2 },
   },
   scifi: {
@@ -3214,7 +3213,7 @@ const CHAT_THEMES = {
     bg: '#080612', surface: 'rgba(176,127,239,0.1)',
     bubbleMe: 'rgba(176,127,239,0.28)', bubbleThem: 'rgba(25,15,45,0.9)',
     accent: '#B07FEF', text: 'rgba(245,240,255,0.95)', textMuted: 'rgba(176,127,239,0.55)',
-    font: "'Playfair Display',serif", bodyFont: 'ui-monospace,Menlo,monospace',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'ui-monospace,Menlo,monospace',
     radius: 12, sound: { type: 'blip', freq: 1200, dur: 0.07 },
   },
   nature: {
@@ -3222,7 +3221,7 @@ const CHAT_THEMES = {
     bg: '#06100a', surface: 'rgba(28,231,131,0.08)',
     bubbleMe: 'rgba(28,231,131,0.22)', bubbleThem: 'rgba(10,30,18,0.9)',
     accent: '#1CE783', text: 'rgba(235,255,245,0.95)', textMuted: 'rgba(28,231,131,0.5)',
-    font: "'Playfair Display',serif", bodyFont: 'inherit',
+    font: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif", bodyFont: 'inherit',
     radius: 18, sound: { type: 'soft', freq: 520, dur: 0.12 },
   },
 };
@@ -3385,7 +3384,7 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
 
         {/* Title row */}
         <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 800, fontStyle: 'italic', color: '#fff', letterSpacing: -0.3 }}>
+          <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 26, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>
             Messages
           </div>
           <button
@@ -3528,7 +3527,7 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '56px 28px' }}>
-              <div style={{ fontFamily: T.serif, fontSize: 18, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
+              <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 18, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
                 {filter === 'spam' ? 'No spam' : filter === 'unread' ? 'All caught up' : filter === 'requests' ? 'No requests' : 'No conversations yet'}
               </div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
@@ -3590,7 +3589,7 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
                       {c.avatar_url ? (
                         <img src={c.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 18, color: 'rgba(255,255,255,0.85)' }}>
+                        <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 18, color: 'rgba(255,255,255,0.85)' }}>
                           {(c.display_name || c.username || 'U')[0].toUpperCase()}
                         </span>
                       )}
@@ -3637,10 +3636,9 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3, gap: 8 }}>
                       <span
                         style={{
-                          fontFamily: T.serif,
+                          fontFamily: T.serif, letterSpacing: '-0.02em',
                           fontSize: 16,
                           fontWeight: 700,
-                          fontStyle: 'italic',
                           color: 'rgba(255,255,255,0.95)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -5074,7 +5072,7 @@ function ChatWidget({ peer, onClose, accent }) {
               {peerInfo?.avatar_url ? (
                 <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <span style={{ fontFamily: T.serif, fontWeight: 700, fontSize: 16, color: accent }}>
+                <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontWeight: 700, fontSize: 16, color: accent }}>
                   {(name || 'U')[0].toUpperCase()}
                 </span>
               )}
@@ -5217,11 +5215,11 @@ function ChatWidget({ peer, onClose, accent }) {
                   {peerInfo?.avatar_url ? (
                     <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <span style={{ fontFamily: T.serif, fontSize: 52, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>
+                    <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 52, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>
                   )}
                 </div>
               </div>
-              <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 700, fontStyle: 'italic', color: '#fff', textAlign: 'center' }}>{name}</div>
+              <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 26, fontWeight: 700, color: '#fff', textAlign: 'center' }}>{name}</div>
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
                 {incomingCall.type === 'video' ? 'Video' : 'Audio'} · CineScroll
               </div>
@@ -5345,7 +5343,7 @@ function ChatWidget({ peer, onClose, accent }) {
                 </span>
               </button>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 700, color: '#fff' }}>{name}</div>
+                <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 17, fontWeight: 700, color: '#fff' }}>{name}</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
                   {callStatus === 'connected'
                     ? formatCallTime(callSecs)
@@ -5384,7 +5382,7 @@ function ChatWidget({ peer, onClose, accent }) {
                           {peerInfo?.avatar_url
                             ? <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
                             : <div style={{ width: '100%', height: '100%', background: `${accent}28`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 36, fontWeight: 700, color: accent }}>{(name||'U')[0].toUpperCase()}</span>
+                                <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 36, fontWeight: 700, color: accent }}>{(name||'U')[0].toUpperCase()}</span>
                               </div>
                           }
                         </div>
@@ -5485,14 +5483,14 @@ function ChatWidget({ peer, onClose, accent }) {
                         {peerInfo?.avatar_url
                           ? <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
                           : <div style={{ width: '100%', height: '100%', background: `${accent}28`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontFamily: "'Playfair Display',serif", fontSize: 48, fontWeight: 700, color: accent }}>{(name||'U')[0].toUpperCase()}</span>
+                              <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 48, fontWeight: 700, color: accent }}>{(name||'U')[0].toUpperCase()}</span>
                             </div>
                         }
                       </div>
                     </div>
 
                     {/* Name */}
-                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 800, fontStyle: 'italic', color: '#fff', letterSpacing: -0.5, marginBottom: 8, textAlign: 'center', textShadow: '0 2px 20px rgba(0,0,0,0.6)' }}>
+                    <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 30, fontWeight: 700, color: '#fff', letterSpacing: -0.5, marginBottom: 8, textAlign: 'center', textShadow: '0 2px 20px rgba(0,0,0,0.6)' }}>
                       {name}
                     </div>
 
@@ -6311,7 +6309,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
     <div style={{position:'fixed',top:0,left:0,right:0,zIndex:106,background:T.bg,borderRadius:'0 0 24px 24px',border:`1px solid ${T.hairline}`,borderTop:'none',maxHeight:'70vh',display:'flex',flexDirection:'column',animation:'notifDrop 0.32s cubic-bezier(0.22,1,0.36,1)',paddingTop:'env(safe-area-inset-top,0px)'}}>
       <style>{`@keyframes notifDrop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{padding:'18px 18px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
-        <span style={{fontFamily:T.serif,fontSize:18,fontWeight:800,fontStyle:'italic',color:T.text}}>Notifications</span>
+        <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:18,fontWeight:700,color:T.text}}>Notifications</span>
         <button onClick={onClose} style={{background:'transparent',border:'none',width:28,height:28,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color={T.text2}/></button>
       </div>
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
@@ -6335,7 +6333,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
                   <div style={{flex:1,minWidth:0}}>
                     {n.type==='release_reminder'?(
                     <div style={{fontSize:13,color:T.text,lineHeight:1.4}}>
-                      <span style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700}}>{n.data?.title||'A film you saved'}</span>{' '}
+                      <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700}}>{n.data?.title||'A film you saved'}</span>{' '}
                       {n.data?.when==='tomorrow'?'releases tomorrow':'is out today'}
                     </div>
                     ):(
@@ -6534,7 +6532,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
         </button>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 800, fontStyle: 'italic', color: T.text, margin: 0 }}>Friends</h1>
+          <h1 style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 22, fontWeight: 700, color: T.text, margin: 0 }}>Friends</h1>
           <p style={{ fontSize: 11.5, color: T.text3, margin: '2px 0 0' }}>{stats.following} following · {stats.followers} followers</p>
         </div>
         <button onClick={() => setTab('discover')} style={{ background: 'transparent', border: 'none', width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -6568,7 +6566,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
             {!isSignedIn ? (
               <div style={{ textAlign: 'center', padding: '48px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                 <SvgIcon name="people" size={36} color={T.hairlineStrong} />
-                <div style={{ fontSize: 15.5, fontWeight: 700, color: T.text, fontFamily: T.serif, fontStyle: 'italic' }}>Sign in to see your friends feed</div>
+                <div style={{ fontSize: 15.5, fontWeight: 700, color: T.text, fontFamily: T.serif }}>Sign in to see your friends feed</div>
                 <div style={{ fontSize: 12.5, color: T.text3 }}>Follow friends to see what they are watching</div>
               </div>
             ) : loadingFeed ? (
@@ -6583,7 +6581,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
                   <div style={{ position: 'relative', borderRadius: 20, padding: '22px 18px', marginBottom: 24, overflow: 'hidden', border: `1px solid ${T.hairline}` }}>
                     <AccentGlow accent={accent} size={150} style={{ right: -40, top: -50 }} />
                     <div style={{ position: 'relative', zIndex: 1, maxWidth: '72%' }}>
-                      <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 800, fontStyle: 'italic', color: T.text, lineHeight: 1.3, marginBottom: 8 }}>
+                      <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 19, fontWeight: 700, color: T.text, lineHeight: 1.3, marginBottom: 8 }}>
                         Follow friends to see <span style={{ color: accent }}>what</span> they're watching
                       </div>
                       <div style={{ fontSize: 12, color: T.text3, marginBottom: 14 }}>Search for users in the Discover tab</div>
@@ -6649,7 +6647,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
                                   </div>
                                 )}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text, fontFamily: T.serif, fontStyle: 'italic', marginBottom: 3 }}>{item.movie_title}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text, fontFamily: T.serif, letterSpacing: '-0.02em', marginBottom: 3 }}>{item.movie_title}</div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                                     <span style={{ fontSize: 11, color: T.text3 }}>{item.movie_year}</span>
                                     {item.movie_rating && <><SvgIcon name="star" size={9} color={item.movie_accent || accent} filled /><span style={{ fontSize: 11, color: item.movie_accent || accent, fontWeight: 600 }}>{item.movie_rating}</span></>}
@@ -6738,7 +6736,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
                           <SvgIcon name="people" size={22} color={T.text2} />
                         </div>
                       </div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: T.text, fontFamily: T.serif, fontStyle: 'italic' }}>{friendsSearchQ ? 'No matches' : 'No friends yet'}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: T.serif }}>{friendsSearchQ ? 'No matches' : 'No friends yet'}</div>
                       {!friendsSearchQ && (
                         <>
                           <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6, maxWidth: 260 }}>Find and follow friends to see their activity in your feed.</div>
@@ -6840,7 +6838,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
                 <div style={{ position: 'relative', textAlign: 'center', padding: '20px 20px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                   <AccentGlow accent={accent} size={130} style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }} />
                   <div style={{ position: 'relative', width: 58, height: 58, borderRadius: '50%', background: T.surface2, border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="search" size={22} color={accent} /></div>
-                  <div style={{ position: 'relative', fontSize: 16, fontWeight: 700, color: T.text, fontFamily: T.serif, fontStyle: 'italic' }}>Find film lovers</div>
+                  <div style={{ position: 'relative', fontSize: 16, fontWeight: 700, color: T.text, fontFamily: T.serif }}>Find film lovers</div>
                   <div style={{ position: 'relative', fontSize: 12.5, color: T.text3 }}>Search by username to find and follow friends</div>
                 </div>
                 <Eyebrow color={T.text3} style={{ marginBottom: 10 }}>Suggested for you</Eyebrow>
@@ -6892,7 +6890,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {leaders.map((u, i) => (
                       <button key={u.user_id} onClick={() => setViewingProfile(u.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', borderTop: i > 0 ? `1px solid ${T.hairline}` : 'none', padding: '11px 0', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ width: 20, textAlign: 'center', fontSize: u.rank <= 3 ? 15 : 13, fontWeight: 800, fontFamily: T.serif, color: u.rank === 1 ? '#FFD66B' : u.rank === 2 ? '#D8D8E0' : u.rank === 3 ? '#E0A468' : T.text3, flexShrink: 0 }}>{u.rank}</div>
+                        <div style={{ width: 20, textAlign: 'center', fontSize: u.rank <= 3 ? 15 : 13, fontWeight: 700, fontFamily: T.serif, letterSpacing: '-0.02em', color: u.rank === 1 ? '#FFD66B' : u.rank === 2 ? '#D8D8E0' : u.rank === 3 ? '#E0A468' : T.text3, flexShrink: 0 }}>{u.rank}</div>
                         <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${accent}18`, border: `1px solid ${accent}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
                           {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.display_name || u.username || 'U')[0].toUpperCase()}
                         </div>
@@ -6975,7 +6973,7 @@ function CreateListSheet({onClose,accent,onCreated}){
         <AccentGlow accent={accent} size={180} style={{right:-20,top:-60}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 22px',position:'relative'}}/>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22,position:'relative'}}>
-          <span style={{fontFamily:T.serif,fontSize:21,fontWeight:800,fontStyle:'italic',color:T.text}}>New List</span>
+          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:21,fontWeight:700,color:T.text}}>New List</span>
           <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',padding:4}}><SvgIcon name="close" size={14} color={T.text2}/></button>
         </div>
         <div style={{position:'relative',marginBottom:14}}>
@@ -7333,8 +7331,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
                   fontSize: 18,
                   fontWeight: 700,
                   color: T.text,
-                  fontFamily: T.serif,
-                  fontStyle: 'italic',
+                  fontFamily: T.serif, letterSpacing: '-0.02em',
                   marginBottom: 4,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -7539,8 +7536,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
                         fontSize: 13,
                         fontWeight: i === currentIdx ? 700 : 500,
                         color: i === currentIdx ? accent2 : T.text,
-                        fontFamily: T.serif,
-                        fontStyle: 'italic',
+                        fontFamily: T.serif, letterSpacing: '-0.02em',
                         marginBottom: 2,
                       }}
                     >
@@ -7954,7 +7950,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
         {!loading&&loadError&&(
           <div style={{padding:'48px 24px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <SvgIcon name="list" size={28} color={T.hairlineStrong}/>
-            <div style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>Couldn't load this list</div>
+            <div style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.serif}}>Couldn't load this list</div>
             <div style={{fontSize:13,color:T.text3,lineHeight:1.5}}>Check your connection and try again.</div>
             <button onClick={reloadList} style={{marginTop:6,background:accentColor,border:'none',borderRadius:20,padding:'11px 22px',cursor:'pointer',fontSize:13,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Try again</button>
           </div>
@@ -7970,7 +7966,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                 </div>
                 <span style={{fontSize:12,color:T.text2}}>by <span style={{color:accentColor,fontWeight:600}}>{list.display_name}</span></span>
               </div>
-              <h1 style={{fontFamily:T.serif,fontSize:26,fontWeight:800,fontStyle:'italic',color:T.text,margin:'0 0 8px',lineHeight:1.15}}>{list.title}</h1>
+              <h1 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:26,fontWeight:700,color:T.text,margin:'0 0 8px',lineHeight:1.15}}>{list.title}</h1>
               {list.description&&<p style={{fontSize:13.5,color:T.text2,lineHeight:1.6,margin:'0 0 14px'}}>{list.description}</p>}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden',marginBottom:18}}>
                 {[{label:'Films',value:list.movie_count},{label:'Followers',value:list.follower_count},{label:'Rating',value:list.avg_rating?`${list.avg_rating}/5`:'—'}].map(s=>(
@@ -8024,7 +8020,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
               movies.length===0?(
                 <div style={{textAlign:'center',padding:'32px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
                   <SvgIcon name="bookmark" size={24} color={T.hairlineStrong}/>
-                  <div style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{list.is_owner?'This list is empty':'No films yet'}</div>
+                  <div style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.is_owner?'This list is empty':'No films yet'}</div>
                   <div style={{fontSize:13,color:T.text3}}>{list.is_owner?'Save films from the feed, then add them here.':'The curator hasn\'t added any titles yet.'}</div>
                 </div>
               ):(
@@ -8038,7 +8034,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                         <div style={{position:'absolute',bottom:3,left:'50%',transform:'translateX(-50%)',fontSize:8,fontWeight:800,color:'rgba(255,255,255,0.6)',background:'rgba(0,0,0,0.5)',borderRadius:4,padding:'1px 4px',whiteSpace:'nowrap'}}>{i+1}</div>
                       </button>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic',marginBottom:4,lineHeight:1.2}}>{m.movie_title}</div>
+                        <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:4,lineHeight:1.2}}>{m.movie_title}</div>
                         <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:8}}>
                           <span style={{fontSize:11,color:T.text3}}>{m.movie_year}</span>
                           {m.movie_rating&&<><SvgIcon name="star" size={10} color={m.movie_accent||accentColor} filled/><span style={{fontSize:11,color:m.movie_accent||accentColor,fontWeight:600}}>{m.movie_rating}</span></>}
@@ -8203,7 +8199,7 @@ function AddToListSheet({movie,onClose,accent}){
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
           <div style={{minWidth:0,flex:1}}>
-            <span style={{fontFamily:T.serif,fontSize:16,fontWeight:800,fontStyle:'italic',color:T.text}}>Add to List</span>
+            <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:T.text}}>Add to List</span>
             <div style={{fontSize:11,color:T.text3,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title||movie?.movie_title}</div>
           </div>
           <button onClick={onClose} style={{background:'transparent',border:'none',cursor:'pointer',padding:4,flexShrink:0}}><SvgIcon name="close" size={13} color={T.text2}/></button>
@@ -8226,7 +8222,7 @@ function AddToListSheet({movie,onClose,accent}){
                     <SvgIcon name="plus" size={16} color={accent}/>
                   </div>
                   <div style={{textAlign:'left'}}>
-                    <div style={{fontSize:13.5,fontWeight:700,color:accent,fontFamily:T.serif,fontStyle:'italic'}}>New list</div>
+                    <div style={{fontSize:13.5,fontWeight:700,color:accent,fontFamily:T.serif}}>New list</div>
                     <div style={{fontSize:11,color:T.text3}}>Create and add this title</div>
                   </div>
                 </button>
@@ -8261,7 +8257,7 @@ function AddToListSheet({movie,onClose,accent}){
                       <button key={list.id} type="button" onClick={()=>handleAdd(list)} disabled={isAdded||isSaving} style={{display:'flex',alignItems:'center',gap:12,background:'none',border:'none',borderTop:i>0?`1px solid ${T.hairline}`:'none',padding:'13px 0',cursor:isAdded?'default':'pointer',fontFamily:'inherit',width:'100%',textAlign:'left',opacity:isAdded?0.6:1,transition:'opacity 0.2s ease'}}>
                         <div style={{width:46,height:30,borderRadius:8,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accent}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center'}}/>
                         <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13.5,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>{list.title}</div>
+                          <div style={{fontSize:13.5,fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.title}</div>
                           <div style={{fontSize:11,color:T.text3}}>{list.movie_count||0} film{(list.movie_count||0)!==1?'s':''}</div>
                         </div>
                         <div style={{flexShrink:0}}>
@@ -8322,7 +8318,7 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <div style={{flex:1}}>
-          <h1 style={{fontFamily:T.serif,fontSize:22,fontWeight:800,fontStyle:'italic',color:T.text,margin:0}}>Community Lists</h1>
+          <h1 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:22,fontWeight:700,color:T.text,margin:0}}>Community Lists</h1>
           <p style={{fontSize:11.5,color:T.text3,margin:'2px 0 0'}}>Curated collections by the community</p>
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
@@ -8359,14 +8355,14 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
         ):!isSignedIn&&tab!=='trending'?(
           <div style={{textAlign:'center',padding:'48px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <SvgIcon name="list" size={28} color={T.hairlineStrong}/>
-            <div style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>Sign in to see your lists</div>
+            <div style={{fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif}}>Sign in to see your lists</div>
             <div style={{fontSize:12.5,color:T.text3}}>Create and follow curated film collections</div>
           </div>
         ):lists.length===0?(
           <div style={{textAlign:'center',padding:'48px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
             <AccentGlow accent={accent} size={120} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
             <div style={{position:'relative',width:58,height:58,borderRadius:'50%',background:T.surface2,border:`1px solid ${T.hairline}`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="list" size={22} color={accent}/></div>
-            <div style={{position:'relative',fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic'}}>
+            <div style={{position:'relative',fontSize:15,fontWeight:700,color:T.text,fontFamily:T.serif}}>
               {tab==='mine'?'You haven\'t created any lists yet':tab==='following'?'You\'re not following any lists yet':'No lists yet — be the first!'}
             </div>
             {tab==='mine'&&isSignedIn&&(
@@ -8387,7 +8383,7 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
                   )}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,fontStyle:'italic',marginBottom:3,lineHeight:1.2,display:'flex',alignItems:'center',gap:8}}>{list.title}{list.is_public===false&&<span style={{fontSize:9,fontWeight:700,color:T.text3,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:6,padding:'2px 6px',fontStyle:'normal',fontFamily:T.sans||'inherit'}}>Private</span>}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:3,lineHeight:1.2,display:'flex',alignItems:'center',gap:8}}>{list.title}{list.is_public===false&&<span style={{fontSize:9,fontWeight:700,color:T.text3,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:6,padding:'2px 6px',fontStyle:'normal',fontFamily:T.sans||'inherit'}}>Private</span>}</div>
                   <div style={{fontSize:11,color:T.text3,marginBottom:5}}>by {list.display_name} · {list.movie_count} film{list.movie_count!==1?'s':''}</div>
                   <div style={{display:'flex',alignItems:'center',gap:10}}>
                     {list.avg_rating&&(
@@ -8546,13 +8542,12 @@ export default function CineScroll(){
   const activeGenreLabel=GENRE_OPTIONS.find(g=>g.id===activeGenre)?.label||'All';
 
   return(
-    <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"'DM Sans',sans-serif",color:'#fff',overflow:'hidden'}}>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700;1,900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+    <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"var(--font-sans), 'Inter', system-ui, -apple-system, sans-serif",color:'#fff',overflow:'hidden'}}>
       {feedToast&&<Toast message={feedToast} accent={accent}/>}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
-          <span style={{fontFamily:T.serif,fontSize:20,fontWeight:800,fontStyle:'italic',letterSpacing:-0.5,color:T.text}}>CineScroll</span>
+          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:20,fontWeight:700,letterSpacing:-0.5,color:T.text}}>CineScroll</span>
         </div>
         <div style={{display:'flex',gap:8,pointerEvents:'all',alignItems:'center'}}>
           <button onClick={()=>{if(!isSignedIn){setShowAuth(true);return;}setShowFriends(true);setFriendsNotifCount(0);}} style={{position:'relative',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
@@ -8651,7 +8646,7 @@ export default function CineScroll(){
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}::-webkit-scrollbar{display:none}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         {loading?(
           <div style={{height:'100dvh',display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'start',flexDirection:'column',gap:12}}>
-            <div style={{fontFamily:T.serif,fontSize:38,fontWeight:800,fontStyle:'italic',color:T.text}}>CineScroll</div>
+            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:38,fontWeight:700,color:T.text}}>CineScroll</div>
             <div style={{fontSize:11,color:T.text3,letterSpacing:3}}>LOADING FILMS...</div>
           </div>
         ):(

@@ -12,7 +12,9 @@ html, body {
   overflow: hidden;
   background: #04040A;
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans), 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }

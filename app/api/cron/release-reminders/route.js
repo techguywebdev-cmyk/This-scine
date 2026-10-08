@@ -29,7 +29,7 @@ function emailHtml({ title, poster, when, link }) {
     ${poster ? `<img src="${esc(poster)}" alt="" width="440" style="display:block;width:100%;max-height:300px;object-fit:cover"/>` : ''}
     <div style="padding:24px">
       <div style="font-size:10px;letter-spacing:3px;color:#FFD166;font-weight:700;text-transform:uppercase">${headline}</div>
-      <h1 style="margin:8px 0 10px;font-family:Georgia,'Playfair Display',serif;font-style:italic;font-size:28px;color:#fff;line-height:1.1">${esc(title)}</h1>
+      <h1 style="margin:8px 0 10px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:28px;color:#fff;line-height:1.1">${esc(title)}</h1>
       <p style="margin:0 0 22px;color:rgba(255,255,255,0.6);font-size:14px;line-height:1.6">You asked us to remind you. ${when === 'tomorrow' ? 'It lands tomorrow — plan your night.' : 'It’s out now — time to watch.'}</p>
       <a href="${link}" style="display:inline-block;background:#FFD166;color:#06060B;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:800;font-size:14px">Open CineScroll</a>
     </div>
