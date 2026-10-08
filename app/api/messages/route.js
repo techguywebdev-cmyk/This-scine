@@ -89,18 +89,23 @@ export async function GET(req) {
 
   try {
     if (withId) {
-      let res = await fetch(
-        `${db('messages')}?or=(and(from_user_id.eq.${userId},to_user_id.eq.${withId}),and(from_user_id.eq.${withId},to_user_id.eq.${userId}))&order=created_at.asc&limit=120&select=id,from_user_id,to_user_id,text,created_at,read,read_at,delivered,msg_type,media_url`,
-        { headers }
-      );
-      if (!res.ok) {
-        res = await fetch(
-          `${db('messages')}?or=(and(from_user_id.eq.${userId},to_user_id.eq.${withId}),and(from_user_id.eq.${withId},to_user_id.eq.${userId}))&order=created_at.asc&limit=120&select=id,from_user_id,to_user_id,text,created_at,read`,
-          { headers }
-        );
+      // Newest first, then flipped: chat messages (latest 150) + only recent call signals (last 3 min).
+      // Calls write dozens of signalling rows; loading the oldest N rows used to hide new messages.
+      const pair = `or=(and(from_user_id.eq.${userId},to_user_id.eq.${withId}),and(from_user_id.eq.${withId},to_user_id.eq.${userId}))`;
+      const cols = 'select=id,from_user_id,to_user_id,text,created_at,read,read_at,delivered,msg_type,media_url';
+      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const [chatRes, sigRes] = await Promise.all([
+        fetch(`${db('messages')}?and=(or(and(from_user_id.eq.${userId},to_user_id.eq.${withId}),and(from_user_id.eq.${withId},to_user_id.eq.${userId})),or(msg_type.is.null,msg_type.neq.call_signal))&order=created_at.desc&limit=150&${cols}`, { headers }),
+        fetch(`${db('messages')}?${pair}&msg_type=eq.call_signal&created_at=gte.${since}&order=created_at.desc&limit=60&${cols}`, { headers }),
+      ]);
+      let chatRows = chatRes.ok ? await chatRes.json() : [];
+      if (!chatRes.ok) {
+        const fb = await fetch(`${db('messages')}?${pair}&order=created_at.desc&limit=150&select=id,from_user_id,to_user_id,text,created_at,read`, { headers });
+        chatRows = fb.ok ? await fb.json() : [];
       }
-      const rows = await res.json();
-      const messages = Array.isArray(rows) ? rows : [];
+      const sigRows = sigRes.ok ? await sigRes.json() : [];
+      const messages = [...(Array.isArray(chatRows) ? chatRows : []), ...(Array.isArray(sigRows) ? sigRows : [])]
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
       const unreadIds = messages
         .filter((m) => m.to_user_id === userId && !m.read)
@@ -282,56 +287,41 @@ export async function POST(request) {
     const data = await res.json();
     const row = Array.isArray(data) ? data[0] : data;
 
-    try {
-      const priorRes = await fetch(
-        `${db('messages')}?or=(and(from_user_id.eq.${userId},to_user_id.eq.${toUserId}),and(from_user_id.eq.${toUserId},to_user_id.eq.${userId}))&select=id&limit=2`,
-        { headers }
-      );
-      const prior = await priorRes.json();
-      const isFirst = !Array.isArray(prior) || prior.length <= 1;
-      const notifType = isFirst ? 'message_request' : 'message';
-      await fetch(db('notifications'), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          user_id: toUserId,
-          from_user_id: userId,
-          type: notifType,
-          read: false,
-        }),
-      });
+    // Notifications: keep the in-app row (fast), skip work for call signals, and only email on the
+    // first message of a conversation so sending never waits on email.
+    if (msgType !== 'call_signal') {
       try {
-        const { notifyUser } = await import('@/lib/notify').catch(() => ({ notifyUser: null }));
-        if (notifyUser) {
-          let recipientEmail = null;
-          try {
-            const u = await clerkClient.users.getUser(toUserId);
-            recipientEmail =
-              u.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ||
-              u.emailAddresses?.[0]?.emailAddress ||
-              null;
-          } catch {}
-          let fromName = 'Someone';
-          try {
-            const me = await clerkClient.users.getUser(userId);
-            fromName = me.username || me.firstName || 'Someone';
-          } catch {}
-          const bodyPreview =
-            msgType === 'voice' ? 'Voice note' : msgType === 'sticker' ? text : text.slice(0, 120);
-          await notifyUser({
-            userId: toUserId,
-            email: recipientEmail,
-            category: 'messages',
-            title: isFirst ? 'New message request' : 'New message',
-            body: `${fromName}: ${bodyPreview}`,
-            url: '/',
-          });
+        const priorRes = await fetch(
+          `${db('messages')}?or=(and(from_user_id.eq.${userId},to_user_id.eq.${toUserId}),and(from_user_id.eq.${toUserId},to_user_id.eq.${userId}))&msg_type=neq.call_signal&select=id&limit=2`,
+          { headers }
+        );
+        const prior = await priorRes.json();
+        const isFirst = !Array.isArray(prior) || prior.length <= 1;
+        const notifPromise = fetch(db('notifications'), {
+          method: 'POST',
+          headers: { ...headers, Prefer: 'return=minimal' },
+          body: JSON.stringify({ user_id: toUserId, from_user_id: userId, type: isFirst ? 'message_request' : 'message', read: false }),
+        }).catch(() => {});
+        let emailPromise = Promise.resolve();
+        if (isFirst) {
+          emailPromise = (async () => {
+            const { notifyUser } = await import('@/lib/notify').catch(() => ({ notifyUser: null }));
+            if (!notifyUser) return;
+            const [u, me] = await Promise.all([
+              clerkClient.users.getUser(toUserId).catch(() => null),
+              clerkClient.users.getUser(userId).catch(() => null),
+            ]);
+            const recipientEmail = u?.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u?.emailAddresses?.[0]?.emailAddress || null;
+            const fromName = me?.username || me?.firstName || 'Someone';
+            const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'sticker' ? text : text.slice(0, 120);
+            await notifyUser({ userId: toUserId, email: recipientEmail, category: 'messages', title: 'New message request', body: `${fromName}: ${bodyPreview}`, url: '/' });
+          })().catch((e) => console.error('notifyUser error', e));
         }
+        // Never hold the sender up for more than ~1.2s on notification side-work
+        await Promise.race([Promise.all([notifPromise, emailPromise]), new Promise((r) => setTimeout(r, 1200))]);
       } catch (e) {
-        console.error('notifyUser error', e);
+        console.error('message notification error:', e);
       }
-    } catch (e) {
-      console.error('message notification error:', e);
     }
 
     return Response.json({

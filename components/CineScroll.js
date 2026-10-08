@@ -3836,7 +3836,6 @@ function ChatWidget({ peer, onClose, accent }) {
   }, []);
 
   const postMessage = async (payload, optimistic) => {
-    setSending(true);
     setMessages((p) => [...p, optimistic]);
     scrollBottom();
     try {
@@ -3859,14 +3858,12 @@ function ChatWidget({ peer, onClose, accent }) {
       setMessages((p) => p.filter((m) => m.id !== optimistic.id));
       setError('Failed to send');
       return false;
-    } finally {
-      setSending(false);
     }
   };
 
   const send = async () => {
     const text = input.trim();
-    if (!text || !peerId || sending) return;
+    if (!text || !peerId) return;
     setInput('');
     setShowStickers(false);
     playChatSound(CHAT_THEMES.classic);
@@ -4885,7 +4882,11 @@ function ChatWidget({ peer, onClose, accent }) {
               }
             } catch {}
           }
-          setMessages(visible);
+          // Keep messages that are still sending (tmp ids) so they never flicker out while the server catches up
+          setMessages((prev) => {
+            const pending = prev.filter((m) => String(m.id).startsWith('tmp-') && !visible.some((v) => v.from_me && v.text === m.text && Math.abs(new Date(v.created_at) - new Date(m.created_at)) < 60000));
+            return pending.length ? [...visible, ...pending] : visible;
+          });
           if (d.peer) setPeerInfo((p) => ({ ...p, ...d.peer }));
           setLoading(false);
         }
@@ -4893,7 +4894,7 @@ function ChatWidget({ peer, onClose, accent }) {
     };
     tick();
     const active = !!callMode || callStatus === 'incoming' || callStatus === 'ringing' || callStatus === 'connecting';
-    const interval = setInterval(tick, active ? 800 : 4000);
+    const interval = setInterval(tick, active ? 800 : 2000);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -5222,7 +5223,7 @@ function ChatWidget({ peer, onClose, accent }) {
               position: 'fixed',
               inset: 0,
               zIndex: 200,
-              background: callMode === 'audio' ? ambient(accent) : '#050508',
+              background: ambient(accent),
               animation: 'fadeIn 0.3s ease',
               overflow: 'hidden',
             }}
@@ -5311,7 +5312,8 @@ function ChatWidget({ peer, onClose, accent }) {
                           opacity: 0.4,
                         }}/>
                       )}
-                      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 35%, rgba(6,6,11,0.25) 0%, rgba(6,6,11,0.9) 100%)' }}/>
+                      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 35%, rgba(6,6,11,0.2) 0%, rgba(6,6,11,0.75) 100%)' }}/>
+                      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(165deg, ${accent}38 0%, ${accent}14 50%, ${accent}2a 100%)` }}/>
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: `3px solid ${accent}55`, boxShadow: `0 20px 60px rgba(0,0,0,0.5)` }}>
                           {peerInfo?.avatar_url
@@ -5394,7 +5396,8 @@ function ChatWidget({ peer, onClose, accent }) {
                     }}/>
                   )}
                   {/* Dark vignette */}
-                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 30%, rgba(6,6,11,0.2) 0%, rgba(6,6,11,0.85) 100%)' }}/>
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 30%, rgba(6,6,11,0.15) 0%, rgba(6,6,11,0.7) 100%)' }}/>
+                  <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(165deg, ${accent}38 0%, ${accent}14 50%, ${accent}2a 100%)` }}/>
                   {/* Accent glow */}
                   <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 40%, ${accent}22 0%, transparent 65%)` }}/>
 
