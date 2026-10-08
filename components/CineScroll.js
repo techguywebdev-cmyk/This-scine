@@ -67,6 +67,7 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     settings: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z','M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
     list:     ['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01'],
     plus:     ['M12 5v14','M5 12h14'],
+    globe:    ['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z','M2 12h20','M12 2a15 15 0 0 1 0 20','M12 2a15 15 0 0 0 0 20'],
     calendar: ['M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z','M16 2v4','M8 2v4','M3 10h18'],
     clock:    ['M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z','M12 6v6l4 2'],
     bell:     ['M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 0 1-3.46 0'],
@@ -2373,15 +2374,16 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
 
 
 // DISCOVER / FILTER SHEET
-function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent, onSearchSelect, activeProvider, onProvider }) {
+export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, accent, onSearchSelect, activeProvider, onProvider }) {
   const [searchQ, setSearchQ] = useState('');
   const [searchRes, setSearchRes] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [activeQuickFilter, setActiveQuickFilter] = useState(null);
+  const [searchMood, setSearchMood] = useState(null);
   const [popular, setPopular] = useState([]);
   const [loadingPopular, setLoadingPopular] = useState(false);
   const [tonight, setTonight] = useState([]);
   const [loadingTonight, setLoadingTonight] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   const MOOD_SIGNALS = [
     ['happy','cheerful','funny','laugh','comedy','light','feel good'],
@@ -2394,7 +2396,6 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
     ['inspiring','uplifting','motivating'],
   ];
   const MOOD_NAMES = ['happy','sad','horror','romance','action','thoughtful','chill','uplifting'];
-
   const detectMood = (q) => {
     const lower = q.toLowerCase();
     for (let i = 0; i < MOOD_SIGNALS.length; i++) {
@@ -2404,11 +2405,12 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
   };
 
   useEffect(() => {
-    if (!searchQ.trim()) { setSearchRes([]); setSearching(false); return; }
+    if (!searchQ.trim()) { setSearchRes([]); setSearching(false); setSearchMood(null); return; }
     const t = setTimeout(async () => {
       setSearching(true);
       try {
         const detectedMood = detectMood(searchQ);
+        setSearchMood(detectedMood);
         const params = new URLSearchParams({ search: searchQ });
         if (detectedMood) params.set('mood', detectedMood);
         const res = await fetch(`/api/movies?${params}`);
@@ -2420,19 +2422,18 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
     return () => clearTimeout(t);
   }, [searchQ]);
 
-  // Rotate popular + load "Tonight for you" whenever Discover opens
-  useEffect(() => {
-    if (!show) return;
+  const loadPopular = () => {
     setLoadingPopular(true);
     fetch('/api/movies?popular=1')
       .then(r => r.json())
-      .then(d => {
-        setPopular((d.movies || []).slice(0, 4));
-        setLoadingPopular(false);
-      })
+      .then(d => { setPopular((d.movies || []).slice(0, 6)); setLoadingPopular(false); })
       .catch(() => setLoadingPopular(false));
+  };
 
-    // Tonight: prefer saved platform, else trending mix
+  // Rotate popular + load the time-of-day picks whenever Discover opens
+  useEffect(() => {
+    if (!show) return;
+    loadPopular();
     setLoadingTonight(true);
     let preferred = '';
     try { preferred = localStorage.getItem('cine_preferred_provider') || ''; } catch {}
@@ -2441,69 +2442,59 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
     fetch(`/api/movies?${params}`)
       .then(r => r.json())
       .then(d => {
-        const pool = d.movies || [];
-        // Stable daily shuffle seed so picks feel "today's" not random every open
+        const pool = (d.movies || []).filter(m => !m.isUpcoming);
+        // Stable daily order so picks feel like "today's", not random every open
         const day = new Date().toISOString().slice(0, 10);
         let seed = 0;
         for (let i = 0; i < day.length; i++) seed = (seed * 31 + day.charCodeAt(i)) >>> 0;
-        const ranked = [...pool].sort((a, b) => {
-          const ha = ((a.id * 2654435761) ^ seed) >>> 0;
-          const hb = ((b.id * 2654435761) ^ seed) >>> 0;
-          return ha - hb;
-        });
-        setTonight(ranked.slice(0, 5));
+        const ranked = [...pool].sort((a, b) => (((a.id * 2654435761) ^ seed) >>> 0) - (((b.id * 2654435761) ^ seed) >>> 0));
+        setTonight(ranked.slice(0, 8));
         setLoadingTonight(false);
       })
       .catch(() => setLoadingTonight(false));
   }, [show]);
 
-  const handleSearchSelect = (m) => {
+  useEffect(() => {
+    if (!show) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [show]);
+
+  const pick = (m) => {
     onSearchSelect && onSearchSelect(m);
     setSearchQ(''); setSearchRes([]);
     onClose();
   };
 
-  const MOODS_WITH_DESC = [
-    { label: 'Trending',    icon: 'flame',   desc: "What's hot right now", color: '#F5A623', apiMood: 'Trending' },
-    { label: 'Top Rated',   icon: 'star',    desc: 'Highest rated picks',  color: '#FFD700', apiMood: 'Top Rated' },
-    { label: 'New',         icon: 'sparkle', desc: 'Fresh out this week',  color: '#B07FEF', apiMood: 'New' },
-    { label: 'Hidden Gems', icon: 'gem',     desc: 'Underrated classics',  color: '#FF6BAE', apiMood: 'Hidden Gems' },
-  ];
-
-  const QUICK_FILTERS = [
-    { label: 'Recently Added', apiMood: 'New',         apiGenre: '', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M8 18h.01"/></svg> },
-    { label: 'Coming Soon',    apiMood: 'Upcoming',    apiGenre: '', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg> },
-    { label: 'International',  apiMood: 'International', apiGenre: '', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg> },
-    { label: 'Award Winners',  apiMood: 'Awards',      apiGenre: '', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4"/><path d="M17 4h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4"/><path d="M12 14a5 5 0 0 0 5-5V4H7v5a5 5 0 0 0 5 5z"/></svg> },
+  // One list for "what kind of feed" — moods and quick filters were the same thing in two shapes
+  const FEEDS = [
+    { label: 'Trending',       apiMood: 'Trending',      icon: 'flame',    desc: 'What everyone is watching right now' },
+    { label: 'Top rated',      apiMood: 'Top Rated',     icon: 'star',     desc: 'The highest-rated films and series' },
+    { label: 'New this week',  apiMood: 'New',           icon: 'sparkle',  desc: 'Just released and freshly added' },
+    { label: 'Coming soon',    apiMood: 'Upcoming',      icon: 'calendar', desc: 'Trailers for what’s about to land' },
+    { label: 'Hidden gems',    apiMood: 'Hidden Gems',   icon: 'gem',      desc: 'Loved by few, worth your night' },
+    { label: 'International',  apiMood: 'International', icon: 'globe',   desc: 'Great stories beyond Hollywood' },
+    { label: 'Award winners',  apiMood: 'Awards',        icon: 'trophy',   desc: 'Oscar, Cannes and festival picks' },
   ];
 
   const PLATFORMS = [
-    { name: 'Netflix',   color: '#E50914', bg: '#1a0000', logo: 'N',    id: '8' },
-    { name: 'Prime',     color: '#00A8E0', bg: '#001520', logo: 'P',    id: '9' },
-    { name: 'Disney+',   color: '#0063e5', bg: '#000520', logo: 'D+',   id: '337' },
-    { name: 'Apple TV+', color: '#ffffff', bg: '#1a1a1a', logo: 'tv',   id: '350' },
-    { name: 'Max',       color: '#002BE7', bg: '#000010', logo: 'max',  id: '1899' },
-    { name: 'Hulu',      color: '#1CE783', bg: '#001a0a', logo: 'hulu', id: '15' },
+    { name: 'Netflix',   color: '#E50914' },
+    { name: 'Prime',     color: '#00A8E0' },
+    { name: 'Disney+',   color: '#3D7BFF' },
+    { name: 'Apple TV+', color: '#FFFFFF' },
+    { name: 'Max',       color: '#5B7CFF' },
+    { name: 'Hulu',      color: '#1CE783' },
   ];
 
-  const applyMood = (label) => {
-    onProvider && onProvider('');
-    onMood(label);
-    onClose();
-  };
+  const moodIs = (m) => (activeMood || 'Trending').toLowerCase() === m.apiMood.toLowerCase();
+  const genreLabel = GENRE_OPTIONS.find(g => g.id === activeGenre)?.label;
+  const feedLabel = FEEDS.find(moodIs)?.label;
+  const hasFilters = (activeMood && activeMood !== 'Trending') || activeGenre || activeProvider;
 
-  const handleQuickFilter = (qf) => {
-    const isActive = activeQuickFilter === qf.label;
-    setActiveQuickFilter(isActive ? null : qf.label);
-    if (!isActive) {
-      onProvider && onProvider('');
-      onMood(qf.apiMood);
-      if (qf.apiGenre !== undefined) onGenre(qf.apiGenre);
-      onClose();
-    }
-  };
-
-  const handlePlatform = (p) => {
+  const chooseFeed = (m) => { onMood(m.apiMood); onClose(); };
+  const chooseGenre = (id) => { onGenre(activeGenre === id ? '' : id); onClose(); };
+  const choosePlatform = (p) => {
     const on = activeProvider === p.name;
     if (on) {
       onProvider && onProvider('');
@@ -2511,262 +2502,180 @@ function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, onMood, 
     } else {
       onProvider && onProvider(p.name);
       try { localStorage.setItem('cine_preferred_provider', p.name); } catch {}
-      onMood(activeMood || 'Trending');
     }
     onClose();
   };
-
-  const handlePopular = (m) => {
-    onSearchSelect && onSearchSelect(m);
-    onClose();
+  const clearAll = () => {
+    onMood('Trending'); onGenre(''); onProvider && onProvider('');
+    try { localStorage.removeItem('cine_preferred_provider'); } catch {}
   };
 
   if (!show) return null;
 
+  const H = ({ children, right }) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '30px 0 6px' }}>
+      <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 19, fontWeight: 700, color: '#fff' }}>{children}</span>
+      {right}
+    </div>
+  );
+  const Spinner = () => (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.1)', borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+  const Row = ({ m, i, rank }) => (
+    <div role="button" tabIndex={0} onClick={() => pick(m)} onKeyDown={(e) => e.key === 'Enter' && pick(m)}
+      style={{ display: 'flex', gap: 14, padding: '14px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
+      {rank != null && <div style={{ width: 18, flexShrink: 0, fontFamily: T.serif, fontSize: 20, fontWeight: 700, color: rank === 1 ? accent : 'rgba(255,255,255,0.3)', paddingTop: 1 }}>{rank}</div>}
+      <div style={{ width: 56, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: m.gradient || GRADS[i % GRADS.length] }}>
+        {m.poster && <img src={m.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 16.5, fontWeight: 700, color: '#fff', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 12.5, color: 'rgba(255,255,255,0.5)' }}>
+          <span>{m.year}</span>
+          {m.rating && m.rating !== 'N/A' && <><span>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'rgba(255,255,255,0.85)' }}><SvgIcon name="star" size={10} color="#FFD166" filled />{m.rating}</span></>}
+          {m.isTV && <><span>·</span><span>Series</span></>}
+        </div>
+        {m.overview && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 1.45, margin: '5px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.overview}</p>}
+      </div>
+    </div>
+  );
+
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }} />
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 91, maxHeight: '88dvh', background: T.bg, borderRadius: '24px 24px 0 0', border: `1px solid ${T.hairline}`, borderBottom: 'none', display: 'flex', flexDirection: 'column', animation: 'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)' }}>
-        <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.14)', margin: '12px auto 0', flexShrink: 0 }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px 10px', flexShrink: 0 }}>
-          <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 26, fontWeight: 700, color: T.text }}>Discover</span>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6 }}><SvgIcon name="close" size={16} color={T.text2} /></button>
-        </div>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }} />
+      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 91, height: '92dvh', background: T.bg, borderRadius: '18px 18px 0 0', borderTop: `1px solid ${T.hairline}`, display: 'flex', flexDirection: 'column', animation: 'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)' }}>
+        <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.cs-disc-input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)', margin: '10px auto 0', flexShrink: 0 }} />
 
-        <div style={{ padding: '0 20px 12px', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: T.surface2, border: `1px solid ${T.hairline}`, borderRadius: 16, padding: '12px 14px' }}>
-            <SvgIcon name="search" size={16} color={T.text3} />
+        {/* Header + search */}
+        <div style={{ padding: '12px 20px 0', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 28, fontWeight: 700, color: '#fff' }}>Discover</span>
+            <button onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="close" size={14} color="#fff" /></button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingBottom: 10, borderBottom: `1.5px solid ${focused ? accent : 'rgba(255,255,255,0.14)'}`, transition: 'border-color 0.2s ease' }}>
+            <SvgIcon name="search" size={18} color={focused ? accent : 'rgba(255,255,255,0.5)'} />
             <input
+              className="cs-disc-input"
               value={searchQ}
               onChange={e => setSearchQ(e.target.value)}
-              placeholder="Search movies, shows, or describe a mood..."
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: T.text, fontSize: 14, fontFamily: 'inherit' }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder="Search a title, or describe a mood"
+              enterKeyHint="search"
+              style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 16.5, fontFamily: 'inherit' }}
             />
             {searchQ && (
-              <button onClick={() => setSearchQ('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                <SvgIcon name="close" size={12} color={T.text3} />
+              <button onClick={() => setSearchQ('')} aria-label="Clear search" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                <SvgIcon name="close" size={13} color="rgba(255,255,255,0.6)" />
               </button>
             )}
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '4px 20px 36px', scrollbarWidth: 'none' }}>
+        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 20px calc(36px + env(safe-area-inset-bottom))', scrollbarWidth: 'none', overscrollBehavior: 'contain' }}>
           {!searchQ.trim() ? (
             <>
-              {/* TONIGHT FOR YOU — retention loop */}
-              <div style={{ marginBottom: 26 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Eyebrow color={T.text3}>{dayPart().title} for you</Eyebrow>
-                  <span style={{ fontSize: 11, color: T.text3 }}>
-                    {(() => { try { return localStorage.getItem('cine_preferred_provider') || 'Trending'; } catch { return 'Trending'; } })()}
+              {/* What the feed is showing now */}
+              {hasFilters && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 0', borderBottom: `1px solid ${T.hairline}` }}>
+                  <span style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Your feed: <span style={{ color: '#fff', fontWeight: 700 }}>{[feedLabel && feedLabel !== 'Trending' ? feedLabel : null, genreLabel && activeGenre ? genreLabel : null, activeProvider || null].filter(Boolean).join(' · ')}</span>
                   </span>
+                  <button onClick={clearAll} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: accent, fontFamily: 'inherit', flexShrink: 0 }}>Clear all</button>
                 </div>
-                {loadingTonight ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-                    <div style={{ width: 18, height: 18, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  </div>
-                ) : tonight.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '14px 8px', background: T.surface2, borderRadius: 14, border: `1px solid ${T.hairline}` }}>
-                    <div style={{ fontSize: 13, color: T.text2, fontWeight: 600, marginBottom: 4 }}>No picks yet</div>
-                    <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.45 }}>Choose a platform below — we will build {dayPart().phrase} around what you can actually watch.</div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', paddingBottom: 4 }}>
-                    {tonight.map((m) => (
-                      <button
-                        key={m.id}
-                        onClick={() => handleSearchSelect(m)}
-                        style={{
-                          flexShrink: 0, width: 110, textAlign: 'left', background: T.surface2,
-                          border: `1px solid ${T.hairline}`, borderRadius: 14, padding: 0, overflow: 'hidden',
-                          cursor: 'pointer', fontFamily: 'inherit',
-                        }}
-                      >
-                        <div style={{ width: '100%', aspectRatio: '2/3', background: m.gradient || T.surface, position: 'relative' }}>
-                          {m.poster && <img src={m.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 45%)' }} />
-                          <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', fontFamily: T.serif, letterSpacing: '-0.02em', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
-                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{m.year}{m.rating ? ` · ★${m.rating}` : ''}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+              )}
+
+              {/* Time-of-day picks */}
+              <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>{activeProvider ? `On ${activeProvider}` : 'Trending today'}</span>}>{dayPart().title} for you</H>
+              {loadingTonight ? <Spinner /> : tonight.length === 0 ? (
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, margin: '6px 0 0' }}>Pick a platform below and we’ll fill this with what you can watch {dayPart().phrase}.</p>
+              ) : (
+                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
+                  {tonight.map((m, i) => (
+                    <div key={m.id} role="button" tabIndex={0} onClick={() => pick(m)} onKeyDown={(e) => e.key === 'Enter' && pick(m)} style={{ flexShrink: 0, width: 112, cursor: 'pointer' }}>
+                      <div style={{ width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: m.gradient || GRADS[i % GRADS.length] }}>
+                        {m.poster && <img src={m.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                      </div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginTop: 8, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                        {m.year}{m.rating && m.rating !== 'N/A' && <> · <SvgIcon name="star" size={9} color="#FFD166" filled /><span style={{ color: 'rgba(255,255,255,0.8)' }}>{m.rating}</span></>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Feed type */}
+              <H>Browse by</H>
+              <div>
+                {FEEDS.map((m) => {
+                  const on = moodIs(m);
+                  return (
+                    <div key={m.label} role="button" tabIndex={0} onClick={() => chooseFeed(m)} onKeyDown={(e) => e.key === 'Enter' && chooseFeed(m)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
+                      <SvgIcon name={m.icon} size={19} color={on ? accent : 'rgba(255,255,255,0.55)'} filled={on && (m.icon === 'flame' || m.icon === 'star')} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15.5, fontWeight: on ? 700 : 600, color: on ? accent : '#fff' }}>{m.label}</div>
+                        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{m.desc}</div>
+                      </div>
+                      {on && <SvgIcon name="check" size={17} color={accent} />}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* MOOD */}
-              <div style={{ marginBottom: 24 }}>
-                <Eyebrow color={T.text3} style={{ marginBottom: 12 }}>Mood</Eyebrow>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {MOODS_WITH_DESC.map(m => {
-                    const on = activeMood === m.label || activeMood === m.apiMood;
-                    return (
-                      <button
-                        key={m.label}
-                        onClick={() => applyMood(m.apiMood)}
-                        style={{
-                          textAlign: 'left', background: on ? `${m.color}18` : T.surface2, border: `1px solid ${on ? m.color + '55' : T.hairline}`,
-                          borderRadius: 16, padding: '14px 14px', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 10, background: on ? m.color : T.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <SvgIcon name={m.icon} size={15} color={on ? '#07070F' : m.color} filled={on} />
-                          </div>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: on ? m.color : T.text }}>{m.label}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: T.text3, lineHeight: 1.35 }}>{m.desc}</div>
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Genre */}
+              <H right={activeGenre ? <button onClick={() => chooseGenre('')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: accent, fontFamily: 'inherit' }}>Any genre</button> : null}>Genre</H>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 22px', paddingTop: 6 }}>
+                {GENRE_OPTIONS.filter(g => g.id).map(g => {
+                  const on = activeGenre === g.id;
+                  return (
+                    <button key={g.id} onClick={() => chooseGenre(g.id)}
+                      style={{ background: 'none', border: 'none', borderBottom: `2px solid ${on ? accent : 'transparent'}`, padding: '8px 0 6px', cursor: 'pointer', fontSize: 15, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.65)', fontFamily: 'inherit' }}>
+                      {g.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* GENRE */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Eyebrow color={T.text3}>Genre</Eyebrow>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {GENRE_OPTIONS.map(g => {
-                    const on = activeGenre === g.id;
-                    return (
-                      <button
-                        key={g.id || 'all'}
-                        onClick={() => { onGenre(g.id); onClose(); }}
-                        style={{
-                          background: on ? accent : T.surface2, border: `1px solid ${on ? accent : T.hairline}`, borderRadius: 20,
-                          padding: '8px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 500,
-                          color: on ? '#07070F' : T.text2, fontFamily: 'inherit',
-                        }}
-                      >
-                        {g.label}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Platforms */}
+              <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Only show what you can stream</span>}>Platforms</H>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20 }}>
+                {PLATFORMS.map(p => {
+                  const on = activeProvider === p.name;
+                  return (
+                    <div key={p.name} role="button" tabIndex={0} onClick={() => choosePlatform(p)} onKeyDown={(e) => e.key === 'Enter' && choosePlatform(p)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: on ? `0 0 10px ${p.color}` : 'none' }} />
+                      <span style={{ flex: 1, fontSize: 15, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.75)' }}>{p.name}</span>
+                      {on && <SvgIcon name="check" size={16} color={accent} />}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* QUICK FILTERS */}
-              <div style={{ marginBottom: 24 }}>
-                <Eyebrow color={T.text3} style={{ marginBottom: 12 }}>Quick Filters</Eyebrow>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: T.hairline, borderRadius: 16, overflow: 'hidden' }}>
-                  {QUICK_FILTERS.map(qf => {
-                    const on = activeQuickFilter === qf.label || activeMood === qf.apiMood;
-                    return (
-                      <button
-                        key={qf.label}
-                        onClick={() => handleQuickFilter(qf)}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                          background: on ? `${accent}14` : T.bg, border: 'none', padding: '14px 4px', cursor: 'pointer', fontFamily: 'inherit',
-                        }}
-                      >
-                        <div style={{ color: on ? accent : T.text3 }}>{qf.icon}</div>
-                        <span style={{ fontSize: 9.5, color: on ? accent : T.text3, fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>{qf.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* PLATFORMS */}
-              <div style={{ marginBottom: 28 }}>
-                <Eyebrow color={T.text3} style={{ marginBottom: 13 }}>Platforms</Eyebrow>
-                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', paddingBottom: 4 }}>
-                  {PLATFORMS.map(p => {
-                    const on = activeProvider === p.name;
-                    return (
-                      <button
-                        key={p.name}
-                        onClick={() => handlePlatform(p)}
-                        title={p.name}
-                        style={{
-                          flexShrink: 0, width: 54, height: 54, borderRadius: 14, background: on ? p.bg : T.surface2,
-                          border: `1px solid ${on ? p.color + '66' : T.hairline}`, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: p.logo.length <= 2 ? 17 : 11, fontWeight: 800, color: on ? p.color : T.text2, fontFamily: 'inherit',
-                        }}
-                      >
-                        {p.logo}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* POPULAR SEARCHES — rotates each open */}
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
-                  <Eyebrow color={T.text3}>Popular Searches</Eyebrow>
-                  <button
-                    onClick={() => {
-                      setLoadingPopular(true);
-                      fetch('/api/movies?popular=1')
-                        .then(r => r.json())
-                        .then(d => { setPopular((d.movies || []).slice(0, 4)); setLoadingPopular(false); })
-                        .catch(() => setLoadingPopular(false));
-                    }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: accent, fontWeight: 600, fontFamily: 'inherit', padding: 0 }}
-                  >
-                    Refresh
-                  </button>
-                </div>
-                {loadingPopular ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 28 }}>
-                    <div style={{ width: 20, height: 20, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
-                    {popular.map((p) => (
-                      <button
-                        key={`${p.id}-${p.title}`}
-                        onClick={() => handlePopular(p)}
-                        style={{ position: 'relative', height: 130, borderRadius: 14, overflow: 'hidden', border: `1px solid ${T.hairline}`, cursor: 'pointer', padding: 0, background: T.surface }}
-                      >
-                        <div style={{ position: 'absolute', inset: 0, backgroundImage: p.poster ? `url(${p.poster})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.85 }} />
-                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.1) 50%,transparent 100%)' }} />
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '8px 10px' }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', fontFamily: T.serif, letterSpacing: '-0.02em', lineHeight: 1.2, textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{p.title}</div>
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{p.year}{p.isTV ? ' · TV' : ''}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Popular */}
+              <H right={<button onClick={loadPopular} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Refresh</button>}>Popular right now</H>
+              {loadingPopular ? <Spinner /> : (
+                <div>{popular.map((m, i) => <Row key={`${m.id}-${m.title}`} m={m} i={i} rank={i + 1} />)}</div>
+              )}
             </>
           ) : (
             <div>
-              {searching ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '30px 0' }}>
-                  <div style={{ width: 22, height: 22, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Searching...</span>
+              {searching ? <Spinner /> : searchRes.length === 0 ? (
+                <div style={{ padding: '36px 0', textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Nothing found for “{searchQ}”</div>
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 6, lineHeight: 1.5 }}>Check the spelling, or describe a mood instead, like “something scary” or “feel good”.</div>
                 </div>
-              ) : searchRes.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px 16px', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>No results for "{searchQ}"</div>
               ) : (
                 <>
-                  <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase' }}>{searchRes.length} results for "{searchQ}"</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {searchRes.map((m, i) => (
-                      <button key={m.id} onClick={() => handleSearchSelect(m)} style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '11px 14px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
-                        <div style={{ width: 42, height: 58, borderRadius: 8, flexShrink: 0, overflow: 'hidden', background: m.gradient || GRADS[i % GRADS.length] }}>{m.poster && <img src={m.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: T.serif }}>{m.title}</span>
-                            {m.isTV && <span style={{ fontSize: 9, color: '#7BC8FF', border: '1px solid #7BC8FF44', borderRadius: 3, padding: '1px 4px', fontWeight: 700 }}>TV</span>}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span>{m.year}</span><SvgIcon name="star" size={9} color={m.accent} filled /><span style={{ color: m.accent, fontWeight: 600 }}>{m.rating}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+                  <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.55)', padding: '16px 0 8px' }}>
+                    {searchMood ? <>Showing <span style={{ color: accent, fontWeight: 700 }}>{searchMood}</span> picks for “{searchQ}”</> : <>{searchRes.length} results for “{searchQ}”</>}
                   </div>
+                  <div>{searchRes.map((m, i) => <Row key={m.id} m={m} i={i} />)}</div>
                 </>
               )}
             </div>
