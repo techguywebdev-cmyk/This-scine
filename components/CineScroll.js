@@ -19,9 +19,9 @@ const T = {
   serif:     "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
-// Soft cinematic page backdrop: the current film's accent washes across the whole screen —
-// brightest at the top-left and bottom-right corners, never dropping to plain black in the middle.
-const ambient = (a = '#F5A623') => `radial-gradient(120% 70% at 0% 0%, ${a}2e 0%, transparent 70%), radial-gradient(120% 70% at 100% 100%, ${a}24 0%, transparent 70%), linear-gradient(165deg, ${a}1f 0%, ${a}12 50%, ${a}1c 100%), #06060B`;
+// Soft cinematic page backdrop: the current film's accent washes down the whole screen and
+// melts into rich black at the bottom — one continuous blend, no hard band anywhere.
+const ambient = (a = '#F5A623') => `radial-gradient(110% 55% at 0% 0%, ${a}33 0%, transparent 70%), linear-gradient(180deg, ${a}26 0%, ${a}17 30%, ${a}0b 60%, rgba(0,0,0,0.55) 100%), #050508`;
 
 // Tracked-out uppercase eyebrow label, used above stats/sections instead of bordered headers
 const Eyebrow = ({ children, color = T.text3, style = {} }) => (
@@ -4928,7 +4928,7 @@ function ChatWidget({ peer, onClose, accent }) {
           zIndex: 131,
           height: '92vh',
           maxHeight: 820,
-          background: '#0B0B10',
+          background: ambient(accent),
           borderRadius: '24px 24px 0 0',
           border: `1px solid ${T.hairline}`,
           borderBottom: 'none',
@@ -5072,7 +5072,7 @@ function ChatWidget({ peer, onClose, accent }) {
               position: 'fixed',
               inset: 0,
               zIndex: 200,
-              background: '#06060B',
+              background: ambient(accent),
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -5200,7 +5200,7 @@ function ChatWidget({ peer, onClose, accent }) {
               position: 'fixed',
               inset: 0,
               zIndex: 200,
-              background: callMode === 'audio' ? '#06060B' : '#050508',
+              background: callMode === 'audio' ? ambient(accent) : '#050508',
               animation: 'fadeIn 0.3s ease',
               overflow: 'hidden',
             }}
@@ -5846,7 +5846,7 @@ function ChatWidget({ peer, onClose, accent }) {
           <div
             style={{
               borderTop: '1px solid rgba(255,255,255,0.06)',
-              background: '#0B0B10',
+              background: 'rgba(5,5,8,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
               padding: '10px 12px 12px',
               flexShrink: 0,
               maxHeight: 240,
@@ -5990,7 +5990,7 @@ function ChatWidget({ peer, onClose, accent }) {
               alignItems: 'center',
               gap: 12,
               flexShrink: 0,
-              background: '#0B0B10',
+              background: 'rgba(5,5,8,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
             }}
           >
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF4D4D', animation: 'pulseRec 1s ease infinite' }} />
@@ -6013,7 +6013,7 @@ function ChatWidget({ peer, onClose, accent }) {
               flexDirection: 'column',
               gap: 8,
               flexShrink: 0,
-              background: '#0B0B10',
+              background: 'rgba(5,5,8,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
             }}
           >
             {/* Attachment sheet — WhatsApp-style: Photo, Video, Document, Camera */}
