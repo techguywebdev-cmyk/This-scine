@@ -2955,7 +2955,7 @@ function daysUntil(dateStr){if(!dateStr)return null;const ms=new Date(dateStr+'T
 function formatReleaseCountdown(dateStr){const d=daysUntil(dateStr);if(d===null)return'';if(d<=0)return'Out now';if(d===1)return'Tomorrow';if(d<=30)return`${d} days`;return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function formatReleaseDate(dateStr){if(!dateStr)return'';return new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
 
-export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder,onNotInterested}){
+function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isSaved,isWatched,onMarkWatched,onTrailer,isReminded,onToggleReminder,onNotInterested}){
   const{isSignedIn}=useUser();
   const isUpcoming=!!movie.isUpcoming;
   const reminderBusyRef=useRef(false);
@@ -3047,7 +3047,7 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
             :<div style={{display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:`1px solid ${accent}30`,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="star" size={11} color={accent} filled/><span style={{fontSize:13,fontWeight:800,color:'#fff'}}>{movie.rating}</span><span style={{fontSize:10,color:'rgba(255,255,255,0.25)'}}>/10</span></div>}
         </div>
       </div>
-      <div style={{position:'absolute',bottom:0,left:0,right:68,padding:'0 20px 36px',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
+      <div style={{position:'absolute',bottom:0,left:0,right:74,padding:'0 20px calc(14px + env(safe-area-inset-bottom))',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
         {isUpcoming&&isActive&&<ReleaseCountdown dateStr={movie.releaseDate} accent={accent}/>}
         <div style={{display:'flex',gap:6,marginBottom:9,flexWrap:'wrap',alignItems:'center'}}>
           {(movie.genre||[]).map(g=>(<span key={g} style={{fontSize:9,letterSpacing:2.2,color:accent,fontWeight:700,textTransform:'uppercase',padding:'3px 8px',border:`1px solid ${accent}38`,borderRadius:4}}>{g}</span>))}
@@ -3062,9 +3062,9 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
             ?<div style={{display:'flex',alignItems:'center',gap:5}}><SvgIcon name="calendar" size={11} color="rgba(255,255,255,0.4)"/><span style={{fontSize:12,color:'rgba(255,255,255,0.5)'}}>In theaters {formatReleaseDate(movie.releaseDate)}</span></div>
             :<div style={{display:'flex',alignItems:'center',gap:4}}><SvgIcon name="eye" size={11} color="rgba(255,255,255,0.28)"/><span style={{fontSize:12,color:'rgba(255,255,255,0.35)'}}>{movie.votes} ratings</span></div>}
         </div>
-        <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.65,margin:'0 0 14px',fontWeight:400}}>{movie.overview}</p>
+        <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.6,margin:0,fontWeight:400}}>{movie.overview}</p>
       </div>
-      <div style={{position:'absolute',right:12,bottom:80,zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
+      <div style={{position:'absolute',right:12,bottom:'calc(16px + env(safe-area-inset-bottom))',zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'nope',icon:'notFor',label:'Not for me',active:false,color:'#FF6B8A',filled:false,fn:()=>{if(navigator.vibrate)navigator.vibrate(15);onNotInterested&&onNotInterested(movie);}}].map(btn=>(
           <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
             <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
