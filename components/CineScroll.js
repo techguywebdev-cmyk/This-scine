@@ -2278,7 +2278,6 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
   useEffect(()=>{const prev=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=prev;};},[]);
     const backdrop=source?.backdrop||movie?.backdrop||movie?.poster;
   const play=(m)=>{if(onTrailer){onTrailer(m);}else{onSelect?.(m);onClose();}};
-  const SaveBtn=({m,size=30})=>{const saved=savedIds?.has?.(m.id);return(<button aria-label={saved?'Saved':'Save'} onClick={(e)=>{e.stopPropagation();onSave?.(m);}} style={{width:size,height:size,borderRadius:'50%',background:saved?accent:'rgba(6,6,11,0.66)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:`1px solid ${saved?accent:'rgba(255,255,255,0.14)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,flexShrink:0}}><SvgIcon name="bookmark" size={size*0.47} color={saved?'#06060B':'#fff'} filled={saved}/></button>);};
   return(
     <><div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.72)',backdropFilter:'blur(10px)',animation:'simFade 0.2s ease'}}/>
     <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:60,background:T.bg,borderRadius:'26px 26px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',height:'90dvh',display:'flex',flexDirection:'column',overflow:'hidden',animation:'sheetUp 0.34s cubic-bezier(0.22,1,0.36,1)'}}>
@@ -2299,11 +2298,11 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
             </div>
             {!!source?.keywords?.length&&(
               <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:12}}>
-                {source.keywords.map(k=>(<span key={k} style={{fontSize:11.5,color:'rgba(255,255,255,0.75)',background:'rgba(255,255,255,0.06)',border:`1px solid ${T.hairline}`,borderRadius:999,padding:'4px 10px',textTransform:'capitalize'}}>{k}</span>))}
+                <span style={{fontSize:13,color:'rgba(255,255,255,0.6)',textTransform:'capitalize'}}>{source.keywords.join(' · ')}</span>
               </div>
             )}
             {!loading&&items.length>0&&onScrollAll&&(
-              <button onClick={()=>{onScrollAll(items);onClose();}} style={{marginTop:16,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accent,color:'#06060B',border:'none',borderRadius:14,padding:'13px 16px',fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>
+              <button onClick={()=>{onScrollAll(items);onClose();}} style={{marginTop:16,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accent,color:'#06060B',border:'none',borderRadius:6,padding:'13px 16px',fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>
                 <SvgIcon name="play" size={14} color="#06060B" filled/>Scroll all {items.length} in your feed
               </button>
             )}
@@ -2328,44 +2327,35 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
 
         {!loading&&items.length>0&&(
           <div style={{padding:'4px 16px calc(28px + env(safe-area-inset-bottom))'}}>
-            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',padding:'0 4px 12px'}}>
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',padding:'0 4px 10px'}}>
               <span style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:700,fontSize:19,color:'#fff'}}>Closest first</span>
               <span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>{items.length} {contentLabel==='Series'?'series':'titles'}</span>
             </div>
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <div>
               {items.map((m,i)=>{
-                const lead=i===0;const art=m.backdrop||m.poster;
+                const saved=savedIds?.has?.(m.id);
                 return(
                 <div key={m.id} role="button" tabIndex={0} onClick={()=>play(m)} onKeyDown={(e)=>{if(e.key==='Enter')play(m);}}
-                  style={{position:'relative',borderRadius:18,overflow:'hidden',cursor:'pointer',border:`1px solid ${lead?accent+'66':T.hairline}`,background:T.surface,animation:`simIn 0.32s ease ${Math.min(i,8)*0.035}s both`}}>
-                  {/* the title's own still bleeds in from the right */}
-                  {art&&<img src={art} alt="" loading="lazy" style={{position:'absolute',top:0,right:0,height:'100%',width:'72%',objectFit:'cover',opacity:lead?0.5:0.28}}/>}
-                  <div style={{position:'absolute',inset:0,background:`linear-gradient(90deg,${T.surface} 30%,rgba(15,15,24,0.82) 58%,rgba(15,15,24,0.35) 100%)`}}/>
-                  <div style={{position:'relative',display:'flex',gap:14,padding:12,alignItems:'stretch'}}>
-                    <div style={{position:'relative',width:lead?92:74,aspectRatio:'2/3',borderRadius:11,overflow:'hidden',flexShrink:0,background:m.gradient||GRADS[i%GRADS.length],boxShadow:'0 8px 22px rgba(0,0,0,0.5)'}}>
-                      {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
-                      <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(6,6,11,0.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="play" size={12} color="#fff" filled/></div>
-                      </div>
+                  style={{display:'flex',gap:14,padding:'16px 4px',borderTop:`1px solid ${T.hairline}`,cursor:'pointer',animation:`simIn 0.3s ease ${Math.min(i,8)*0.03}s both`}}>
+                  <div style={{position:'relative',width:76,aspectRatio:'2/3',borderRadius:4,overflow:'hidden',flexShrink:0,background:m.gradient||GRADS[i%GRADS.length]}}>
+                    {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:10}}>
+                      <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:19,lineHeight:1.2,color:'#fff',minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                      <span style={{fontSize:13,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums',flexShrink:0}}>{m.match||80}%</span>
                     </div>
-                    <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column'}}>
-                      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
-                        <span style={{fontSize:12.5,fontWeight:700,color:accent,paddingTop:2}}>{m.matchReason}</span>
-                        <SaveBtn m={m} size={32}/>
-                      </div>
-                      <div style={{fontFamily:T.serif,fontStyle:'italic',fontWeight:800,fontSize:lead?23:19,lineHeight:1.15,color:'#fff',marginTop:2,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.title}</div>
-                      <div style={{display:'flex',alignItems:'center',gap:6,marginTop:5,fontSize:13,color:'rgba(255,255,255,0.62)',whiteSpace:'nowrap',overflow:'hidden'}}>
-                        <span>{m.year}</span>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:3,color:'#fff',fontWeight:700}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{m.rating}</span>
-                        {m.genre?.[0]&&<span style={{overflow:'hidden',textOverflow:'ellipsis'}}>{m.genre.join(', ')}</span>}
-                      </div>
-                      {lead&&m.overview&&<p style={{fontSize:13.5,color:'rgba(255,255,255,0.7)',lineHeight:1.5,margin:'8px 0 0',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.overview}</p>}
-                      {/* match strength: a line that fills to the score */}
-                      <div style={{marginTop:'auto',paddingTop:10,display:'flex',alignItems:'center',gap:10}}>
-                        <div style={{flex:1,height:3,borderRadius:2,background:'rgba(255,255,255,0.1)',overflow:'hidden'}}>
-                          <div style={{width:`${m.match||80}%`,height:'100%',borderRadius:2,background:accent,opacity:0.35+((m.match||80)-60)/60}}/>
-                        </div>
-                        <span style={{fontSize:12.5,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums'}}>{m.match||80}%</span>
+                    <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4,fontSize:12.5,color:'rgba(255,255,255,0.5)',whiteSpace:'nowrap',overflow:'hidden'}}>
+                      <span>{m.year}</span><span>·</span>
+                      <span style={{display:'inline-flex',alignItems:'center',gap:3,color:'rgba(255,255,255,0.85)'}}><SvgIcon name="star" size={10} color="#FFD166" filled/>{m.rating}</span>
+                      {m.genre?.[0]&&<><span>·</span><span style={{overflow:'hidden',textOverflow:'ellipsis'}}>{m.genre.join(', ')}</span></>}
+                    </div>
+                    {m.overview&&<p style={{fontSize:13.5,color:'rgba(255,255,255,0.68)',lineHeight:1.5,margin:'7px 0 0',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.overview}</p>}
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}}>
+                      <span style={{fontSize:12.5,fontWeight:700,color:accent}}>{m.matchReason}</span>
+                      <div style={{display:'flex',alignItems:'center',gap:18}}>
+                        <button aria-label={saved?'Saved':'Save'} onClick={(e)=>{e.stopPropagation();onSave?.(m);}} style={{background:'none',border:'none',padding:4,cursor:'pointer',display:'flex'}}><SvgIcon name="bookmark" size={18} color={saved?accent:'rgba(255,255,255,0.7)'} filled={saved}/></button>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12.5,fontWeight:700,color:'#fff'}}><SvgIcon name="play" size={11} color="#fff" filled/>Trailer</span>
                       </div>
                     </div>
                   </div>
