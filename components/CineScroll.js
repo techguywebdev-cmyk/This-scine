@@ -2299,18 +2299,18 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
             <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.22)',margin:'10px auto 14px'}}/>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}>
               <div style={{minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,color:accent}}>Because you liked</div>
+                <div style={{fontSize:12.5,fontWeight:700,color:accent}}>Because you liked</div>
                 <div style={{fontFamily:T.serif,fontWeight:700,fontSize:26,letterSpacing:'-0.02em',lineHeight:1.08,color:T.text,marginTop:6,textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>{movie?.title}</div>
               </div>
               <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:`1px solid ${T.hairline}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="close" size={14} color="#fff"/></button>
             </div>
             {!!source?.keywords?.length&&(
               <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:12}}>
-                <span style={{fontSize:13,color:'rgba(255,255,255,0.6)',textTransform:'capitalize'}}>{source.keywords.join(' · ')}</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.6)',textTransform:'capitalize'}}>{source.keywords.join(' · ')}</span>
               </div>
             )}
             {!loading&&items.length>0&&onScrollAll&&(
-              <button onClick={()=>{onScrollAll(items);onClose();}} style={{marginTop:16,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accent,color:'#06060B',border:'none',borderRadius:6,padding:'13px 16px',fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'inherit'}}>
+              <button onClick={()=>{onScrollAll(items);onClose();}} style={{marginTop:16,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accent,color:'#06060B',border:'none',borderRadius:6,padding:'13px 16px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
                 <SvgIcon name="play" size={14} color="#06060B" filled/>Scroll all {items.length} in your feed
               </button>
             )}
@@ -2328,8 +2328,8 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
         {!loading&&(err||items.length===0)&&(
           <div style={{textAlign:'center',padding:'40px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
             <SvgIcon name="similar" size={28} color={T.text3}/>
-            <div style={{fontSize:15,color:T.text,fontWeight:700}}>{err?'Couldn’t load matches':`No close matches for this ${contentLabel==='Series'?'series':'film'} yet`}</div>
-            <button onClick={load} style={{marginTop:6,background:'transparent',border:`1px solid ${T.hairlineStrong}`,color:T.text,borderRadius:999,padding:'8px 18px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Try again</button>
+            <div style={{fontSize:13,color:T.text,fontWeight:700}}>{err?'Couldn’t load matches':`No close matches for this ${contentLabel==='Series'?'series':'film'} yet`}</div>
+            <button onClick={load} style={{marginTop:6,background:'transparent',border:`1px solid ${T.hairlineStrong}`,color:T.text,borderRadius:999,padding:'8px 18px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Try again</button>
           </div>
         )}
 
@@ -2337,7 +2337,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
           <div style={{padding:'4px 16px calc(28px + env(safe-area-inset-bottom))'}}>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',padding:'0 4px 10px'}}>
               <span style={{fontWeight:700,fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',color:accent}}>Closest first</span>
-              <span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>{items.length} {contentLabel==='Series'?'series':'titles'}</span>
+              <span style={{fontSize:12,color:T.text2}}>{items.length} {contentLabel==='Series'?'series':'titles'}</span>
             </div>
             <div>
               {items.map((m,i)=>{
@@ -2350,20 +2350,20 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:10}}>
-                      <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:19,lineHeight:1.2,color:'#fff',minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
-                      <span style={{fontSize:13,fontWeight:800,color:accent,fontVariantNumeric:'tabular-nums',flexShrink:0}}>{m.match||80}%</span>
+                      <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700,fontSize:15,lineHeight:1.2,color:'#fff',minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                      <span style={{fontSize:12,fontWeight:700,color:accent,fontVariantNumeric:'tabular-nums',flexShrink:0}}>{m.match||80}%</span>
                     </div>
-                    <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4,fontSize:12.5,color:'rgba(255,255,255,0.5)',whiteSpace:'nowrap',overflow:'hidden'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4,fontSize:11,color:T.text2,whiteSpace:'nowrap',overflow:'hidden'}}>
                       <span>{m.year}</span><span>·</span>
                       <span style={{display:'inline-flex',alignItems:'center',gap:3,color:'rgba(255,255,255,0.85)'}}><SvgIcon name="star" size={10} color="#FFD166" filled/>{m.rating}</span>
                       {m.genre?.[0]&&<><span>·</span><span style={{overflow:'hidden',textOverflow:'ellipsis'}}>{m.genre.join(', ')}</span></>}
                     </div>
-                    {m.overview&&<p style={{fontSize:13.5,color:'rgba(255,255,255,0.68)',lineHeight:1.5,margin:'7px 0 0',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.overview}</p>}
+                    {m.overview&&<p style={{fontSize:12,color:'rgba(255,255,255,0.58)',lineHeight:1.5,margin:'7px 0 0',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{m.overview}</p>}
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}}>
-                      <span style={{fontSize:12.5,fontWeight:700,color:accent}}>{m.matchReason}</span>
+                      <span style={{fontSize:11,fontWeight:700,color:accent}}>{m.matchReason}</span>
                       <div style={{display:'flex',alignItems:'center',gap:18}}>
                         <button aria-label={saved?'Saved':'Save'} onClick={(e)=>{e.stopPropagation();onSave?.(m);}} style={{background:'none',border:'none',padding:4,cursor:'pointer',display:'flex'}}><SvgIcon name="bookmark" size={18} color={saved?accent:'rgba(255,255,255,0.7)'} filled={saved}/></button>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12.5,fontWeight:700,color:'#fff'}}><SvgIcon name="play" size={11} color="#fff" filled/>Trailer</span>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:700,color:'#fff'}}><SvgIcon name="play" size={11} color="#fff" filled/>Trailer</span>
                       </div>
                     </div>
                   </div>
@@ -2535,18 +2535,18 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
   const Row = ({ m, i, rank }) => (
     <div role="button" tabIndex={0} onClick={() => pick(m)} onKeyDown={(e) => e.key === 'Enter' && pick(m)}
       style={{ display: 'flex', gap: 14, padding: '14px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
-      {rank != null && <div style={{ width: 18, flexShrink: 0, fontFamily: T.serif, fontSize: 20, fontWeight: 700, color: rank === 1 ? accent : 'rgba(255,255,255,0.3)', paddingTop: 1 }}>{rank}</div>}
+      {rank != null && <div style={{ width: 18, flexShrink: 0, fontFamily: T.serif, fontSize: 16, fontWeight: 700, color: rank === 1 ? accent : 'rgba(255,255,255,0.3)', paddingTop: 1 }}>{rank}</div>}
       <div style={{ width: 56, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: m.gradient || GRADS[i % GRADS.length] }}>
         {m.poster && <img src={m.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 16.5, fontWeight: 700, color: '#fff', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 12.5, color: 'rgba(255,255,255,0.5)' }}>
+        <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11, color:T.text2 }}>
           <span>{m.year}</span>
           {m.rating && m.rating !== 'N/A' && <><span>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'rgba(255,255,255,0.85)' }}><SvgIcon name="star" size={10} color="#FFD166" filled />{m.rating}</span></>}
           {m.isTV && <><span>·</span><span>Series</span></>}
         </div>
-        {m.overview && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 1.45, margin: '5px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.overview}</p>}
+        {m.overview && <p style={{ fontSize: 12, color:'rgba(255,255,255,0.58)', lineHeight: 1.45, margin: '5px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.overview}</p>}
       </div>
     </div>
   );
@@ -2561,7 +2561,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
         {/* Header + search */}
         <div style={{ position: 'relative', padding: '12px 20px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily:T.serif, fontSize:21,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>Discover</span>
+            <span style={{ fontFamily:T.serif, fontSize:16,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>Discover</span>
             <button onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="close" size={14} color="#fff" /></button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingBottom: 10, borderBottom: `1.5px solid ${focused ? accent : 'rgba(255,255,255,0.14)'}`, transition: 'border-color 0.2s ease' }}>
@@ -2574,7 +2574,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               onBlur={() => setFocused(false)}
               placeholder="Search a title, or describe a mood"
               enterKeyHint="search"
-              style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 16.5, fontFamily: 'inherit' }}
+              style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14, fontFamily: 'inherit' }}
             />
             {searchQ && (
               <button onClick={() => setSearchQ('')} aria-label="Clear search" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
@@ -2590,17 +2590,17 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               {/* What the feed is showing now */}
               {hasFilters && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 0', borderBottom: `1px solid ${T.hairline}` }}>
-                  <span style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     Your feed: <span style={{ color: '#fff', fontWeight: 700 }}>{[feedLabel && feedLabel !== 'Trending' ? feedLabel : null, genreLabel && activeGenre ? genreLabel : null, activeProvider || null].filter(Boolean).join(' · ')}</span>
                   </span>
-                  <button onClick={clearAll} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: accent, fontFamily: 'inherit', flexShrink: 0 }}>Clear all</button>
+                  <button onClick={clearAll} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: accent, fontFamily: 'inherit', flexShrink: 0 }}>Clear all</button>
                 </div>
               )}
 
               {/* Time-of-day picks */}
-              <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>{activeProvider ? `On ${activeProvider}` : 'Trending today'}</span>}>{dayPart().title} for you</H>
+              <H right={<span style={{ fontSize: 12, color:T.text2 }}>{activeProvider ? `On ${activeProvider}` : 'Trending today'}</span>}>{dayPart().title} for you</H>
               {loadingTonight ? <Spinner /> : tonight.length === 0 ? (
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, margin: '6px 0 0' }}>Pick a platform below and we’ll fill this with what you can watch {dayPart().phrase}.</p>
+                <p style={{ fontSize: 12.5, color:T.text2, lineHeight: 1.5, margin: '6px 0 0' }}>Pick a platform below and we’ll fill this with what you can watch {dayPart().phrase}.</p>
               ) : (
                 <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
                   {tonight.map((m, i) => (
@@ -2608,8 +2608,8 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                       <div style={{ width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: m.gradient || GRADS[i % GRADS.length] }}>
                         {m.poster && <img src={m.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                       </div>
-                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginTop: 8, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color:T.text2, marginTop: 2 }}>
                         {m.year}{m.rating && m.rating !== 'N/A' && <> · <SvgIcon name="star" size={9} color="#FFD166" filled /><span style={{ color: 'rgba(255,255,255,0.8)' }}>{m.rating}</span></>}
                       </div>
                     </div>
@@ -2627,8 +2627,8 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                       style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
                       <SvgIcon name={m.icon} size={19} color={on ? accent : 'rgba(255,255,255,0.55)'} filled={on && (m.icon === 'flame' || m.icon === 'star')} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15.5, fontWeight: on ? 700 : 600, color: on ? accent : '#fff' }}>{m.label}</div>
-                        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{m.desc}</div>
+                        <div style={{ fontSize: 13.5, fontWeight: on ? 700 : 600, color: on ? accent : '#fff' }}>{m.label}</div>
+                        <div style={{ fontSize: 11, color:T.text2, marginTop: 2 }}>{m.desc}</div>
                       </div>
                       {on && <SvgIcon name="check" size={17} color={accent} />}
                     </div>
@@ -2637,13 +2637,13 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               </div>
 
               {/* Genre */}
-              <H right={activeGenre ? <button onClick={() => chooseGenre('')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: accent, fontFamily: 'inherit' }}>Any genre</button> : null}>Genre</H>
+              <H right={activeGenre ? <button onClick={() => chooseGenre('')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: accent, fontFamily: 'inherit' }}>Any genre</button> : null}>Genre</H>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 22px', paddingTop: 6 }}>
                 {GENRE_OPTIONS.filter(g => g.id).map(g => {
                   const on = activeGenre === g.id;
                   return (
                     <button key={g.id} onClick={() => chooseGenre(g.id)}
-                      style={{ background: 'none', border: 'none', borderBottom: `2px solid ${on ? accent : 'transparent'}`, padding: '8px 0 6px', cursor: 'pointer', fontSize: 15, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.65)', fontFamily: 'inherit' }}>
+                      style={{ background: 'none', border: 'none', borderBottom: `2px solid ${on ? accent : 'transparent'}`, padding: '8px 0 6px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.65)', fontFamily: 'inherit' }}>
                       {g.label}
                     </button>
                   );
@@ -2651,7 +2651,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               </div>
 
               {/* Platforms */}
-              <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Only show what you can stream</span>}>Platforms</H>
+              <H right={<span style={{ fontSize: 12, color:T.text2 }}>Only show what you can stream</span>}>Platforms</H>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20 }}>
                 {PLATFORMS.map(p => {
                   const on = activeProvider === p.name;
@@ -2659,7 +2659,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                     <div key={p.name} role="button" tabIndex={0} onClick={() => choosePlatform(p)} onKeyDown={(e) => e.key === 'Enter' && choosePlatform(p)}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
                       <span style={{ width: 9, height: 9, borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: on ? `0 0 10px ${p.color}` : 'none' }} />
-                      <span style={{ flex: 1, fontSize: 15, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.75)' }}>{p.name}</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.75)' }}>{p.name}</span>
                       {on && <SvgIcon name="check" size={16} color={accent} />}
                     </div>
                   );
@@ -2669,13 +2669,13 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               {/* Public folders from the community */}
               {folders.length>0&&(
                 <>
-                  <H right={onOpenFolders?<button onClick={()=>{onClose();onOpenFolders();}} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>See all</button>:null}>Popular folders</H>
+                  <H right={onOpenFolders?<button onClick={()=>{onClose();onOpenFolders();}} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>See all</button>:null}>Popular folders</H>
                   <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
                     {folders.map(f => (
                       <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ flexShrink: 0, width: 132, cursor: 'pointer' }}>
                         <div style={{ width: 132, height: 132 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={f.cover_accent || accent} /></div>
-                        <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
+                        <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
                       </div>
                     ))}
                   </div>
@@ -2683,7 +2683,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               )}
 
               {/* Popular */}
-              <H right={<button onClick={loadPopular} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Refresh</button>}>Popular right now</H>
+              <H right={<button onClick={loadPopular} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Refresh</button>}>Popular right now</H>
               {loadingPopular ? <Spinner /> : (
                 <div>{popular.map((m, i) => <Row key={`${m.id}-${m.title}`} m={m} i={i} rank={i + 1} />)}</div>
               )}
@@ -2692,12 +2692,12 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
             <div>
               {searching ? <Spinner /> : searchRes.length === 0 ? (
                 <div style={{ padding: '36px 0', textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Nothing found for “{searchQ}”</div>
-                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 6, lineHeight: 1.5 }}>Check the spelling, or describe a mood instead, like “something scary” or “feel good”.</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff' }}>Nothing found for “{searchQ}”</div>
+                  <div style={{ fontSize: 12.5, color:T.text2, marginTop: 6, lineHeight: 1.5 }}>Check the spelling, or describe a mood instead, like “something scary” or “feel good”.</div>
                 </div>
               ) : (
                 <>
-                  <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.55)', padding: '16px 0 8px' }}>
+                  <div style={{ fontSize: 12, color:T.text2, padding: '16px 0 8px' }}>
                     {searchMood ? <>Showing <span style={{ color: accent, fontWeight: 700 }}>{searchMood}</span> picks for “{searchQ}”</> : <>{searchRes.length} results for “{searchQ}”</>}
                   </div>
                   <div>{searchRes.map((m, i) => <Row key={m.id} m={m} i={i} />)}</div>
@@ -6505,7 +6505,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const friendIds = new Set(friends.map(f => f.user_id));
   const FollowBtn = ({ u: raw }) => { const u = { ...raw, isFollowing: raw.isFollowing ?? friendIds.has(raw.user_id) }; return isSignedIn ? (
     <button onClick={(e) => { e.stopPropagation(); handleFollow(u); }}
-      style={{ background: u.isFollowing ? 'transparent' : accent, border: `1px solid ${u.isFollowing ? 'rgba(255,255,255,0.2)' : accent}`, borderRadius: 6, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: u.isFollowing ? 'rgba(255,255,255,0.75)' : '#06060B', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>
+      style={{ background: u.isFollowing ? 'transparent' : accent, border: `1px solid ${u.isFollowing ? 'rgba(255,255,255,0.2)' : accent}`, borderRadius: 6, padding: '7px 14px', cursor: 'pointer', fontSize: 12, color: u.isFollowing ? 'rgba(255,255,255,0.75)' : '#06060B', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>
       {u.isFollowing ? 'Following' : 'Follow'}
     </button>
   ) : null; };
@@ -6515,10 +6515,10 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
       <Avatar u={u} size={44} ring={activeRecently.has(u.user_id)} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.display_name || u.username || 'User'}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.display_name || u.username || 'User'}</span>
           {u.verified && <SvgIcon name="badgeCheck" size={13} color="#4DA8FF" filled />}
         </div>
-        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta || `@${u.username || 'user'}`}</div>
+        <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta || `@${u.username || 'user'}`}</div>
       </div>
       {right}
     </div>
@@ -6528,7 +6528,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, borderBottom: '1.5px solid rgba(255,255,255,0.14)' }}>
       <SvgIcon name="search" size={17} color="rgba(255,255,255,0.5)" />
       <input autoFocus={autoFocus} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 16, fontFamily: 'inherit' }} />
+        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 13.5, fontFamily: 'inherit' }} />
       {value && <button onClick={() => onChange('')} aria-label="Clear" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}><SvgIcon name="close" size={13} color="rgba(255,255,255,0.6)" /></button>}
     </div>
   );
@@ -6545,8 +6545,8 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
           <Avatar u={who} size={40} />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
-            <button onClick={() => setViewingProfile(first.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{name}</button>
+          <div style={{ fontSize: 12.5, color:'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+            <button onClick={() => setViewingProfile(first.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: '#fff' }}>{name}</button>
             {' '}{VERB[p.type] || 'shared'}{' '}
             {many ? <span style={{ color: '#fff', fontWeight: 600 }}>{p.items.length} titles</span> : <span style={{ color: '#fff', fontWeight: 600 }}>{first.movie_title}</span>}
             <span style={{ color: 'rgba(255,255,255,0.4)' }}>  {timeAgo(first.created_at)}</span>
@@ -6554,7 +6554,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
 
           {/* Review text reads like a post */}
           {first.review_text && (
-            <p style={{ fontSize: 15, color: '#fff', lineHeight: 1.5, margin: '8px 0 0', paddingLeft: 12, borderLeft: `2px solid ${first.movie_accent || accent}` }}>{first.review_text}</p>
+            <p style={{ fontSize: 13, color: '#fff', lineHeight: 1.5, margin: '8px 0 0', paddingLeft: 12, borderLeft: `2px solid ${first.movie_accent || accent}` }}>{first.review_text}</p>
           )}
 
           {many ? (
@@ -6573,8 +6573,8 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                 {first.movie_poster && <img src={first.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
               </div>
               <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 17, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{first.movie_title}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+                <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{first.movie_title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color:T.text2, marginTop: 4 }}>
                   {first.movie_year && <span>{first.movie_year}</span>}
                   {first.movie_rating && <><span>·</span><SvgIcon name="star" size={10} color="#FFD166" filled /><span style={{ color: 'rgba(255,255,255,0.85)' }}>{first.movie_rating}</span></>}
                 </div>
@@ -6586,15 +6586,15 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 12 }}>
             {isTitle(p.type) && !many && (
               <>
-                <button onClick={() => onWatchTrailer(toMovie(first))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                <button onClick={() => onWatchTrailer(toMovie(first))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: '#fff' }}>
                   <SvgIcon name="play" size={12} color="#fff" filled />Trailer
                 </button>
-                <button onClick={() => saveFromFeed(first)} disabled={savedHere.has(first.movie_id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: savedHere.has(first.movie_id) ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)' }}>
+                <button onClick={() => saveFromFeed(first)} disabled={savedHere.has(first.movie_id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: savedHere.has(first.movie_id) ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)' }}>
                   <SvgIcon name="bookmark" size={14} color={savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)'} filled={savedHere.has(first.movie_id)} />{savedHere.has(first.movie_id) ? 'Saved' : 'Save'}
                 </button>
               </>
             )}
-            <button onClick={() => openChat(first)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>
+            <button onClick={() => openChat(first)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>
               <SvgIcon name="chat" size={14} color="rgba(255,255,255,0.75)" />{p.type === 'reviewed' ? 'Reply' : 'Message'}
             </button>
           </div>
@@ -6628,26 +6628,26 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
           <button onClick={onClose} aria-label="Back" style={{ background: 'none', border: 'none', width: 36, height: 36, marginLeft: -8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-          <h1 style={{ flex: 1, fontFamily:T.serif, fontSize:21,letterSpacing:'-0.02em', fontWeight:700, color:T.text, margin: 0 }}>Friends</h1>
+          <h1 style={{ flex: 1, fontFamily:T.serif, fontSize:16,letterSpacing:'-0.02em', fontWeight:700, color:T.text, margin: 0 }}>Friends</h1>
           <button onClick={() => setShowMessages(true)} aria-label="Messages" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <SvgIcon name="chat" size={20} color="#fff" />
-            {stats.pending > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{stats.pending}</span>}
+            {stats.pending > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight:700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{stats.pending}</span>}
           </button>
           <button onClick={() => setShowNotifs(true)} aria-label="Notifications" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <SvgIcon name="bell" size={20} color="#fff" />
-            {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>}
+            {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight:700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>}
           </button>
         </div>
-        <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
-          <button onClick={() => setFollowListType('followers')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, color: 'rgba(255,255,255,0.55)' }}><b style={{ color: '#fff' }}>{stats.followers}</b> followers</button>
+        <div style={{ fontSize: 12, color:T.text2, marginTop: 2 }}>
+          <button onClick={() => setFollowListType('followers')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color:T.text2 }}><b style={{ color: '#fff' }}>{stats.followers}</b> followers</button>
           <span style={{ margin: '0 8px' }}>·</span>
-          <button onClick={() => setFollowListType('following')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, color: 'rgba(255,255,255,0.55)' }}><b style={{ color: '#fff' }}>{stats.following}</b> following</button>
+          <button onClick={() => setFollowListType('following')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color:T.text2 }}><b style={{ color: '#fff' }}>{stats.following}</b> following</button>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 24, marginTop: 16, borderBottom: `1px solid ${T.hairline}` }}>
           {[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']].map(([t, label]) => (
-            <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${tab === t ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 11px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15, fontWeight: tab === t ? 700 : 500, color: tab === t ? accent : 'rgba(255,255,255,0.5)' }}>{label}</button>
+            <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${tab === t ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 11px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: tab === t ? 700 : 500, color: tab === t ? accent : 'rgba(255,255,255,0.5)' }}>{label}</button>
           ))}
         </div>
       </div>
@@ -6655,8 +6655,8 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', padding: '0 20px calc(40px + env(safe-area-inset-bottom))' }}>
         {!isSignedIn ? (
           <div style={{ textAlign: 'center', padding: '56px 12px' }}>
-            <div style={{ fontFamily:T.serif, fontSize:17,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>See what your friends are watching</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 8, lineHeight: 1.5 }}>Sign in to follow people, see their saves and reviews, and message them about a film.</div>
+            <div style={{ fontFamily:T.serif, fontSize:14,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>See what your friends are watching</div>
+            <div style={{ fontSize: 12.5, color:T.text2, marginTop: 8, lineHeight: 1.5 }}>Sign in to follow people, see their saves and reviews, and message them about a film.</div>
           </div>
         ) : (
           <>
@@ -6670,12 +6670,12 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                       {[...friends].sort((a, b) => (activeRecently.has(b.user_id) ? 1 : 0) - (activeRecently.has(a.user_id) ? 1 : 0)).map(f => (
                         <button key={f.user_id} onClick={() => setViewingProfile(f.user_id)} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                           <Avatar u={f} size={58} ring={activeRecently.has(f.user_id)} />
-                          <span style={{ fontSize: 12, color: activeRecently.has(f.user_id) ? '#fff' : 'rgba(255,255,255,0.6)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name || f.username}</span>
+                          <span style={{ fontSize: 11, color: activeRecently.has(f.user_id) ? '#fff' : 'rgba(255,255,255,0.6)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name || f.username}</span>
                         </button>
                       ))}
                       <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 58, height: 58, borderRadius: '50%', border: '1.5px dashed rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="plus" size={20} color="#fff" /></div>
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Add</span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Add</span>
                       </button>
                     </div>
                   )}
@@ -6683,19 +6683,19 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {/* Buzzing in your circle */}
                   {buzzing.length > 0 && activityFilter === 'all' && (
                     <>
-                      <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>This week</span>}>Buzzing in your circle</H>
+                      <H right={<span style={{ fontSize: 12, color:T.text2 }}>This week</span>}>Buzzing in your circle</H>
                       <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -20px', padding: '0 20px' }}>
                         {buzzing.map(({ item, people }) => (
                           <div key={item.movie_id} role="button" tabIndex={0} onClick={() => onWatchTrailer(toMovie(item))} style={{ flexShrink: 0, width: 118, cursor: 'pointer' }}>
                             <div style={{ width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: T.surface }}>
                               {item.movie_poster && <img src={item.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                             </div>
-                            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.movie_title}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.movie_title}</div>
                             <div style={{ display: 'flex', alignItems: 'center', marginTop: 5 }}>
                               {[...people.values()].slice(0, 3).map((pp, k) => (
                                 <div key={pp.user_id} style={{ marginLeft: k ? -7 : 0, border: `2px solid ${T.bg}`, borderRadius: '50%' }}><Avatar u={pp} size={20} /></div>
                               ))}
-                              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginLeft: 6 }}>{people.size} friends</span>
+                              <span style={{ fontSize: 11, color:T.text2, marginLeft: 6 }}>{people.size} friends</span>
                             </div>
                           </div>
                         ))}
@@ -6706,7 +6706,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {/* Filters */}
                   <div style={{ display: 'flex', gap: 20, overflowX: 'auto', scrollbarWidth: 'none', marginTop: 26, borderBottom: `1px solid ${T.hairline}` }}>
                     {FILTERS.map(f => (
-                      <button key={f.id} onClick={() => setActivityFilter(f.id)} style={{ flexShrink: 0, background: 'none', border: 'none', borderBottom: `2px solid ${activityFilter === f.id ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: activityFilter === f.id ? 700 : 500, color: activityFilter === f.id ? accent : 'rgba(255,255,255,0.5)' }}>{f.label}</button>
+                      <button key={f.id} onClick={() => setActivityFilter(f.id)} style={{ flexShrink: 0, background: 'none', border: 'none', borderBottom: `2px solid ${activityFilter === f.id ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: activityFilter === f.id ? 700 : 500, color: activityFilter === f.id ? accent : 'rgba(255,255,255,0.5)' }}>{f.label}</button>
                     ))}
                   </div>
 
@@ -6714,15 +6714,15 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {posts.length === 0 ? (
                     stats.following === 0 || friends.length === 0 ? (
                       <div style={{ paddingTop: 22 }}>
-                        <div style={{ fontFamily:T.serif, fontSize:17,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>Your feed fills up when you follow people</div>
-                        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 6, lineHeight: 1.5 }}>You’ll see what they save, watch and review here. Start with a few film lovers:</div>
+                        <div style={{ fontFamily:T.serif, fontSize:14,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>Your feed fills up when you follow people</div>
+                        <div style={{ fontSize: 12.5, color:T.text2, marginTop: 6, lineHeight: 1.5 }}>You’ll see what they save, watch and review here. Start with a few film lovers:</div>
                         <div style={{ marginTop: 12 }}>
                           {loadingSuggested ? <Spinner /> : suggested.slice(0, 6).map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
                         </div>
-                        <button onClick={() => setTab('find')} style={{ marginTop: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: accent }}>Search for people</button>
+                        <button onClick={() => setTab('find')} style={{ marginTop: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: accent }}>Search for people</button>
                       </div>
                     ) : (
-                      <div style={{ padding: '28px 0', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>
+                      <div style={{ padding: '28px 0', fontSize: 12.5, color:T.text2 }}>
                         {activityFilter === 'all' ? 'Quiet for now. When the people you follow save or review something, it shows up here.' : 'Nothing like this from your friends yet.'}
                       </div>
                     )
@@ -6732,7 +6732,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                       const showDay = label !== lastDay; lastDay = label;
                       return (
                         <div key={p.key}>
-                          {showDay && <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.45)', padding: '18px 0 2px' }}>{label}</div>}
+                          {showDay && <div style={{ fontSize: 12, fontWeight: 700, color:T.text2, padding: '18px 0 2px' }}>{label}</div>}
                           <Post p={p} />
                         </div>
                       );
@@ -6742,7 +6742,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {/* Keep growing the circle */}
                   {posts.length > 0 && suggested.filter(u => !u.isFollowing).length > 0 && (
                     <>
-                      <H right={<button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: accent }}>See all</button>}>People you may know</H>
+                      <H right={<button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: accent }}>See all</button>}>People you may know</H>
                       {suggested.filter(u => !u.isFollowing).slice(0, 3).map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
                     </>
                   )}
@@ -6756,8 +6756,8 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                 {underlineInput(friendsSearchQ, setFriendsSearchQ, 'Search people you follow')}
                 {loadingFriends ? <Spinner /> : filteredFriends.length === 0 ? (
                   <div style={{ padding: '28px 0' }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{friendsSearchQ ? `No one called “${friendsSearchQ}”` : 'You’re not following anyone yet'}</div>
-                    {!friendsSearchQ && <button onClick={() => setTab('find')} style={{ marginTop: 10, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: accent }}>Find people to follow</button>}
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff' }}>{friendsSearchQ ? `No one called “${friendsSearchQ}”` : 'You’re not following anyone yet'}</div>
+                    {!friendsSearchQ && <button onClick={() => setTab('find')} style={{ marginTop: 10, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: accent }}>Find people to follow</button>}
                   </div>
                 ) : (
                   <div style={{ marginTop: 8 }}>
@@ -6766,7 +6766,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                         meta={`${f.watchlistCount || 0} saved${f.topGenres?.length ? ` · into ${f.topGenres.slice(0, 2).join(', ')}` : ''}`}
                         right={
                           <button onClick={(e) => { e.stopPropagation(); setChatPeer({ user_id: f.user_id, username: f.username, avatar_url: f.avatar_url }); }}
-                            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: '#fff', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>Message</button>
+                            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '7px 12px', cursor: 'pointer', fontSize: 12, color: '#fff', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>Message</button>
                         } />
                     ))}
                   </div>
@@ -6780,7 +6780,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                 {underlineInput(searchQ, setSearchQ, 'Search by name or username', true)}
                 {searching ? <Spinner /> : searchQ ? (
                   searchRes.length === 0 ? (
-                    <div style={{ padding: '28px 0', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>No one found for “{searchQ}”. Check the spelling, or try their username.</div>
+                    <div style={{ padding: '28px 0', fontSize: 12.5, color:T.text2 }}>No one found for “{searchQ}”. Check the spelling, or try their username.</div>
                   ) : (
                     <div style={{ marginTop: 8 }}>{searchRes.map(u => <PersonRow key={u.user_id} u={u} right={<FollowBtn u={u} />} />)}</div>
                   )
@@ -6788,15 +6788,15 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   <>
                     <H top={24}>Suggested for you</H>
                     {loadingSuggested ? <Spinner /> : suggested.length === 0 ? (
-                      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', padding: '6px 0' }}>No suggestions right now.</div>
+                      <div style={{ fontSize: 12.5, color:T.text2, padding: '6px 0' }}>No suggestions right now.</div>
                     ) : suggested.map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
 
-                    <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Biggest watchlists</span>}>Top curators</H>
+                    <H right={<span style={{ fontSize: 12, color:T.text2 }}>Biggest watchlists</span>}>Top curators</H>
                     {loadingLeaders ? <Spinner /> : leaders.length === 0 ? (
-                      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', padding: '6px 0' }}>No watchlists yet. Save a few titles and you could be first.</div>
+                      <div style={{ fontSize: 12.5, color:T.text2, padding: '6px 0' }}>No watchlists yet. Save a few titles and you could be first.</div>
                     ) : leaders.map(u => (
                       <div key={u.user_id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 22, fontFamily: T.serif, fontSize: 17, fontWeight: 700, color: u.rank === 1 ? accent : 'rgba(255,255,255,0.35)' }}>{u.rank}</div>
+                        <div style={{ width: 22, fontFamily: T.serif, fontSize: 14, fontWeight: 700, color: u.rank === 1 ? accent : 'rgba(255,255,255,0.35)' }}>{u.rank}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <PersonRow u={u} meta={`${u.watchlistCount} saved · @${u.username}`} right={u.user_id !== user?.id ? <FollowBtn u={u} /> : null} />
                         </div>
@@ -7865,8 +7865,8 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                 <div role="button" tabIndex={0} onClick={togglePrivacy} onKeyDown={e=>e.key==='Enter'&&togglePrivacy()} style={{display:'flex',alignItems:'center',gap:12,padding:'4px 0 18px',cursor:'pointer'}}>
                   <SvgIcon name={list.is_public===false?'lock':'people'} size={18} color={accentColor}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{list.is_public===false?'Private folder':'Public folder'}</div>
-                    <div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:2}}>{list.is_public===false?'Only you can see it. Make it public to let people follow and rate it.':'Anyone can find, follow and rate it.'}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>{list.is_public===false?'Private folder':'Public folder'}</div>
+                    <div style={{fontSize:11,color:T.text2,marginTop:2}}>{list.is_public===false?'Only you can see it. Make it public to let people follow and rate it.':'Anyone can find, follow and rate it.'}</div>
                   </div>
                   <span style={{width:42,height:24,borderRadius:12,background:list.is_public===false?'rgba(255,255,255,0.15)':accentColor,position:'relative',transition:'background 0.2s ease',flexShrink:0,opacity:savingPrivacy?0.6:1}}>
                     <span style={{position:'absolute',top:2,left:list.is_public===false?2:20,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
@@ -8111,14 +8111,14 @@ function AddToListSheet({movie,onClose,accent,isSaved,onEnsureSaved}){
         <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.18)',margin:'10px auto 0',flexShrink:0}}/>
         <div style={{padding:'14px 20px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <div style={{minWidth:0,flex:1}}>
-            <div style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>Add to folder</div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.55)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title||movie?.movie_title}</div>
+            <div style={{fontFamily:T.serif,fontSize:16,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>Add to folder</div>
+            <div style={{fontSize:12,color:T.text2,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title||movie?.movie_title}</div>
           </div>
-          <button onClick={onClose} aria-label="Done" style={{background:'none',border:'none',cursor:'pointer',padding:4,fontFamily:'inherit',fontSize:14,fontWeight:700,color:accent,flexShrink:0}}>Done</button>
+          <button onClick={onClose} aria-label="Done" style={{background:'none',border:'none',cursor:'pointer',padding:4,fontFamily:'inherit',fontSize:12.5,fontWeight:700,color:accent,flexShrink:0}}>Done</button>
         </div>
         <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',padding:'0 20px calc(28px + env(safe-area-inset-bottom))'}}>
           {!isSignedIn?(
-            <div style={{padding:'24px 0',color:'rgba(255,255,255,0.55)',fontSize:14}}>Sign in to organise your watchlist into folders.</div>
+            <div style={{padding:'24px 0',color:T.text2,fontSize:12.5}}>Sign in to organise your watchlist into folders.</div>
           ):loading?(
             <div style={{display:'flex',justifyContent:'center',padding:24}}><div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.1)',borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>
           ):(
@@ -8126,25 +8126,25 @@ function AddToListSheet({movie,onClose,accent,isSaved,onEnsureSaved}){
               {!showCreate?(
                 <div role="button" tabIndex={0} onClick={()=>setShowCreate(true)} onKeyDown={e=>e.key==='Enter'&&setShowCreate(true)} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer'}}>
                   <div style={{width:48,height:48,borderRadius:6,border:`1.5px dashed ${accent}88`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="plus" size={18} color={accent}/></div>
-                  <div style={{fontSize:15,fontWeight:700,color:accent}}>New folder</div>
+                  <div style={{fontSize:13,fontWeight:700,color:accent}}>New folder</div>
                 </div>
               ):(
                 <div style={{padding:'14px 0',borderTop:`1px solid ${T.hairline}`}}>
                   <input autoFocus value={newTitle} onChange={e=>setNewTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')createAndAdd();}} maxLength={60} placeholder="Folder name, e.g. Slow-burn thrillers"
-                    style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',borderBottom:`1.5px solid ${accent}`,padding:'8px 2px',color:'#fff',fontSize:16,fontFamily:'inherit',outline:'none'}}/>
+                    style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',borderBottom:`1.5px solid ${accent}`,padding:'8px 2px',color:'#fff',fontSize:13.5,fontFamily:'inherit',outline:'none'}}/>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:14,gap:12}}>
                     <button type="button" onClick={()=>setNewPublic(p=>!p)} style={{display:'flex',alignItems:'center',gap:10,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit'}}>
                       <span style={{width:38,height:22,borderRadius:11,background:newPublic?accent:'rgba(255,255,255,0.15)',position:'relative',transition:'background 0.2s ease',flexShrink:0}}>
                         <span style={{position:'absolute',top:2,left:newPublic?18:2,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
                       </span>
                       <span style={{textAlign:'left'}}>
-                        <span style={{display:'block',fontSize:14,fontWeight:700,color:'#fff'}}>{newPublic?'Public':'Private'}</span>
-                        <span style={{display:'block',fontSize:12,color:'rgba(255,255,255,0.5)'}}>{newPublic?'Anyone can find and follow it':'Only you can see it'}</span>
+                        <span style={{display:'block',fontSize:12.5,fontWeight:700,color:'#fff'}}>{newPublic?'Public':'Private'}</span>
+                        <span style={{display:'block',fontSize:11,color:T.text2}}>{newPublic?'Anyone can find and follow it':'Only you can see it'}</span>
                       </span>
                     </button>
                     <div style={{display:'flex',gap:14,alignItems:'center',flexShrink:0}}>
-                      <button type="button" onClick={()=>{setShowCreate(false);setNewTitle('');}} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.6)',fontFamily:'inherit'}}>Cancel</button>
-                      <button type="button" onClick={createAndAdd} disabled={creating||!newTitle.trim()} style={{background:accent,border:'none',borderRadius:6,padding:'9px 14px',cursor:creating||!newTitle.trim()?'default':'pointer',fontSize:14,fontWeight:800,color:'#06060B',fontFamily:'inherit',opacity:creating||!newTitle.trim()?0.5:1}}>{creating?'Creating…':'Create'}</button>
+                      <button type="button" onClick={()=>{setShowCreate(false);setNewTitle('');}} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontSize:12.5,fontWeight:600,color:'rgba(255,255,255,0.6)',fontFamily:'inherit'}}>Cancel</button>
+                      <button type="button" onClick={createAndAdd} disabled={creating||!newTitle.trim()} style={{background:accent,border:'none',borderRadius:6,padding:'9px 14px',cursor:creating||!newTitle.trim()?'default':'pointer',fontSize:12.5,fontWeight:700,color:'#06060B',fontFamily:'inherit',opacity:creating||!newTitle.trim()?0.5:1}}>{creating?'Creating…':'Create'}</button>
                     </div>
                   </div>
                 </div>
@@ -8153,8 +8153,8 @@ function AddToListSheet({movie,onClose,accent,isSaved,onEnsureSaved}){
                 <div key={list.id} role="button" tabIndex={0} onClick={()=>toggle(list)} onKeyDown={e=>e.key==='Enter'&&toggle(list)} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer',opacity:busy===list.id?0.6:1}}>
                   <FolderCover posters={list.posters||(list.cover_poster?[list.cover_poster]:[])} accent={accent} size={48} locked={list.is_public===false}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:15,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{list.title}</div>
-                    <div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:2}}>{list.movie_count||0} title{(list.movie_count||0)===1?'':'s'} · {list.is_public===false?'Private':'Public'}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{list.title}</div>
+                    <div style={{fontSize:11,color:T.text2,marginTop:2}}>{list.movie_count||0} title{(list.movie_count||0)===1?'':'s'} · {list.is_public===false?'Private':'Public'}</div>
                   </div>
                   <span style={{width:24,height:24,borderRadius:'50%',border:`1.5px solid ${list.contains?accent:'rgba(255,255,255,0.3)'}`,background:list.contains?accent:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     {list.contains&&<SvgIcon name="check" size={13} color="#06060B"/>}
@@ -8218,7 +8218,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const Tabs=()=>(
     <div style={{display:'flex',gap:24,borderBottom:`1px solid ${T.hairline}`,marginTop:16}}>
       {[['mine','My watchlist'],['following','Following'],['trending','Popular folders']].map(([t,label])=>(
-        <button key={t} onClick={()=>{setTab(t);setView('home');}} style={{background:'none',border:'none',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:15,fontWeight:tab===t?700:500,color:tab===t?accent:'rgba(255,255,255,0.5)',whiteSpace:'nowrap'}}>{label}</button>
+        <button key={t} onClick={()=>{setTab(t);setView('home');}} style={{background:'none',border:'none',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:500,color:tab===t?accent:'rgba(255,255,255,0.5)',whiteSpace:'nowrap'}}>{label}</button>
       ))}
     </div>
   );
@@ -8235,16 +8235,16 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
         {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:m.watched?0.55:1}}/>}
       </div>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16.5,fontWeight:700,color:m.watched?'rgba(255,255,255,0.6)':'#fff',lineHeight:1.25,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
-        <div style={{display:'flex',alignItems:'center',gap:6,marginTop:3,fontSize:12.5,color:'rgba(255,255,255,0.5)'}}>
+        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:14,fontWeight:700,color:m.watched?'rgba(255,255,255,0.6)':'#fff',lineHeight:1.25,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+        <div style={{display:'flex',alignItems:'center',gap:6,marginTop:3,fontSize:11,color:T.text2}}>
           {m.year&&<span>{m.year}</span>}
           {m.rating&&m.rating!=='N/A'&&<><span>·</span><SvgIcon name="star" size={10} color="#FFD166" filled/><span style={{color:'rgba(255,255,255,0.85)'}}>{m.rating}</span></>}
           {m.is_tv&&<><span>·</span><span>Series</span></>}
         </div>
         <div style={{display:'flex',alignItems:'center',gap:18,marginTop:10}}>
-          <button onClick={()=>onWatchTrailer(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#fff'}}><SvgIcon name="play" size={11} color="#fff" filled/>Trailer</button>
-          <button onClick={()=>setFilingMovie(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.75)'}}><SvgIcon name="folder" size={14} color="rgba(255,255,255,0.75)"/>Folder</button>
-          <button onClick={()=>onMarkWatched&&onMarkWatched(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:m.watched?accent:'rgba(255,255,255,0.75)'}}><SvgIcon name="check" size={14} color={m.watched?accent:'rgba(255,255,255,0.75)'}/>{m.watched?'Watched':'Mark watched'}</button>
+          <button onClick={()=>onWatchTrailer(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#fff'}}><SvgIcon name="play" size={11} color="#fff" filled/>Trailer</button>
+          <button onClick={()=>setFilingMovie(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'rgba(255,255,255,0.75)'}}><SvgIcon name="folder" size={14} color="rgba(255,255,255,0.75)"/>Folder</button>
+          <button onClick={()=>onMarkWatched&&onMarkWatched(asMovie(m))} style={{display:'inline-flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:m.watched?accent:'rgba(255,255,255,0.75)'}}><SvgIcon name="check" size={14} color={m.watched?accent:'rgba(255,255,255,0.75)'}/>{m.watched?'Watched':'Mark watched'}</button>
         </div>
       </div>
     </div>
@@ -8257,8 +8257,8 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
       ):(
         <div style={{width:'100%',aspectRatio:'1'}}><FolderCoverFill posters={posters} accent={accent} locked={locked}/></div>
       )}
-      <div style={{fontSize:15,fontWeight:700,color:dashed?accent:'#fff',marginTop:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
-      {sub&&<div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:2}}>{sub}</div>}
+      <div style={{fontSize:13,fontWeight:700,color:dashed?accent:'#fff',marginTop:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+      {sub&&<div style={{fontSize:11,color:T.text2,marginTop:2}}>{sub}</div>}
     </div>
   );
 
@@ -8266,11 +8266,11 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
     <div role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} onKeyDown={e=>e.key==='Enter'&&onOpenList&&onOpenList(l.id)} style={{display:'flex',gap:14,alignItems:'center',padding:'13px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer'}}>
       <FolderCover posters={l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[])} accent={l.cover_accent||accent} size={60}/>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16.5,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
-        <div style={{fontSize:12.5,color:'rgba(255,255,255,0.5)',marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>by {l.display_name||l.username} · {l.movie_count||0} titles{l.follower_count?` · ${l.follower_count} following`:''}</div>
-        {l.description&&<div style={{fontSize:13,color:'rgba(255,255,255,0.62)',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:1,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{l.description}</div>}
+        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:14,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
+        <div style={{fontSize:11,color:T.text2,marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>by {l.display_name||l.username} · {l.movie_count||0} titles{l.follower_count?` · ${l.follower_count} following`:''}</div>
+        {l.description&&<div style={{fontSize:12,color:'rgba(255,255,255,0.58)',marginTop:4,lineHeight:1.4,display:'-webkit-box',WebkitLineClamp:1,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{l.description}</div>}
       </div>
-      {l.avg_rating!=null&&<span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:13,fontWeight:700,color:'#fff',flexShrink:0}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{l.avg_rating}</span>}
+      {l.avg_rating!=null&&<span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:12,fontWeight:700,color:'#fff',flexShrink:0}}><SvgIcon name="star" size={11} color="#FFD166" filled/>{l.avg_rating}</span>}
     </div>
   );
 
@@ -8287,16 +8287,16 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
           <button onClick={view==='all'?()=>setView('home'):onClose} aria-label="Back" style={{background:'none',border:'none',width:36,height:36,marginLeft:-8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-          <h1 style={{flex:1,fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:21,fontWeight:700,color:T.text,margin:0}}>{view==='all'?'All saved':'Watchlist'}</h1>
-          {view==='home'&&onOpenArcs&&<button onClick={onOpenArcs} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:700,color:accent}}>Cine Arcs</button>}
+          <h1 style={{flex:1,fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:T.text,margin:0}}>{view==='all'?'All saved':'Watchlist'}</h1>
+          {view==='home'&&onOpenArcs&&<button onClick={onOpenArcs} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12.5,fontWeight:700,color:accent}}>Cine Arcs</button>}
         </div>
-        <div style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',marginTop:2}}>
+        <div style={{fontSize:12,color:T.text2,marginTop:2}}>
           {view==='all'?`${toWatch.length} to watch · ${watchedList.length} watched`:`${saved.length} saved · ${tab==='mine'?lists.length:'—'} folders`}
         </div>
         {view==='home'?<Tabs/>:(
           <div style={{display:'flex',gap:24,borderBottom:`1px solid ${T.hairline}`,marginTop:16}}>
             {[['towatch',`To watch (${toWatch.length})`],['watched',`Watched (${watchedList.length})`]].map(([t,label])=>(
-              <button key={t} onClick={()=>setAllFilter(t)} style={{background:'none',border:'none',borderBottom:`2px solid ${allFilter===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:15,fontWeight:allFilter===t?700:500,color:allFilter===t?accent:'rgba(255,255,255,0.5)'}}>{label}</button>
+              <button key={t} onClick={()=>setAllFilter(t)} style={{background:'none',border:'none',borderBottom:`2px solid ${allFilter===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:allFilter===t?700:500,color:allFilter===t?accent:'rgba(255,255,255,0.5)'}}>{label}</button>
             ))}
           </div>
         )}
@@ -8305,16 +8305,16 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',padding:'0 20px calc(40px + env(safe-area-inset-bottom))'}}>
         {!isSignedIn?(
           <div style={{padding:'48px 0'}}>
-            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:20,fontWeight:700,color:'#fff'}}>Your watchlist lives here</div>
-            <div style={{fontSize:14,color:'rgba(255,255,255,0.55)',marginTop:6,lineHeight:1.5}}>Sign in to save films and sort them into folders like “Date night” or “Weekend binge”.</div>
+            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:'#fff'}}>Your watchlist lives here</div>
+            <div style={{fontSize:12.5,color:T.text2,marginTop:6,lineHeight:1.5}}>Sign in to save films and sort them into folders like “Date night” or “Weekend binge”.</div>
           </div>
         ):view==='all'?(
           (allFilter==='towatch'?toWatch:watchedList).length===0?(
-            <div style={{padding:'28px 0',fontSize:14,color:'rgba(255,255,255,0.55)'}}>{allFilter==='towatch'?'Nothing waiting. Tap Save on any film in your feed to add it here.':'Films you mark as watched show up here.'}</div>
+            <div style={{padding:'28px 0',fontSize:12.5,color:T.text2}}>{allFilter==='towatch'?'Nothing waiting. Tap Save on any film in your feed to add it here.':'Films you mark as watched show up here.'}</div>
           ):(allFilter==='towatch'?toWatch:watchedList).map(m=><SavedRow key={m.movie_id} m={m}/>)
         ):tab==='mine'?(
           <>
-            <Label right={<span style={{fontSize:13,color:'rgba(255,255,255,0.45)'}}>Private unless you share them</span>}>Folders</Label>
+            <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
             {loading?<Spinner/>:(
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'18px 14px'}}>
                 <FolderTile title="All saved" sub={`${saved.length} title${saved.length===1?'':'s'}`} posters={saved.map(m=>m.poster).filter(Boolean).slice(0,4)} onClick={()=>setView('all')}/>
@@ -8325,18 +8325,18 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
               </div>
             )}
 
-            <Label right={saved.length>6?<button onClick={()=>setView('all')} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:accent}}>See all</button>:null}>Recently saved</Label>
+            <Label right={saved.length>6?<button onClick={()=>setView('all')} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:accent}}>See all</button>:null}>Recently saved</Label>
             {toWatch.length===0?(
-              <div style={{fontSize:14,color:'rgba(255,255,255,0.55)',lineHeight:1.5,padding:'4px 0'}}>Tap Save on any film in your feed. It lands here, and you can file it into a folder.</div>
+              <div style={{fontSize:12.5,color:T.text2,lineHeight:1.5,padding:'4px 0'}}>Tap Save on any film in your feed. It lands here, and you can file it into a folder.</div>
             ):[...toWatch].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).slice(0,6).map(m=><SavedRow key={m.movie_id} m={m}/>)}
           </>
         ):(
           <>
-            <div style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',padding:'16px 0 6px',lineHeight:1.5}}>
+            <div style={{fontSize:12,color:T.text2,padding:'16px 0 6px',lineHeight:1.5}}>
               {tab==='following'?'Public folders you follow. They update when their owners add titles.':'The most-followed and best-rated public folders right now.'}
             </div>
             {loading?<Spinner/>:lists.length===0?(
-              <div style={{padding:'20px 0',fontSize:14,color:'rgba(255,255,255,0.55)'}}>{tab==='following'?'You’re not following any folders yet. Browse Popular folders to find some.':'No public folders yet. Make one of yours public to be the first.'}</div>
+              <div style={{padding:'20px 0',fontSize:12.5,color:T.text2}}>{tab==='following'?'You’re not following any folders yet. Browse Popular folders to find some.':'No public folders yet. Make one of yours public to be the first.'}</div>
             ):lists.map(l=><PublicRow key={l.id} l={l}/>)}
           </>
         )}
@@ -8623,10 +8623,10 @@ export default function CineScroll(){
           <div style={{pointerEvents:'all',display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.82)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'10px 10px 10px 12px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)',animation:'toastIn 0.3s cubic-bezier(0.22,1,0.36,1)'}}>
             <div style={{width:30,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0,background:T.surface}}>{savePrompt.poster&&<img src={savePrompt.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13.5,fontWeight:700,color:'#fff'}}>Saved to your watchlist</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.55)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{savePrompt.title}</div>
+              <div style={{fontSize:12,fontWeight:700,color:'#fff'}}>Saved to your watchlist</div>
+              <div style={{fontSize:11,color:T.text2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{savePrompt.title}</div>
             </div>
-            <button onClick={()=>{clearTimeout(savePromptTimer.current);setFolderMovie(savePrompt);setSavePrompt(null);}} style={{display:'inline-flex',alignItems:'center',gap:6,background:savePrompt.accent||accent,border:'none',borderRadius:8,padding:'9px 12px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:800,color:'#06060B',flexShrink:0}}>
+            <button onClick={()=>{clearTimeout(savePromptTimer.current);setFolderMovie(savePrompt);setSavePrompt(null);}} style={{display:'inline-flex',alignItems:'center',gap:6,background:savePrompt.accent||accent,border:'none',borderRadius:8,padding:'9px 12px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#06060B',flexShrink:0}}>
               <SvgIcon name="folder" size={14} color="#06060B"/>Add to folder
             </button>
           </div>
