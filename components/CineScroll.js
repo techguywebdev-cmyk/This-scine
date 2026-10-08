@@ -19,9 +19,9 @@ const T = {
   serif:     "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
-// Soft cinematic page backdrop: the current film's accent bleeds in from the top-left and settles
-// at the bottom-right, so every page feels lit by what you were just watching.
-const ambient = (a = '#F5A623') => `radial-gradient(170% 80% at 0% 0%, ${a}2b 0%, ${a}14 40%, ${a}06 62%, transparent 82%), radial-gradient(140% 60% at 100% 100%, ${a}1c 0%, ${a}08 45%, transparent 72%), #06060B`;
+// Soft cinematic page backdrop: the current film's accent washes across the whole screen —
+// brightest at the top-left and bottom-right corners, never dropping to plain black in the middle.
+const ambient = (a = '#F5A623') => `radial-gradient(120% 70% at 0% 0%, ${a}2e 0%, transparent 70%), radial-gradient(120% 70% at 100% 100%, ${a}24 0%, transparent 70%), linear-gradient(165deg, ${a}1f 0%, ${a}12 50%, ${a}1c 100%), #06060B`;
 
 // Tracked-out uppercase eyebrow label, used above stats/sections instead of bordered headers
 const Eyebrow = ({ children, color = T.text3, style = {} }) => (
