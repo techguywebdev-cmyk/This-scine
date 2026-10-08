@@ -19,6 +19,10 @@ const T = {
   serif:     "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
+// Soft cinematic page backdrop: the current film's accent bleeds in from the top-left and settles
+// at the bottom-right, so every page feels lit by what you were just watching.
+const ambient = (a = '#F5A623') => `radial-gradient(140% 55% at 0% 0%, ${a}26 0%, ${a}0f 38%, transparent 70%), radial-gradient(120% 45% at 100% 100%, ${a}17 0%, transparent 65%), #06060B`;
+
 // Tracked-out uppercase eyebrow label, used above stats/sections instead of bordered headers
 const Eyebrow = ({ children, color = T.text3, style = {} }) => (
   <div style={{ fontSize: 9.5, letterSpacing: 2.2, color, fontWeight: 700, textTransform: 'uppercase', ...style }}>{children}</div>
@@ -1205,7 +1209,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     {showOwnPreview&&user&&<UserProfileSheet userId={user.id} onClose={()=>setShowOwnPreview(false)} accent={accent} onWatchTrailer={setPlayerMovie}/>}
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.82)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       {toast&&<Toast message={toast} accent={accent}/>}
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',height:'92%',background:T.bg,borderRadius:'28px 28px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.35s cubic-bezier(0.22,1,0.36,1)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',height:'92%',background:ambient(accent),borderRadius:'28px 28px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.35s cubic-bezier(0.22,1,0.36,1)'}}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 18px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
@@ -1308,18 +1312,18 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                     </button>
                   </div>
                 </div>
-                <div style={{position:'relative',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden'}}>
+                <div style={{position:'relative',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
                   {[{label:'Titles',value:saved},{label:'Watched',value:watched},{label:'Reviews',value:reviews}].map(s=>(
-                    <div key={s.label} style={{background:T.bg,padding:'14px 6px',textAlign:'center'}}>
+                    <div key={s.label} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'14px 6px',textAlign:'center'}}>
                       <SerifStat size={21}>{s.value}</SerifStat>
                       <Eyebrow style={{marginTop:4,fontSize:8.5}}>{s.label}</Eyebrow>
                     </div>
                   ))}
                 </div>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,marginBottom:26,background:T.hairline,borderRadius:14,overflow:'hidden'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,marginBottom:26,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
                 {[{label:'Avg Rating',value:avgRating,icon:'star'},{label:'Genres Explored',value:Object.keys(topGenres).length,icon:'gem'}].map(s=>(
-                  <div key={s.label} style={{background:T.bg,padding:'14px'}}>
+                  <div key={s.label} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'14px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:7}}><SvgIcon name={s.icon} size={11} color={T.text3}/><Eyebrow style={{fontSize:8.5}}>{s.label}</Eyebrow></div>
                     <SerifStat size={23}>{s.value}</SerifStat>
                   </div>
@@ -1448,10 +1452,10 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
           )}
           {tab==='watchlist'&&(
             <div>
-              <div style={{margin:'16px 18px 0',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden'}}>
-                <div style={{background:T.bg,padding:'13px 8px',textAlign:'center'}}><SerifStat size={18}>{watchlist.length}</SerifStat><Eyebrow style={{marginTop:3,fontSize:8.5}}>Titles</Eyebrow></div>
-                <div style={{background:T.bg,padding:'13px 8px',textAlign:'center'}}><SerifStat size={18} color={accent}>{avgRating}</SerifStat><Eyebrow style={{marginTop:3,fontSize:8.5}}>Avg Rating</Eyebrow></div>
-                <div style={{background:T.bg,padding:'13px 8px',textAlign:'center'}}><SerifStat size={18} color="#7BC8FF">{watched}</SerifStat><Eyebrow style={{marginTop:3,fontSize:8.5}}>Watched</Eyebrow></div>
+              <div style={{margin:'16px 18px 0',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
+                <div style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'13px 8px',textAlign:'center'}}><SerifStat size={18}>{watchlist.length}</SerifStat><Eyebrow style={{marginTop:3,fontSize:8.5}}>Titles</Eyebrow></div>
+                <div style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'13px 8px',textAlign:'center'}}><SerifStat size={18} color={accent}>{avgRating}</SerifStat><Eyebrow style={{marginTop:3,fontSize:8.5}}>Avg Rating</Eyebrow></div>
+                <div style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'13px 8px',textAlign:'center'}}><SerifStat size={18} color="#7BC8FF">{watched}</SerifStat><Eyebrow style={{marginTop:3,fontSize:8.5}}>Watched</Eyebrow></div>
               </div>
               <div style={{padding:'14px 18px 6px',display:'flex',flexDirection:'column',gap:9}}>
                 <div style={{position:'relative'}}><div style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)'}}><SvgIcon name="search" size={13} color={T.text3}/></div><input value={watchlistSearch} onChange={e=>setWatchlistSearch(e.target.value)} placeholder="Search watchlist..." style={{width:'100%',boxSizing:'border-box',background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:12,padding:'9px 12px 9px 34px',color:T.text,fontSize:13,outline:'none',fontFamily:'inherit'}}/></div>
@@ -1700,7 +1704,7 @@ function FollowListModal({targetUserId,type,accent,onClose,onSelectUser}){
 
   return(
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:160,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(12px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'75%',background:T.bg,borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.3s cubic-bezier(0.22,1,0.36,1)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'75%',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.3s cubic-bezier(0.22,1,0.36,1)'}}>
         <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 18px',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,borderBottom:`1px solid ${T.hairline}`}}>
@@ -1887,7 +1891,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
     {chatPeer&&<ChatWidget peer={chatPeer} onClose={()=>{const back=chatPeer?.fromMessages;setChatPeer(null);if(back)setShowMessages(true);}} accent={accentColor||accent}/>}
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:108,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(10px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       {toast&&<Toast message={toast} accent={accent}/>}
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'90vh',background:T.bg,borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'90vh',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.profile-scroll::-webkit-scrollbar{display:none}`}</style>
 
         {loading?(
@@ -1950,13 +1954,13 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
               </div>
 
               {/* STATS */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,marginBottom:22,background:T.hairline,borderRadius:14,overflow:'hidden'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,marginBottom:22,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
                 {[
                   {label:'Followers',value:profile.followers,icon:'people',action:()=>setFollowListType('followers')},
                   {label:'Following',value:profile.following,icon:'userPlus',action:()=>setFollowListType('following')},
                   {label:'Watchlist',value:profile.watchlistCount,icon:'bookmark',action:()=>setTab('watchlist')},
                 ].map(s=>(
-                  <button key={s.label} onClick={s.action} style={{background:T.bg,border:'none',padding:'13px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',fontFamily:'inherit'}}>
+                  <button key={s.label} onClick={s.action} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,border:'none',padding:'13px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',fontFamily:'inherit'}}>
                     <SvgIcon name={s.icon} size={14} color={T.text3}/>
                     <SerifStat size={18}>{s.value}</SerifStat>
                     <Eyebrow style={{fontSize:8.5}}>{s.label}</Eyebrow>
@@ -2082,9 +2086,9 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                     <div style={{fontSize:11,color:T.text3}}>{profile.isSelf?'Create your first list from the Lists screen':'This user hasn\'t created any lists yet'}</div>
                   </div>
                 ):(
-                  <div style={{display:'flex',flexDirection:'column',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden'}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:1,borderBottom:`1px solid ${T.hairline}`,overflow:'hidden'}}>
                     {userLists.map(list=>(
-                      <button key={list.id} onClick={()=>setViewingList(list.id)} style={{display:'flex',gap:12,alignItems:'center',background:T.bg,border:'none',padding:'13px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
+                      <button key={list.id} onClick={()=>setViewingList(list.id)} style={{display:'flex',gap:12,alignItems:'center',background:'transparent',boxShadow:`0 -1px 0 ${T.hairline}`,border:'none',padding:'13px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
                         <div style={{width:52,height:34,borderRadius:8,overflow:'hidden',flexShrink:0,background:list.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${list.cover_accent||accentColor}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center'}}/>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:2}}>{list.title}</div>
@@ -2281,7 +2285,7 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
   const play=(m)=>{if(onTrailer){onTrailer(m);}else{onSelect?.(m);onClose();}};
   return(
     <><div onClick={onClose} style={{position:'fixed',inset:0,zIndex:55,background:'rgba(0,0,0,0.72)',backdropFilter:'blur(10px)',animation:'simFade 0.2s ease'}}/>
-    <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:60,background:T.bg,borderRadius:'26px 26px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',height:'90dvh',display:'flex',flexDirection:'column',overflow:'hidden',animation:'sheetUp 0.34s cubic-bezier(0.22,1,0.36,1)'}}>
+    <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:60,background:ambient(accent),borderRadius:'26px 26px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',height:'90dvh',display:'flex',flexDirection:'column',overflow:'hidden',animation:'sheetUp 0.34s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes simFade{from{opacity:0}to{opacity:1}}@keyframes simShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}@keyframes simIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',overscrollBehavior:'contain'}}>
         {/* Header */}
@@ -2545,13 +2549,12 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }} />
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 91, height: '92dvh', background: T.bg, borderRadius: '18px 18px 0 0', borderTop: `1px solid ${T.hairline}`, display: 'flex', flexDirection: 'column', animation: 'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)' }}>
+      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 91, height: '92dvh', background:ambient(accent), borderRadius: '18px 18px 0 0', borderTop: `1px solid ${T.hairline}`, display: 'flex', flexDirection: 'column', animation: 'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)' }}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.cs-disc-input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)', margin: '10px auto 0', flexShrink: 0 }} />
 
         {/* Header + search */}
         <div style={{ position: 'relative', padding: '12px 20px 0', flexShrink: 0 }}>
-          <AccentGlow accent={accent} size={170} style={{ left: -40, top: -70 }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily:T.serif, fontSize:21,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>Discover</span>
             <button onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="close" size={14} color="#fff" /></button>
@@ -3280,7 +3283,7 @@ function MessagesInbox({ onClose, accent, onOpenChat, onOpenProfile }) {
           zIndex: 121,
           height: '88vh',
           maxHeight: 780,
-          background: T.bg,
+          background:ambient(accent),
           borderRadius: '24px 24px 0 0',
           border: `1px solid ${T.hairline}`,
           borderBottom: 'none',
@@ -6216,7 +6219,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
   return(
     <>
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:105,background:'rgba(0,0,0,0.65)',backdropFilter:'blur(10px)',animation:'fadeIn 0.2s ease'}}/>
-    <div style={{position:'fixed',top:0,left:0,right:0,zIndex:106,background:T.bg,borderRadius:'0 0 24px 24px',border:`1px solid ${T.hairline}`,borderTop:'none',maxHeight:'70vh',display:'flex',flexDirection:'column',animation:'notifDrop 0.32s cubic-bezier(0.22,1,0.36,1)',paddingTop:'env(safe-area-inset-top,0px)'}}>
+    <div style={{position:'fixed',top:0,left:0,right:0,zIndex:106,background:ambient(accent),borderRadius:'0 0 24px 24px',border:`1px solid ${T.hairline}`,borderTop:'none',maxHeight:'70vh',display:'flex',flexDirection:'column',animation:'notifDrop 0.32s cubic-bezier(0.22,1,0.36,1)',paddingTop:'env(safe-area-inset-top,0px)'}}>
       <style>{`@keyframes notifDrop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{padding:'18px 18px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
         <span style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>Notifications</span>
@@ -6582,7 +6585,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   let lastDay = null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: T.bg, display: 'flex', flexDirection: 'column', animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background:ambient(accent), display: 'flex', flexDirection: 'column', animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}div::-webkit-scrollbar{display:none}input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
       {toast && <Toast message={toast} accent={accent} />}
       {showNotifs && <NotificationsPanel onClose={() => setShowNotifs(false)} accent={accent} notifications={notifications} loading={loadingNotifs} onMarkRead={handleMarkRead} onFollowBack={handleFollowBack} onOpenChat={(p) => setChatPeer(p)} />}
@@ -6600,7 +6603,6 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
 
       {/* Header */}
       <div style={{ position: 'relative', padding: 'max(18px, env(safe-area-inset-top)) 20px 0', flexShrink: 0 }}>
-        <AccentGlow accent={accent} size={170} style={{ left: -40, top: -60 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button onClick={onClose} aria-label="Back" style={{ background: 'none', border: 'none', width: 36, height: 36, marginLeft: -8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -6816,7 +6818,7 @@ function CreateListSheet({onClose,accent,onCreated}){
 
   return(
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:170,background:'rgba(0,0,0,0.82)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:T.bg,borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',padding:'0 20px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',position:'relative',overflow:'hidden'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',padding:'0 20px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',position:'relative',overflow:'hidden'}}>
         <AccentGlow accent={accent} size={180} style={{right:-20,top:-60}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 22px',position:'relative'}}/>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22,position:'relative'}}>
@@ -7780,7 +7782,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:130,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(14px)'}}/>
     <div style={{position:'fixed',inset:0,zIndex:131,overflowY:'auto',WebkitOverflowScrolling:'touch',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-      <div style={{minHeight:'100%',background:T.bg,paddingBottom:48}}>
+      <div style={{minHeight:'100%',background:ambient(accent),paddingBottom:48}}>
         {/* COVER HEADER */}
         <div style={{position:'relative',width:'100%',aspectRatio:'2.2',background:list?.cover_poster?`url(${list.cover_poster})`:`linear-gradient(135deg,${accentColor}30,${T.surface})`,backgroundSize:'cover',backgroundPosition:'center',flexShrink:0}}>
           <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(6,6,11,0.2) 0%,rgba(6,6,11,0.98) 100%)'}}/>
@@ -7815,9 +7817,9 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
               </div>
               <h1 style={{fontFamily:T.serif,fontSize:26,letterSpacing:'-0.02em',fontWeight:700,color:T.text,margin:'0 0 8px',lineHeight:1.15}}>{list.title}</h1>
               {list.description&&<p style={{fontSize:13.5,color:T.text2,lineHeight:1.6,margin:'0 0 14px'}}>{list.description}</p>}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden',marginBottom:18}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden',marginBottom:18}}>
                 {[{label:'Films',value:list.movie_count},{label:'Followers',value:list.follower_count},{label:'Rating',value:list.avg_rating?`${list.avg_rating}/5`:'—'}].map(s=>(
-                  <div key={s.label} style={{background:T.bg,padding:'12px 6px',textAlign:'center'}}>
+                  <div key={s.label} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'12px 6px',textAlign:'center'}}>
                     <SerifStat size={18} color={s.label==='Rating'&&list.avg_rating?accentColor:T.text}>{s.value}</SerifStat>
                     <Eyebrow style={{marginTop:3,fontSize:8.5}}>{s.label}</Eyebrow>
                   </div>
@@ -8042,7 +8044,7 @@ function AddToListSheet({movie,onClose,accent}){
   return(
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.82)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       {toast&&<Toast message={toast} accent={accent}/>}
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'75vh',background:T.bg,borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'75vh',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
         <div style={{padding:'16px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
           <div style={{minWidth:0,flex:1}}>
@@ -8154,7 +8156,7 @@ function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,onOpenLi
   };
 
   return(
-    <div style={{position:'fixed',inset:0,zIndex:120,background:T.bg,display:'flex',flexDirection:'column',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)',visibility:openListId?'hidden':'visible'}}>
+    <div style={{position:'fixed',inset:0,zIndex:120,background:ambient(accent),display:'flex',flexDirection:'column',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)',visibility:openListId?'hidden':'visible'}}>
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
       {toast&&<Toast message={toast} accent={accent}/>}
       {showCreate&&<CreateListSheet onClose={()=>setShowCreate(false)} accent={accent} onCreated={handleCreated}/>}

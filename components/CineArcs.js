@@ -21,6 +21,10 @@ const T = {
   serif: "var(--font-display), 'Inter Tight', system-ui, -apple-system, sans-serif",
 };
 
+// Soft cinematic page backdrop: the current film's accent bleeds in from the top-left and settles
+// at the bottom-right, so every page feels lit by what you were just watching.
+const ambient = (a = '#F5A623') => `radial-gradient(140% 55% at 0% 0%, ${a}26 0%, ${a}0f 38%, transparent 70%), radial-gradient(120% 45% at 100% 100%, ${a}17 0%, transparent 65%), #06060B`;
+
 const PROGRESS_KEY = 'cine_arc_progress';
 const MY_ARC_ID = 'my-watchlist-arc';
 
@@ -758,7 +762,7 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: T.bg, display: 'flex', flexDirection: 'column', animation: 'arcsIn 0.35s cubic-bezier(0.22,1,0.36,1)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: ambient(detail?.theme_meta?.accent || accent), display: 'flex', flexDirection: 'column', animation: 'arcsIn 0.35s cubic-bezier(0.22,1,0.36,1)' }}>
       <style>{`@keyframes arcsIn{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes arcsSpin{to{transform:rotate(360deg)}}@keyframes arcsShimmer{0%{background-position:-300px 0}100%{background-position:300px 0}}@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}`}</style>
 
       {detail ? (
@@ -774,7 +778,6 @@ export default function CineArcs({ onClose, accent = '#F5A623', onWatchTrailer, 
         <div ref={listScrollRef} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
           {/* Header */}
           <div style={{ position: 'relative', padding: 'max(16px, env(safe-area-inset-top)) 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{ position: 'absolute', left: -40, top: -60, width: 170, height: 170, borderRadius: '50%', background: `radial-gradient(circle,${accent}26 0%,transparent 70%)`, pointerEvents: 'none' }} />
             <div>
               <h1 style={{ fontFamily:T.serif, fontWeight:700, fontSize:21,letterSpacing:'-0.02em', lineHeight: 1.05, color:T.text, margin: 0 }}>Cine Arcs</h1>
               <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: '8px 0 0', maxWidth: 420 }}>Watchlists that build. Each one starts easy and gets more intense with every title.</p>
