@@ -1908,9 +1908,12 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
           <div className="profile-scroll" style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
             {/* COVER PHOTO — aspect-ratio matches CoverCropModal's export (2.2:1) so the
                 saved crop displays without being re-cropped again by a mismatched container */}
-            <div style={{position:'relative',width:'100%',aspectRatio:'2.5',flexShrink:0,background:coverImg?'#0a0a14':`linear-gradient(135deg,${accentColor}30,#0a0a14)`,overflow:'hidden'}}>
-              {coverImg&&<img src={coverImg} alt="" decoding="async" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}}/>}
-              <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(8,8,16,0.05) 0%,rgba(8,8,16,0.4) 65%,rgba(8,8,16,0.98) 100%)'}}/>
+            <div style={{position:'relative',zIndex:2,width:'100%',aspectRatio:'2.5',flexShrink:0}}>
+              {/* cover fades into the page wash instead of ending on a hard dark band; the avatar can now sit over the edge without being clipped */}
+              <div style={{position:'absolute',inset:0,overflow:'hidden',borderRadius:'24px 24px 0 0',background:coverImg?'transparent':`linear-gradient(135deg,${accentColor}30,transparent)`,WebkitMaskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)',maskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)'}}>
+                {coverImg&&<img src={coverImg} alt="" decoding="async" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}}/>}
+                <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(8,8,16,0.25) 0%,rgba(8,8,16,0) 40%)'}}/>
+              </div>
               <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.25)',position:'absolute',top:10,left:'50%',transform:'translateX(-50%)'}}/>
               <div style={{position:'absolute',top:14,right:14,display:'flex',gap:8,zIndex:2}}>
                 <button onClick={async()=>{
@@ -1925,7 +1928,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
               </div>
               {/* Avatar anchored to the bottom of the cover via percentage offset, so the overlap
                   stays proportionally consistent across any screen width */}
-              <div style={{position:'absolute',left:'6%',bottom:'-22%',width:'21%',aspectRatio:'1',minWidth:64,maxWidth:84,borderRadius:'50%',background:`${accentColor}25`,border:'3px solid #08080F',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:700,color:accentColor,overflow:'hidden',zIndex:2}}>
+              <div style={{position:'absolute',left:'6%',bottom:'-22%',width:'21%',aspectRatio:'1',minWidth:64,maxWidth:84,borderRadius:'50%',background:`${accentColor}25`,border:'3px solid rgba(6,6,11,0.92)',boxShadow:'0 8px 24px rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:700,color:accentColor,overflow:'hidden',zIndex:3}}>
                 {profile.avatar_url?<img src={profile.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(profile.display_name||profile.username||'U')[0].toUpperCase()}
               </div>
             </div>
