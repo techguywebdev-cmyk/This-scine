@@ -7645,7 +7645,7 @@ function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, accent, o
 }
 
 
-function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistIds,watchedIds}){
+function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistIds,watchedIds,watchlist=[],onFillFromFeed}){
   const{isSignedIn,user}=useUser();
   const[list,setList]=useState(null);
   const[movies,setMovies]=useState([]);
@@ -7664,6 +7664,18 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
   const[replyingTo,setReplyingTo]=useState(null);
   const[activeTab,setActiveTab]=useState('films');
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),3000);};
+  const[showPicker,setShowPicker]=useState(false);const[pickerBusy,setPickerBusy]=useState(null);
+  const addFromWatchlist=async(w)=>{
+    if(pickerBusy)return;setPickerBusy(w.movie_id);
+    const movie={id:w.movie_id,title:w.title,poster:w.poster,year:w.year,rating:w.rating,accent:w.accent,isTV:!!w.is_tv};
+    try{
+      const r=await fetch(`/api/lists/${listId}/movies`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie})});
+      if(!r.ok)throw new Error();
+      setMovies(p=>[...p,{movie_id:w.movie_id,movie_title:w.title,movie_poster:w.poster,movie_year:w.year,movie_rating:w.rating,movie_accent:w.accent,is_tv:!!w.is_tv}]);
+      setList(p=>p?{...p,movie_count:(p.movie_count||0)+1}:p);
+    }catch{showToast('Couldn’t add that one — try again');}
+    setPickerBusy(null);
+  };
   const[savingPrivacy,setSavingPrivacy]=useState(false);
   const togglePrivacy=async()=>{
     if(!list||savingPrivacy)return;
@@ -7813,6 +7825,26 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
   return(
     <>
     {toast&&<Toast message={toast} accent={accentColor}/>}
+    {showPicker&&(
+      <div onClick={()=>setShowPicker(false)} style={{position:'fixed',inset:0,zIndex:240,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(12px)',display:'flex',alignItems:'flex-end'}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'78vh',background:ambient(accentColor),borderRadius:'22px 22px 0 0',borderTop:`1px solid ${T.hairline}`,display:'flex',flexDirection:'column',animation:'sheetUp 0.3s cubic-bezier(0.22,1,0.36,1)'}}>
+          <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.18)',margin:'10px auto 0'}}/>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 20px 10px'}}>
+            <div><div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:18,fontWeight:700,color:T.text}}>Add from your watchlist</div><div style={{fontSize:11,color:T.text2,marginTop:2}}>Into {list?.title}</div></div>
+            <button onClick={()=>setShowPicker(false)} style={{background:'none',border:'none',padding:4,cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:accentColor}}>Done</button>
+          </div>
+          <div style={{flex:1,overflowY:'auto',padding:'0 20px calc(24px + env(safe-area-inset-bottom))'}}>
+            {watchlist.map(w=>{const inIt=movies.some(m=>m.movie_id===w.movie_id);return(
+              <div key={w.movie_id} role="button" tabIndex={0} onClick={()=>!inIt&&addFromWatchlist(w)} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderTop:`1px solid ${T.hairline}`,cursor:inIt?'default':'pointer',opacity:pickerBusy===w.movie_id?0.5:1}}>
+                <div style={{width:40,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:T.surface,flexShrink:0}}>{w.poster&&<img src={w.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
+                <div style={{flex:1,minWidth:0}}><div style={{fontSize:13.5,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.title}</div><div style={{fontSize:11,color:T.text2,marginTop:2}}>{w.year}{w.watched?' · Watched':''}</div></div>
+                <span style={{width:22,height:22,borderRadius:'50%',border:`1.5px solid ${inIt?accentColor:'rgba(255,255,255,0.3)'}`,background:inIt?accentColor:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{inIt?<SvgIcon name="check" size={12} color="#06060B"/>:<SvgIcon name="plus" size={11} color="rgba(255,255,255,0.7)"/>}</span>
+              </div>
+            );})}
+          </div>
+        </div>
+      </div>
+    )}
     {showPlaylist&&movies.length>0&&<ListPlaylistPlayer listId={listId} movies={movies} startIndex={playlistStartIdx} onClose={()=>setShowPlaylist(false)} accent={accentColor} onSave={onSave} watchlistIds={watchlistIds}/>}
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:130,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(14px)'}}/>
     <div style={{position:'fixed',inset:0,zIndex:131,overflowY:'auto',WebkitOverflowScrolling:'touch',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)'}}>
@@ -7907,6 +7939,9 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                   </button>
                 ))}
               </div>
+              {list.is_owner&&movies.length>0&&activeTab==='films'&&(
+                <button onClick={()=>setShowPicker(true)} style={{marginLeft:'auto',marginRight:12,display:'flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#fff'}}><SvgIcon name="plus" size={12} color="#fff"/>Add</button>
+              )}
               {movies.length>0&&activeTab==='films'&&(
                 <button onClick={()=>{setPlaylistStartIdx(0);setShowPlaylist(true);}} style={{display:'flex',alignItems:'center',gap:6,background:accentColor,border:'none',borderRadius:20,padding:'8px 16px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit',flexShrink:0}}>
                   <SvgIcon name="play" size={12} color="#07070F" filled/>Play All
@@ -7919,7 +7954,13 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
                 <div style={{textAlign:'center',padding:'32px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
                   <SvgIcon name="bookmark" size={24} color={T.hairlineStrong}/>
                   <div style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>{list.is_owner?'This folder is empty':'No titles yet'}</div>
-                  <div style={{fontSize:13,color:T.text3}}>{list.is_owner?'Tap Save on any film in your feed, then choose this folder.':'Nothing has been added yet.'}</div>
+                  <div style={{fontSize:13,color:T.text3}}>{list.is_owner?'Fill it from what you’ve already saved, or go find something new.':'Nothing has been added yet.'}</div>
+                  {list.is_owner&&(
+                    <div style={{display:'flex',flexDirection:'column',gap:8,width:'100%',maxWidth:300,marginTop:8}}>
+                      <button onClick={()=>{onClose();onFillFromFeed&&onFillFromFeed(list);}} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:accentColor,border:'none',borderRadius:8,padding:'12px 14px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:800,color:'#06060B'}}><SvgIcon name="play" size={12} color="#06060B" filled/>Find films in the feed</button>
+                      {watchlist.length>0&&<button onClick={()=>setShowPicker(true)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'transparent',border:'1px solid rgba(255,255,255,0.2)',borderRadius:8,padding:'11px 14px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#fff'}}><SvgIcon name="plus" size={13} color="#fff"/>Add from your watchlist</button>}
+                    </div>
+                  )}
                 </div>
               ):(
                 <div style={{display:'flex',flexDirection:'column'}}>
@@ -8017,7 +8058,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
 }
 
 // A real folder made from the film itself: the newest title's poster forms the folder (tab + body),
-// with a frosted glass pocket across the front. Portrait shape, scales to any width.
+// with a clear glass pocket across the front. Portrait shape, scales to any width.
 function FolderArt({poster,accent,locked,count,small=false}){
   const r=small?4:10;
   const img=poster?`url("${poster}")`:null;
@@ -8032,8 +8073,8 @@ function FolderArt({poster,accent,locked,count,small=false}){
       <div style={{position:'absolute',left:0,right:0,top:'8%',bottom:0,borderRadius:r,overflow:'hidden',boxShadow:'0 12px 28px rgba(0,0,0,0.45)',border:'1px solid rgba(255,255,255,0.08)',...fill}}>
         {!img&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',paddingBottom:'30%'}}><SvgIcon name="folder" size={small?14:26} color={accent}/></div>}
       </div>
-      {/* frosted front pocket */}
-      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'46%',borderRadius:r,overflow:'hidden',backdropFilter:'blur(14px) saturate(1.3)',WebkitBackdropFilter:'blur(14px) saturate(1.3)',background:`linear-gradient(180deg,rgba(255,255,255,0.14) 0%,${accent}22 40%,rgba(6,6,11,0.55) 100%)`,boxShadow:'inset 0 1px 0 rgba(255,255,255,0.4), 0 -6px 14px rgba(0,0,0,0.25)',borderTop:`1px solid ${accent}66`}}>
+      {/* clear glass front pocket — the poster runs straight through it */}
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'46%',borderRadius:r,overflow:'hidden',background:'linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 30%,rgba(6,6,11,0.5) 100%)',boxShadow:'inset 0 1px 0 rgba(255,255,255,0.45), 0 -6px 14px rgba(0,0,0,0.22)',borderTop:`1px solid ${accent}77`}}>
         {!small&&count!=null&&<div style={{position:'absolute',left:8,bottom:7,fontSize:10,fontWeight:700,color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,0.5)'}}>{count} title{count===1?'':'s'}</div>}
         {locked&&<div style={{position:'absolute',right:small?3:7,bottom:small?3:6,width:small?14:18,height:small?14:18,borderRadius:'50%',background:'rgba(6,6,11,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?8:11} color="#fff"/></div>}
       </div>
@@ -8423,10 +8464,17 @@ export default function CineScroll(){
     return()=>{cancelled=true;clearInterval(interval);};
   },[isLoaded,isSignedIn]);
 
+  const[targetFolder,setTargetFolder]=useState(null);
   const[savePrompt,setSavePrompt]=useState(null);const[folderMovie,setFolderMovie]=useState(null);const savePromptTimer=useRef(null);
   const handleSave=async(movie)=>{
     const already=watchlistIds.has(movie.id);
-    if(!already){clearTimeout(savePromptTimer.current);setSavePrompt(movie);savePromptTimer.current=setTimeout(()=>setSavePrompt(null),4500);}
+    if(!already){
+      if(targetFolder){
+        // Filling a folder from the feed: every Save also drops the title into that folder
+        fetch(`/api/lists/${targetFolder.id}/movies`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movie:{id:movie.id,title:movie.title,poster:movie.poster,year:movie.year,rating:movie.rating,accent:movie.accent,isTV:!!movie.isTV}})}).catch(()=>{});
+        setTargetFolder(t=>t?{...t,added:(t.added||0)+1}:t);
+      }else{clearTimeout(savePromptTimer.current);setSavePrompt(movie);savePromptTimer.current=setTimeout(()=>setSavePrompt(null),4500);}
+    }
     if(already){setWatchlistIds(p=>{const n=new Set(p);n.delete(movie.id);return n;});setWatchlist(p=>p.filter(m=>m.movie_id!==movie.id));await fetch('/api/watchlist',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie.id})});}
     else{
       setWatchlistIds(p=>new Set([...p,movie.id]));setWatchlist(p=>[{movie_id:movie.id,title:movie.title,year:movie.year,rating:movie.rating,poster:movie.poster,backdrop:movie.backdrop,genre:movie.genre,overview:movie.overview,accent:movie.accent,gradient:movie.gradient,is_tv:movie.isTV||false,watched:false,saved_at:Date.now(),certification:movie.certification||''},...p]);
@@ -8644,8 +8692,20 @@ export default function CineScroll(){
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData} onWatchTrailer={(m)=>{setShowProfile(false);setTrailerMovie(m);}} onDiscover={()=>{setShowProfile(false);setTimeout(()=>setShowFilter(true),50);}}/>}
       {showArcs&&<CineArcs onClose={()=>setShowArcs(false)} accent={accent} onWatchTrailer={setTrailerMovie} watchlist={watchlist} user={user}/>}
       {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList} onOpenArcs={()=>{setShowLists(false);setShowArcs(true);}}/>}
-      {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}
+      {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onFillFromFeed={(l)=>{setTargetFolder({id:l.id,title:l.title});setShowLists(false);setTopLevelList(null);}} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}
       {folderMovie&&<AddToListSheet movie={folderMovie} onClose={()=>setFolderMovie(null)} accent={folderMovie.accent||accent} isSaved={watchlistIds.has(folderMovie.id)} onEnsureSaved={handleSave}/>}
+      {targetFolder&&!showLists&&!topLevelList&&(
+        <div style={{position:'fixed',left:16,right:16,bottom:'calc(16px + env(safe-area-inset-bottom))',zIndex:299,display:'flex',justifyContent:'center',pointerEvents:'none'}}>
+          <div style={{pointerEvents:'all',display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.85)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:`1px solid ${accent}55`,borderRadius:14,padding:'10px 10px 10px 14px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)'}}>
+            <SvgIcon name="folder" size={18} color={accent}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12.5,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Filling “{targetFolder.title}”</div>
+              <div style={{fontSize:11,color:T.text2}}>{targetFolder.added?`${targetFolder.added} added · tap Save to add more`:'Tap Save on any film to add it'}</div>
+            </div>
+            <button onClick={()=>{const id=targetFolder.id;setTargetFolder(null);setTopLevelList(id);}} style={{background:accent,border:'none',borderRadius:8,padding:'9px 14px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:800,color:'#06060B',flexShrink:0}}>Done</button>
+          </div>
+        </div>
+      )}
       {hiddenToast&&(
         <div style={{position:'fixed',left:16,right:16,bottom:'calc(20px + env(safe-area-inset-bottom))',zIndex:301,display:'flex',justifyContent:'center',pointerEvents:'none'}}>
           <div style={{pointerEvents:'all',display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.82)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'12px 12px 12px 14px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)'}}>
