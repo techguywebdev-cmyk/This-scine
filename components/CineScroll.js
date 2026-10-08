@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import CineArcs from './CineArcs';
 
@@ -6272,12 +6272,11 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
 }
 
 // ─── FRIENDS SCREEN ───────────────────────────────────────────────────────────
-function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
+export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
   const { isSignedIn, user } = useUser();
-  const [tab, setTab] = useState('feed'); // feed, friends, discover
+  const [tab, setTab] = useState('feed'); // feed, following, find
   const [feedItems, setFeedItems] = useState([]);
   const [friends, setFriends] = useState([]);
-  const [followers, setFollowers] = useState([]);
   const [suggested, setSuggested] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [loadingLeaders, setLoadingLeaders] = useState(true);
@@ -6289,8 +6288,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [loadingSuggested, setLoadingSuggested] = useState(true);
-  const [activityFilter, setActivityFilter] = useState('all'); // all, saved, watched, reviewed
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [activityFilter, setActivityFilter] = useState('all');
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
@@ -6299,6 +6297,7 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
   const [chatPeer, setChatPeer] = useState(null);
   const [showMessages, setShowMessages] = useState(false);
   const [followListType, setFollowListType] = useState(null);
+  const [savedHere, setSavedHere] = useState(() => new Set());
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -6311,19 +6310,14 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
     fetch('/api/follows?type=following')
       .then(r => r.json()).then(d => { setFriends(d.users || []); setLoadingFriends(false); })
       .catch(() => setLoadingFriends(false));
-    fetch('/api/follows?type=followers')
-      .then(r => r.json()).then(d => { setFollowers(d.users || []); })
-      .catch(() => {});
     fetch('/api/follows?type=stats')
-      .then(r => r.json()).then(d => { setStats(p => ({ ...p, following: d.following || 0, followers: d.followers || 0, pending: d.pending || p.pending || 0 })); })
+      .then(r => r.json()).then(d => { setStats(p => ({ ...p, following: d.following || 0, followers: d.followers || 0 })); })
+      .catch(() => {});
     fetch('/api/messages')
       .then(r => r.json()).then(d => {
         const convs = d.conversations || [];
-        const unread = convs.filter(c => c.unread).length;
-        // Show unread count; if zero unread but have threads, show thread count so the tile isn't empty
-        setStats(p => ({ ...p, pending: unread > 0 ? unread : convs.length }));
-      }).catch(() => {})
-      .catch(() => {});
+        setStats(p => ({ ...p, pending: convs.filter(c => c.unread).length }));
+      }).catch(() => {});
     fetch('/api/follows?type=suggested')
       .then(r => r.json()).then(d => { setSuggested(d.users || []); setLoadingSuggested(false); })
       .catch(() => setLoadingSuggested(false));
@@ -6351,18 +6345,22 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
 
   const handleFollow = async (targetUser) => {
     const isFollowing = targetUser.isFollowing;
-    setSearchRes(p => p.map(u => u.user_id === targetUser.user_id ? { ...u, isFollowing: !isFollowing } : u));
-    setSuggested(p => p.map(u => u.user_id === targetUser.user_id ? { ...u, isFollowing: !isFollowing } : u));
+    const flip = (u) => u.user_id === targetUser.user_id ? { ...u, isFollowing: !isFollowing } : u;
+    setSearchRes(p => p.map(flip));
+    setSuggested(p => p.map(flip));
+    setLeaders(p => p.map(flip));
     if (isFollowing) {
       setFriends(p => p.filter(f => f.user_id !== targetUser.user_id));
       setStats(p => ({ ...p, following: Math.max(0, p.following - 1) }));
-      await fetch('/api/follows', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: targetUser.user_id }) });
+      await fetch('/api/follows', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: targetUser.user_id }) }).catch(() => {});
       showToast('Unfollowed');
     } else {
       setFriends(p => [{ ...targetUser, isFollowing: true }, ...p]);
       setStats(p => ({ ...p, following: p.following + 1 }));
-      await fetch('/api/follows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: targetUser.user_id }) });
+      await fetch('/api/follows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: targetUser.user_id }) }).catch(() => {});
       showToast(`Now following @${targetUser.username}`);
+      // Pull their activity into the feed right away
+      fetch('/api/activity?type=feed').then(r => r.json()).then(d => setFeedItems(d.items || [])).catch(() => {});
     }
   };
 
@@ -6381,472 +6379,410 @@ function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
   const timeAgo = (ts) => {
     const diff = Date.now() - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return days < 7 ? `${days}d` : new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const activityIcon = (type) => {
-    if (type === 'saved') return { icon: 'bookmark', label: 'saved to watchlist', color: '#7BFF9E' };
-    if (type === 'watched') return { icon: 'eye', label: 'marked as watched', color: '#7BC8FF' };
-    if (type === 'reviewed') return { icon: 'chat', label: 'left a review', color: '#B07FEF' };
-    if (type === 'list_follow') return { icon: 'list', label: 'followed a list', color: '#F5A623' };
-    if (type === 'arc_complete') return { icon: 'flame', label: 'finished a Cine Arc', color: '#FF7A2F' };
-    return { icon: 'play', label: 'interacted with', color: accent };
+  const VERB = {
+    saved: 'saved', watched: 'watched', reviewed: 'reviewed',
+    list_follow: 'followed the list', arc_complete: 'finished the arc',
   };
+  const isTitle = (t) => t === 'saved' || t === 'watched' || t === 'reviewed';
 
-  const ACTIVITY_FILTERS = [
-    { id: 'all', label: 'All activity' },
-    { id: 'saved', label: 'Saved' },
+  const FILTERS = [
+    { id: 'all', label: 'Everything' },
+    { id: 'reviewed', label: 'Reviews' },
     { id: 'watched', label: 'Watched' },
-    { id: 'reviewed', label: 'Reviewed' },
+    { id: 'saved', label: 'Saved' },
     { id: 'list_follow', label: 'Lists' },
     { id: 'arc_complete', label: 'Arcs' },
   ];
 
-  const filteredFeed = activityFilter === 'all' ? feedItems : feedItems.filter(i => i.type === activityFilter);
+  // Friends who did something in the last 24h get a ring around their avatar
+  const activeRecently = useMemo(() => {
+    const cut = Date.now() - 86400000;
+    const s = new Set();
+    feedItems.forEach(i => { if (new Date(i.created_at).getTime() > cut) s.add(i.user_id); });
+    return s;
+  }, [feedItems]);
 
-  const filteredFriends = friends.filter(f => !friendsSearchQ.trim() || (f.username || '').toLowerCase().includes(friendsSearchQ.toLowerCase()));
+  // "Buzzing in your circle": titles more than one friend touched this week
+  const buzzing = useMemo(() => {
+    const cut = Date.now() - 7 * 86400000;
+    const map = new Map();
+    feedItems.forEach(i => {
+      if (!isTitle(i.type) || !i.movie_id || new Date(i.created_at).getTime() < cut) return;
+      const cur = map.get(i.movie_id) || { item: i, people: new Map() };
+      if (!cur.people.has(i.user_id)) cur.people.set(i.user_id, i);
+      map.set(i.movie_id, cur);
+    });
+    return [...map.values()].filter(x => x.people.size >= 2).sort((a, b) => b.people.size - a.people.size).slice(0, 10);
+  }, [feedItems]);
+
+  // Collapse bursts (same person, same action, within 3h) into one post with a poster strip
+  const posts = useMemo(() => {
+    const list = activityFilter === 'all' ? feedItems : feedItems.filter(i => i.type === activityFilter);
+    const out = [];
+    list.forEach(i => {
+      const last = out[out.length - 1];
+      if (last && last.user_id === i.user_id && last.type === i.type && i.type !== 'reviewed' && isTitle(i.type)
+        && Math.abs(new Date(last.items[0].created_at) - new Date(i.created_at)) < 3 * 3600000) {
+        last.items.push(i);
+      } else {
+        out.push({ key: i.id || `${i.user_id}-${i.created_at}`, user_id: i.user_id, type: i.type, items: [i] });
+      }
+    });
+    return out;
+  }, [feedItems, activityFilter]);
+
+  const dayLabel = (ts) => {
+    const d = new Date(ts); const today = new Date();
+    const diff = Math.floor((new Date(today.toDateString()) - new Date(d.toDateString())) / 86400000);
+    if (diff <= 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7) return 'This week';
+    return 'Earlier';
+  };
+
+  const toMovie = (it) => ({ id: it.movie_id, title: it.movie_title, poster: it.movie_poster, year: it.movie_year, rating: it.movie_rating, accent: it.movie_accent || accent, mediaType: 'movie' });
+  const saveFromFeed = (it) => {
+    onAddToWatchlist && onAddToWatchlist(toMovie(it));
+    setSavedHere(p => new Set([...p, it.movie_id]));
+    showToast(`Saved ${it.movie_title}`);
+  };
+  const openChat = (it) => setChatPeer({ user_id: it.user_id, username: it.username, avatar_url: it.avatar_url });
+
+  const filteredFriends = friends.filter(f => !friendsSearchQ.trim() || `${f.username || ''} ${f.display_name || ''}`.toLowerCase().includes(friendsSearchQ.toLowerCase()));
+
+  /* ── small building blocks ── */
+  const Avatar = ({ u, size = 40, ring = false }) => (
+    <div style={{ width: size, height: size, borderRadius: '50%', padding: ring ? 2 : 0, background: ring ? accent : 'transparent', flexShrink: 0, boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', height: '100%', boxSizing: 'border-box', borderRadius: '50%', overflow: 'hidden', background: T.surface, border: ring ? `2px solid ${T.bg}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.38, fontWeight: 700, color: '#fff' }}>
+        {u?.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u?.display_name || u?.username || 'U')[0].toUpperCase()}
+      </div>
+    </div>
+  );
+  const Spinner = () => (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+      <div style={{ width: 22, height: 22, border: '2px solid rgba(255,255,255,0.1)', borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+  const H = ({ children, right, top = 28 }) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: `${top}px 0 8px` }}>
+      <span style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 19, fontWeight: 700, color: '#fff' }}>{children}</span>
+      {right}
+    </div>
+  );
+  const friendIds = new Set(friends.map(f => f.user_id));
+  const FollowBtn = ({ u: raw }) => { const u = { ...raw, isFollowing: raw.isFollowing ?? friendIds.has(raw.user_id) }; return isSignedIn ? (
+    <button onClick={(e) => { e.stopPropagation(); handleFollow(u); }}
+      style={{ background: u.isFollowing ? 'transparent' : accent, border: `1px solid ${u.isFollowing ? 'rgba(255,255,255,0.2)' : accent}`, borderRadius: 6, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: u.isFollowing ? 'rgba(255,255,255,0.75)' : '#06060B', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>
+      {u.isFollowing ? 'Following' : 'Follow'}
+    </button>
+  ) : null; };
+  const PersonRow = ({ u, meta, right }) => (
+    <div role="button" tabIndex={0} onClick={() => setViewingProfile(u.user_id)} onKeyDown={(e) => e.key === 'Enter' && setViewingProfile(u.user_id)}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
+      <Avatar u={u} size={44} ring={activeRecently.has(u.user_id)} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.display_name || u.username || 'User'}</span>
+          {u.verified && <SvgIcon name="badgeCheck" size={13} color="#4DA8FF" filled />}
+        </div>
+        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta || `@${u.username || 'user'}`}</div>
+      </div>
+      {right}
+    </div>
+  );
+  // plain function (not a component) so the input keeps focus while typing
+  const underlineInput = (value, onChange, placeholder, autoFocus) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, borderBottom: '1.5px solid rgba(255,255,255,0.14)' }}>
+      <SvgIcon name="search" size={17} color="rgba(255,255,255,0.5)" />
+      <input autoFocus={autoFocus} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 16, fontFamily: 'inherit' }} />
+      {value && <button onClick={() => onChange('')} aria-label="Clear" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}><SvgIcon name="close" size={13} color="rgba(255,255,255,0.6)" /></button>}
+    </div>
+  );
+
+  /* ── one post in the feed ── */
+  const Post = ({ p }) => {
+    const first = p.items[0];
+    const many = p.items.length > 1;
+    const who = { user_id: first.user_id, username: first.username, avatar_url: first.avatar_url, display_name: first.display_name };
+    const name = first.display_name || first.username || 'Someone';
+    return (
+      <div style={{ display: 'flex', gap: 12, padding: '16px 0', borderTop: `1px solid ${T.hairline}` }}>
+        <button onClick={() => setViewingProfile(first.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', alignSelf: 'flex-start' }} aria-label={`Open ${name}'s profile`}>
+          <Avatar u={who} size={40} />
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
+            <button onClick={() => setViewingProfile(first.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{name}</button>
+            {' '}{VERB[p.type] || 'shared'}{' '}
+            {many ? <span style={{ color: '#fff', fontWeight: 600 }}>{p.items.length} titles</span> : <span style={{ color: '#fff', fontWeight: 600 }}>{first.movie_title}</span>}
+            <span style={{ color: 'rgba(255,255,255,0.4)' }}>  {timeAgo(first.created_at)}</span>
+          </div>
+
+          {/* Review text reads like a post */}
+          {first.review_text && (
+            <p style={{ fontSize: 15, color: '#fff', lineHeight: 1.5, margin: '8px 0 0', paddingLeft: 12, borderLeft: `2px solid ${first.movie_accent || accent}` }}>{first.review_text}</p>
+          )}
+
+          {many ? (
+            <div style={{ display: 'flex', gap: 6, marginTop: 10, overflowX: 'auto', scrollbarWidth: 'none' }}>
+              {p.items.slice(0, 8).map(it => (
+                <button key={it.id || it.movie_id} onClick={() => onWatchTrailer(toMovie(it))} aria-label={`Trailer for ${it.movie_title}`}
+                  style={{ flexShrink: 0, width: 72, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: T.surface, border: 'none', padding: 0, cursor: 'pointer' }}>
+                  {it.movie_poster && <img src={it.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                </button>
+              ))}
+            </div>
+          ) : first.movie_title && (
+            <div role="button" tabIndex={0} onClick={() => isTitle(p.type) && onWatchTrailer({ ...toMovie(first), ...(p.type === 'reviewed' && first.review_id ? { initialTab: 'comments', highlightCommentId: first.review_id } : {}) })}
+              style={{ display: 'flex', gap: 12, marginTop: 10, cursor: isTitle(p.type) ? 'pointer' : 'default' }}>
+              <div style={{ width: 64, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: T.surface }}>
+                {first.movie_poster && <img src={first.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 17, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{first.movie_title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+                  {first.movie_year && <span>{first.movie_year}</span>}
+                  {first.movie_rating && <><span>·</span><SvgIcon name="star" size={10} color="#FFD166" filled /><span style={{ color: 'rgba(255,255,255,0.85)' }}>{first.movie_rating}</span></>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Actions: everything here does something real */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 12 }}>
+            {isTitle(p.type) && !many && (
+              <>
+                <button onClick={() => onWatchTrailer(toMovie(first))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                  <SvgIcon name="play" size={12} color="#fff" filled />Trailer
+                </button>
+                <button onClick={() => saveFromFeed(first)} disabled={savedHere.has(first.movie_id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: savedHere.has(first.movie_id) ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)' }}>
+                  <SvgIcon name="bookmark" size={14} color={savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)'} filled={savedHere.has(first.movie_id)} />{savedHere.has(first.movie_id) ? 'Saved' : 'Save'}
+                </button>
+              </>
+            )}
+            <button onClick={() => openChat(first)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>
+              <SvgIcon name="chat" size={14} color="rgba(255,255,255,0.75)" />{p.type === 'reviewed' ? 'Reply' : 'Message'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  let lastDay = null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: T.bg, display: 'flex', flexDirection: 'column', animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
-      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes menuIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}div::-webkit-scrollbar{display:none}`}</style>
+      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}div::-webkit-scrollbar{display:none}input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
       {toast && <Toast message={toast} accent={accent} />}
-      {showNotifs && <NotificationsPanel onClose={() => setShowNotifs(false)} accent={accent} notifications={notifications} loading={loadingNotifs} onMarkRead={handleMarkRead} onFollowBack={handleFollowBack} onOpenChat={(p)=>setChatPeer(p)} />}
+      {showNotifs && <NotificationsPanel onClose={() => setShowNotifs(false)} accent={accent} notifications={notifications} loading={loadingNotifs} onMarkRead={handleMarkRead} onFollowBack={handleFollowBack} onOpenChat={(p) => setChatPeer(p)} />}
       {chatPeer && <ChatWidget peer={chatPeer} onClose={() => { const back = chatPeer?.fromMessages; setChatPeer(null); if (back) setShowMessages(true); }} accent={accent} />}
       {showMessages && (
-        <MessagesInbox
-          onClose={() => setShowMessages(false)}
-          accent={accent}
+        <MessagesInbox onClose={() => setShowMessages(false)} accent={accent}
           onOpenChat={(p) => { setShowMessages(false); setChatPeer({ ...p, fromMessages: true }); }}
-          onOpenProfile={(id) => { setShowMessages(false); setViewingProfile(id); }}
-        />
+          onOpenProfile={(id) => { setShowMessages(false); setViewingProfile(id); }} />
       )}
       {followListType && (
-        <FollowListModal
-          targetUserId={user?.id}
-          type={followListType}
-          onClose={() => setFollowListType(null)}
-          accent={accent}
-          onSelectUser={(id) => { setFollowListType(null); setViewingProfile(id); }}
-        />
+        <FollowListModal targetUserId={user?.id} type={followListType} onClose={() => setFollowListType(null)} accent={accent}
+          onSelectUser={(id) => { setFollowListType(null); setViewingProfile(id); }} />
       )}
       {viewingProfile && <UserProfileSheet userId={viewingProfile} onClose={() => setViewingProfile(null)} accent={accent} onWatchTrailer={onWatchTrailer} onAddToWatchlist={onAddToWatchlist} />}
 
       {/* Header */}
-      <div style={{ padding: '52px 18px 0', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-        <button onClick={onClose} style={{ background: 'transparent', border: 'none', width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: -6 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
-        </button>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 22, fontWeight: 700, color: T.text, margin: 0 }}>Friends</h1>
-          <p style={{ fontSize: 11.5, color: T.text3, margin: '2px 0 0' }}>{stats.following} following · {stats.followers} followers</p>
-        </div>
-        <button onClick={() => setTab('discover')} style={{ background: 'transparent', border: 'none', width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <SvgIcon name="userPlus" size={16} color={T.text2} />
-        </button>
-                <button onClick={() => setShowMessages(true)} style={{ position: 'relative', background: 'transparent', border: 'none', width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} title="Messages">
-          <SvgIcon name="chat" size={16} color={T.text2} />
-          {stats.pending > 0 && <div style={{ position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: '50%', background: accent, border: `1.5px solid ${T.bg}` }} />}
-        </button>
-<button onClick={() => setShowNotifs(true)} style={{ position: 'relative', background: 'transparent', border: 'none', width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <SvgIcon name="bell" size={16} color={T.text2} />
-          {unreadCount > 0 && <div style={{ position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: '50%', background: accent, border: `2px solid ${T.bg}` }} />}
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 24, padding: '18px 18px 0', borderBottom: `1px solid ${T.hairline}`, flexShrink: 0 }}>
-        {[['feed', 'flame', 'Feed'], ['friends', 'people', 'Friends'], ['discover', 'search', 'Discover']].map(([t, icon, label]) => (
-          <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 14px', fontFamily: 'inherit', fontSize: 13, fontWeight: tab === t ? 700 : 500, color: tab === t ? accent : T.text3, borderBottom: `2px solid ${tab === t ? accent : 'transparent'}`, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <SvgIcon name={icon} size={13} color={tab === t ? accent : T.text3} filled={t === 'feed' && tab === t} />
-            {label}
+      <div style={{ padding: 'max(18px, env(safe-area-inset-top)) 20px 0', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={onClose} aria-label="Back" style={{ background: 'none', border: 'none', width: 36, height: 36, marginLeft: -8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-        ))}
+          <h1 style={{ flex: 1, fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 28, fontWeight: 700, color: '#fff', margin: 0 }}>Friends</h1>
+          <button onClick={() => setShowMessages(true)} aria-label="Messages" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <SvgIcon name="chat" size={20} color="#fff" />
+            {stats.pending > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{stats.pending}</span>}
+          </button>
+          <button onClick={() => setShowNotifs(true)} aria-label="Notifications" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <SvgIcon name="bell" size={20} color="#fff" />
+            {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>}
+          </button>
+        </div>
+        <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
+          <button onClick={() => setFollowListType('followers')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, color: 'rgba(255,255,255,0.55)' }}><b style={{ color: '#fff' }}>{stats.followers}</b> followers</button>
+          <span style={{ margin: '0 8px' }}>·</span>
+          <button onClick={() => setFollowListType('following')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, color: 'rgba(255,255,255,0.55)' }}><b style={{ color: '#fff' }}>{stats.following}</b> following</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 24, marginTop: 16, borderBottom: `1px solid ${T.hairline}` }}>
+          {[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']].map(([t, label]) => (
+            <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${tab === t ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 11px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15, fontWeight: tab === t ? 700 : 500, color: tab === t ? '#fff' : 'rgba(255,255,255,0.5)' }}>{label}</button>
+          ))}
+        </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-
-        {/* FEED TAB */}
-        {tab === 'feed' && (
-          <div style={{ padding: '18px' }}>
-            {!isSignedIn ? (
-              <div style={{ textAlign: 'center', padding: '48px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-                <SvgIcon name="people" size={36} color={T.hairlineStrong} />
-                <div style={{ fontSize: 15.5, fontWeight: 700, color: T.text, fontFamily: T.serif }}>Sign in to see your friends feed</div>
-                <div style={{ fontSize: 12.5, color: T.text3 }}>Follow friends to see what they are watching</div>
-              </div>
-            ) : loadingFeed ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: 40 }}>
-                <div style={{ width: 22, height: 22, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                <span style={{ fontSize: 12.5, color: T.text3 }}>Loading feed...</span>
-              </div>
-            ) : (
-              <div>
-                {/* FOLLOW BANNER */}
-                {stats.following === 0 && (
-                  <div style={{ position: 'relative', borderRadius: 20, padding: '22px 18px', marginBottom: 24, overflow: 'hidden', border: `1px solid ${T.hairline}` }}>
-                    <AccentGlow accent={accent} size={150} style={{ right: -40, top: -50 }} />
-                    <div style={{ position: 'relative', zIndex: 1, maxWidth: '72%' }}>
-                      <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 19, fontWeight: 700, color: T.text, lineHeight: 1.3, marginBottom: 8 }}>
-                        Follow friends to see <span style={{ color: accent }}>what</span> they're watching
-                      </div>
-                      <div style={{ fontSize: 12, color: T.text3, marginBottom: 14 }}>Search for users in the Discover tab</div>
-                      <button onClick={() => setTab('discover')} style={{ background: accent, border: 'none', borderRadius: 20, padding: '10px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#07070F', fontFamily: 'inherit' }}>Find Friends</button>
-                    </div>
-                  </div>
-                )}
-
-                {/* ACTIVITY HEADER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <Eyebrow color={T.text3}>Activity Feed</Eyebrow>
-                  <div style={{ position: 'relative' }}>
-                    <button onClick={() => setShowFilterMenu(p => !p)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 11.5, color: T.text2, fontWeight: 600 }}>
-                      {ACTIVITY_FILTERS.find(f => f.id === activityFilter)?.label}
-                      <SvgIcon name="chevron" size={11} color={T.text3} />
-                    </button>
-                    {showFilterMenu && (
-                      <>
-                        <div onClick={() => setShowFilterMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
-                        <div style={{ position: 'absolute', top: '110%', right: 0, zIndex: 11, background: T.surface, border: `1px solid ${T.hairlineStrong}`, borderRadius: 12, padding: 4, minWidth: 130, animation: 'menuIn 0.15s ease', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
-                          {ACTIVITY_FILTERS.map(f => (
-                            <button key={f.id} onClick={() => { setActivityFilter(f.id); setShowFilterMenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', background: activityFilter === f.id ? `${accent}15` : 'none', border: 'none', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color: activityFilter === f.id ? accent : T.text2, fontWeight: activityFilter === f.id ? 700 : 400 }}>{f.label}</button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* EMPTY STATE */}
-                {filteredFeed.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                    <SvgIcon name="flame" size={26} color={T.hairlineStrong} />
-                    <div style={{ fontSize: 12.5, color: T.text3 }}>{stats.following === 0 ? 'No activity yet' : 'Nothing matches this filter'}</div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    {filteredFeed.map((item, i) => {
-                      const act = activityIcon(item.type);
-                      return (
-                        <div key={item.id || i} style={{ display: 'flex', gap: 12, padding: '14px 0', borderBottom: i < filteredFeed.length - 1 ? `1px solid ${T.hairline}` : 'none', animation: 'fadeIn 0.3s ease' }}>
-                          {/* Activity-type icon avatar */}
-                          <button onClick={() => setViewingProfile(item.user_id)} style={{ position: 'relative', flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                            <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${act.color}16`, border: `1px solid ${act.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                              {item.avatar_url ? <img src={item.avatar_url} alt="" onError={(e)=>{e.currentTarget.style.display='none';e.currentTarget.nextSibling&&(e.currentTarget.nextSibling.style.display='flex');}} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}<span style={{ display: item.avatar_url ? 'none' : 'flex', fontSize: 14, fontWeight: 800, color: act.color, width:'100%',height:'100%',alignItems:'center',justifyContent:'center' }}>{(item.display_name || item.username || 'U')[0].toUpperCase()}</span>
-                            </div>
-                            <div style={{ position: 'absolute', bottom: -2, right: -2, width: 17, height: 17, borderRadius: '50%', background: act.color, border: `2px solid ${T.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <SvgIcon name={act.icon} size={8} color="#08080F" filled={act.icon === 'bookmark' || act.icon === 'eye'} />
-                            </div>
-                          </button>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7, flexWrap: 'wrap' }}>
-                              <button onClick={() => setViewingProfile(item.user_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}><span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>@{item.username || 'user'}</span></button>
-                              <span style={{ fontSize: 11, color: T.text3 }}>{act.label}</span>
-                              <span style={{ fontSize: 10, color: T.text3, marginLeft: 'auto' }}>{timeAgo(item.created_at)}</span>
-                            </div>
-                            {item.movie_title && (
-                              <button onClick={() => onWatchTrailer({ id: item.movie_id, title: item.movie_title, poster: item.movie_poster, year: item.movie_year, rating: item.movie_rating, accent: item.movie_accent || accent, mediaType: 'movie', ...(item.type === 'reviewed' && item.review_id ? { initialTab: 'comments', highlightCommentId: item.review_id } : {}) })}
-                                style={{ display: 'flex', gap: 10, alignItems: 'center', background: T.surface2, border: `1px solid ${T.hairline}`, borderRadius: 12, padding: '10px 12px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' }}>
-                                {item.movie_poster && (
-                                  <div style={{ width: 38, height: 52, borderRadius: 7, overflow: 'hidden', flexShrink: 0 }}>
-                                    <img src={item.movie_poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                  </div>
-                                )}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text, fontFamily: T.serif, letterSpacing: '-0.02em', marginBottom: 3 }}>{item.movie_title}</div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                    <span style={{ fontSize: 11, color: T.text3 }}>{item.movie_year}</span>
-                                    {item.movie_rating && <><SvgIcon name="star" size={9} color={item.movie_accent || accent} filled /><span style={{ fontSize: 11, color: item.movie_accent || accent, fontWeight: 600 }}>{item.movie_rating}</span></>}
-                                  </div>
-                                  {item.review_text && <p style={{ fontSize: 11, color: T.text2, margin: '8px 0 0', lineHeight: 1.5, background: 'rgba(0,0,0,0.25)', borderRadius: 8, padding: '8px 10px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.review_text}</p>}
-                                </div>
-                                {item.type === 'saved' ? (
-                                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid ${accent}44`, background: `${accent}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <SvgIcon name="plus" size={13} color={accent} />
-                                  </div>
-                                ) : item.type === 'list_follow' ? (
-                                  <div style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid #F5A62344`, background: '#F5A62312', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <SvgIcon name="list" size={13} color="#F5A623" />
-                                  </div>
-                                ) : (
-                                  <SvgIcon name="play" size={13} color={T.text3} filled />
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* BOTTOM FIND FRIENDS BAR */}
-                <button onClick={() => setTab('discover')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', background: 'transparent', border: `1px solid ${T.hairline}`, borderRadius: 16, padding: '14px', cursor: 'pointer', fontFamily: 'inherit', marginTop: 18 }}>
-                  <SvgIcon name="people" size={15} color={accent} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>Find Friends</span>
-                </button>
-              </div>
-            )}
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', padding: '0 20px calc(40px + env(safe-area-inset-bottom))' }}>
+        {!isSignedIn ? (
+          <div style={{ textAlign: 'center', padding: '56px 12px' }}>
+            <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 20, fontWeight: 700, color: '#fff' }}>See what your friends are watching</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 8, lineHeight: 1.5 }}>Sign in to follow people, see their saves and reviews, and message them about a film.</div>
           </div>
-        )}
-
-        {/* FRIENDS TAB */}
-        {tab === 'friends' && (
-          <div style={{ padding: '18px' }}>
-            {!isSignedIn ? (
-              <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-                <div style={{ fontSize: 12.5, color: T.text3 }}>Sign in to manage friends</div>
-              </div>
-            ) : (
-              <div>
-                {/* SEARCH */}
-                <div style={{ position: 'relative', marginBottom: 18 }}>
-                  <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}>
-                    <SvgIcon name="search" size={14} color={T.text3} />
-                  </div>
-                  <input
-                    value={friendsSearchQ}
-                    onChange={e => setFriendsSearchQ(e.target.value)}
-                    placeholder="Search friends..."
-                    style={{ width: '100%', boxSizing: 'border-box', background: T.surface2, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '12px 16px 12px 40px', color: T.text, fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
-                  />
-                </div>
-
-                {/* STATS ROW */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, marginBottom: 24, background: T.hairline, borderRadius: 14, overflow: 'hidden' }}>
-                  {[
-                    { label: 'Followers', value: stats.followers, icon: 'people', action: () => setFollowListType('followers') },
-                    { label: 'Following', value: stats.following, icon: 'userPlus', action: () => setFollowListType('following') },
-                    { label: 'Messages', value: stats.pending, icon: 'inbox', badge: stats.pending > 0, action: () => setShowMessages(true) },
-                  ].map(s => (
-                    <button key={s.label} type="button" onClick={s.action} style={{ background: T.bg, padding: '16px 8px', textAlign: 'center', position: 'relative', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-                      {s.badge && <div style={{ position: 'absolute', top: 10, right: 10, width: 6, height: 6, borderRadius: '50%', background: accent }} />}
-                      <SvgIcon name={s.icon} size={13} color={T.text3} />
-                      <SerifStat size={19} style={{ marginTop: 8 }}>{s.value}</SerifStat>
-                      <Eyebrow style={{ marginTop: 3, fontSize: 8.5 }}>{s.label}</Eyebrow>
-                    </button>
-                  ))}
-                </div>
-
-                {loadingFriends ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                    <div style={{ width: 22, height: 22, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  </div>
-                ) : filteredFriends.length === 0 ? (
-                  <div>
-                    {/* EMPTY STATE */}
-                    <div style={{ textAlign: 'center', padding: '24px 20px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                      <div style={{ position: 'relative', marginBottom: 6 }}>
-                        <AccentGlow accent={accent} size={90} style={{ left: '50%', top: '50%', transform: 'translate(-50%,-50%)' }} />
-                        <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: T.surface2, border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <SvgIcon name="people" size={22} color={T.text2} />
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: T.serif }}>{friendsSearchQ ? 'No matches' : 'No friends yet'}</div>
-                      {!friendsSearchQ && (
-                        <>
-                          <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6, maxWidth: 260 }}>Find and follow friends to see their activity in your feed.</div>
-                          <button onClick={() => setTab('discover')} style={{ marginTop: 10, background: accent, border: 'none', borderRadius: 20, padding: '10px 24px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#07070F', fontFamily: 'inherit' }}>Discover People</button>
-                        </>
-                      )}
+        ) : (
+          <>
+            {/* ─── FEED ─── */}
+            {tab === 'feed' && (
+              loadingFeed ? <Spinner /> : (
+                <>
+                  {/* Your circle */}
+                  {friends.length > 0 && (
+                    <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -20px', padding: '18px 20px 4px' }}>
+                      {[...friends].sort((a, b) => (activeRecently.has(b.user_id) ? 1 : 0) - (activeRecently.has(a.user_id) ? 1 : 0)).map(f => (
+                        <button key={f.user_id} onClick={() => setViewingProfile(f.user_id)} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          <Avatar u={f} size={58} ring={activeRecently.has(f.user_id)} />
+                          <span style={{ fontSize: 12, color: activeRecently.has(f.user_id) ? '#fff' : 'rgba(255,255,255,0.6)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name || f.username}</span>
+                        </button>
+                      ))}
+                      <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 58, height: 58, borderRadius: '50%', border: '1.5px dashed rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="plus" size={20} color="#fff" /></div>
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Add</span>
+                      </button>
                     </div>
+                  )}
 
-                    {/* SUGGESTED FOR YOU */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.25)', fontWeight: 700, textTransform: 'uppercase' }}>Suggested for you</div>
-                      <button onClick={() => setTab('discover')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: accent, padding: 0 }}>See all</button>
-                    </div>
-                    {loadingSuggested ? (
-                      <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                        <div style={{ width: 20, height: 20, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                      </div>
-                    ) : suggested.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 12, color: T.text3 }}>No suggestions right now</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {suggested.map((u, i) => (
-                          <div key={u.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: i > 0 ? `1px solid ${T.hairline}` : 'none' }}>
-                            <button onClick={() => setViewingProfile(u.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}>
-                              <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${accent}18`, border: `1px solid ${accent}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
-                                {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.display_name || u.username || 'U')[0].toUpperCase()}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                  <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{u.display_name || u.username}</span>
-                                  {u.verified && <SvgIcon name="badgeCheck" size={13} color="#4DA8FF" filled />}
-                                </div>
-                                <div style={{ fontSize: 11, color: T.text3, marginTop: 1 }}>@{u.username}</div>
-                                {u.mutualCount > 0 && <div style={{ fontSize: 10, color: T.text3, marginTop: 2 }}>{u.mutualCount} mutual friend{u.mutualCount === 1 ? '' : 's'}</div>}
-                              </div>
-                            </button>
-                            <button onClick={() => handleFollow(u)}
-                              style={{ background: u.isFollowing ? 'transparent' : 'none', border: `1px solid ${u.isFollowing ? T.hairlineStrong : accent}`, borderRadius: 18, padding: '6px 16px', cursor: 'pointer', fontSize: 12, color: u.isFollowing ? T.text2 : accent, fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>
-                              {u.isFollowing ? 'Following' : 'Follow'}
-                            </button>
+                  {/* Buzzing in your circle */}
+                  {buzzing.length > 0 && activityFilter === 'all' && (
+                    <>
+                      <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>This week</span>}>Buzzing in your circle</H>
+                      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -20px', padding: '0 20px' }}>
+                        {buzzing.map(({ item, people }) => (
+                          <div key={item.movie_id} role="button" tabIndex={0} onClick={() => onWatchTrailer(toMovie(item))} style={{ flexShrink: 0, width: 118, cursor: 'pointer' }}>
+                            <div style={{ width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: T.surface }}>
+                              {item.movie_poster && <img src={item.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                            </div>
+                            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.movie_title}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', marginTop: 5 }}>
+                              {[...people.values()].slice(0, 3).map((pp, k) => (
+                                <div key={pp.user_id} style={{ marginLeft: k ? -7 : 0, border: `2px solid ${T.bg}`, borderRadius: '50%' }}><Avatar u={pp} size={20} /></div>
+                              ))}
+                              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginLeft: 6 }}>{people.size} friends</span>
+                            </div>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <Eyebrow color={T.text3} style={{ marginBottom: 8 }}>Following {filteredFriends.length}</Eyebrow>
-                    {filteredFriends.map((f, i) => (
-                      <button key={f.user_id || i} onClick={() => setViewingProfile(f.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', borderTop: i > 0 ? `1px solid ${T.hairline}` : 'none', padding: '12px 0', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${accent}18`, border: `1px solid ${accent}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
-                          {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (f.username || 'U')[0].toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>{f.display_name || f.username || 'User'}</div>
-                          <div style={{ fontSize: 11, color: T.text3 }}>@{f.username || 'user'} · {f.watchlistCount || 0} in watchlist{f.topGenres && f.topGenres.length > 0 ? ` · ${f.topGenres.slice(0, 2).join(', ')}` : ''}</div>
-                        </div>
-                        <span onClick={(e) => { e.stopPropagation(); handleFollow(f); }} style={{ background: 'transparent', border: `1px solid ${T.hairlineStrong}`, borderRadius: 20, padding: '5px 14px', cursor: 'pointer', fontSize: 11, color: T.text2, fontFamily: 'inherit', fontWeight: 600, flexShrink: 0 }}>
-                          Following
-                        </span>
-                      </button>
+                    </>
+                  )}
+
+                  {/* Filters */}
+                  <div style={{ display: 'flex', gap: 20, overflowX: 'auto', scrollbarWidth: 'none', marginTop: 26, borderBottom: `1px solid ${T.hairline}` }}>
+                    {FILTERS.map(f => (
+                      <button key={f.id} onClick={() => setActivityFilter(f.id)} style={{ flexShrink: 0, background: 'none', border: 'none', borderBottom: `2px solid ${activityFilter === f.id ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: activityFilter === f.id ? 700 : 500, color: activityFilter === f.id ? '#fff' : 'rgba(255,255,255,0.5)' }}>{f.label}</button>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* DISCOVER TAB */}
-        {tab === 'discover' && (
-          <div style={{ padding: '18px' }}>
-            <div style={{ position: 'relative', marginBottom: 20 }}>
-              <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}>
-                <SvgIcon name="search" size={15} color={T.text3} />
-              </div>
-              <input
-                autoFocus
-                value={searchQ}
-                onChange={e => setSearchQ(e.target.value)}
-                placeholder="Search by username..."
-                style={{ width: '100%', boxSizing: 'border-box', background: T.surface2, border: `1px solid ${T.hairline}`, borderRadius: 14, padding: '13px 16px 13px 42px', color: T.text, fontSize: 14.5, outline: 'none', fontFamily: 'inherit' }}
-              />
-              {searchQ && <button onClick={() => setSearchQ('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><SvgIcon name="close" size={13} color={T.text3} /></button>}
-            </div>
-
-            {searching && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                <div style={{ width: 22, height: 22, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              </div>
-            )}
-
-            {!searching && searchQ && searchRes.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 24, color: T.text3, fontSize: 13 }}>No users found for "{searchQ}"</div>
-            )}
-
-            {!searching && !searchQ && (
-              <div>
-                <div style={{ position: 'relative', textAlign: 'center', padding: '20px 20px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                  <AccentGlow accent={accent} size={130} style={{ left: '50%', top: 0, transform: 'translateX(-50%)' }} />
-                  <div style={{ position: 'relative', width: 58, height: 58, borderRadius: '50%', background: T.surface2, border: `1px solid ${T.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="search" size={22} color={accent} /></div>
-                  <div style={{ position: 'relative', fontSize: 16, fontWeight: 700, color: T.text, fontFamily: T.serif }}>Find film lovers</div>
-                  <div style={{ position: 'relative', fontSize: 12.5, color: T.text3 }}>Search by username to find and follow friends</div>
-                </div>
-                <Eyebrow color={T.text3} style={{ marginBottom: 10 }}>Suggested for you</Eyebrow>
-                {loadingSuggested ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                    <div style={{ width: 20, height: 20, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  </div>
-                ) : suggested.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 12, color: T.text3 }}>No suggestions right now</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {suggested.map((u, i) => (
-                      <div key={u.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: i > 0 ? `1px solid ${T.hairline}` : 'none' }}>
-                        <button onClick={() => setViewingProfile(u.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}>
-                          <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${accent}18`, border: `1px solid ${accent}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
-                            {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.display_name || u.username || 'U')[0].toUpperCase()}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{u.display_name || u.username}</span>
-                              {u.verified && <SvgIcon name="badgeCheck" size={13} color="#4DA8FF" filled />}
-                            </div>
-                            <div style={{ fontSize: 11, color: T.text3, marginTop: 1 }}>@{u.username}</div>
-                            {u.mutualCount > 0 && <div style={{ fontSize: 10, color: T.text3, marginTop: 2 }}>{u.mutualCount} mutual friend{u.mutualCount === 1 ? '' : 's'}</div>}
-                          </div>
-                        </button>
-                        <button onClick={() => handleFollow(u)}
-                          style={{ background: u.isFollowing ? 'transparent' : 'none', border: `1px solid ${u.isFollowing ? T.hairlineStrong : accent}`, borderRadius: 18, padding: '6px 16px', cursor: 'pointer', fontSize: 12, color: u.isFollowing ? T.text2 : accent, fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>
-                          {u.isFollowing ? 'Following' : 'Follow'}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* TOP WATCHLISTS LEADERBOARD */}
-                <div style={{ marginTop: 28, marginBottom: 10 }}>
-                  <Eyebrow color={T.text3} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <SvgIcon name="trophy" size={11} color={accent} /> Top Watchlists
-                  </Eyebrow>
-                </div>
-                {loadingLeaders ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                    <div style={{ width: 20, height: 20, border: `2px solid rgba(255,255,255,0.1)`, borderTop: `2px solid ${accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  </div>
-                ) : leaders.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 12, color: T.text3 }}>No watchlists saved yet — be the first!</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {leaders.map((u, i) => (
-                      <button key={u.user_id} onClick={() => setViewingProfile(u.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', borderTop: i > 0 ? `1px solid ${T.hairline}` : 'none', padding: '11px 0', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ width: 20, textAlign: 'center', fontSize: u.rank <= 3 ? 15 : 13, fontWeight: 700, fontFamily: T.serif, letterSpacing: '-0.02em', color: u.rank === 1 ? '#FFD66B' : u.rank === 2 ? '#D8D8E0' : u.rank === 3 ? '#E0A468' : T.text3, flexShrink: 0 }}>{u.rank}</div>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${accent}18`, border: `1px solid ${accent}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
-                          {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.display_name || u.username || 'U')[0].toUpperCase()}
+                  {/* Posts */}
+                  {posts.length === 0 ? (
+                    stats.following === 0 || friends.length === 0 ? (
+                      <div style={{ paddingTop: 22 }}>
+                        <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 20, fontWeight: 700, color: '#fff' }}>Your feed fills up when you follow people</div>
+                        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 6, lineHeight: 1.5 }}>You’ll see what they save, watch and review here. Start with a few film lovers:</div>
+                        <div style={{ marginTop: 12 }}>
+                          {loadingSuggested ? <Spinner /> : suggested.slice(0, 6).map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{u.display_name || u.username}</div>
-                          <div style={{ fontSize: 11, color: T.text3 }}>@{u.username}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                          <SvgIcon name="bookmark" size={10} color={accent} filled />
-                          <span style={{ fontSize: 12, color: accent, fontWeight: 700 }}>{u.watchlistCount}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {!searching && searchRes.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <Eyebrow color={T.text3} style={{ marginBottom: 8 }}>{searchRes.length} users found</Eyebrow>
-                {searchRes.map((u, i) => (
-                  <div key={u.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: i > 0 ? `1px solid ${T.hairline}` : 'none' }}>
-                    <button onClick={() => setViewingProfile(u.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}>
-                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${accent}18`, border: `1px solid ${accent}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: accent, flexShrink: 0, overflow: 'hidden' }}>
-                        {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.username || 'U')[0].toUpperCase()}
+                        <button onClick={() => setTab('find')} style={{ marginTop: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: accent }}>Search for people</button>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>{u.display_name || u.username || 'User'}</div>
-                        <div style={{ fontSize: 11, color: T.text3 }}>@{u.username || 'user'}</div>
-                      </div>
-                    </button>
-                    {isSignedIn ? (
-                      <button onClick={() => handleFollow(u)}
-                        style={{ background: u.isFollowing ? 'transparent' : accent, border: `1px solid ${u.isFollowing ? T.hairlineStrong : accent}`, borderRadius: 20, padding: '6px 16px', cursor: 'pointer', fontSize: 12, color: u.isFollowing ? T.text2 : '#07070F', fontFamily: 'inherit', fontWeight: 700, transition: 'all 0.2s ease', flexShrink: 0 }}>
-                        {u.isFollowing ? 'Following' : 'Follow'}
-                      </button>
                     ) : (
-                      <span style={{ fontSize: 11, color: T.text3, flexShrink: 0 }}>Sign in to follow</span>
-                    )}
+                      <div style={{ padding: '28px 0', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>
+                        {activityFilter === 'all' ? 'Quiet for now. When the people you follow save or review something, it shows up here.' : 'Nothing like this from your friends yet.'}
+                      </div>
+                    )
+                  ) : (
+                    posts.map((p) => {
+                      const label = dayLabel(p.items[0].created_at);
+                      const showDay = label !== lastDay; lastDay = label;
+                      return (
+                        <div key={p.key}>
+                          {showDay && <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.45)', padding: '18px 0 2px' }}>{label}</div>}
+                          <Post p={p} />
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Keep growing the circle */}
+                  {posts.length > 0 && suggested.filter(u => !u.isFollowing).length > 0 && (
+                    <>
+                      <H right={<button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: accent }}>See all</button>}>People you may know</H>
+                      {suggested.filter(u => !u.isFollowing).slice(0, 3).map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
+                    </>
+                  )}
+                </>
+              )
+            )}
+
+            {/* ─── FOLLOWING ─── */}
+            {tab === 'following' && (
+              <div style={{ paddingTop: 18 }}>
+                {underlineInput(friendsSearchQ, setFriendsSearchQ, 'Search people you follow')}
+                {loadingFriends ? <Spinner /> : filteredFriends.length === 0 ? (
+                  <div style={{ padding: '28px 0' }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{friendsSearchQ ? `No one called “${friendsSearchQ}”` : 'You’re not following anyone yet'}</div>
+                    {!friendsSearchQ && <button onClick={() => setTab('find')} style={{ marginTop: 10, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: accent }}>Find people to follow</button>}
                   </div>
-                ))}
+                ) : (
+                  <div style={{ marginTop: 8 }}>
+                    {filteredFriends.map(f => (
+                      <PersonRow key={f.user_id} u={f}
+                        meta={`${f.watchlistCount || 0} saved${f.topGenres?.length ? ` · into ${f.topGenres.slice(0, 2).join(', ')}` : ''}`}
+                        right={
+                          <button onClick={(e) => { e.stopPropagation(); setChatPeer({ user_id: f.user_id, username: f.username, avatar_url: f.avatar_url }); }}
+                            style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: '#fff', fontFamily: 'inherit', fontWeight: 700, flexShrink: 0 }}>Message</button>
+                        } />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
+            {/* ─── FIND PEOPLE ─── */}
+            {tab === 'find' && (
+              <div style={{ paddingTop: 18 }}>
+                {underlineInput(searchQ, setSearchQ, 'Search by name or username', true)}
+                {searching ? <Spinner /> : searchQ ? (
+                  searchRes.length === 0 ? (
+                    <div style={{ padding: '28px 0', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>No one found for “{searchQ}”. Check the spelling, or try their username.</div>
+                  ) : (
+                    <div style={{ marginTop: 8 }}>{searchRes.map(u => <PersonRow key={u.user_id} u={u} right={<FollowBtn u={u} />} />)}</div>
+                  )
+                ) : (
+                  <>
+                    <H top={24}>Suggested for you</H>
+                    {loadingSuggested ? <Spinner /> : suggested.length === 0 ? (
+                      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', padding: '6px 0' }}>No suggestions right now.</div>
+                    ) : suggested.map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
+
+                    <H right={<span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Biggest watchlists</span>}>Top curators</H>
+                    {loadingLeaders ? <Spinner /> : leaders.length === 0 ? (
+                      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', padding: '6px 0' }}>No watchlists yet. Save a few titles and you could be first.</div>
+                    ) : leaders.map(u => (
+                      <div key={u.user_id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 22, fontFamily: T.serif, fontSize: 17, fontWeight: 700, color: u.rank === 1 ? accent : 'rgba(255,255,255,0.35)' }}>{u.rank}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <PersonRow u={u} meta={`${u.watchlistCount} saved · @${u.username}`} right={u.user_id !== user?.id ? <FollowBtn u={u} /> : null} />
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
