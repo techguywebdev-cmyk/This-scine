@@ -8057,26 +8057,27 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
   );
 }
 
-// A real folder made from the film itself: the newest title's poster forms the folder (tab + body),
-// with a clear glass pocket across the front. Portrait shape, scales to any width.
+// Folder: a tinted back panel with a tab, the newest title's poster tucked inside like a photo,
+// and a solid dark-glass pocket in front carrying the count and lock. Portrait 3:4, scales to any width.
 function FolderArt({poster,accent,locked,count,small=false}){
-  const r=small?4:10;
-  const img=poster?`url("${poster}")`:null;
-  const fill=img?{backgroundImage:img,backgroundSize:'cover',backgroundPosition:'center top'}:{background:`linear-gradient(160deg,${accent}40,rgba(255,255,255,0.04))`};
+  const r=small?4:12;
   return(
-    <div style={{position:'relative',width:'100%',aspectRatio:'4/5'}}>
-      {/* tab */}
-      <div style={{position:'absolute',left:0,top:0,width:'42%',height:'14%',borderRadius:`${r}px ${r}px 0 0`,overflow:'hidden',clipPath:'polygon(0 0, 84% 0, 100% 100%, 0 100%)',...(img?{backgroundImage:img,backgroundSize:'240% auto',backgroundPosition:'left top'}:fill)}}>
-        <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.45)'}}/>
-      </div>
-      {/* body — the poster */}
-      <div style={{position:'absolute',left:0,right:0,top:'8%',bottom:0,borderRadius:r,overflow:'hidden',boxShadow:'0 12px 28px rgba(0,0,0,0.45)',border:'1px solid rgba(255,255,255,0.08)',...fill}}>
-        {!img&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',paddingBottom:'30%'}}><SvgIcon name="folder" size={small?14:26} color={accent}/></div>}
-      </div>
-      {/* clear glass front pocket — the poster runs straight through it */}
-      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'46%',borderRadius:r,overflow:'hidden',background:'linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 30%,rgba(6,6,11,0.5) 100%)',boxShadow:'inset 0 1px 0 rgba(255,255,255,0.45), 0 -6px 14px rgba(0,0,0,0.22)',borderTop:`1px solid ${accent}77`}}>
-        {!small&&count!=null&&<div style={{position:'absolute',left:8,bottom:7,fontSize:10,fontWeight:700,color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,0.5)'}}>{count} title{count===1?'':'s'}</div>}
-        {locked&&<div style={{position:'absolute',right:small?3:7,bottom:small?3:6,width:small?14:18,height:small?14:18,borderRadius:'50%',background:'rgba(6,6,11,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?8:11} color="#fff"/></div>}
+    <div style={{position:'relative',width:'100%',aspectRatio:'3/4'}}>
+      {/* tab + back panel */}
+      <div style={{position:'absolute',left:0,top:0,width:'42%',height:'12%',borderRadius:`${r}px ${r}px 0 0`,background:`linear-gradient(180deg,${accent}66,${accent}40)`,clipPath:'polygon(0 0, 84% 0, 100% 100%, 0 100%)'}}/>
+      <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:r,background:`linear-gradient(170deg,${accent}55 0%,${accent}22 60%,rgba(255,255,255,0.04) 100%)`,border:`1px solid ${accent}40`,boxShadow:'0 12px 28px rgba(0,0,0,0.4)'}}/>
+      {/* the title inside */}
+      {poster?(
+        <div style={{position:'absolute',left:'10%',right:'10%',top:small?'13%':'12%',bottom:'22%',borderRadius:small?2:6,overflow:'hidden',boxShadow:'0 6px 18px rgba(0,0,0,0.45)',transform:'rotate(-2deg)'}}>
+          <img src={poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+        </div>
+      ):(
+        <div style={{position:'absolute',left:0,right:0,top:'14%',bottom:'40%',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="folder" size={small?12:26} color={accent}/></div>
+      )}
+      {/* pocket */}
+      <div style={{position:'absolute',left:0,right:0,bottom:0,height:'38%',borderRadius:r,background:`linear-gradient(180deg,${accent}30,${accent}0d), #14141B`,borderTop:`1.5px solid ${accent}aa`,boxShadow:'inset 0 1px 0 rgba(255,255,255,0.08), 0 -8px 18px rgba(0,0,0,0.35)'}}>
+        {!small&&count!=null&&<div style={{position:'absolute',left:12,bottom:11,fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{count} title{count===1?'':'s'}</div>}
+        {locked&&<div style={{position:'absolute',right:small?3:10,bottom:small?3:9,width:small?13:20,height:small?13:20,borderRadius:'50%',background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?7:10} color="rgba(255,255,255,0.8)"/></div>}
       </div>
     </div>
   );
@@ -8311,15 +8312,15 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const FolderTile=({title,sub,posters,locked,onClick,dashed,count})=>(
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
       {dashed?(
-        <div style={{position:'relative',width:'100%',aspectRatio:'4/5'}}>
-          <div style={{position:'absolute',left:0,top:0,width:'40%',height:'12%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
-          <div style={{position:'absolute',left:0,right:0,top:'8%',bottom:0,borderRadius:10,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
+        <div style={{position:'relative',width:'100%',aspectRatio:'3/4'}}>
+          <div style={{position:'absolute',left:0,top:0,width:'40%',height:'10%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
+          <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
         </div>
       ):(
         <FolderCoverFill posters={posters} accent={accent} locked={locked} count={count}/>
       )}
-      <div style={{fontSize:12,fontWeight:700,color:dashed?accent:'#fff',marginTop:7,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
-      {sub&&<div style={{fontSize:10.5,color:T.text2,marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sub}</div>}
+      <div style={{fontSize:13,fontWeight:700,color:dashed?accent:'#fff',marginTop:9,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+      {sub&&<div style={{fontSize:11,color:T.text2,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sub}</div>}
     </div>
   );
 
@@ -8377,8 +8378,8 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
           <>
             <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
             {loading?<Spinner/>:(
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px 10px'}}>
-                <FolderTile title="All saved" sub="Everything" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px 14px'}}>
+                <FolderTile title="All saved" sub="Everything you've saved" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
                 {lists.map(l=>(
                   <FolderTile key={l.id} title={l.title} sub={l.is_public===false?'Private':'Public'} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
                 ))}
