@@ -575,7 +575,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
   })();
 
   return (
-    <div style={{position:'fixed',inset:0,zIndex:260,background:T.bg,display:'flex',flexDirection:'column',animation:'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
+    <div style={{position:'fixed',inset:0,zIndex:260,background:ambient(accent),display:'flex',flexDirection:'column',animation:'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}div::-webkit-scrollbar{display:none}.cast-scroll::-webkit-scrollbar{display:none}`}</style>
       <div style={{position:'relative',zIndex:10,background:'#000',flexShrink:0,boxShadow:'0 8px 24px rgba(0,0,0,0.45)'}}>
         {loading&&<div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}><div style={{width:30,height:30,border:`2.5px solid rgba(255,255,255,0.1)`,borderTop:`2.5px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:12.5,color:T.text3}}>Loading trailer...</span></div>}
@@ -614,14 +614,14 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
               </div>
             </div>
           </div>
-          <div style={{position:'relative',display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden',marginBottom:18}}>
+          <div style={{position:'relative',display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden',marginBottom:18}}>
             <AccentGlow accent={accent} size={140} style={{right:-30,top:-50}}/>
-            <div style={{position:'relative',background:T.bg,padding:'15px'}}>
+            <div style={{position:'relative',background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}, 0 -1px 0 ${T.hairline}`,padding:'15px'}}>
               <Eyebrow style={{marginBottom:9}}>TMDB Rating</Eyebrow>
               <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}><SvgIcon name="star" size={16} color={accent} filled/><SerifStat size={22}>{movie?.rating}</SerifStat><span style={{fontSize:12,color:T.text3}}>/10</span></div>
               <div style={{fontSize:11,color:T.text3}}>{voteCountStr} votes</div>
             </div>
-            <div style={{position:'relative',background:T.bg,padding:'15px'}}>
+            <div style={{position:'relative',background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}, 0 -1px 0 ${T.hairline}`,padding:'15px'}}>
               <Eyebrow style={{marginBottom:9}}>Your Rating</Eyebrow>
               <div style={{display:'flex',gap:4,marginBottom:4}}>
                 {[1,2,3,4,5].map(s=>(<button key={s} onMouseEnter={()=>setHoverStar(s)} onMouseLeave={()=>setHoverStar(0)} onClick={()=>setUserRating(s)} style={{background:'none',border:'none',cursor:'pointer',padding:0,transition:'transform 0.1s ease',transform:hoverStar===s?'scale(1.2)':'scale(1)'}}><SvgIcon name="star" size={17} color={s<=(hoverStar||userRating)?accent:T.hairlineStrong} filled={s<=(hoverStar||userRating)}/></button>))}
@@ -643,14 +643,14 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
             </div>
           )}
           <StreamingBadges movieId={movie?.id} mediaType={movie?.mediaType} title={movie?.title} year={movie?.year}/>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,background:T.hairline,borderRadius:14,overflow:'hidden',marginBottom:20,marginTop:8}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden',marginBottom:20,marginTop:8}}>
             {[
               {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="7" width="4" height="10"/><path d="M6 7l4-4 4 4M14 7v10M18 7l2 2v6l-2 2"/></svg>,label:'Director',value:director?.name||'—'},
               {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,label:'Release Date',value:releaseDateFormatted||'—'},
               {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>,label:'Runtime',value:runtimeStr||'—'},
               {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>,label:'Language',value:language||'—'},
             ].map((m,i)=>(
-              <div key={i} style={{background:T.bg,padding:'14px',display:'flex',alignItems:'center',gap:12}}>
+              <div key={i} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}, 0 -1px 0 ${T.hairline}`,padding:'14px',display:'flex',alignItems:'center',gap:12}}>
                 <div style={{flexShrink:0}}>{m.icon}</div>
                 <div style={{flex:1,minWidth:0}}>
                   <Eyebrow style={{marginBottom:3,fontSize:8.5}}>{m.label}</Eyebrow>
@@ -2196,7 +2196,7 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
   return(
     <>
     {viewingProfile&&<UserProfileSheet userId={viewingProfile} onClose={()=>setViewingProfile(null)} accent={accent} onWatchTrailer={onWatchTrailer} onAddToWatchlist={onAddToWatchlist}/>}
-    <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:T.bg,backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
+    <div onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:0,left:0,right:0,height:'78%',background:ambient(accent),backdropFilter:'blur(30px)',borderRadius:'24px 24px 0 0',zIndex:50,border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)'}}>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 0',flexShrink:0}}/>
       <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${T.hairline}`,flexShrink:0}}>
@@ -2261,8 +2261,8 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
         ))}
       </div>
       {replyingTo&&<div style={{padding:'8px 20px',background:T.surface2,borderTop:`1px solid ${T.hairline}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}><span style={{fontSize:11,color:T.text2}}>Replying to <span style={{color:accent}}>@{replyingTo.username}</span></span><button onClick={()=>{setReplyingTo(null);setInput('');}} style={{background:'none',border:'none',cursor:'pointer',color:T.text3,fontSize:14,padding:0}}>×</button></div>}
-      {isSignedIn?(<div style={{padding:'10px 16px 34px',borderTop:`1px solid ${T.hairline}`,display:'flex',gap:8,alignItems:'center',flexShrink:0,background:T.bg}}><input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&post()} placeholder={replyingTo?`Reply to @${replyingTo.username}...`:'Write a review...'} style={{flex:1,background:T.surface2,border:`1px solid ${replyingTo?accent+'40':T.hairline}`,borderRadius:22,padding:'11px 16px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/><button onClick={post} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="send" size={14} color="#07070F"/></button></div>)
-      :(<div style={{padding:'14px 20px 34px',borderTop:`1px solid ${T.hairline}`,flexShrink:0,background:T.bg}}><button onClick={onAuthRequired} style={{width:'100%',background:`${accent}14`,border:`1px solid ${accent}40`,borderRadius:16,padding:'13px',cursor:'pointer',fontFamily:'inherit',fontSize:14,color:accent,fontWeight:600}}>Sign in to leave a review</button></div>)}
+      {isSignedIn?(<div style={{padding:'10px 16px 34px',borderTop:`1px solid ${T.hairline}`,display:'flex',gap:8,alignItems:'center',flexShrink:0,background:'rgba(6,6,11,0.55)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)'}}><input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&post()} placeholder={replyingTo?`Reply to @${replyingTo.username}...`:'Write a review...'} style={{flex:1,background:T.surface2,border:`1px solid ${replyingTo?accent+'40':T.hairline}`,borderRadius:22,padding:'11px 16px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/><button onClick={post} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="send" size={14} color="#07070F"/></button></div>)
+      :(<div style={{padding:'14px 20px 34px',borderTop:`1px solid ${T.hairline}`,flexShrink:0,background:'rgba(6,6,11,0.55)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)'}}><button onClick={onAuthRequired} style={{width:'100%',background:`${accent}14`,border:`1px solid ${accent}40`,borderRadius:16,padding:'13px',cursor:'pointer',fontFamily:'inherit',fontSize:14,color:accent,fontWeight:600}}>Sign in to leave a review</button></div>)}
     </div>
     </>
   );
