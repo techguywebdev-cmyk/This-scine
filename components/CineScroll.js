@@ -2063,17 +2063,24 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
 
                   {/* WATCHLIST */}
                   {tab==='watchlist'&&(profile.watchlist===null?empty('This watchlist is private',`${name.split(' ')[0]} keeps their saves to themselves.`):watchlist.length===0?empty('No titles yet'):(
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'14px 10px',paddingTop:16}}>
-                      {watchlist.slice(0,60).map((m,i)=>(
-                        <div key={m.movie_id||i} style={{minWidth:0}}>
-                          <button onClick={()=>onWatchTrailer&&onWatchTrailer(toMovie(m))} style={{position:'relative',display:'block',width:'100%',aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],border:'none',cursor:'pointer',padding:0}}>
+                    <div style={{paddingTop:4}}>
+                      {watchlist.slice(0,80).map((m,i)=>(
+                        <div key={m.movie_id||i} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderTop:i?`1px solid ${T.hairline}`:'none'}}>
+                          <button onClick={()=>onWatchTrailer&&onWatchTrailer(toMovie(m))} style={{width:42,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0,background:m.gradient||GRADS[i%GRADS.length],border:'none',padding:0,cursor:'pointer'}}>
                             {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
-                            {m.watched&&<span style={{position:'absolute',top:5,left:5,fontSize:9.5,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.6)',borderRadius:4,padding:'2px 5px'}}>Watched</span>}
                           </button>
-                          <div style={{display:'flex',alignItems:'center',gap:4,marginTop:6}}>
-                            <div style={{flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
-                            {!profile.isSelf&&onAddToWatchlist&&<button onClick={()=>saveIt(m)} aria-label={`Save ${m.title}`} style={{background:'none',border:'none',padding:2,cursor:'pointer',display:'flex'}}><SvgIcon name="plus" size={13} color={accentColor}/></button>}
-                          </div>
+                          <button onClick={()=>onWatchTrailer&&onWatchTrailer(toMovie(m))} style={{flex:1,minWidth:0,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                            <div style={{fontSize:13.5,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                            <div style={{fontSize:11.5,color:T.text2,marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                              {[m.year,(m.genre||[]).slice(0,2).join(', ')].filter(Boolean).join(' · ')}
+                              {m.watched&&<span style={{color:'#7BFFB0',fontWeight:700}}> · Watched</span>}
+                            </div>
+                          </button>
+                          {!profile.isSelf&&onAddToWatchlist&&(
+                            <button onClick={()=>saveIt(m)} aria-label={`Save ${m.title}`} style={{flexShrink:0,display:'inline-flex',alignItems:'center',gap:5,background:'none',border:`1px solid ${T.hairlineStrong}`,borderRadius:16,height:30,padding:'0 12px',cursor:'pointer',fontFamily:'inherit',fontSize:11.5,fontWeight:700,color:'#fff'}}>
+                              <SvgIcon name="plus" size={11} color="#fff"/>Save
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -2661,10 +2668,10 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               {folders.length>0&&(
                 <>
                   <H right={onOpenFolders?<button onClick={()=>{onClose();onOpenFolders();}} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>See all</button>:null}>Popular folders</H>
-                  <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
-                    {folders.map(f => (
-                      <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ flexShrink: 0, width: 132, cursor: 'pointer' }}>
-                        <div style={{ width: 108 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} /></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px 48px', marginTop: 12 }}>
+                    {folders.slice(0, 4).map(f => (
+                      <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ minWidth: 0, cursor: 'pointer' }}>
+                        <FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} />
                         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
                         <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
                       </div>
@@ -8630,6 +8637,17 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
     </div>
   );
 
+  const PublicTile=({l})=>(
+    <div role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} onKeyDown={e=>e.key==='Enter'&&onOpenList&&onOpenList(l.id)} style={{cursor:'pointer',minWidth:0}}>
+      <FolderCoverFill posters={l.cover_url?[l.cover_url]:(l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[]))} accent={accent} count={l.movie_count||0}/>
+      <div style={{display:'flex',alignItems:'center',gap:6,marginTop:9}}>
+        <div style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
+        {l.avg_rating!=null&&<span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:11,fontWeight:700,color:'#fff',flexShrink:0}}><SvgIcon name="star" size={10} color="#FFD166" filled/>{l.avg_rating}</span>}
+      </div>
+      <div style={{fontSize:11,color:T.text2,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>by {l.display_name||l.username}{l.follower_count?` · ${l.follower_count} following`:''}</div>
+    </div>
+  );
+
   const PublicRow=({l})=>(
     <div role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} onKeyDown={e=>e.key==='Enter'&&onOpenList&&onOpenList(l.id)} style={{display:'flex',gap:14,alignItems:'center',padding:'13px 0',borderTop:`1px solid ${T.hairline}`,cursor:'pointer'}}>
       <FolderCover posters={l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[])} accent={accent} size={60}/>
@@ -8705,7 +8723,11 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
             </div>
             {loading?<Spinner/>:lists.length===0?(
               <div style={{padding:'20px 0',fontSize:12.5,color:T.text2}}>{tab==='following'?'You’re not following any folders yet. Browse Popular folders to find some.':'No public folders yet. Make one of yours public to be the first.'}</div>
-            ):lists.map(l=><PublicRow key={l.id} l={l}/>)}
+            ):(
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'22px 48px',paddingTop:8}}>
+                {lists.map(l=><PublicTile key={l.id} l={l}/>)}
+              </div>
+            )}
           </>
         )}
       </div>
