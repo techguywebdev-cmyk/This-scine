@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { putObject, deletePrefix } from '@/lib/storage';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
@@ -45,28 +46,12 @@ export async function POST(request) {
     // A new file name per upload lets browsers cache each cover forever
     const path = `${userId}/cover-${Date.now()}.${ext}`;
 
-    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/profile-covers/${path}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': file.type,
-        'cache-control': 'max-age=31536000',
-        'x-upsert': 'true',
-      },
-      body: buffer,
-    });
-
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text();
-      console.error('Storage upload error:', uploadRes.status, errText);
-      let detail = errText;
-      try { detail = JSON.parse(errText)?.message || JSON.parse(errText)?.error || errText; } catch {}
-      return Response.json({ error: `Storage error (${uploadRes.status}): ${detail}`.slice(0, 300) }, { status: 500 });
+    let publicUrl;
+    try {
+      ({ url: publicUrl } = await putObject({ bucket: 'profile-covers', key: path, body: buffer, contentType: file.type }));
+    } catch (e) {
+      return Response.json({ error: String(e.message || e).slice(0, 300) }, { status: 500 });
     }
-
-    // cache-bust so the new image shows immediately even though the path is stable
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/profile-covers/${path}`;
 
     // save the URL to user_settings
     const settingsRes = await fetch(db('user_settings'), {
@@ -86,22 +71,7 @@ export async function POST(request) {
     }
 
     // Tidy up older covers for this user (best-effort)
-    try {
-      const listRes = await fetch(`${SUPABASE_URL}/storage/v1/object/list/profile-covers`, {
-        method: 'POST',
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix: `${userId}/`, limit: 50 }),
-      });
-      const files = await listRes.json();
-      const old = (Array.isArray(files) ? files : []).map((f) => `${userId}/${f.name}`).filter((n) => n !== path);
-      if (old.length) {
-        await fetch(`${SUPABASE_URL}/storage/v1/object/profile-covers`, {
-          method: 'DELETE',
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prefixes: old }),
-        });
-      }
-    } catch {}
+    await deletePrefix({ bucket: 'profile-covers', prefix: `${userId}/`, keepKey: path });
 
     return Response.json({ cover_url: publicUrl });
   } catch (err) {

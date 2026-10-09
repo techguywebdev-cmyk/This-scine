@@ -4746,17 +4746,30 @@ function ChatWidget({ peer, onClose, accent }) {
     try {
       const isVideo = file.type.startsWith('video/');
       const isImage = file.type.startsWith('image/');
-      const reader = new FileReader();
-      const dataUrl = await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      if (typeof dataUrl === 'string' && dataUrl.length > 4_500_000) {
+      // Photos are resized on the phone first: faster to send, lighter to load
+      let upload = file;
+      if (isImage && file.type !== 'image/gif') {
+        try {
+          const bmp = await createImageBitmap(file);
+          const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.82));
+          if (blob && blob.size < file.size) upload = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+        } catch {}
+      }
+      if (upload.size > (isImage ? 8 : 4.4) * 1024 * 1024) {
         setError('File too large — try a smaller one');
         setSending(false);
         return;
       }
+      const form = new FormData();
+      form.append('file', upload, upload.name || 'upload');
+      form.append('kind', isVideo ? 'video' : isImage ? 'image' : 'file');
+      const up = await fetch('/api/upload-chat-media', { method: 'POST', body: form });
+      const upData = await up.json().catch(() => ({}));
+      if (!up.ok || !upData.url) throw new Error(upData.error || 'Upload failed');
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4764,7 +4777,7 @@ function ChatWidget({ peer, onClose, accent }) {
           toUserId: peerId,
           text: isVideo ? 'Video' : isImage ? 'Photo' : file.name || 'File',
           msg_type: isVideo ? 'video' : isImage ? 'image' : 'file',
-          media_url: dataUrl,
+          media_url: upData.url,
         }),
       });
       const d = await res.json();
