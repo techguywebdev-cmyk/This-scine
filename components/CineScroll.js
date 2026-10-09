@@ -6345,7 +6345,20 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const [showMessages, setShowMessages] = useState(false);
   const [followListType, setFollowListType] = useState(null);
   const [savedHere, setSavedHere] = useState(() => new Set());
+  const [heroPosters, setHeroPosters] = useState([]);
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  // A fresh wall of posters every visit
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/movies?popular=1').then(r => r.json()).then(d => {
+      if (!alive) return;
+      const list = (d.movies || []).map(m => m.poster).filter(Boolean);
+      for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }
+      setHeroPosters(list.slice(0, 6));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -6859,28 +6872,40 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
 
       {/* Header */}
       <div style={{ position: 'relative', padding: 'max(18px, env(safe-area-inset-top)) 20px 0', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button onClick={onClose} aria-label="Back" style={{ background: 'none', border: 'none', width: 36, height: 36, marginLeft: -8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Poster wall — reshuffled on every visit */}
+        <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 'calc(190px + env(safe-area-inset-top))', overflow: 'hidden', pointerEvents: 'none', WebkitMaskImage: 'linear-gradient(to bottom,#000 55%,transparent 100%)', maskImage: 'linear-gradient(to bottom,#000 55%,transparent 100%)' }}>
+          <div style={{ position: 'absolute', left: -18, right: -18, top: -34, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6, transform: 'rotate(-4deg)' }}>
+            {(heroPosters.length ? heroPosters.slice(0, 5) : Array(5).fill(null)).map((src, i) => (
+              <div key={i} style={{ aspectRatio: '2/3', borderRadius: 4, overflow: 'hidden', background: 'rgba(255,255,255,0.05)', transform: `translateY(${i % 2 ? 22 : 0}px)` }}>
+                {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'revealIn .6s ease' }} />}
+              </div>
+            ))}
+          </div>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.35) 0%, rgba(6,6,11,0.1) 40%, rgba(6,6,11,0.55) 100%)' }} />
+        </div>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={onClose} aria-label="Back" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: 'none', borderRadius: '50%', width: 36, height: 36, marginLeft: -4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
-          <h1 style={{ flex: 1, fontFamily:T.serif, fontSize:16,letterSpacing:'-0.02em', fontWeight:700, color:T.text, margin: 0 }}>Friends</h1>
-          <button onClick={() => setShowMessages(true)} aria-label="Messages" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ flex: 1 }} />
+          <button onClick={() => setShowMessages(true)} aria-label="Messages" style={{ position: 'relative', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '50%', marginLeft: 6, border: 'none', width: 38, height: 38, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <SvgIcon name="chat" size={20} color="#fff" />
             {stats.pending > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight:700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{stats.pending}</span>}
           </button>
-          <button onClick={() => setShowNotifs(true)} aria-label="Notifications" style={{ position: 'relative', background: 'none', border: 'none', width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={() => setShowNotifs(true)} aria-label="Notifications" style={{ position: 'relative', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '50%', marginLeft: 6, border: 'none', width: 38, height: 38, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <SvgIcon name="bell" size={20} color="#fff" />
             {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight:700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>}
           </button>
         </div>
-        <div style={{ fontSize: 12, color:T.text2, marginTop: 2 }}>
+        <h1 style={{ position: 'relative', fontFamily: T.serif, fontSize: 26, letterSpacing: '-0.02em', fontWeight: 800, color: '#fff', margin: '78px 0 0', textShadow: '0 2px 18px rgba(0,0,0,0.6)' }}>Friends</h1>
+        <div style={{ position: 'relative', fontSize: 12, color:T.text2, marginTop: 2 }}>
           <button onClick={() => setFollowListType('followers')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color:T.text2 }}><b style={{ color: '#fff' }}>{stats.followers}</b> followers</button>
           <span style={{ margin: '0 8px' }}>·</span>
           <button onClick={() => setFollowListType('following')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, color:T.text2 }}><b style={{ color: '#fff' }}>{stats.following}</b> following</button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 24, marginTop: 16, borderBottom: `1px solid ${T.hairline}` }}>
+        <div style={{ position: 'relative', display: 'flex', gap: 24, marginTop: 16, borderBottom: `1px solid ${T.hairline}` }}>
           {[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${tab === t ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 11px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: tab === t ? 700 : 500, color: tab === t ? accent : 'rgba(255,255,255,0.5)' }}>{label}</button>
           ))}
