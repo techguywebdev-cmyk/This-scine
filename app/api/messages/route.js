@@ -78,6 +78,7 @@ function mapMessage(m, userId) {
     delivered: m.delivered !== false,
     msg_type: m.msg_type || 'text',
     media_url: m.media_url || null,
+    meta: m.meta || null,
   };
 }
 
@@ -93,7 +94,7 @@ export async function GET(req) {
       // Newest first, then flipped: chat messages (latest 150) + only recent call signals (last 3 min).
       // Calls write dozens of signalling rows; loading the oldest N rows used to hide new messages.
       const pair = `or=(and(from_user_id.eq.${userId},to_user_id.eq.${withId}),and(from_user_id.eq.${withId},to_user_id.eq.${userId}))`;
-      const cols = 'select=id,from_user_id,to_user_id,text,created_at,read,read_at,delivered,msg_type,media_url';
+      const cols = 'select=id,from_user_id,to_user_id,text,created_at,read,read_at,delivered,msg_type,media_url,meta';
       const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const [chatRes, sigRes] = await Promise.all([
         fetch(`${db('messages')}?and=(or(and(from_user_id.eq.${userId},to_user_id.eq.${withId}),and(from_user_id.eq.${withId},to_user_id.eq.${userId})),or(msg_type.is.null,msg_type.neq.call_signal))&order=created_at.desc&limit=150&${cols}`, { headers }),
@@ -170,6 +171,7 @@ export async function GET(req) {
       if (m.msg_type === 'voice') preview = 'Voice note';
       else if (m.msg_type === 'sticker') preview = m.text || 'Sticker';
       else if (m.msg_type === 'gif') preview = 'GIF';
+      else if (m.msg_type === 'title') preview = `🎬 ${m.text || 'Shared a film'}`;
       // Guard: never surface raw signal JSON
       if (typeof preview === 'string' && preview.trim().startsWith('{') && preview.includes('"kind"')) {
         preview = 'Call update';
@@ -254,6 +256,14 @@ export async function POST(request) {
       msg_type: msgType,
       media_url: mediaUrl,
     };
+    // A shared film/show travels as structured data so the chat can render a tappable card
+    if (msgType === 'title' && body.meta && typeof body.meta === 'object') {
+      const m = body.meta;
+      payload.meta = {
+        id: m.id, type: m.type === 'tv' ? 'tv' : 'movie', title: String(m.title || '').slice(0, 200),
+        poster: m.poster || null, backdrop: m.backdrop || null, year: m.year || null, rating: m.rating || null, accent: m.accent || null,
+      };
+    }
 
     let res = await fetch(db('messages'), {
       method: 'POST',
@@ -325,7 +335,7 @@ export async function POST(request) {
           if (!notify) return;
           const me = await clerkClient.users.getUser(userId).catch(() => null);
           const fromName = me?.username || me?.firstName || 'Someone';
-          const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'sticker' ? text : text.slice(0, 120);
+          const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'title' ? `Shared “${body.meta?.title || 'a film'}” with you` : msgType === 'sticker' ? text : text.slice(0, 120);
           if (isFirst) {
             const u = await clerkClient.users.getUser(toUserId).catch(() => null);
             const recipientEmail = u?.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u?.emailAddresses?.[0]?.emailAddress || null;
@@ -351,6 +361,7 @@ export async function POST(request) {
         delivered: true,
         msg_type: row?.msg_type || msgType,
         media_url: row?.media_url || mediaUrl,
+        meta: row?.meta || payload.meta || null,
         read_at: null,
       },
     });

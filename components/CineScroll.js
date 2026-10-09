@@ -464,6 +464,8 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
   const [manualTimestamp, setManualTimestamp] = useState('');
   const [likedLocal, setLikedLocal] = useState({}); // cosmetic only, reviews table has no likes column
   const [viewingProfile, setViewingProfile] = useState(null);
+  const [showShare, setShowShare] = useState(false);
+  const mentionsRef = useRef([]);
   const commentInputRef = useRef(null);
   const { isSignedIn, user } = useUser();
   useEffect(() => {
@@ -521,7 +523,8 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
     const ts = (!parentId && timestampMode && manualTimestamp) ? manualTimestamp : null;
     setCommentInput(''); setManualTimestamp(''); setReplyingTo(null);
     try {
-      const res = await fetch('/api/reviews', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ movieId: movie?.id, movieTitle: movie?.title, text, rating:0, parentId, time: ts }) });
+      const mentions = mentionsRef.current; mentionsRef.current = [];
+      const res = await fetch('/api/reviews', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ movieId: movie?.id, movieTitle: movie?.title, moviePoster: movie?.poster || null, mediaType: movie?.mediaType === 'tv' || movie?.isTV ? 'tv' : 'movie', text, rating:0, parentId, time: ts, mentions }) });
       const data = await res.json();
       if (data.comment) {
         if (parentId) {
@@ -584,6 +587,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:260,background:ambient(accent),display:'flex',flexDirection:'column',animation:'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
+      {showShare&&<ShareSheet movie={movie} accent={accent} onClose={()=>setShowShare(false)}/>}
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}div::-webkit-scrollbar{display:none}.cast-scroll::-webkit-scrollbar{display:none}`}</style>
       <div style={{position:'relative',zIndex:10,background:'#000',flexShrink:0,boxShadow:'0 8px 24px rgba(0,0,0,0.45)'}}>
         {loading&&<div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}><div style={{width:30,height:30,border:`2.5px solid rgba(255,255,255,0.1)`,borderTop:`2.5px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:12.5,color:T.text3}}>Loading trailer...</span></div>}
@@ -591,6 +595,9 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
         {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
         <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <button onClick={()=>setShowShare(true)} aria-label="Share" style={{position:'absolute',top:12,right:12,display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:16,height:32,padding:'0 12px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#fff'}}>
+          <SvgIcon name="share" size={13} color="#fff"/>Share
         </button>
       </div>
       <div style={{flex:1,minHeight:0,overflowY:'auto',WebkitOverflowScrolling:'touch'}}>
@@ -705,7 +712,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
                     {c.avatar_url?<img src={c.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(c.username||'U')[0].toUpperCase()}
                   </button>
                   <div style={{flex:1}}>
-                    <p style={{fontSize:13.5,color:T.text,lineHeight:1.55,margin:'0 0 5px'}}>{c.text}</p>
+                    <p style={{fontSize:13.5,color:T.text,lineHeight:1.55,margin:'0 0 5px'}}><MentionText text={c.text} accent={accent}/></p>
                     <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:7}}>
                       <button onClick={()=>setViewingProfile(c.user_id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,fontFamily:'inherit'}}><span style={{fontSize:12,fontWeight:600,color:T.text2}}>@{c.username}</span></button>
                       {c.time&&(<span style={{fontSize:10,color:accent,background:`${accent}16`,border:`1px solid ${accent}2e`,borderRadius:10,padding:'1px 8px',fontWeight:700,display:'inline-flex',alignItems:'center',gap:3}}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>{c.time}</span>)}
@@ -733,7 +740,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
                       {r.avatar_url?<img src={r.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(r.username||'U')[0].toUpperCase()}
                     </button>
                     <div style={{flex:1}}>
-                      <p style={{fontSize:12.5,color:T.text,lineHeight:1.5,margin:'0 0 4px'}}>{r.text}</p>
+                      <p style={{fontSize:12.5,color:T.text,lineHeight:1.5,margin:'0 0 4px'}}><MentionText text={r.text} accent={accent}/></p>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                         <button onClick={()=>setViewingProfile(r.user_id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,fontFamily:'inherit'}}><span style={{fontSize:11,fontWeight:600,color:T.text2}}>@{r.username}</span></button>
                         {r.isSelf&&(
@@ -765,8 +772,9 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
               </div>
             )}
             {isSignedIn?(
-              <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                <input ref={commentInputRef} value={commentInput} onChange={e=>setCommentInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&postComment()} placeholder={replyingTo?`Reply to @${replyingTo.username}...`:'Comment on this trailer...'} style={{flex:1,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:22,padding:'12px 16px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+              <div style={{position:'relative',display:'flex',gap:8,alignItems:'center'}}>
+                <MentionSuggest value={commentInput} accent={accent} onPick={u=>{mentionsRef.current=[...mentionsRef.current,{user_id:u.user_id,handle:u.username}];setCommentInput(v=>applyMention(v,u));setTimeout(()=>commentInputRef.current?.focus(),0);}}/>
+                <input ref={commentInputRef} value={commentInput} onChange={e=>setCommentInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&postComment()} placeholder={replyingTo?`Reply to @${replyingTo.username}...`:'Comment… type @ to tag someone'} style={{flex:1,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:22,padding:'12px 16px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/>
                 <button onClick={postComment} style={{background:accent,border:'none',borderRadius:'50%',width:42,height:42,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="send" size={15} color="#07070F"/></button>
               </div>
             ):(
@@ -939,6 +947,151 @@ function installApiCache(){
   window.__cinePrefetch=(paths)=>paths.forEach(pth=>{window.fetch(pth).catch(()=>{});});
 }
 if(typeof window!=='undefined')installApiCache();
+
+// ── @mentions ──
+// Highlights @handles in comment text
+function MentionText({text,accent}){
+  const parts=String(text||'').split(/(@[a-zA-Z0-9_.]{2,32})/g);
+  return <>{parts.map((p,i)=>p.startsWith('@')&&i%2===1?<span key={i} style={{color:accent,fontWeight:700}}>{p}</span>:<span key={i}>{p}</span>)}</>;
+}
+// Suggestions that pop up while typing "@name" — people you follow first, then everyone
+function MentionSuggest({value,onPick,accent}){
+  const[list,setList]=useState([]);
+  const followingRef=useRef(null);
+  const m=/(?:^|\s)@([a-zA-Z0-9_.]{0,30})$/.exec(value||'');
+  const q=m?m[1].toLowerCase():null;
+  useEffect(()=>{
+    if(q===null){setList([]);return;}
+    let alive=true;
+    const run=async()=>{
+      if(!followingRef.current){try{const d=await fetch('/api/follows?type=following').then(r=>r.json());followingRef.current=d.users||[];}catch{followingRef.current=[];}}
+      const local=followingRef.current.filter(u=>!q||`${u.username} ${u.display_name||''}`.toLowerCase().includes(q)).slice(0,5);
+      if(alive)setList(local);
+      if(q.length>=2){
+        try{const d=await fetch(`/api/follows?type=search&q=${encodeURIComponent(q)}`).then(r=>r.json());
+          if(!alive)return;const seen=new Set(local.map(u=>u.user_id));setList([...local,...(d.users||[]).filter(u=>!seen.has(u.user_id))].slice(0,6));}catch{}
+      }
+    };
+    const t=setTimeout(run,q.length>=2?220:0);
+    return()=>{alive=false;clearTimeout(t);};
+  },[q]);
+  if(q===null||list.length===0)return null;
+  return(
+    <div style={{position:'absolute',left:0,right:0,bottom:'calc(100% + 8px)',zIndex:20,background:'rgba(14,14,20,0.96)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${T.hairline}`,borderRadius:12,padding:4,boxShadow:'0 -10px 30px rgba(0,0,0,0.45)',animation:'fadeIn .15s ease'}}>
+      {list.map(u=>(
+        <button key={u.user_id} type="button" onMouseDown={e=>e.preventDefault()} onClick={()=>onPick(u)} style={{display:'flex',alignItems:'center',gap:10,width:'100%',background:'none',border:'none',padding:'8px 10px',cursor:'pointer',fontFamily:'inherit',textAlign:'left',borderRadius:8}}>
+          <span style={{width:28,height:28,borderRadius:'50%',overflow:'hidden',background:`${accent}33`,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:accent}}>{u.avatar_url?<img src={u.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(u.display_name||u.username||'U')[0].toUpperCase()}</span>
+          <span style={{minWidth:0}}>
+            <span style={{display:'block',fontSize:13,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.username}</span>
+            <span style={{display:'block',fontSize:11,color:T.text2}}>@{u.username}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+const applyMention=(value,u)=>String(value||'').replace(/@([a-zA-Z0-9_.]{0,30})$/,`@${u.username} `);
+
+// ── Share a film: send to friends in-app (DM) or share a link anywhere ──
+export function ShareSheet({movie,accent,onClose}){
+  const{isSignedIn}=useUser();
+  const[friends,setFriends]=useState(null);
+  const[picked,setPicked]=useState(()=>new Set());
+  const[q,setQ]=useState('');
+  const[note,setNote]=useState('');
+  const[sending,setSending]=useState(false);
+  const[done,setDone]=useState(null);
+  const type=movie?.isTV||movie?.mediaType==='tv'?'tv':'movie';
+  const link=`${typeof window!=='undefined'?window.location.origin:'https://this-scine.vercel.app'}/?m=${type}-${movie?.id}`;
+  useEffect(()=>{
+    if(!isSignedIn){setFriends([]);return;}
+    Promise.all([
+      fetch('/api/follows?type=following').then(r=>r.json()).catch(()=>({users:[]})),
+      fetch('/api/messages').then(r=>r.json()).catch(()=>({threads:[]})),
+    ]).then(([f,m])=>{
+      const map=new Map();
+      (m.threads||m.conversations||[]).forEach(t=>{const id=t.peer_id||t.user_id;if(id)map.set(id,{user_id:id,username:t.username||t.peer_username,display_name:t.display_name,avatar_url:t.avatar_url||t.peer_avatar});});
+      (f.users||[]).forEach(u=>{if(!map.has(u.user_id))map.set(u.user_id,u);});
+      setFriends([...map.values()].filter(u=>u.username));
+    });
+  },[isSignedIn]);
+  useEffect(()=>{
+    if(q.trim().length<2)return;
+    const t=setTimeout(()=>{fetch(`/api/follows?type=search&q=${encodeURIComponent(q.trim())}`).then(r=>r.json()).then(d=>{setFriends(p=>{const have=new Set((p||[]).map(u=>u.user_id));return[...(p||[]),...(d.users||[]).filter(u=>!have.has(u.user_id))];});}).catch(()=>{});},250);
+    return()=>clearTimeout(t);
+  },[q]);
+  const shown=(friends||[]).filter(u=>!q.trim()||`${u.username} ${u.display_name||''}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const toggle=id=>setPicked(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+  const send=async()=>{
+    if(!picked.size)return;
+    setSending(true);
+    const meta={id:movie.id,type,title:movie.title,poster:movie.poster||null,backdrop:movie.backdrop||null,year:movie.year||null,rating:movie.rating||null,accent:movie.accent||null};
+    const ids=[...picked];
+    await Promise.all(ids.map(id=>fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({toUserId:id,msg_type:'title',text:movie.title,meta})}).then(()=>note.trim()?fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({toUserId:id,text:note.trim()})}):null).catch(()=>{})));
+    setSending(false);
+    setDone(ids.length===1?`Sent to ${(friends||[]).find(u=>u.user_id===ids[0])?.display_name||(friends||[]).find(u=>u.user_id===ids[0])?.username||'1 person'}`:`Sent to ${ids.length} people`);
+    setTimeout(onClose,1100);
+  };
+  const external=async()=>{
+    const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on CineScroll`;
+    try{if(navigator.share){await navigator.share({title:movie.title,text,url:link});return;}await navigator.clipboard.writeText(`${text} ${link}`);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}
+  };
+  const copy=async()=>{try{await navigator.clipboard.writeText(link);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}};
+  return(
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',display:'flex',alignItems:'flex-end',animation:'fadeIn .2s ease'}}>
+      <style>{`@keyframes shareUp{from{transform:translateY(100%)}to{transform:none}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'82vh',display:'flex',flexDirection:'column',background:ambient(accent),borderRadius:'20px 20px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',animation:'shareUp .28s cubic-bezier(0.22,1,0.36,1)'}}>
+        <div style={{padding:'12px 20px 0'}}>
+          <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.25)',margin:'0 auto 14px'}}/>
+          <div style={{display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{width:42,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:T.surface,flexShrink:0}}>{movie?.poster&&<img src={movie.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}</div>
+            <div style={{minWidth:0,flex:1}}>
+              <div style={{fontSize:15,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Share “{movie?.title}”</div>
+              <div style={{fontSize:12,color:T.text2,marginTop:2}}>{done||'Send to friends or share a link'}</div>
+            </div>
+          </div>
+        </div>
+        {isSignedIn?(
+          <>
+            <div style={{padding:'16px 20px 0'}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:10,borderBottom:'1.5px solid rgba(255,255,255,0.14)'}}>
+                <SvgIcon name="search" size={16} color="rgba(255,255,255,0.5)"/>
+                <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search people" style={{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',color:'#fff',fontSize:14,fontFamily:'inherit'}}/>
+              </div>
+            </div>
+            <div style={{flex:1,minHeight:120,overflowY:'auto',padding:'14px 20px 4px'}}>
+              {friends===null?<div style={{display:'flex',justifyContent:'center',padding:20}}><div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.1)',borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>:shown.length===0?(
+                <div style={{fontSize:12.5,color:T.text2,padding:'8px 0'}}>{q?'No one found':'Follow people to send films to them here.'}</div>
+              ):(
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'14px 8px'}}>
+                  {shown.map(u=>{const on=picked.has(u.user_id);return(
+                    <button key={u.user_id} onClick={()=>toggle(u.user_id)} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',display:'flex',flexDirection:'column',alignItems:'center',gap:6,minWidth:0}}>
+                      <span style={{position:'relative',width:54,height:54,borderRadius:'50%',boxShadow:on?`0 0 0 2px ${T.bg}, 0 0 0 4px ${accent}`:'none',transition:'box-shadow .15s'}}>
+                        <span style={{display:'flex',width:'100%',height:'100%',borderRadius:'50%',overflow:'hidden',background:`${accent}33`,alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:700,color:accent}}>{u.avatar_url?<img src={u.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(u.display_name||u.username||'U')[0].toUpperCase()}</span>
+                        {on&&<span style={{position:'absolute',right:-2,bottom:-2,width:20,height:20,borderRadius:'50%',background:accent,border:`2px solid ${T.bg}`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={11} color="#06060B"/></span>}
+                      </span>
+                      <span style={{fontSize:11,fontWeight:on?700:500,color:on?'#fff':'rgba(255,255,255,0.7)',width:'100%',textAlign:'center',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(u.display_name||u.username||'').split(' ')[0]}</span>
+                    </button>
+                  );})}
+                </div>
+              )}
+            </div>
+            {picked.size>0&&(
+              <div style={{display:'flex',gap:8,alignItems:'center',padding:'10px 20px 0'}}>
+                <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Add a message (optional)" style={{flex:1,minWidth:0,background:`linear-gradient(135deg, rgba(255,255,255,0.08), ${accent}14)`,border:`1px solid ${accent}2e`,borderRadius:22,padding:'11px 15px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+                <button onClick={send} disabled={sending} style={{background:accent,border:'none',borderRadius:22,height:42,padding:'0 18px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#07070F',flexShrink:0,opacity:sending?0.7:1}}>{sending?'Sending…':`Send${picked.size>1?` (${picked.size})`:''}`}</button>
+              </div>
+            )}
+          </>
+        ):<div style={{padding:'16px 20px 0',fontSize:12.5,color:T.text2}}>Sign in to send films to friends.</div>}
+        <div style={{display:'flex',gap:10,padding:'16px 20px calc(18px + env(safe-area-inset-bottom))'}}>
+          <button onClick={external} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:8,height:44,borderRadius:22,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer'}}><SvgIcon name="share" size={15} color="#fff"/>Share via…</button>
+          <button onClick={copy} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:8,height:44,borderRadius:22,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer'}}><SvgIcon name="list" size={15} color="#fff"/>Copy link</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Web push: register the service worker, subscribe with the server key and store it on the account
 async function subscribePush(){
@@ -2203,13 +2356,15 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
 
   const startReply=(comment)=>{if(!isSignedIn){onAuthRequired();return;}setReplyingTo(comment);setInput(`@${comment.username} `);setTimeout(()=>inputRef.current?.focus(),100);};
 
+  const mentionsRef=useRef([]);
   const post=async()=>{
     if(!isSignedIn){onAuthRequired();return;}
     if(!input.trim())return;
     const text=input;const parentId=replyingTo?replyingTo.id:null;
     setInput('');setReplyingTo(null);
+    const mentions=mentionsRef.current;mentionsRef.current=[];
     try{
-      const res=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie?.id,movieTitle:movie?.title,text,rating:0,parentId})});
+      const res=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:movie?.id,movieTitle:movie?.title,moviePoster:movie?.poster||null,mediaType:movie?.mediaType==='tv'||movie?.isTV?'tv':'movie',text,rating:0,parentId,mentions})});
       const data=await res.json();
       if(data.comment){
         if(parentId){
@@ -2259,7 +2414,7 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
                   <span style={{fontSize:11,color:T.text3}}>{timeAgo(c.created_at)}</span>
                 </div>
                 {c.rating>0&&<div style={{display:'flex',gap:2,marginBottom:5}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={10} color={s<=c.rating?accent:T.hairlineStrong} filled={s<=c.rating}/>)}</div>}
-                <p style={{fontSize:13.5,color:T.text2,lineHeight:1.55,margin:'0 0 7px'}}>{c.text}</p>
+                <p style={{fontSize:13.5,color:T.text2,lineHeight:1.55,margin:'0 0 7px'}}><MentionText text={c.text} accent={accent}/></p>
                 <div style={{display:'flex',gap:12,alignItems:'center'}}>
                   <button onClick={()=>toggleLike(c.id)} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',gap:4}}>
                     <SvgIcon name="heart" size={12} color={likedLocal[c.id]?'#FF6B8A':T.hairlineStrong} filled={!!likedLocal[c.id]}/>
@@ -2290,7 +2445,7 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
                       </button>
                     )}
                   </div>
-                  <p style={{fontSize:12.5,color:T.text2,lineHeight:1.5,margin:0}}>{r.text}</p>
+                  <p style={{fontSize:12.5,color:T.text2,lineHeight:1.5,margin:0}}><MentionText text={r.text} accent={accent}/></p>
                 </div>
               </div>
             ))}
@@ -2298,7 +2453,7 @@ function CommentPanel({movie,onClose,accent,onAuthRequired,onWatchTrailer,onAddT
         ))}
       </div>
       {replyingTo&&<div style={{padding:'8px 20px',background:T.surface2,borderTop:`1px solid ${T.hairline}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}><span style={{fontSize:11,color:T.text2}}>Replying to <span style={{color:accent}}>@{replyingTo.username}</span></span><button onClick={()=>{setReplyingTo(null);setInput('');}} style={{background:'none',border:'none',cursor:'pointer',color:T.text3,fontSize:14,padding:0}}>×</button></div>}
-      {isSignedIn?(<div style={{padding:'10px 16px 34px',borderTop:`1px solid ${T.hairline}`,display:'flex',gap:8,alignItems:'center',flexShrink:0,background:'rgba(6,6,11,0.55)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)'}}><input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&post()} placeholder={replyingTo?`Reply to @${replyingTo.username}...`:'Write a review...'} style={{flex:1,background:T.surface2,border:`1px solid ${replyingTo?accent+'40':T.hairline}`,borderRadius:22,padding:'11px 16px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/><button onClick={post} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="send" size={14} color="#07070F"/></button></div>)
+      {isSignedIn?(<div style={{position:'relative',padding:'10px 16px 34px',borderTop:`1px solid ${T.hairline}`,display:'flex',gap:8,alignItems:'center',flexShrink:0,background:'rgba(6,6,11,0.55)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)'}}><MentionSuggest value={input} accent={accent} onPick={u=>{mentionsRef.current=[...mentionsRef.current,{user_id:u.user_id,handle:u.username}];setInput(v=>applyMention(v,u));setTimeout(()=>inputRef.current?.focus(),0);}}/><input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&post()} placeholder={replyingTo?`Reply to @${replyingTo.username}...`:'Write a review… type @ to tag someone'} style={{flex:1,background:T.surface2,border:`1px solid ${replyingTo?accent+'40':T.hairline}`,borderRadius:22,padding:'11px 16px',color:T.text,fontSize:14,outline:'none',fontFamily:'inherit'}}/><button onClick={post} style={{background:accent,border:'none',borderRadius:'50%',width:40,height:40,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="send" size={14} color="#07070F"/></button></div>)
       :(<div style={{padding:'14px 20px 34px',borderTop:`1px solid ${T.hairline}`,flexShrink:0,background:'rgba(6,6,11,0.55)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)'}}><button onClick={onAuthRequired} style={{width:'100%',background:`${accent}14`,border:`1px solid ${accent}40`,borderRadius:16,padding:'13px',cursor:'pointer',fontFamily:'inherit',fontSize:14,color:accent,fontWeight:600}}>Sign in to leave a review</button></div>)}
     </div>
     </>
@@ -2993,6 +3148,7 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
   const isUpcoming=!!movie.isUpcoming;
   const reminderBusyRef=useRef(false);
   const[remindToast,setRemindToast]=useState(null);const remindToastTimer=useRef(null);
+  const[showShareSheet,setShowShareSheet]=useState(false);
   const shareMovie=async()=>{
     const url=`${typeof window!=='undefined'?window.location.origin:'https://this-scine.vercel.app'}/?m=${movie.isTV?'tv':'movie'}-${movie.id}`;
     const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on CineScroll`;
@@ -3107,13 +3263,14 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.6,margin:0,fontWeight:400}}>{movie.overview}</p>
       </div>
       <div style={{position:'absolute',right:12,bottom:'calc(16px + env(safe-area-inset-bottom))',zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
-        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'share',icon:'share',label:'Share',active:false,color:accent,filled:false,fn:shareMovie}].map(btn=>(
+        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'share',icon:'share',label:'Share',active:false,color:accent,filled:false,fn:()=>setShowShareSheet(true)}].map(btn=>(
           <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
             <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
             <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
           </button>
         ))}
       </div>
+      {showShareSheet&&<ShareSheet movie={movie} accent={accent} onClose={()=>setShowShareSheet(false)}/>}
       {remindToast&&(
         <div style={{position:'absolute',left:'50%',top:'52%',transform:'translateX(-50%)',zIndex:30,pointerEvents:'none',animation:'fadeUp 0.25s ease'}}>
           <div style={{display:'flex',alignItems:'center',gap:8,whiteSpace:'nowrap',background:'rgba(6,6,11,0.88)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${remindToast.ok?'#FFD16655':'rgba(255,107,138,0.45)'}`,borderRadius:999,padding:'9px 16px',boxShadow:'0 10px 30px rgba(0,0,0,0.45)'}}>
@@ -5939,7 +6096,7 @@ function ChatWidget({ peer, onClose, accent }) {
                     </div>
                   );
                 }
-                const isSticker = m.msg_type === 'sticker' || (m.text && [...m.text].length <= 3 && !/[a-zA-Z0-9]/.test(m.text || ''));
+                const isSticker = m.msg_type === 'sticker' || (m.msg_type !== 'title' && m.text && [...m.text].length <= 3 && !/[a-zA-Z0-9]/.test(m.text || ''));
                 const isVoice = m.msg_type === 'voice' || (!!m.media_url && (m.text === 'Voice note' || m.msg_type === 'voice'));
                 const isGif = m.msg_type === 'gif' || (m.media_url && (m.text === 'GIF' || m.msg_type === 'gif'));
                 const mine = !!m.from_me;
@@ -6001,6 +6158,22 @@ function ChatWidget({ peer, onClose, accent }) {
                         <div style={{ borderRadius: 14, overflow: 'hidden', maxWidth: 240, border: '1px solid rgba(255,255,255,0.06)' }}>
                           <video src={m.media_url} controls playsInline style={{ width: '100%', display: 'block', background: '#000' }} />
                         </div>
+                      ) : m.msg_type === 'title' && m.meta ? (
+                        <button
+                          type="button"
+                          onClick={() => window.dispatchEvent(new CustomEvent('cine:open-title', { detail: { id: m.meta.id, title: m.meta.title, poster: m.meta.poster, backdrop: m.meta.backdrop, year: m.meta.year, rating: m.meta.rating, accent: m.meta.accent || accent, mediaType: m.meta.type, isTV: m.meta.type === 'tv' } }))}
+                          style={{ display: 'flex', gap: 10, alignItems: 'center', width: 250, textAlign: 'left', padding: 8, borderRadius: 16, cursor: 'pointer', fontFamily: 'inherit', background: mine ? `${accent}26` : themBubble, border: `1px solid ${mine ? accent + '55' : 'rgba(255,255,255,0.08)'}` }}
+                        >
+                          <span style={{ width: 56, aspectRatio: '2/3', borderRadius: 4, overflow: 'hidden', background: 'rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                            {m.meta.poster && <img src={m.meta.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                          </span>
+                          <span style={{ minWidth: 0, flex: 1 }}>
+                            <span style={{ display: 'block', fontSize: 10, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase', color: accent }}>{mine ? 'You shared' : 'Shared with you'}</span>
+                            <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: '#fff', marginTop: 3, lineHeight: 1.25 }}>{m.meta.title}</span>
+                            <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 3 }}>{[m.meta.year, m.meta.rating ? `★ ${m.meta.rating}` : null, m.meta.type === 'tv' ? 'Series' : null].filter(Boolean).join(' · ')}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 7, fontSize: 11.5, fontWeight: 700, color: '#fff' }}><SvgIcon name="play" size={10} color="#fff" filled />Watch trailer</span>
+                          </span>
+                        </button>
                       ) : isSticker ? (
                         <div style={{ fontSize: 40, lineHeight: 1.1, padding: '2px' }}>{m.text}</div>
                       ) : (
@@ -6412,7 +6585,14 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
     if(type==='like')return{icon:'heart',color:'#FF6B8A'};
     if(type==='message_request'||type==='message')return{icon:'chat',color:'#7BC8FF'};
     if(type==='release_reminder')return{icon:'calendar',color:'#FFD166'};
+    if(type==='mention')return{icon:'chat',color:accent};
     return{icon:'bell',color:accent};
+  };
+  const openMention=(n)=>{
+    const d=n.data||{};
+    if(!d.movie_id)return;
+    window.dispatchEvent(new CustomEvent('cine:open-title',{detail:{id:d.movie_id,title:d.title,poster:d.poster,mediaType:d.media_type||'movie',isTV:d.media_type==='tv',accent,initialTab:'comments',highlightCommentId:d.review_id}}));
+    onClose();
   };
   return(
     <>
@@ -6437,7 +6617,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
             {notifications.map((n,i)=>{
               const ni=notifIcon(n.type);
               return(
-                <div key={n.id||i} onClick={()=>{if(!n.read)onMarkRead(n.id);if((n.type==='message_request'||n.type==='message')&&onOpenChat){onOpenChat({user_id:n.user_id,username:n.username,avatar_url:n.avatar_url});onClose();}}} style={{display:'flex',gap:12,alignItems:'center',padding:'12px 0',borderBottom:i<notifications.length-1?`1px solid ${T.hairline}`:'none',cursor:n.read?'default':'pointer',opacity:n.read?0.5:1,transition:'opacity 0.2s ease'}}>
+                <div key={n.id||i} onClick={()=>{if(!n.read)onMarkRead(n.id);if(n.type==='mention'){openMention(n);return;}if((n.type==='message_request'||n.type==='message')&&onOpenChat){onOpenChat({user_id:n.user_id,username:n.username,avatar_url:n.avatar_url});onClose();}}} style={{display:'flex',gap:12,alignItems:'center',padding:'12px 0',borderBottom:i<notifications.length-1?`1px solid ${T.hairline}`:'none',cursor:n.read?'default':'pointer',opacity:n.read?0.5:1,transition:'opacity 0.2s ease'}}>
                   <div style={{width:38,height:38,borderRadius:'50%',background:`${ni.color}16`,border:`1px solid ${ni.color}38`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,position:'relative',overflow:'hidden'}}>
                     {n.type==='release_reminder'&&n.data?.poster?<img src={n.data.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:n.avatar_url&&n.type!=='release_reminder'?<img src={n.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<SvgIcon name={ni.icon} size={16} color={ni.color}/>}
                   </div>
@@ -6446,6 +6626,11 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
                     <div style={{fontSize:13,color:T.text,lineHeight:1.4}}>
                       <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontWeight:700}}>{n.data?.title||'A film you saved'}</span>{' '}
                       {n.data?.when==='tomorrow'?'releases tomorrow':'is out today'}
+                    </div>
+                    ):n.type==='mention'?(
+                    <div style={{fontSize:13,color:T.text,lineHeight:1.4}}>
+                      <span style={{fontWeight:700}}>@{n.username||'someone'}</span> mentioned you{n.data?.title?<> on <span style={{fontWeight:700}}>{n.data.title}</span></>:''}
+                      {n.data?.snippet&&<div style={{fontSize:12,color:T.text2,marginTop:3,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>“{n.data.snippet}”</div>}
                     </div>
                     ):(
                     <div style={{fontSize:13,color:T.text,lineHeight:1.4}}>
@@ -6458,6 +6643,7 @@ function NotificationsPanel({onClose,accent,notifications,loading,onMarkRead,onF
                   {n.type==='follow'&&!n.followedBack&&(
                     <button onClick={(e)=>{e.stopPropagation();onFollowBack(n);}} style={{background:accent,border:'none',borderRadius:18,padding:'6px 14px',cursor:'pointer',fontSize:11,fontWeight:700,color:'#07070F',fontFamily:'inherit',flexShrink:0}}>Follow back</button>
                   )}
+                  {n.type==='mention'&&n.data?.poster&&<div style={{width:30,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0}}><img src={n.data.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/></div>}
                   {(n.type==='message_request'||n.type==='message')&&onOpenChat&&(
                     <button onClick={(e)=>{e.stopPropagation();onOpenChat({user_id:n.user_id,username:n.username,avatar_url:n.avatar_url});onClose();}} style={{background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:18,padding:'6px 14px',cursor:'pointer',fontSize:11,fontWeight:700,color:accent,fontFamily:'inherit',flexShrink:0}}>Reply</button>
                   )}
@@ -8972,6 +9158,13 @@ export default function CineScroll(){
     const t=setTimeout(()=>{if('requestIdleCallback' in window)window.requestIdleCallback(go,{timeout:3000});else go();},2500);
     return()=>clearTimeout(t);
   },[isLoaded,isSignedIn]);
+
+  // Shared film cards (chat, notifications) open the player from anywhere
+  useEffect(()=>{
+    const fn=(e)=>{if(e.detail&&e.detail.id)setTrailerMovie(e.detail);};
+    window.addEventListener('cine:open-title',fn);
+    return()=>window.removeEventListener('cine:open-title',fn);
+  },[]);
 
   // Warm the profile cover in the background so the profile opens with it already painted
   useEffect(()=>{

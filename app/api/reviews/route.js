@@ -155,6 +155,39 @@ export async function GET(req) {
 
 // POST /api/reviews { movieId, movieTitle, text, rating, parentId? }
 // POST /api/reviews { listId, text, parentId? }
+async function notifyMentions({ fromId, fromName, text, mentions, movieId, movieTitle, moviePoster, mediaType, reviewId, listId }) {
+  const handles = [...new Set((text.match(/@([a-zA-Z0-9_.]{2,32})/g) || []).map((h) => h.slice(1).toLowerCase()))];
+  if (!handles.length) return;
+  const ids = new Set();
+  // Picked from the suggestion list: trust the id, but only if the handle is still in the text
+  for (const m of Array.isArray(mentions) ? mentions : []) {
+    if (m?.user_id && m?.handle && handles.includes(String(m.handle).toLowerCase())) ids.add(m.user_id);
+  }
+  // Typed by hand: resolve real usernames through Clerk
+  const unresolved = handles.filter((h) => !(Array.isArray(mentions) ? mentions : []).some((m) => String(m?.handle || '').toLowerCase() === h));
+  if (unresolved.length) {
+    try {
+      const { data: users } = await clerkClient.users.getUserList({ username: unresolved, limit: 20 });
+      (users || []).forEach((u) => ids.add(u.id));
+    } catch {}
+  }
+  ids.delete(fromId);
+  if (!ids.size) return;
+  const snippet = text.length > 140 ? text.slice(0, 137) + '…' : text;
+  const rows = [...ids].slice(0, 10).map((uid) => ({
+    user_id: uid, from_user_id: fromId, type: 'mention', read: false,
+    data: { movie_id: movieId || null, title: movieTitle || null, poster: moviePoster, media_type: mediaType, review_id: reviewId || null, list_id: listId || null, snippet },
+  }));
+  await fetch(db('notifications'), { method: 'POST', headers: { ...headers, Prefer: 'return=minimal' }, body: JSON.stringify(rows) });
+  try {
+    const notify = await import('@/lib/notify');
+    await Promise.race([
+      Promise.all(rows.map((r) => notify.pushUser({ userId: r.user_id, category: 'activity', title: `@${fromName} mentioned you`, body: movieTitle ? `On ${movieTitle}: ${snippet}` : snippet, url: movieId ? `/?m=${mediaType === 'tv' ? 'tv' : 'movie'}-${movieId}` : '/', tag: `mention-${reviewId}` }))),
+      new Promise((r) => setTimeout(r, 1500)),
+    ]);
+  } catch {}
+}
+
 export async function POST(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -198,6 +231,13 @@ export async function POST(request) {
     const data = await res.json();
     const row = Array.isArray(data) ? data[0] : data;
     const userMap = await getUserMap([userId]);
+
+    // @mentions → notification (+ push) for each tagged person, friends or not
+    try {
+      await notifyMentions({ fromId: userId, fromName: userMap[userId]?.username || 'someone', text: payload.text, mentions: body.mentions, movieId, movieTitle, moviePoster: body.moviePoster || null, mediaType: body.mediaType || 'movie', reviewId: row?.id, listId });
+    } catch (e) {
+      console.error('mention notify error', e);
+    }
 
     if (listId) {
       return Response.json({
