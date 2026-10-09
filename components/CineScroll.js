@@ -904,6 +904,25 @@ function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Co
   );
 }
 
+// Web push: register the service worker, subscribe with the server key and store it on the account
+async function subscribePush(){
+  if(typeof window==='undefined'||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))throw new Error('unsupported');
+  if(Notification.permission!=='granted'){const perm=await Notification.requestPermission();if(perm!=='granted')throw new Error('denied');}
+  await navigator.serviceWorker.register('/sw.js');
+  const reg=await navigator.serviceWorker.ready;
+  const keyData=await fetch('/api/push-subscribe',{cache:'no-store'}).then(r=>r.json());
+  if(!keyData.publicKey)throw new Error('Push is not configured yet');
+  const toBytes=b=>{const pad='='.repeat((4-b.length%4)%4);const raw=atob((b+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(raw,c=>c.charCodeAt(0));};
+  const key=toBytes(keyData.publicKey);
+  let sub=await reg.pushManager.getSubscription();
+  // Re-subscribe if the existing subscription was made with a different server key
+  if(sub){const cur=sub.options&&sub.options.applicationServerKey?new Uint8Array(sub.options.applicationServerKey):null;if(!cur||cur.length!==key.length||cur.some((v,i)=>v!==key[i])){try{await sub.unsubscribe();}catch{}sub=null;}}
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+  const res=await fetch('/api/push-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+  if(!res.ok)throw new Error('Could not save subscription');
+  return sub;
+}
+
 // Remember cover photo URLs on this device so profiles paint instantly on the next open
 const coverCache={
   get(id){try{return id?(JSON.parse(localStorage.getItem('cine_covers')||'{}')[id]||null):null;}catch{return null;}},
@@ -964,40 +983,17 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     }
     setPushBusy(true);
     try{
-      const perm=await Notification.requestPermission();
-      if(perm!=='granted'){showToast('Permission denied');setPushBusy(false);return;}
-      await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-      const keyRes=await fetch('/api/push-subscribe',{cache:'no-store'});
-      const keyData=await keyRes.json();
-      if(!keyData.publicKey)throw new Error('Push is not configured yet');
-      const urlBase64ToUint8Array=(base64String)=>{
-        const padding='='.repeat((4-base64String.length%4)%4);
-        const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
-        const rawData=atob(base64);
-        const outputArray=new Uint8Array(rawData.length);
-        for(let i=0;i<rawData.length;++i){outputArray[i]=rawData.charCodeAt(i);}
-        return outputArray;
-      };
-      const reg=await navigator.serviceWorker.ready;
-      let sub=await reg.pushManager.getSubscription();
-      if(sub){try{await sub.unsubscribe();}catch{}}
-      sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(keyData.publicKey)});
-      const saveRes=await fetch('/api/push-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
-      if(!saveRes.ok){const t=await saveRes.text();throw new Error('Could not save subscription ('+saveRes.status+') '+t.slice(0,80));}
+      await subscribePush();
       setHasWebPush(true);
       const next={...notifyPrefs,web:true};
       setNotifyPrefs(next);
       await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({notify_prefs:next})});
       showToast('Browser notifications enabled');
     }catch(e){
-      console.error(e);
-      const iosNoPwa=/iPhone|iPad|iPod/.test(navigator.userAgent)&&!window.matchMedia('(display-mode: standalone)').matches;
-      showToast(iosNoPwa?'On iPhone: Share → Add to Home Screen, then enable here':(e.message||'Could not enable notifications'));
+      showToast(e.message==='denied'?'Notifications are blocked — allow them in your browser settings':(e.message||'Could not enable notifications'));
     }
     setPushBusy(false);
   };
-
   const patchSettings=async(fields)=>{
     let res;
     try{res=await fetch('/api/settings',{method:'PATCH',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});}
@@ -8326,7 +8322,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
 function FolderArt({poster,accent,locked,count,small=false}){
   const r=small?4:12;
   return(
-    <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
+    <div style={{position:'relative',width:'100%',aspectRatio:'1/1.08'}}>
       {/* tab + back panel */}
       <div style={{position:'absolute',left:0,top:0,width:'42%',height:'12%',borderRadius:`${r}px ${r}px 0 0`,background:`linear-gradient(180deg,${accent}66,${accent}40)`,clipPath:'polygon(0 0, 84% 0, 100% 100%, 0 100%)'}}/>
       <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:r,background:`linear-gradient(170deg,${accent}55 0%,${accent}22 60%,rgba(255,255,255,0.04) 100%)`,border:`1px solid ${accent}40`,boxShadow:'0 12px 28px rgba(0,0,0,0.4)'}}/>
@@ -8576,7 +8572,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const FolderTile=({title,sub,posters,locked,onClick,dashed,count})=>(
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
       {dashed?(
-        <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
+        <div style={{position:'relative',width:'100%',aspectRatio:'1/1.08'}}>
           <div style={{position:'absolute',left:0,top:0,width:'40%',height:'10%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
           <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={22} color={accent}/></div>
         </div>
@@ -8642,7 +8638,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
           <>
             <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
             {loading?<Spinner/>:(
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'22px 36px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'22px 48px'}}>
                 <FolderTile title="All saved" sub="Everything you've saved" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
                 {lists.map(l=>(
                   <FolderTile key={l.id} title={l.title} sub={l.is_public===false?'Private':'Public'} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
@@ -8706,6 +8702,26 @@ export default function CineScroll(){
       setActiveIndex(0);setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
     }).catch(()=>{});
   },[]);
+
+  // Notifications on by default: silently keep the subscription fresh if allowed, otherwise ask once (softly)
+  const[pushAsk,setPushAsk]=useState(false);
+  useEffect(()=>{
+    if(!isLoaded||!isSignedIn||typeof window==='undefined')return;
+    if(!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window))return;
+    if(Notification.permission==='granted'){subscribePush().catch(()=>{});return;}
+    if(Notification.permission==='denied')return;
+    let last=0;try{last=+localStorage.getItem('cine_push_ask')||0;}catch{}
+    if(Date.now()-last<5*24*3600e3)return;
+    const t=setTimeout(()=>setPushAsk(true),9000);
+    return()=>clearTimeout(t);
+  },[isLoaded,isSignedIn]);
+  const answerPush=async(yes)=>{
+    setPushAsk(false);
+    try{localStorage.setItem('cine_push_ask',String(Date.now()));}catch{}
+    if(!yes)return;
+    try{await subscribePush();setFeedToast('Notifications on');setTimeout(()=>setFeedToast(null),2500);}
+    catch(e){setFeedToast(e.message==='denied'?'Notifications blocked in browser settings':'Could not turn on notifications');setTimeout(()=>setFeedToast(null),3000);}
+  };
 
   // Warm the profile cover in the background so the profile opens with it already painted
   useEffect(()=>{
@@ -8936,6 +8952,19 @@ export default function CineScroll(){
     <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"var(--font-sans), 'Inter', system-ui, -apple-system, sans-serif",color:'#fff',overflow:'hidden'}}>
       {feedToast&&<Toast message={feedToast} accent={accent}/>}
       {pushChatPeer&&<ChatWidget peer={pushChatPeer} onClose={()=>setPushChatPeer(null)} accent={accent}/>}
+      {pushAsk&&(
+        <div style={{position:'fixed',left:16,right:16,top:'calc(64px + env(safe-area-inset-top))',zIndex:300,display:'flex',justifyContent:'center',animation:'fadeUp .3s ease'}}>
+          <div style={{display:'flex',alignItems:'center',gap:12,maxWidth:420,width:'100%',background:'rgba(12,12,18,0.86)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:14,padding:'12px 12px 12px 14px',boxShadow:'0 12px 36px rgba(0,0,0,0.5)'}}>
+            <SvgIcon name="bell" size={18} color={accent}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12.5,fontWeight:700,color:'#fff'}}>Turn on notifications</div>
+              <div style={{fontSize:11,color:T.text2,marginTop:1}}>Messages, calls and release reminders</div>
+            </div>
+            <button onClick={()=>answerPush(false)} style={{background:'none',border:'none',padding:'6px 4px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.55)'}}>Not now</button>
+            <button onClick={()=>answerPush(true)} style={{background:accent,border:'none',borderRadius:16,padding:'7px 14px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#07070F'}}>Turn on</button>
+          </div>
+        </div>
+      )}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
