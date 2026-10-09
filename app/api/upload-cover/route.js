@@ -42,7 +42,8 @@ export async function POST(request) {
     }
 
     const buffer = await file.arrayBuffer();
-    const path = `${userId}/cover.${ext}`;
+    // A new file name per upload lets browsers cache each cover forever
+    const path = `${userId}/cover-${Date.now()}.${ext}`;
 
     const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/profile-covers/${path}`, {
       method: 'POST',
@@ -50,6 +51,7 @@ export async function POST(request) {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': file.type,
+        'cache-control': 'max-age=31536000',
         'x-upsert': 'true',
       },
       body: buffer,
@@ -64,7 +66,7 @@ export async function POST(request) {
     }
 
     // cache-bust so the new image shows immediately even though the path is stable
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/profile-covers/${path}?t=${Date.now()}`;
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/profile-covers/${path}`;
 
     // save the URL to user_settings
     const settingsRes = await fetch(db('user_settings'), {
@@ -82,6 +84,24 @@ export async function POST(request) {
       console.error('Failed to save cover_url to user_settings:', settingsRes.status, errText);
       return Response.json({ error: 'Image uploaded but failed to save to your profile — try again' }, { status: 500 });
     }
+
+    // Tidy up older covers for this user (best-effort)
+    try {
+      const listRes = await fetch(`${SUPABASE_URL}/storage/v1/object/list/profile-covers`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefix: `${userId}/`, limit: 50 }),
+      });
+      const files = await listRes.json();
+      const old = (Array.isArray(files) ? files : []).map((f) => `${userId}/${f.name}`).filter((n) => n !== path);
+      if (old.length) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/profile-covers`, {
+          method: 'DELETE',
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefixes: old }),
+        });
+      }
+    } catch {}
 
     return Response.json({ cover_url: publicUrl });
   } catch (err) {

@@ -779,7 +779,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
 }
 // PROFILE SHEET
 // COVER CROP MODAL (Twitter-style drag-to-reposition + zoom, exports a compressed JPEG)
-function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Cover Photo',outputWidth=1920,roundPreview=false}){
+function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Cover Photo',outputWidth=1400,roundPreview=false}){
   const ASPECT=aspect;
   const[imgUrl,setImgUrl]=useState(null);
   const[natural,setNatural]=useState({w:0,h:0});
@@ -861,13 +861,13 @@ function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Co
       ctx.imageSmoothingEnabled=true;
       ctx.imageSmoothingQuality='high';
       ctx.drawImage(fullResImg,srcX,srcY,srcW,srcH,0,0,OUT_W,OUT_H);
-      canvas.toBlob(blob=>{setSaving(false);if(blob)onSave(blob);},'image/jpeg',0.92);
+      canvas.toBlob(blob=>{setSaving(false);if(blob)onSave(blob);},'image/jpeg',0.85);
     };
     fullResImg.onerror=()=>{
       ctx.imageSmoothingEnabled=true;
       ctx.imageSmoothingQuality='high';
       ctx.drawImage(imgElRef.current,srcX,srcY,srcW,srcH,0,0,OUT_W,OUT_H);
-      canvas.toBlob(blob=>{setSaving(false);if(blob)onSave(blob);},'image/jpeg',0.9);
+      canvas.toBlob(blob=>{setSaving(false);if(blob)onSave(blob);},'image/jpeg',0.85);
     };
     fullResImg.src=imgUrl;
   };
@@ -904,13 +904,24 @@ function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Co
   );
 }
 
+// Remember cover photo URLs on this device so profiles paint instantly on the next open
+const coverCache={
+  get(id){try{return id?(JSON.parse(localStorage.getItem('cine_covers')||'{}')[id]||null):null;}catch{return null;}},
+  set(id,url){try{if(!id)return;const m=JSON.parse(localStorage.getItem('cine_covers')||'{}');if(url)m[id]=url;else delete m[id];const keys=Object.keys(m);if(keys.length>60)delete m[keys[0]];localStorage.setItem('cine_covers',JSON.stringify(m));}catch{}},
+};
+function CoverImg({src,style}){
+  const[ok,setOk]=useState(false);
+  useEffect(()=>{setOk(false);},[src]);
+  return <img src={src} alt="" decoding="async" fetchpriority="high" onLoad={()=>setOk(true)} ref={el=>{if(el&&el.complete&&el.naturalWidth&&!ok)setOk(true);}} style={{...style,opacity:ok?1:0,transition:'opacity .35s ease'}}/>;
+}
+
 function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loadingData,onDiscover,onWatchTrailer}){
   const{user}=useUser();const{signOut}=useClerk();
   const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
   const[watchlistPublic,setWatchlistPublic]=useState(true);const[loadingSettings,setLoadingSettings]=useState(true);const[notifyPrefs,setNotifyPrefs]=useState({email:true,web:true,app:true,messages:true,follows:true,activity:true});const[hasWebPush,setHasWebPush]=useState(false);const[pushBusy,setPushBusy]=useState(false);
   const[bio,setBio]=useState('');const[bioInput,setBioInput]=useState('');const[savingBio,setSavingBio]=useState(false);
   const[nickname,setNickname]=useState('');const[nicknameInput,setNicknameInput]=useState('');const[savingNickname,setSavingNickname]=useState(false);
-  const[coverUrl,setCoverUrl]=useState(null);const[uploadingCover,setUploadingCover]=useState(false);
+  const[coverUrl,setCoverUrlState]=useState(()=>coverCache.get(user?.id));const setCoverUrl=u=>{setCoverUrlState(u);coverCache.set(user?.id,u);};const[uploadingCover,setUploadingCover]=useState(false);
   const[cropFile,setCropFile]=useState(null);
   const[avatarCropFile,setAvatarCropFile]=useState(null);
   const[uploadingAvatar,setUploadingAvatar]=useState(false);
@@ -1247,7 +1258,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
               <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={onCoverFileSelected} style={{display:'none'}}/>
               <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={onAvatarFileSelected} style={{display:'none'}}/>
               <button onClick={()=>coverInputRef.current?.click()} disabled={uploadingCover} style={{position:'relative',width:'100%',aspectRatio:'2.5',borderRadius:18,overflow:'hidden',border:`1px solid ${T.hairline}`,background:coverUrl?'#0a0a12':`linear-gradient(150deg,${accent}1f,${T.surface})`,cursor:'pointer',padding:0,display:'block',position:'relative'}}>
-                {coverUrl&&<img src={coverUrl} alt="" decoding="async" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top',imageRendering:'auto',transform:'translateZ(0)'}}/>}
+                {coverUrl&&<CoverImg src={coverUrl} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}}/>}
                 <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.5))'}}/>
                 <div style={{position:'absolute',right:10,top:10,display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.5)',backdropFilter:'blur(6px)',borderRadius:18,padding:'6px 12px'}}>
                   {uploadingCover?<div style={{width:12,height:12,border:'1.5px solid rgba(255,255,255,0.25)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>:<SvgIcon name="plus" size={11} color="#fff"/>}
@@ -1773,7 +1784,7 @@ export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWa
   useEffect(()=>{
     if(!userId)return;
     setLoading(true);
-    setTab('activity');setActivity([]);setReviews([]);setCoverImg(null);
+    setTab('activity');setActivity([]);setReviews([]);setCoverImg(coverCache.get(userId));
     fetch(`/api/users/${userId}`)
       .then(r=>r.json())
       .then(d=>{setProfile(d);setFollowing(!!d.isFollowing);setLoading(false);})
@@ -1784,12 +1795,11 @@ export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWa
   useEffect(()=>{
     if(!profile)return;
     if(profile.cover_url){
-      const img=new Image();
-      img.onload=()=>setCoverImg(profile.cover_url);
-      img.onerror=()=>{};
-      img.src=profile.cover_url;
+      setCoverImg(profile.cover_url);
+      coverCache.set(profile.user_id||userId,profile.cover_url);
       return;
     }
+    if(coverCache.get(profile.user_id||userId)){coverCache.set(profile.user_id||userId,null);setCoverImg(null);}
     if(!TMDB_KEY)return;
     const topGenre=profile.topGenres?.[0];
     const genreId=topGenre?TMDB_GENRE_IDS[topGenre]:null;
@@ -1916,7 +1926,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
             <div style={{position:'relative',zIndex:2,width:'100%',aspectRatio:'2.5',flexShrink:0}}>
               {/* cover fades into the page wash instead of ending on a hard dark band; the avatar can now sit over the edge without being clipped */}
               <div style={{position:'absolute',inset:0,overflow:'hidden',borderRadius:'24px 24px 0 0',background:coverImg?'transparent':`linear-gradient(135deg,${accentColor}30,transparent)`,WebkitMaskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)',maskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)'}}>
-                {coverImg&&<img src={coverImg} alt="" decoding="async" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}}/>}
+                {coverImg&&<CoverImg src={coverImg} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}}/>}
                 <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(8,8,16,0.25) 0%,rgba(8,8,16,0) 40%)'}}/>
               </div>
               <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.25)',position:'absolute',top:10,left:'50%',transform:'translateX(-50%)'}}/>
@@ -8436,6 +8446,16 @@ export default function CineScroll(){
     const load=async()=>{setLoadingProfileData(true);try{const[wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);const[wData,rData]=await Promise.all([wRes.json(),rRes.json()]);const items=wData.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));setUserReviews(rData.items||[]);}catch(e){console.error(e);}setLoadingProfileData(false);fetch('/api/reminders').then(r=>r.ok?r.json():{items:[]}).then(d=>setReminderIds(new Set((d.items||[]).map(r=>r.movie_id)))).catch(()=>{});};
     load();
   },[isLoaded,isSignedIn]);
+
+  // Warm the profile cover in the background so the profile opens with it already painted
+  useEffect(()=>{
+    if(!isLoaded||!isSignedIn||!user?.id)return;
+    const t=setTimeout(()=>{
+      const cached=coverCache.get(user.id);if(cached){const i=new Image();i.src=cached;}
+      fetch('/api/settings').then(r=>r.ok?r.json():null).then(d=>{if(!d)return;coverCache.set(user.id,d.cover_url||null);if(d.cover_url&&d.cover_url!==cached){const i=new Image();i.src=d.cover_url;}}).catch(()=>{});
+    },1500);
+    return()=>clearTimeout(t);
+  },[isLoaded,isSignedIn,user?.id]);
 
   // Opened from a push notification (?chat=<userId>): jump straight into that conversation
   const[pushChatPeer,setPushChatPeer]=useState(null);
