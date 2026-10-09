@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "CineScroll",
+    "slug": "cinescroll",
+    "scheme": "cinescroll",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#06060B",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#06060B"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.cinescroll"
+    },
+    "android": {
+      "package": "app.cinescroll",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#06060B",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "@clerk/expo",
+      [
+        "expo-notifications",
+        {
+          "color": "#F5A623"
+        }
+      ],
+      "expo-font",
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "https://this-scine.vercel.app"
+    }
+  }
+}
