@@ -2682,7 +2682,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                   <div style={{ display: 'flex', gap: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', margin: '8px -20px 0', padding: '0 20px' }}>
                     {folders.map(f => (
                       <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ flexShrink: 0, width: 132, cursor: 'pointer' }}>
-                        <div style={{ width: 128 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} /></div>
+                        <div style={{ width: 108 }}><FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} /></div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
                         <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
                       </div>
@@ -7863,7 +7863,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
       <div style={{minHeight:'100%',background:ambient(accent),paddingBottom:48}}>
         {/* COVER HEADER */}
         <div style={{position:'relative',width:'100%',padding:'60px 0 52px',display:'flex',justifyContent:'center',flexShrink:0}}>
-          {!loading&&list&&<div style={{width:150}}><FolderArt poster={list.cover_url||movies[movies.length-1]?.movie_poster||list.cover_poster} accent={accentColor} locked={list.is_public===false} count={movies.length}/></div>}
+          {!loading&&list&&<div style={{width:120}}><FolderArt poster={list.cover_url||movies[movies.length-1]?.movie_poster||list.cover_poster} accent={accentColor} locked={list.is_public===false} count={movies.length}/></div>}
           <button onClick={onClose} style={{position:'absolute',top:14,left:14,background:'rgba(0,0,0,0.5)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
           </button>
@@ -8072,7 +8072,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
 function FolderArt({poster,accent,locked,count,small=false}){
   const r=small?4:12;
   return(
-    <div style={{position:'relative',width:'100%',aspectRatio:'3/4'}}>
+    <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
       {/* tab + back panel */}
       <div style={{position:'absolute',left:0,top:0,width:'42%',height:'12%',borderRadius:`${r}px ${r}px 0 0`,background:`linear-gradient(180deg,${accent}66,${accent}40)`,clipPath:'polygon(0 0, 84% 0, 100% 100%, 0 100%)'}}/>
       <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:r,background:`linear-gradient(170deg,${accent}55 0%,${accent}22 60%,rgba(255,255,255,0.04) 100%)`,border:`1px solid ${accent}40`,boxShadow:'0 12px 28px rgba(0,0,0,0.4)'}}/>
@@ -8082,7 +8082,7 @@ function FolderArt({poster,accent,locked,count,small=false}){
           <img src={poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
         </div>
       ):(
-        <div style={{position:'absolute',left:0,right:0,top:'14%',bottom:'40%',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="folder" size={small?12:26} color={accent}/></div>
+        <div style={{position:'absolute',left:0,right:0,top:'14%',bottom:'40%',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="folder" size={small?12:22} color={accent}/></div>
       )}
       {/* pocket */}
       <div style={{position:'absolute',left:0,right:0,bottom:0,height:'38%',borderRadius:r,background:`linear-gradient(180deg,${accent}30,${accent}0d), #14141B`,borderTop:`1.5px solid ${accent}aa`,boxShadow:'inset 0 1px 0 rgba(255,255,255,0.08), 0 -8px 18px rgba(0,0,0,0.35)'}}>
@@ -8322,9 +8322,9 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const FolderTile=({title,sub,posters,locked,onClick,dashed,count})=>(
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
       {dashed?(
-        <div style={{position:'relative',width:'100%',aspectRatio:'3/4'}}>
+        <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
           <div style={{position:'absolute',left:0,top:0,width:'40%',height:'10%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
-          <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={26} color={accent}/></div>
+          <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={22} color={accent}/></div>
         </div>
       ):(
         <FolderCoverFill posters={posters} accent={accent} locked={locked} count={count}/>
@@ -8388,7 +8388,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
           <>
             <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
             {loading?<Spinner/>:(
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px 14px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'22px 36px'}}>
                 <FolderTile title="All saved" sub="Everything you've saved" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
                 {lists.map(l=>(
                   <FolderTile key={l.id} title={l.title} sub={l.is_public===false?'Private':'Public'} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
