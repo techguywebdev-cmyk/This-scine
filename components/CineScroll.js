@@ -596,13 +596,15 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
         <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
-        <button onClick={()=>setShowShare(true)} aria-label="Share" style={{position:'absolute',top:12,right:12,display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:16,height:32,padding:'0 12px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#fff'}}>
-          <SvgIcon name="share" size={13} color="#fff"/>Share
-        </button>
       </div>
       <div style={{flex:1,minHeight:0,overflowY:'auto',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'18px 18px 0',flexShrink:0}}>
-        <h1 style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:'clamp(20px,5vw,27px)',fontWeight:700,color:T.text,margin:'0 0 9px',lineHeight:1.15,letterSpacing:-0.3}}>{movie?.title}</h1>
+        <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:9}}>
+          <h1 style={{flex:1,minWidth:0,fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:'clamp(20px,5vw,27px)',fontWeight:700,color:T.text,margin:0,lineHeight:1.15,letterSpacing:-0.3}}>{movie?.title}</h1>
+          <button onClick={()=>setShowShare(true)} aria-label="Share" style={{flexShrink:0,marginTop:2,display:'flex',alignItems:'center',gap:6,background:`${accent}1a`,border:`1px solid ${accent}44`,borderRadius:18,height:34,padding:'0 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:accent}}>
+            <SvgIcon name="share" size={13} color={accent}/>Share
+          </button>
+        </div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
           <span style={{fontSize:13,color:T.text2}}>{movie?.year}</span>
           {cert&&<CertBadge cert={cert}/>}
@@ -977,7 +979,7 @@ function MentionSuggest({value,onPick,accent}){
   },[q]);
   if(q===null||list.length===0)return null;
   return(
-    <div style={{position:'absolute',left:0,right:0,bottom:'calc(100% + 8px)',zIndex:20,background:'rgba(14,14,20,0.96)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${T.hairline}`,borderRadius:12,padding:4,boxShadow:'0 -10px 30px rgba(0,0,0,0.45)',animation:'fadeIn .15s ease'}}>
+    <div style={{position:'absolute',left:0,right:0,bottom:'calc(100% + 8px)',zIndex:20,background:`linear-gradient(160deg, ${accent}2e 0%, ${accent}12 55%, rgba(255,255,255,0.04) 100%), rgba(10,10,16,0.72)`,backdropFilter:'blur(18px) saturate(140%)',WebkitBackdropFilter:'blur(18px) saturate(140%)',border:`1px solid ${accent}38`,borderRadius:12,padding:4,boxShadow:'0 -10px 30px rgba(0,0,0,0.45)',animation:'fadeIn .15s ease'}}>
       {list.map(u=>(
         <button key={u.user_id} type="button" onMouseDown={e=>e.preventDefault()} onClick={()=>onPick(u)} style={{display:'flex',alignItems:'center',gap:10,width:'100%',background:'none',border:'none',padding:'8px 10px',cursor:'pointer',fontFamily:'inherit',textAlign:'left',borderRadius:8}}>
           <span style={{width:28,height:28,borderRadius:'50%',overflow:'hidden',background:`${accent}33`,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:accent}}>{u.avatar_url?<img src={u.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(u.display_name||u.username||'U')[0].toUpperCase()}</span>
