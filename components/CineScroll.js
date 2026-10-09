@@ -6506,6 +6506,16 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
       .sort((a, b) => new Date(b.latest) - new Date(a.latest));
   }, [feedItems, activityFilter, personFilter]);
 
+  // Feed by action: each section is a row of people; tap a face to reveal what they did
+  const [openPerson, setOpenPerson] = useState({});
+  const sections = useMemo(() => {
+    const ORDER = ['saved', 'watched', 'reviewed', 'list_follow', 'arc_complete'];
+    return ORDER.map(type => ({
+      type,
+      people: people.map(p => ({ ...p, items: (p.groups.find(g => g.type === type) || {}).items || [] })).filter(p => p.items.length > 0),
+    })).filter(sec => sec.people.length > 0);
+  }, [people]);
+
   const dayLabel = (ts) => {
     const d = new Date(ts); const today = new Date();
     const diff = Math.floor((new Date(today.toDateString()) - new Date(d.toDateString())) / 86400000);
@@ -6648,6 +6658,97 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const GROUP_LABEL = { saved: 'Saved', watched: 'Watched', reviewed: 'Reviewed', list_follow: 'Followed folders', arc_complete: 'Finished arcs' };
   const actionBtn = { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 };
 
+  const SECTION = {
+    saved: { title: 'Saves', verb: 'saved', icon: 'bookmark' },
+    watched: { title: 'Watched', verb: 'watched', icon: 'eye' },
+    reviewed: { title: 'Reviews', verb: 'reviewed', icon: 'chat' },
+    list_follow: { title: 'Folders', verb: 'followed', icon: 'folder' },
+    arc_complete: { title: 'Cine Arcs', verb: 'finished', icon: 'star' },
+  };
+  const ActionSection = ({ sec }) => {
+    const meta = SECTION[sec.type] || { title: 'Activity', verb: 'shared' };
+    const openId = openPerson[sec.type];
+    const open = sec.people.find(p => p.user_id === openId);
+    const titles = sec.people.reduce((n, p) => n + p.items.length, 0);
+    const toggle = (id) => setOpenPerson(cur => ({ ...cur, [sec.type]: cur[sec.type] === id ? null : id }));
+    return (
+      <div style={{ padding: '20px 0 18px', borderTop: `1px solid ${T.hairline}` }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: accent }}>{meta.title}</span>
+          <span style={{ fontSize: 11.5, color: T.text2 }}>{sec.people.length} {sec.people.length === 1 ? 'person' : 'people'} · {titles} {sec.type === 'reviewed' ? (titles === 1 ? 'review' : 'reviews') : (titles === 1 ? 'title' : 'titles')}</span>
+        </div>
+
+        {/* Faces */}
+        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', scrollbarWidth: 'none', margin: '12px -20px 0', padding: '2px 20px 2px' }}>
+          {sec.people.map(p => {
+            const on = openId === p.user_id;
+            const nm = p.user.display_name || p.user.username || 'User';
+            return (
+              <button key={p.user_id} onClick={() => toggle(p.user_id)} aria-expanded={on} aria-label={`${nm} ${meta.verb} ${p.items.length}`}
+                style={{ flexShrink: 0, width: 60, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: openId && !on ? 0.45 : 1, transition: 'opacity .2s' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ borderRadius: '50%', boxShadow: on ? `0 0 0 2px ${T.bg}, 0 0 0 4px ${accent}` : 'none', transition: 'box-shadow .2s' }}>
+                    <Avatar u={p.user} size={52} />
+                  </div>
+                  <span style={{ position: 'absolute', right: -4, bottom: -2, minWidth: 18, height: 18, padding: '0 5px', boxSizing: 'border-box', borderRadius: 9, background: on ? accent : 'rgba(20,20,28,0.95)', border: `1.5px solid ${on ? accent : 'rgba(255,255,255,0.18)'}`, color: on ? '#06060B' : '#fff', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{p.items.length}</span>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.65)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nm.split(' ')[0]}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {!open && <div style={{ fontSize: 11.5, color: T.text3, marginTop: 10 }}>Tap someone to see what they {meta.verb}</div>}
+
+        {/* Revealed */}
+        {open && (() => {
+          const nm = open.user.display_name || open.user.username || 'User';
+          return (
+            <div style={{ marginTop: 14, animation: 'revealIn .25s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <button onClick={() => setViewingProfile(open.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', minWidth: 0 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: '#fff' }}>{nm}</span>
+                  <span style={{ fontSize: 11.5, color: T.text2 }}>  @{open.user.username || 'user'} · {timeAgo(open.items[0].created_at)}</span>
+                </button>
+                <button onClick={() => openChat({ user_id: open.user_id, username: open.user.username, avatar_url: open.user.avatar_url })} style={{ ...actionBtn, color: 'rgba(255,255,255,0.75)', flexShrink: 0 }}>
+                  <SvgIcon name="chat" size={13} color="rgba(255,255,255,0.75)" />Message
+                </button>
+              </div>
+
+              {sec.type === 'reviewed' ? open.items.slice(0, 5).map(it => (
+                <div key={it.id || it.movie_id} role="button" tabIndex={0} onClick={() => onWatchTrailer({ ...toMovie(it), ...(it.review_id ? { initialTab: 'comments', highlightCommentId: it.review_id } : {}) })} style={{ display: 'flex', gap: 12, marginTop: 12, cursor: 'pointer' }}>
+                  <div style={{ width: 48, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: T.surface }}>
+                    {it.movie_poster && <img src={it.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{it.movie_title}</div>
+                    {it.review_text && <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45, marginTop: 4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.review_text}</div>}
+                  </div>
+                </div>
+              )) : isTitle(sec.type) ? (
+                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', margin: '12px -20px 0', padding: '0 20px' }}>
+                  {open.items.slice(0, 20).map(it => (
+                    <div key={it.id || it.movie_id} style={{ flexShrink: 0, width: 96 }}>
+                      <button onClick={() => onWatchTrailer(toMovie(it))} aria-label={`Trailer for ${it.movie_title}`} style={{ display: 'block', width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: T.surface, border: 'none', padding: 0, cursor: 'pointer', position: 'relative' }}>
+                        {it.movie_poster && <img src={it.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                      </button>
+                      <div style={{ fontSize: 11.5, fontWeight: 600, color: '#fff', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.movie_title}</div>
+                      <button onClick={() => saveFromFeed(it)} disabled={savedHere.has(it.movie_id)} style={{ ...actionBtn, fontSize: 11, marginTop: 4, color: savedHere.has(it.movie_id) ? accent : 'rgba(255,255,255,0.6)', cursor: savedHere.has(it.movie_id) ? 'default' : 'pointer' }}>
+                        <SvgIcon name="bookmark" size={11} color={savedHere.has(it.movie_id) ? accent : 'rgba(255,255,255,0.6)'} filled={savedHere.has(it.movie_id)} />{savedHere.has(it.movie_id) ? 'Saved' : 'Save'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : open.items.slice(0, 6).map(it => (
+                <div key={it.id || `${it.type}-${it.created_at}`} style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', padding: '10px 0 0' }}>{it.movie_title || 'Something new'}</div>
+              ))}
+            </div>
+          );
+        })()}
+      </div>
+    );
+  };
+
   const PersonBlock = ({ p }) => {
     const u = p.user;
     const name = u.display_name || u.username || 'Someone';
@@ -6741,7 +6842,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background:ambient(accent), display: 'flex', flexDirection: 'column', animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
-      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}div::-webkit-scrollbar{display:none}input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
+      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes revealIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}div::-webkit-scrollbar{display:none}input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
       {toast && <Toast message={toast} accent={accent} />}
       {showNotifs && <NotificationsPanel onClose={() => setShowNotifs(false)} accent={accent} notifications={notifications} loading={loadingNotifs} onMarkRead={handleMarkRead} onFollowBack={handleFollowBack} onOpenChat={(p) => setChatPeer(p)} />}
       {chatPeer && <ChatWidget peer={chatPeer} onClose={() => { const back = chatPeer?.fromMessages; setChatPeer(null); if (back) setShowMessages(true); }} accent={accent} />}
@@ -6837,13 +6938,6 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                     </>
                   )}
 
-                  {/* Filters */}
-                  <div style={{ display: 'flex', gap: 20, overflowX: 'auto', scrollbarWidth: 'none', marginTop: 26, borderBottom: `1px solid ${T.hairline}` }}>
-                    {FILTERS.map(f => (
-                      <button key={f.id} onClick={() => setActivityFilter(f.id)} style={{ flexShrink: 0, background: 'none', border: 'none', borderBottom: `2px solid ${activityFilter === f.id ? accent : 'transparent'}`, marginBottom: -1, padding: '0 0 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: activityFilter === f.id ? 700 : 500, color: activityFilter === f.id ? accent : 'rgba(255,255,255,0.5)' }}>{f.label}</button>
-                    ))}
-                  </div>
-
                   {/* People */}
                   {personFilter && (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, fontSize: 12, color: T.text2 }}>
@@ -6867,7 +6961,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                       </div>
                     )
                   ) : (
-                    people.map(p => <PersonBlock key={p.user_id} p={p} />)
+                    <div style={{ marginTop: 22 }}>{sections.map(sec => <ActionSection key={sec.type} sec={sec} />)}</div>
                   )}
 
                   {/* Keep growing the circle */}
