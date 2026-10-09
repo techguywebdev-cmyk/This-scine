@@ -3723,15 +3723,42 @@ function ChatWidget({ peer, onClose, accent }) {
   const callStatusRef = useRef('idle');
   const peerId = peer?.user_id || peer?.id;
 
-  const ICE_SERVERS =
-    (typeof globalThis !== 'undefined' && globalThis.CINESCROLL_ICE_SERVERS) || [
-      {
-        urls: [
-          'stun:stun.l.google.com:19302',
-          'stun:stun1.l.google.com:19302',
-        ],
-      },
-    ];
+  const DEFAULT_ICE = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+  const iceServersRef = useRef(DEFAULT_ICE);
+  // Fetch STUN/TURN servers as soon as the chat opens so a call never waits on it
+  useEffect(() => {
+    fetch('/api/ice').then(r => r.ok ? r.json() : null).then(d => { if (d && Array.isArray(d.iceServers) && d.iceServers.length) iceServersRef.current = d.iceServers; }).catch(() => {});
+  }, []);
+
+  // Instant signalling over a realtime socket (database polling stays as the fallback)
+  const rtChannelRef = useRef(null);
+  const rtReadyRef = useRef(false);
+  const seenSidRef = useRef(new Set());
+  const handleSignalRef = useRef(null);
+  useEffect(() => {
+    if (!peerId || !user?.id) return;
+    let cancelled = false; let client = null; let channel = null;
+    (async () => {
+      try {
+        const { getRealtime } = await import('@/lib/realtime');
+        client = getRealtime();
+        if (cancelled || !client) return;
+        const name = `cs-call-${[user.id, peerId].sort().join('-')}`;
+        channel = client.channel(name, { config: { broadcast: { self: false, ack: false } } });
+        channel.on('broadcast', { event: 'signal' }, ({ payload }) => {
+          if (!payload || payload.from === user.id) return;
+          const sig = payload.signal;
+          if (!sig || (sig.sid && seenSidRef.current.has(sig.sid))) return;
+          if (sig.sid) seenSidRef.current.add(sig.sid);
+          handleSignalRef.current && handleSignalRef.current(sig, false);
+        });
+        channel.subscribe((status) => { rtReadyRef.current = status === 'SUBSCRIBED'; });
+        rtChannelRef.current = channel;
+      } catch (e) { console.warn('[call] realtime unavailable', e?.message || e); }
+    })();
+    return () => { cancelled = true; rtReadyRef.current = false; try { channel && client && client.removeChannel(channel); } catch {} rtChannelRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peerId, user?.id]);
 
   const AUDIO_CONSTRAINTS = {
     echoCancellation: true,
@@ -4070,8 +4097,24 @@ function ChatWidget({ peer, onClose, accent }) {
     return `${m}:${String(sec).padStart(2, '0')}`;
   };
 
-  const sendSignal = async (payload) => {
+  const sendSignal = async (payloadIn) => {
     if (!peerId) return false;
+    const payload = { ...payloadIn, sid: payloadIn.sid || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}` };
+    seenSidRef.current.add(payload.sid);
+    let broadcasted = false;
+    if (rtReadyRef.current && rtChannelRef.current) {
+      try { rtChannelRef.current.send({ type: 'broadcast', event: 'signal', payload: { from: user?.id, signal: payload } }); broadcasted = true; } catch {}
+    }
+    // ICE candidates already went out instantly; persist them without making the caller wait
+    if (broadcasted && payload.kind === 'ice') {
+      fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ toUserId: peerId, text: JSON.stringify(payload), msg_type: 'call_signal' }) }).catch(() => {});
+      return true;
+    }
+    if (broadcasted && payload.kind !== 'offer') {
+      // Answer / end / upgrades reached the peer already; store in the background
+      fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ toUserId: peerId, text: JSON.stringify(payload), msg_type: 'call_signal' }) }).catch(() => {});
+      return true;
+    }
     try {
       const res = await fetch('/api/messages', {
         method: 'POST',
@@ -4209,7 +4252,7 @@ function ChatWidget({ peer, onClose, accent }) {
     if (typeof RTCPeerConnection === 'undefined') {
       throw new Error('Calling is not supported in this browser');
     }
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new RTCPeerConnection({ iceServers: iceServersRef.current, iceCandidatePoolSize: 4, bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' });
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -4218,6 +4261,9 @@ function ChatWidget({ peer, onClose, accent }) {
     };
 
     pc.ontrack = (e) => {
+      // Ask the browser to play audio as soon as it can instead of buffering extra
+      try { if (e.receiver && 'jitterBufferTarget' in e.receiver) e.receiver.jitterBufferTarget = 40; } catch {}
+      try { if (e.receiver && 'playoutDelayHint' in e.receiver) e.receiver.playoutDelayHint = 0.04; } catch {}
       let stream = remoteStreamRef.current;
       if (!stream) {
         stream = e.streams?.[0] || new MediaStream();
@@ -4329,6 +4375,12 @@ function ChatWidget({ peer, onClose, accent }) {
       makingOfferRef.current = true;
       const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
       await pc.setLocalDescription(offer);
+      await new Promise((resolve) => {
+        if (pc.iceGatheringState === 'complete') return resolve();
+        const t = setTimeout(resolve, 900);
+        const on = () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); pc.removeEventListener('icegatheringstatechange', on); resolve(); } };
+        pc.addEventListener('icegatheringstatechange', on);
+      });
       const ok = await sendSignal({ kind: 'offer', sdp: pc.localDescription || offer, callType: mode });
       if (!ok) {
         setError('Unable to reach the other person.');
@@ -4876,6 +4928,9 @@ function ChatWidget({ peer, onClose, accent }) {
               visible.push(m);
               continue;
             }
+            let sidSeen = false;
+            try { const pp = JSON.parse(m.text || '{}'); if (pp.sid) { sidSeen = seenSidRef.current.has(pp.sid); seenSidRef.current.add(pp.sid); } } catch {}
+            if (sidSeen) processedSignalsRef.current.add(m.id);
             if (!processedSignalsRef.current.has(m.id)) {
               processedSignalsRef.current.add(m.id);
               if (resolvedIds.has(m.id)) {
@@ -4953,6 +5008,7 @@ function ChatWidget({ peer, onClose, accent }) {
   };
 
 
+  handleSignalRef.current = handleSignal;
   return (
     <>
       {showPeerProfile && peerInfo?.user_id && (
@@ -5360,6 +5416,7 @@ function ChatWidget({ peer, onClose, accent }) {
                     ref={remoteVideoRef}
                     autoPlay
                     playsInline
+                    muted
                     style={{
                       position: 'absolute',
                       inset: 0,
