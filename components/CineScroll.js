@@ -8681,9 +8681,11 @@ export default function CineScroll(){
             <SvgIcon name="sliders" size={17} color={showFilter?accent:'rgba(255,255,255,0.7)'}/>
           </button>
           {isSignedIn?(
-            <button onClick={()=>setShowProfile(true)} style={{width:36,height:36,borderRadius:'50%',background:`${accent}22`,border:`2px solid ${accent}55`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0,position:'relative'}}>
-              {user?.imageUrl?<img src={user.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:13,fontWeight:700,color:accent}}>{(user?.firstName||user?.username||'?')[0].toUpperCase()}</span>}
-              {watchlistIds.size>0&&<div style={{position:'absolute',top:-2,right:-2,width:14,height:14,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #04040A'}}><span style={{fontSize:7,fontWeight:800,color:'#04040A'}}>{watchlistIds.size}</span></div>}
+            <button onClick={()=>setShowProfile(true)} aria-label="Profile" style={{width:36,height:36,padding:0,background:'none',border:'none',cursor:'pointer',flexShrink:0,position:'relative'}}>
+              <span style={{position:'absolute',inset:0,borderRadius:'50%',background:`${accent}22`,border:`2px solid ${accent}55`,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                {user?.imageUrl?<img src={user.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:13,fontWeight:700,color:accent}}>{(user?.firstName||user?.username||'?')[0].toUpperCase()}</span>}
+              </span>
+              {watchlistIds.size>0&&<span style={{position:'absolute',top:-5,right:-6,minWidth:17,height:17,padding:'0 4px',borderRadius:9,background:accent,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #04040A',boxSizing:'border-box',fontSize:9,fontWeight:800,color:'#04040A',lineHeight:1,zIndex:1}}>{watchlistIds.size>99?'99+':watchlistIds.size}</span>}
             </button>
           ):(
             <button onClick={()=>setShowAuth(true)} style={{background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:22,padding:'6px 12px',cursor:'pointer',fontSize:12,color:accent,fontWeight:700,fontFamily:'inherit',whiteSpace:'nowrap'}}>Sign in</button>
