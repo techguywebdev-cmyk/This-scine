@@ -3708,6 +3708,8 @@ function ChatWidget({ peer, onClose, accent }) {
   }, [camOff]);
   const [remoteSpeaking, setRemoteSpeaking] = useState(false);
   const [upgradePrompt, setUpgradePrompt] = useState(false); // peer asked to go video
+  const [upgradeRequested, setUpgradeRequested] = useState(false); // I asked to go video, waiting
+  const upgradeTimerRef = useRef(null);
   const [remoteStreamTick, setRemoteStreamTick] = useState(0);
   const [facingMode, setFacingMode] = useState('user'); // user | environment
   const [switchingCam, setSwitchingCam] = useState(false);
@@ -4240,6 +4242,8 @@ function ChatWidget({ peer, onClose, accent }) {
     setCamOff(false);
     setRemoteSpeaking(false);
     setUpgradePrompt(false);
+    setUpgradeRequested(false);
+    clearTimeout(upgradeTimerRef.current);
     setFacingMode('user');
     setSwitchingCam(false);
     setControlsVisible(true);
@@ -4292,6 +4296,8 @@ function ChatWidget({ peer, onClose, accent }) {
         stream.addTrack(e.track);
       }
       attachRemoteStream(stream);
+      setRemoteStreamTick((t) => t + 1);
+      if (e.track) e.track.onunmute = () => { attachRemoteStream(remoteStreamRef.current); setRemoteStreamTick((t) => t + 1); };
       setCallStatus('connected');
       clearReconnectTimer();
     };
@@ -4516,7 +4522,14 @@ function ChatWidget({ peer, onClose, accent }) {
       return;
     }
 
+    if (signal.kind === 'upgrade_cancel') {
+      setUpgradePrompt(false);
+      return;
+    }
+
     if (signal.kind === 'upgrade_offer') {
+      clearTimeout(upgradeTimerRef.current);
+      setUpgradeRequested(false);
       try {
         const conn = pc || ensurePc();
         await conn.setRemoteDescription(signal.sdp);
@@ -4578,6 +4591,8 @@ function ChatWidget({ peer, onClose, accent }) {
     }
 
     if (signal.kind === 'upgrade_decline') {
+      clearTimeout(upgradeTimerRef.current);
+      setUpgradeRequested(false);
       setUpgradePrompt(false);
       setError('They declined video');
       setTimeout(() => setError(null), 2500);
@@ -4610,7 +4625,20 @@ function ChatWidget({ peer, onClose, accent }) {
 
   const requestVideoUpgrade = async () => {
     if (callMode !== 'audio' || !pcRef.current) return;
+    if (upgradeRequested) { cancelVideoUpgrade(); return; }
+    setUpgradeRequested(true);
+    clearTimeout(upgradeTimerRef.current);
+    upgradeTimerRef.current = setTimeout(() => {
+      setUpgradeRequested(false);
+      setError('No answer to your video request');
+      setTimeout(() => setError(null), 2500);
+    }, 30000);
     await sendSignal({ kind: 'upgrade_request' });
+  };
+  const cancelVideoUpgrade = async () => {
+    clearTimeout(upgradeTimerRef.current);
+    setUpgradeRequested(false);
+    await sendSignal({ kind: 'upgrade_cancel' });
   };
 
   const acceptVideoUpgrade = async () => {
@@ -4911,6 +4939,27 @@ function ChatWidget({ peer, onClose, accent }) {
       try { audioCtx?.close(); } catch {}
     };
   }, [callMode, callStatus, remoteStreamTick]);
+
+  // The <video> elements only mount once the call is in video mode, so after an
+  // audio→video switch the streams have to be attached again (both sides).
+  useEffect(() => {
+    if (!callMode) return;
+    const t = setTimeout(() => {
+      const rs = remoteStreamRef.current;
+      if (rs && remoteVideoRef.current) {
+        if (remoteVideoRef.current.srcObject !== rs) remoteVideoRef.current.srcObject = rs;
+        else { remoteVideoRef.current.srcObject = null; remoteVideoRef.current.srcObject = rs; }
+        remoteVideoRef.current.play?.().catch(() => {});
+      }
+      const ls = localStreamRef.current;
+      if (ls && localVideoRef.current && localVideoRef.current.srcObject !== ls) {
+        localVideoRef.current.srcObject = ls;
+        localVideoRef.current.muted = true;
+        localVideoRef.current.play?.().catch(() => {});
+      }
+    }, 60);
+    return () => clearTimeout(t);
+  }, [callMode, remoteStreamTick, camOff]);
 
   // auto-hide controls on video after idle
   useEffect(() => {
@@ -5581,6 +5630,20 @@ function ChatWidget({ peer, onClose, accent }) {
               )}
             </div>
 
+            {/* I asked to switch to video — waiting for them */}
+            {upgradeRequested && callMode === 'audio' && (
+              <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', left: 16, right: 16, bottom: 130, zIndex: 12, display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(15,15,24,0.9)', border: `1px solid ${accent}55`, borderRadius: 16, padding: '12px 14px', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: `${accent}26`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: 'callPulse 1.6s ease-in-out infinite' }}>
+                  <SvgIcon name="video" size={16} color={accent} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Asking {name} to switch to video…</div>
+                  <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>Your camera turns on when they accept</div>
+                </div>
+                <button type="button" onClick={cancelVideoUpgrade} style={{ background: 'none', border: 'none', padding: '6px 4px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.65)' }}>Cancel</button>
+              </div>
+            )}
+
             {/* Upgrade prompt */}
             {upgradePrompt && (
               <div
@@ -5741,17 +5804,18 @@ function ChatWidget({ peer, onClose, accent }) {
                   }}
                   style={{
                     width: 56, height: 56, borderRadius: '50%',
-                    background: (callMode === 'video' && camOff) ? '#fff' : 'rgba(255,255,255,0.15)',
+                    background: upgradeRequested ? accent : (callMode === 'video' && camOff) ? '#fff' : 'rgba(255,255,255,0.15)',
                     backdropFilter: 'blur(12px)',
-                    border: `1px solid ${(callMode === 'video' && camOff) ? 'transparent' : 'rgba(255,255,255,0.2)'}`,
+                    border: `1px solid ${upgradeRequested || (callMode === 'video' && camOff) ? 'transparent' : 'rgba(255,255,255,0.2)'}`,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.2s ease',
+                    animation: upgradeRequested ? 'callPulse 1.6s ease-in-out infinite' : 'none',
                   }}
                 >
-                  <SvgIcon name={(callMode === 'video' && camOff) ? 'videoOff' : 'video'} size={22} color={(callMode === 'video' && camOff) ? '#0A0A0F' : '#fff'} />
+                  <SvgIcon name={(callMode === 'video' && camOff) ? 'videoOff' : 'video'} size={22} color={upgradeRequested || (callMode === 'video' && camOff) ? '#0A0A0F' : '#fff'} />
                 </button>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-                  {callMode === 'audio' ? 'Camera' : camOff ? 'Camera' : 'Camera'}
+                <span style={{ fontSize: 10, color: upgradeRequested ? accent : 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+                  {upgradeRequested ? 'Waiting…' : callMode === 'audio' ? 'Video' : 'Camera'}
                 </span>
               </div>
 
