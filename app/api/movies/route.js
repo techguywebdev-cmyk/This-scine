@@ -203,6 +203,18 @@ export async function GET(request) {
 
 
   try {
+    // ── SINGLE TITLE (shared links) ──
+    const itemId = searchParams.get('item');
+    if (itemId) {
+      const t = searchParams.get('itemType') === 'tv' ? 'tv' : 'movie';
+      const r = await fetch(`${TMDB_BASE}/${t}/${parseInt(itemId, 10)}?api_key=${TMDB_KEY}`, { next: { revalidate: 3600 } });
+      if (!r.ok) return Response.json({ movies: [] }, { status: 404 });
+      const d = await r.json();
+      const cert = await getMovieCert(d.id, t === 'tv');
+      const idx = d.id % ACCENTS.length;
+      return Response.json({ movies: [formatItem(d, idx, cert)] });
+    }
+
     // ── POPULAR SEARCHES (rotating trending picks) ──
     if (popularOnly) {
       const p = Math.floor(Math.random() * 5) + 1;

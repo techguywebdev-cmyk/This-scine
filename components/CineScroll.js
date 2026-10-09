@@ -2978,6 +2978,15 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
   const isUpcoming=!!movie.isUpcoming;
   const reminderBusyRef=useRef(false);
   const[remindToast,setRemindToast]=useState(null);const remindToastTimer=useRef(null);
+  const shareMovie=async()=>{
+    const url=`${typeof window!=='undefined'?window.location.origin:'https://this-scine.vercel.app'}/?m=${movie.isTV?'tv':'movie'}-${movie.id}`;
+    const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on CineScroll`;
+    try{
+      if(navigator.share){await navigator.share({title:movie.title,text,url});return;}
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      flashRemind('Link copied');
+    }catch(e){if(e&&e.name==='AbortError')return;try{await navigator.clipboard.writeText(url);flashRemind('Link copied');}catch{flashRemind('Could not share',false);}}
+  };
   const flashRemind=(msg,ok=true)=>{clearTimeout(remindToastTimer.current);setRemindToast({msg,ok});remindToastTimer.current=setTimeout(()=>setRemindToast(null),2800);};
   useEffect(()=>()=>clearTimeout(remindToastTimer.current),[]);
   const toggleReminder=async()=>{
@@ -3083,7 +3092,7 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
         <p style={{fontSize:13.5,color:'rgba(255,255,255,0.55)',lineHeight:1.6,margin:0,fontWeight:400}}>{movie.overview}</p>
       </div>
       <div style={{position:'absolute',right:12,bottom:'calc(16px + env(safe-area-inset-bottom))',zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
-        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'nope',icon:'notFor',label:'Not for me',active:false,color:'#FF6B8A',filled:false,fn:()=>{if(navigator.vibrate)navigator.vibrate(15);onNotInterested&&onNotInterested(movie);}}].map(btn=>(
+        {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'share',icon:'share',label:'Share',active:false,color:accent,filled:false,fn:shareMovie}].map(btn=>(
           <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
             <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
             <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
@@ -3093,7 +3102,7 @@ function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onSave,isS
       {remindToast&&(
         <div style={{position:'absolute',left:'50%',top:'52%',transform:'translateX(-50%)',zIndex:30,pointerEvents:'none',animation:'fadeUp 0.25s ease'}}>
           <div style={{display:'flex',alignItems:'center',gap:8,whiteSpace:'nowrap',background:'rgba(6,6,11,0.88)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${remindToast.ok?'#FFD16655':'rgba(255,107,138,0.45)'}`,borderRadius:999,padding:'9px 16px',boxShadow:'0 10px 30px rgba(0,0,0,0.45)'}}>
-            <SvgIcon name={remindToast.ok?'bell':'close'} size={14} color={remindToast.ok?'#FFD166':'#FF6B8A'} filled={remindToast.ok}/>
+            <SvgIcon name={!remindToast.ok?'close':/link/i.test(remindToast.msg)?'share':'bell'} size={14} color={remindToast.ok?'#FFD166':'#FF6B8A'} filled={remindToast.ok&&!/link/i.test(remindToast.msg)}/>
             <span style={{fontSize:12.5,fontWeight:700,color:'#fff'}}>{remindToast.msg}</span>
           </div>
         </div>
@@ -3657,6 +3666,7 @@ function ChatWidget({ peer, onClose, accent }) {
   const { user } = useUser();
   const [messages, setMessages] = useState([]);
   const [peerInfo, setPeerInfo] = useState(peer || null);
+  const [showPeerProfile, setShowPeerProfile] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -4949,6 +4959,11 @@ function ChatWidget({ peer, onClose, accent }) {
 
   return (
     <>
+      {showPeerProfile && peerInfo?.user_id && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 140 }}>
+          <UserProfileSheet userId={peerInfo.user_id} onClose={() => setShowPeerProfile(false)} accent={accent} onWatchTrailer={() => {}} />
+        </div>
+      )}
       <div
         onClick={onClose}
         style={{
@@ -5010,7 +5025,7 @@ function ChatWidget({ peer, onClose, accent }) {
             </span>
           </button>
 
-          <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div role="button" tabIndex={0} aria-label="View profile" onClick={() => peerInfo?.user_id && setShowPeerProfile(true)} onKeyDown={e => e.key === 'Enter' && peerInfo?.user_id && setShowPeerProfile(true)} style={{ position: 'relative', flexShrink: 0, cursor: 'pointer' }}>
             <div
               style={{
                 width: 42,
@@ -5045,7 +5060,7 @@ function ChatWidget({ peer, onClose, accent }) {
             />
           </div>
 
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div role="button" tabIndex={0} onClick={() => peerInfo?.user_id && setShowPeerProfile(true)} onKeyDown={e => e.key === 'Enter' && peerInfo?.user_id && setShowPeerProfile(true)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
             <div
               style={{
                 fontSize: 15,
@@ -5058,6 +5073,7 @@ function ChatWidget({ peer, onClose, accent }) {
             >
               {name}
             </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>View profile</div>
           </div>
 
           <button
@@ -8675,6 +8691,22 @@ export default function CineScroll(){
     load();
   },[isLoaded,isSignedIn]);
 
+  // Shared link (?m=movie-123 / ?m=tv-456): put that title first in the feed
+  const sharedRef=useRef(null);
+  useEffect(()=>{
+    if(typeof window==='undefined')return;
+    const u=new URL(window.location.href);const m=u.searchParams.get('m');
+    if(!m)return;
+    const [type,id]=m.split('-');if(!id)return;
+    u.searchParams.delete('m');window.history.replaceState(null,'',u.pathname+(u.search||''));
+    fetch(`/api/movies?item=${encodeURIComponent(id)}&itemType=${type==='tv'?'tv':'movie'}`).then(r=>r.ok?r.json():null).then(d=>{
+      const mv=d&&d.movies&&d.movies[0];if(!mv)return;
+      sharedRef.current=mv;
+      setMovies(p=>[mv,...p.filter(x=>!(x.id===mv.id&&!!x.isTV===!!mv.isTV))]);
+      setActiveIndex(0);setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
+    }).catch(()=>{});
+  },[]);
+
   // Warm the profile cover in the background so the profile opens with it already painted
   useEffect(()=>{
     if(!isLoaded||!isSignedIn||!user?.id)return;
@@ -8870,7 +8902,8 @@ export default function CineScroll(){
         if(fresh.length<4&&retry<2){pageRef.current+=1;loadingMoreRef.current=false;return fetchMovies(mood,genre,search,pageRef.current,true,provider,retry+1);}
       }
       else{
-        setMovies(pick);
+        const shared=sharedRef.current;sharedRef.current=null;
+        setMovies(shared?[shared,...pick.filter(x=>!(x.id===shared.id&&!!x.isTV===!!shared.isTV))]:pick);
         setActiveIndex(0);
         pageRef.current=1;
         setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
