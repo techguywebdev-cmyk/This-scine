@@ -989,29 +989,36 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     setPushBusy(false);
   };
 
+  const patchSettings=async(fields)=>{
+    let res;
+    try{res=await fetch('/api/settings',{method:'PATCH',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});}
+    catch{throw new Error('No connection — try again');}
+    const text=await res.text();
+    let data={};try{data=text?JSON.parse(text):{};}catch{
+      if(res.status===401||res.status===403||res.redirected)throw new Error('Session expired — refresh the page and try again');
+      throw new Error(`Couldn't save (error ${res.status})`);
+    }
+    if(!res.ok||data.error)throw new Error(data.error||`Couldn't save (error ${res.status})`);
+    return data;
+  };
   const saveBio=async()=>{
     if(bioInput===bio)return;
     setSavingBio(true);
     try{
-      const res=await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({bio:bioInput})});
-      let data={};
-      try{data=await res.json();}catch{throw new Error(`Bad response (status ${res.status})`);}
-      if(!res.ok||data.error){throw new Error(data.error||`Save failed (status ${res.status})`);}
+      await patchSettings({bio:bioInput});
       setBio(bioInput);
       showToast('Bio updated');
-    }catch(err){setBioInput(bio);showToast(err.message||'Could not save bio — try again');}
+    }catch(err){showToast(err.message||'Could not save bio — try again');}
     setSavingBio(false);
   };
   const saveNickname=async()=>{
     if(nicknameInput===nickname)return;
     setSavingNickname(true);
     try{
-      const res=await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({nickname:nicknameInput})});
-      const data=await res.json();
-      if(!res.ok||data.error){throw new Error(data.error||'Failed');}
-      setNickname(nicknameInput);
+      const data=await patchSettings({nickname:nicknameInput});
+      setNickname((data&&typeof data.nickname==='string')?data.nickname:nicknameInput.trim());
       showToast('Display name updated');
-    }catch{setNicknameInput(nickname);showToast('Could not save — try again');}
+    }catch(err){showToast(err.message||'Could not save — try again');}
     setSavingNickname(false);
   };
   const uploadCoverBlob=async(blobOrFile)=>{

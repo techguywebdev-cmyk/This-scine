@@ -33,6 +33,8 @@ function parsePrefs(raw) {
 }
 
 // GET /api/settings
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -71,13 +73,18 @@ export async function GET() {
 }
 
 // PATCH /api/settings
+// Update the row if it exists, otherwise insert it. Errors carry the real reason
+// so the client can show something more useful than "couldn't save".
 export async function PATCH(request) {
-  const { userId } = auth();
-  if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  let userId = null;
+  try { userId = auth().userId; } catch (e) { console.error('settings auth error', e); }
+  if (!userId) return Response.json({ error: 'You are signed out — sign in again to save' }, { status: 401 });
+
+  let body = {};
+  try { body = await request.json(); } catch { return Response.json({ error: 'Invalid request body' }, { status: 400 }); }
 
   try {
-    const body = await request.json();
-    const payload = { user_id: userId, updated_at: new Date().toISOString() };
+    const payload = { updated_at: new Date().toISOString() };
 
     if (typeof body.watchlist_public === 'boolean') payload.watchlist_public = body.watchlist_public;
     if (typeof body.bio === 'string') payload.bio = body.bio.slice(0, 160);
@@ -85,52 +92,53 @@ export async function PATCH(request) {
     if (typeof body.nickname === 'string') payload.nickname = body.nickname.trim().slice(0, 40);
 
     if (body.notify_prefs && typeof body.notify_prefs === 'object') {
-      // merge with existing
       let existing = { ...DEFAULT_PREFS };
       try {
-        const cur = await fetch(
-          `${db('user_settings')}?user_id=eq.${userId}&select=notify_prefs`,
-          { headers }
-        );
+        const cur = await fetch(`${db('user_settings')}?user_id=eq.${encodeURIComponent(userId)}&select=notify_prefs`, { headers, cache: 'no-store' });
         const rows = await cur.json();
         if (Array.isArray(rows) && rows[0]) existing = parsePrefs(rows[0].notify_prefs);
       } catch {}
       payload.notify_prefs = { ...existing, ...body.notify_prefs };
     }
 
-    if (body.push_subscription !== undefined) {
-      payload.push_subscription = body.push_subscription; // object or null
+    if (body.push_subscription !== undefined) payload.push_subscription = body.push_subscription;
+
+    if (Object.keys(payload).length <= 1) {
+      return Response.json({ error: 'Nothing to save' }, { status: 400 });
     }
 
-    if (Object.keys(payload).length <= 2) {
-      return Response.json({ error: 'No valid fields provided' }, { status: 400 });
-    }
-
-    const upsertRes = await fetch(db('user_settings'), {
-      method: 'POST',
-      headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=representation' },
+    // 1) Try updating an existing row
+    const upd = await fetch(`${db('user_settings')}?user_id=eq.${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      headers,
       body: JSON.stringify(payload),
+      cache: 'no-store',
     });
+    if (!upd.ok) {
+      const t = await upd.text();
+      console.error('settings update failed', upd.status, t);
+      return Response.json({ error: `Save failed (${upd.status}): ${t.slice(0, 140)}` }, { status: 500 });
+    }
+    const updated = await upd.json().catch(() => []);
 
-    if (!upsertRes.ok) {
-      const errText = await upsertRes.text();
-      console.error('Supabase upsert error:', upsertRes.status, errText);
-      // If notify_prefs column missing, still try without it for core fields
-      if (errText.includes('notify_prefs') || errText.includes('push_subscription')) {
-        return Response.json(
-          {
-            error:
-              'Add columns in Supabase: alter table user_settings add column if not exists notify_prefs jsonb default \'{}\'::jsonb; alter table user_settings add column if not exists push_subscription jsonb;',
-          },
-          { status: 500 }
-        );
+    // 2) No row yet: insert one
+    if (!Array.isArray(updated) || updated.length === 0) {
+      const ins = await fetch(db('user_settings'), {
+        method: 'POST',
+        headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify({ user_id: userId, ...payload }),
+        cache: 'no-store',
+      });
+      if (!ins.ok) {
+        const t = await ins.text();
+        console.error('settings insert failed', ins.status, t);
+        return Response.json({ error: `Save failed (${ins.status}): ${t.slice(0, 140)}` }, { status: 500 });
       }
-      return Response.json({ error: 'Database update failed' }, { status: 500 });
     }
 
     return Response.json({ success: true, ...payload });
   } catch (err) {
     console.error('PATCH /api/settings error:', err);
-    return Response.json({ error: 'Failed to update settings' }, { status: 500 });
+    return Response.json({ error: `Save failed: ${err?.message || 'unknown error'}` }, { status: 500 });
   }
 }
