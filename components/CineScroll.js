@@ -6486,6 +6486,26 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     return out;
   }, [feedItems, activityFilter]);
 
+  // Organise the feed by person: one block per friend, their actions grouped by type
+  const [personFilter, setPersonFilter] = useState(null);
+  const people = useMemo(() => {
+    let list = activityFilter === 'all' ? feedItems : feedItems.filter(i => i.type === activityFilter);
+    if (personFilter) list = list.filter(i => i.user_id === personFilter);
+    const map = new Map();
+    list.forEach(i => {
+      let p = map.get(i.user_id);
+      if (!p) { p = { user_id: i.user_id, user: { user_id: i.user_id, username: i.username, avatar_url: i.avatar_url, display_name: i.display_name }, latest: i.created_at, groups: new Map() }; map.set(i.user_id, p); }
+      if (new Date(i.created_at) > new Date(p.latest)) p.latest = i.created_at;
+      const g = p.groups.get(i.type) || [];
+      if (!(isTitle(i.type) && i.type !== 'reviewed' && g.some(x => x.movie_id === i.movie_id))) g.push(i);
+      p.groups.set(i.type, g);
+    });
+    const ORDER = ['reviewed', 'watched', 'saved', 'list_follow', 'arc_complete'];
+    return [...map.values()]
+      .map(p => ({ ...p, groups: [...p.groups.entries()].sort((a, b) => (ORDER.indexOf(a[0]) + 99) % 99 - (ORDER.indexOf(b[0]) + 99) % 99).map(([type, items]) => ({ type, items: items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) })) }))
+      .sort((a, b) => new Date(b.latest) - new Date(a.latest));
+  }, [feedItems, activityFilter, personFilter]);
+
   const dayLabel = (ts) => {
     const d = new Date(ts); const today = new Date();
     const diff = Math.floor((new Date(today.toDateString()) - new Date(d.toDateString())) / 86400000);
@@ -6625,6 +6645,98 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     );
   };
 
+  const GROUP_LABEL = { saved: 'Saved', watched: 'Watched', reviewed: 'Reviewed', list_follow: 'Followed folders', arc_complete: 'Finished arcs' };
+  const actionBtn = { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 };
+
+  const PersonBlock = ({ p }) => {
+    const u = p.user;
+    const name = u.display_name || u.username || 'Someone';
+    const total = p.groups.reduce((n, g) => n + g.items.length, 0);
+    return (
+      <div style={{ padding: '18px 0 20px', borderTop: `1px solid ${T.hairline}` }}>
+        {/* Who */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setViewingProfile(p.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} aria-label={`Open ${name}'s profile`}>
+            <Avatar u={u} size={42} ring={activeRecently.has(p.user_id)} />
+          </button>
+          <button onClick={() => setViewingProfile(p.user_id)} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+            <div style={{ fontSize: 11.5, color: T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{u.username || 'user'} · active {timeAgo(p.latest)}{timeAgo(p.latest) === 'now' ? '' : ' ago'}</div>
+          </button>
+          <button onClick={() => openChat({ user_id: p.user_id, username: u.username, avatar_url: u.avatar_url })} aria-label={`Message ${name}`} style={{ background: 'none', border: `1px solid ${T.hairline}`, borderRadius: 18, height: 32, padding: '0 12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', flexShrink: 0 }}>
+            <SvgIcon name="chat" size={13} color="rgba(255,255,255,0.8)" />Message
+          </button>
+        </div>
+
+        {/* What they did, grouped */}
+        <div style={{ marginLeft: 54 }}>
+          {p.groups.map(g => {
+            const first = g.items[0];
+            return (
+              <div key={g.type} style={{ marginTop: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 10.5, letterSpacing: 1.6, textTransform: 'uppercase', fontWeight: 700, color: accent }}>{GROUP_LABEL[g.type] || 'Shared'}</span>
+                  <span style={{ fontSize: 11, color: T.text3 }}>{g.items.length > 1 ? `${g.items.length} · ` : ''}{timeAgo(first.created_at)}</span>
+                </div>
+
+                {g.type === 'reviewed' ? (
+                  g.items.slice(0, 2).map(it => (
+                    <div key={it.id || it.movie_id} role="button" tabIndex={0} onClick={() => onWatchTrailer({ ...toMovie(it), ...(it.review_id ? { initialTab: 'comments', highlightCommentId: it.review_id } : {}) })} style={{ display: 'flex', gap: 12, marginTop: 10, cursor: 'pointer' }}>
+                      <div style={{ width: 48, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: T.surface }}>
+                        {it.movie_poster && <img src={it.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{it.movie_title}{it.review_rating ? <span style={{ marginLeft: 6, fontSize: 11.5, color: '#FFD166' }}>★ {it.review_rating}</span> : null}</div>
+                        {it.review_text && <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45, marginTop: 4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.review_text}</div>}
+                      </div>
+                    </div>
+                  ))
+                ) : isTitle(g.type) && g.items.length === 1 ? (
+                  <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                    <div role="button" tabIndex={0} onClick={() => onWatchTrailer(toMovie(first))} style={{ width: 56, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: T.surface, cursor: 'pointer' }}>
+                      {first.movie_poster && <img src={first.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', lineHeight: 1.25 }}>{first.movie_title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: T.text2, marginTop: 4 }}>
+                        {first.movie_year && <span>{first.movie_year}</span>}
+                        {first.movie_rating && <><span>·</span><SvgIcon name="star" size={10} color="#FFD166" filled /><span style={{ color: 'rgba(255,255,255,0.85)' }}>{first.movie_rating}</span></>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 18, marginTop: 10 }}>
+                        <button onClick={() => onWatchTrailer(toMovie(first))} style={{ ...actionBtn, color: '#fff' }}><SvgIcon name="play" size={11} color="#fff" filled />Trailer</button>
+                        <button onClick={() => saveFromFeed(first)} disabled={savedHere.has(first.movie_id)} style={{ ...actionBtn, color: savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)', cursor: savedHere.has(first.movie_id) ? 'default' : 'pointer' }}>
+                          <SvgIcon name="bookmark" size={13} color={savedHere.has(first.movie_id) ? accent : 'rgba(255,255,255,0.75)'} filled={savedHere.has(first.movie_id)} />{savedHere.has(first.movie_id) ? 'Saved' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : isTitle(g.type) ? (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10, overflowX: 'auto', scrollbarWidth: 'none', marginRight: -20, paddingRight: 20 }}>
+                    {g.items.slice(0, 12).map(it => (
+                      <button key={it.id || it.movie_id} onClick={() => onWatchTrailer(toMovie(it))} aria-label={it.movie_title} style={{ flexShrink: 0, width: 76, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                        <div style={{ width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', background: T.surface }}>
+                          {it.movie_poster && <img src={it.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.7)', marginTop: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.movie_title}</div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  g.items.slice(0, 3).map(it => (
+                    <div key={it.id || `${it.type}-${it.created_at}`} style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.8)', marginTop: 8 }}>{it.movie_title || it.list_title || it.arc_title || 'Something new'}</div>
+                  ))
+                )}
+              </div>
+            );
+          })}
+          {total > 0 && p.groups.some(g => g.items.length > 12) && (
+            <button onClick={() => setViewingProfile(p.user_id)} style={{ ...actionBtn, color: accent, marginTop: 12 }}>See all on {name.split(' ')[0]}'s profile</button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   let lastDay = null;
 
   return (
@@ -6690,9 +6802,9 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {friends.length > 0 && (
                     <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -20px', padding: '18px 20px 4px' }}>
                       {[...friends].sort((a, b) => (activeRecently.has(b.user_id) ? 1 : 0) - (activeRecently.has(a.user_id) ? 1 : 0)).map(f => (
-                        <button key={f.user_id} onClick={() => setViewingProfile(f.user_id)} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                          <Avatar u={f} size={58} ring={activeRecently.has(f.user_id)} />
-                          <span style={{ fontSize: 11, color: activeRecently.has(f.user_id) ? '#fff' : 'rgba(255,255,255,0.6)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name || f.username}</span>
+                        <button key={f.user_id} onClick={() => setPersonFilter(cur => cur === f.user_id ? null : f.user_id)} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: personFilter && personFilter !== f.user_id ? 0.4 : 1, transition: 'opacity .2s' }}>
+                          <Avatar u={f} size={58} ring={activeRecently.has(f.user_id) || personFilter === f.user_id} />
+                          <span style={{ fontSize: 11, fontWeight: personFilter === f.user_id ? 700 : 400, color: personFilter === f.user_id ? accent : activeRecently.has(f.user_id) ? '#fff' : 'rgba(255,255,255,0.6)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name || f.username}</span>
                         </button>
                       ))}
                       <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -6732,8 +6844,14 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                     ))}
                   </div>
 
-                  {/* Posts */}
-                  {posts.length === 0 ? (
+                  {/* People */}
+                  {personFilter && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14, fontSize: 12, color: T.text2 }}>
+                      <span>Showing {(friends.find(f => f.user_id === personFilter)?.display_name) || (friends.find(f => f.user_id === personFilter)?.username) || 'one person'}</span>
+                      <button onClick={() => setPersonFilter(null)} style={{ ...actionBtn, color: accent }}>Show everyone</button>
+                    </div>
+                  )}
+                  {people.length === 0 ? (
                     stats.following === 0 || friends.length === 0 ? (
                       <div style={{ paddingTop: 22 }}>
                         <div style={{ fontFamily:T.serif, fontSize:14,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>Your feed fills up when you follow people</div>
@@ -6749,20 +6867,11 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                       </div>
                     )
                   ) : (
-                    posts.map((p) => {
-                      const label = dayLabel(p.items[0].created_at);
-                      const showDay = label !== lastDay; lastDay = label;
-                      return (
-                        <div key={p.key}>
-                          {showDay && <div style={{ fontSize: 12, fontWeight: 700, color:T.text2, padding: '18px 0 2px' }}>{label}</div>}
-                          <Post p={p} />
-                        </div>
-                      );
-                    })
+                    people.map(p => <PersonBlock key={p.user_id} p={p} />)
                   )}
 
                   {/* Keep growing the circle */}
-                  {posts.length > 0 && suggested.filter(u => !u.isFollowing).length > 0 && (
+                  {people.length > 0 && !personFilter && suggested.filter(u => !u.isFollowing).length > 0 && (
                     <>
                       <H right={<button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: accent }}>See all</button>}>People you may know</H>
                       {suggested.filter(u => !u.isFollowing).slice(0, 3).map(u => <PersonRow key={u.user_id} u={u} meta={u.mutualCount > 0 ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`} right={<FollowBtn u={u} />} />)}
