@@ -32,6 +32,8 @@ export async function GET() {
         if (eu.ok) await c.fetch(`https://${process.env.R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com/${process.env.R2_BUCKET}/${key}`, { method: 'DELETE' }).catch(() => {});
         out.bucketName = process.env.R2_BUCKET === process.env.R2_BUCKET.trim() ? process.env.R2_BUCKET : 'has extra spaces';
         out.accountIdLength = (process.env.R2_ACCOUNT_ID || '').trim().length;
+        out.accountIdStartsWith = (process.env.R2_ACCOUNT_ID || '').trim().slice(0, 6);
+        out.accessKeyIdStartsWith = (process.env.R2_ACCESS_KEY_ID || '').trim().slice(0, 6);
         out.accessKeyIdLength = (process.env.R2_ACCESS_KEY_ID || '').trim().length;
         out.secretKeyLength = (process.env.R2_SECRET_ACCESS_KEY || '').trim().length;
         out.secretHadSpaces = (process.env.R2_SECRET_ACCESS_KEY || '') !== (process.env.R2_SECRET_ACCESS_KEY || '').trim();
