@@ -100,6 +100,9 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     speaker:   ['M11 5L6 9H2v6h4l5 4V5z','M15.54 8.46a5 5 0 0 1 0 7.07','M19.07 4.93a10 10 0 0 1 0 14.14'],
     speakerOff:['M11 5L6 9H2v6h4l5 4V5z','M23 9l-6 6','M17 9l6 6'],
     flipCam:   ['M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5','M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5','M16 11l2-2-2-2','M8 13l-2 2 2 2'],
+    image:     ['M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z','M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z','M21 15l-5-5L5 21'],
+    camera:    ['M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z','M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
+    file:      ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6','M8 13h8','M8 17h5'],
   };
   const def = icons[name];
   if (!def) return null;
@@ -5987,8 +5990,7 @@ function ChatWidget({ peer, onClose, accent }) {
         {showStickers && (
           <div
             style={{
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-              background: 'rgba(5,5,8,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              background: `linear-gradient(180deg, ${accent}08, ${accent}12)`, borderTop: `1px solid ${accent}22`,
               padding: '10px 12px 12px',
               flexShrink: 0,
               maxHeight: 240,
@@ -6109,7 +6111,7 @@ function ChatWidget({ peer, onClose, accent }) {
                         key={g.id}
                         type="button"
                         onClick={() => sendGif(g)}
-                        style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 0, overflow: 'hidden', cursor: 'pointer', aspectRatio: '1' }}
+                        style={{ background: `${accent}14`, border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 0, overflow: 'hidden', cursor: 'pointer', aspectRatio: '1' }}
                       >
                         <img src={g.preview || g.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </button>
@@ -6127,12 +6129,11 @@ function ChatWidget({ peer, onClose, accent }) {
             style={{
               padding: '12px 14px',
               paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
               flexShrink: 0,
-              background: 'rgba(5,5,8,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              background: `linear-gradient(180deg, ${accent}0a 0%, ${accent}17 100%)`, borderTop: `1px solid ${accent}22`,
             }}
           >
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF4D4D', animation: 'pulseRec 1s ease infinite' }} />
@@ -6155,51 +6156,39 @@ function ChatWidget({ peer, onClose, accent }) {
               flexDirection: 'column',
               gap: 8,
               flexShrink: 0,
-              background: 'rgba(5,5,8,0.55)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              background: `linear-gradient(180deg, ${accent}0a 0%, ${accent}17 100%)`, borderTop: `1px solid ${accent}22`,
             }}
           >
             {/* Attachment sheet — WhatsApp-style: Photo, Video, Document, Camera */}
             {showAttach && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 10,
-                  padding: '8px 4px 4px',
-                }}
-              >
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, padding: '6px 0 4px', animation: 'attachIn .22s ease' }}>
+                <style>{`@keyframes attachIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}`}</style>
                 {[
-                  { id: 'photo', label: 'Photo', accept: 'image/*', icon: '📷' },
-                  { id: 'video', label: 'Video', accept: 'video/*', icon: '🎬' },
-                  { id: 'doc', label: 'Document', accept: '*/*', icon: '📄' },
-                  { id: 'camera', label: 'Camera', accept: 'image/*', capture: 'environment', icon: '📸' },
+                  { id: 'photo', label: 'Photos', accept: 'image/*', icon: 'image', tint: '#7BC8FF' },
+                  { id: 'camera', label: 'Camera', accept: 'image/*', capture: 'environment', icon: 'camera', tint: '#FF8FB1' },
+                  { id: 'video', label: 'Video', accept: 'video/*', icon: 'video', tint: '#B79CFF' },
+                  { id: 'doc', label: 'File', accept: '*/*', icon: 'file', tint: '#7BFFB0' },
+                  { id: 'gif', label: 'GIFs', icon: 'gif', tint: '#FFD166' },
                 ].map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => {
-                      const input = fileInputRef.current;
-                      if (!input) return;
-                      input.accept = item.accept;
-                      if (item.capture) input.setAttribute('capture', item.capture);
-                      else input.removeAttribute('capture');
-                      input.click();
+                      if (item.id === 'gif') { setShowAttach(false); setShowStickers(true); setMediaTab('gifs'); return; }
+                      const inputEl = fileInputRef.current;
+                      if (!inputEl) return;
+                      inputEl.accept = item.accept;
+                      if (item.capture) inputEl.setAttribute('capture', item.capture);
+                      else inputEl.removeAttribute('capture');
+                      inputEl.click();
+                      setShowAttach(false);
                     }}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 16,
-                      padding: '14px 6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontFamily: 'inherit',
-                    }}
+                    style={{ background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, fontFamily: 'inherit' }}
                   >
-                    <span style={{ fontSize: 22 }}>{item.icon}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>{item.label}</span>
+                    <span style={{ width: 50, height: 50, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(145deg, ${item.tint}38, ${item.tint}12)`, border: `1px solid ${item.tint}40`, boxShadow: `0 6px 18px ${item.tint}1f, inset 0 1px 0 rgba(255,255,255,0.08)` }}>
+                      <SvgIcon name={item.icon} size={21} color={item.tint} />
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -6222,8 +6211,10 @@ function ChatWidget({ peer, onClose, accent }) {
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  background: showAttach ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)',
-                  border: 'none',
+                  background: showAttach ? accent : `${accent}1f`,
+                  border: `1px solid ${accent}38`,
+                  transition: 'transform .2s, background .2s',
+                  transform: showAttach ? 'rotate(45deg)' : 'none',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -6231,7 +6222,7 @@ function ChatWidget({ peer, onClose, accent }) {
                   flexShrink: 0,
                 }}
               >
-                <SvgIcon name="plus" size={18} color="rgba(255,255,255,0.85)" />
+                <SvgIcon name="plus" size={18} color={showAttach ? '#0A0A0F' : '#fff'} />
               </button>
               <div
                 style={{
@@ -6239,7 +6230,9 @@ function ChatWidget({ peer, onClose, accent }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
-                  background: 'rgba(255,255,255,0.07)',
+                  background: `linear-gradient(135deg, rgba(255,255,255,0.09), ${accent}14)`,
+                  border: `1px solid ${accent}2e`,
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06)`,
                   borderRadius: 24,
                   padding: '4px 6px 4px 14px',
                   minHeight: 44,
