@@ -8556,6 +8556,7 @@ export default function CineScroll(){
   const handleNotInterested=(movie)=>{
     const idx=movies.findIndex(m=>m.id===movie.id);
     hiddenIdsRef.current.add(movie.id);saveHidden();
+    try{const g=JSON.parse(localStorage.getItem('cine_hidden_genres')||'{}');(movie.genre||[]).forEach(n=>{g[n]=(g[n]||0)+1;});localStorage.setItem('cine_hidden_genres',JSON.stringify(g));}catch{}
     setMovies(p=>p.filter(m=>m.id!==movie.id));
     clearTimeout(hiddenToastTimer.current);setHiddenToast({movie,idx});hiddenToastTimer.current=setTimeout(()=>setHiddenToast(null),4000);
   };
@@ -8565,19 +8566,63 @@ export default function CineScroll(){
     setMovies(p=>{const n=[...p];n.splice(Math.max(0,idx),0,movie);return n;});
     clearTimeout(hiddenToastTimer.current);setHiddenToast(null);
   };
-  const fetchMovies=useCallback(async(mood,genre,search='',page=1,append=false,provider='')=>{
-    if(loadingMoreRef.current&&append)return;
-    if(append){loadingMoreRef.current=true;setLoadingMore(true);}else setLoading(true);
+  // ── Feed memory: what this device has already been shown, so the feed keeps moving ──
+  const feedKey=m=>`${m.isTV?'t':'m'}${m.id}`;
+  const seenRef=useRef({});
+  const seedRef=useRef(String(Math.floor(Math.random()*1e9)));
+  const watchlistRef=useRef([]);
+  useEffect(()=>{watchlistRef.current=watchlist;},[watchlist]);
+  useEffect(()=>{
     try{
-      const params=new URLSearchParams({mood:(mood||'trending').toLowerCase(),genre:genre||'',search:search||'',page:String(page)});
+      const raw=JSON.parse(localStorage.getItem('cine_seen')||'{}');const now=Date.now();const keep={};
+      Object.entries(raw).forEach(([k,t])=>{if(now-t<5*24*3600e3)keep[k]=t;});
+      seenRef.current=keep;
+    }catch{}
+  },[]);
+  const markSeen=m=>{
+    if(!m||!m.id)return;
+    const k=feedKey(m);if(seenRef.current[k])return;
+    seenRef.current[k]=Date.now();
+    try{
+      const entries=Object.entries(seenRef.current).sort((a,b)=>b[1]-a[1]).slice(0,900);
+      seenRef.current=Object.fromEntries(entries);
+      localStorage.setItem('cine_seen',JSON.stringify(seenRef.current));
+    }catch{}
+  };
+  const tasteParams=()=>{
+    const counts={};
+    (watchlistRef.current||[]).forEach(w=>(Array.isArray(w.genre)?w.genre:[]).forEach(g=>{counts[g]=(counts[g]||0)+(w.watched?1:2);}));
+    const taste=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([g])=>g);
+    let avoid=[];
+    try{const h=JSON.parse(localStorage.getItem('cine_hidden_genres')||'{}');avoid=Object.entries(h).filter(([g,c])=>c>=3&&!taste.includes(g)&&(c>=(counts[g]||0)+3)).map(([g])=>g);}catch{}
+    return{taste,avoid};
+  };
+
+  const fetchMovies=useCallback(async(mood,genre,search='',page=1,append=false,provider='',retry=0)=>{
+    if(loadingMoreRef.current&&append&&!retry)return;
+    if(append){loadingMoreRef.current=true;setLoadingMore(true);}else{setLoading(true);seedRef.current=String(Math.floor(Math.random()*1e9));}
+    try{
+      const params=new URLSearchParams({mood:(mood||'trending').toLowerCase(),genre:genre||'',search:search||'',page:String(page),seed:seedRef.current});
       if(provider) params.set('provider', provider);
+      const recent=Object.entries(seenRef.current).sort((a,b)=>b[1]-a[1]).slice(0,70).map(([k])=>k);
+      if(recent.length)params.set('exclude',recent.join(','));
+      const{taste,avoid}=tasteParams();
+      if(taste.length)params.set('taste',taste.join(','));
+      if(avoid.length)params.set('avoid',avoid.join(','));
       const res=await fetch(`/api/movies?${params}`);
       const data=await res.json();
       const hidden=hiddenIdsRef.current;
-      const batch=(data.movies||[]).filter(m=>!hidden.has(m.id));
-      if(append){setMovies(p=>[...p,...batch]);}
+      const raw=(data.movies||[]).filter(m=>!hidden.has(m.id));
+      // Prefer titles this device hasn't been shown in the last few days
+      const fresh=raw.filter(m=>!seenRef.current[feedKey(m)]);
+      const pick=fresh.length>=5?fresh:raw;
+      if(append){
+        let added=0;
+        setMovies(p=>{const have=new Set(p.map(feedKey));const add=pick.filter(m=>!have.has(feedKey(m)));added=add.length;return[...p,...add];});
+        if(fresh.length<4&&retry<2){pageRef.current+=1;loadingMoreRef.current=false;return fetchMovies(mood,genre,search,pageRef.current,true,provider,retry+1);}
+      }
       else{
-        setMovies(batch);
+        setMovies(pick);
         setActiveIndex(0);
         pageRef.current=1;
         setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
@@ -8585,6 +8630,9 @@ export default function CineScroll(){
     }catch(e){console.error(e);}
     if(append){loadingMoreRef.current=false;setLoadingMore(false);}else setLoading(false);
   },[]);
+
+  // Anything the viewer actually lands on counts as seen
+  useEffect(()=>{const m=movies[activeIndex];if(!m)return;const t=setTimeout(()=>markSeen(m),1200);return()=>clearTimeout(t);},[activeIndex,movies]);
 
   useEffect(()=>{fetchMovies(activeMood,activeGenre,'',1,false,activeProvider);},[activeMood,activeGenre,activeProvider]);
 

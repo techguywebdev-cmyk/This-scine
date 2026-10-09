@@ -5,7 +5,71 @@ const GENRE_MAP = {
   28: 'Action', 18: 'Drama', 35: 'Comedy', 27: 'Horror', 878: 'Sci-Fi',
   10749: 'Romance', 53: 'Thriller', 16: 'Animation', 99: 'Documentary',
   80: 'Crime', 14: 'Fantasy', 9648: 'Mystery', 10752: 'War', 37: 'Western',
+  12: 'Adventure', 10751: 'Family', 36: 'History',
+  // TV-only genre ids
+  10759: 'Action', 10765: 'Sci-Fi', 10768: 'War', 10762: 'Kids', 10764: 'Reality',
 };
+
+// Genre name -> TMDB ids for movie and TV discover
+const NAME_TO_IDS = {
+  Action: { movie: 28, tv: 10759 }, Adventure: { movie: 12, tv: 10759 }, Drama: { movie: 18, tv: 18 },
+  Comedy: { movie: 35, tv: 35 }, Horror: { movie: 27 }, 'Sci-Fi': { movie: 878, tv: 10765 },
+  Romance: { movie: 10749 }, Thriller: { movie: 53 }, Animation: { movie: 16, tv: 16 },
+  Documentary: { movie: 99, tv: 99 }, Crime: { movie: 80, tv: 80 }, Fantasy: { movie: 14, tv: 10765 },
+  Mystery: { movie: 9648, tv: 9648 }, War: { movie: 10752, tv: 10768 }, Western: { movie: 37, tv: 37 },
+  Family: { movie: 10751, tv: 10751 }, History: { movie: 36 },
+};
+
+// ── Seeded randomness so each session walks its own path through TMDB's catalogue ──
+function hashStr(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// Page n (1-based) of a seeded permutation of 1..max — consecutive pages never repeat a source page
+function permPage(seed, tag, max, n) {
+  const r = rng(hashStr(`${seed}|${tag}`));
+  const arr = Array.from({ length: max }, (_, i) => i + 1);
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return arr[(n - 1) % max];
+}
+function seededShuffle(list, seed) {
+  const r = rng(seed);
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const keyOf = (m) => `${m.title ? 'm' : 't'}${m.id}`;
+const primaryGenre = (m) => (m.genre_ids || [])[0] || 0;
+
+// Order so neighbouring cards rarely share a primary genre or a media type run > 2
+function diversify(items) {
+  const pool = [...items];
+  const out = [];
+  while (pool.length) {
+    const last = out[out.length - 1];
+    const prev = out[out.length - 2];
+    let idx = pool.findIndex((m) => {
+      if (!last) return true;
+      if (primaryGenre(m) && primaryGenre(m) === primaryGenre(last)) return false;
+      const isTv = !m.title;
+      if (prev && isTv === !last.title && isTv === !prev.title) return false;
+      return true;
+    });
+    if (idx < 0) idx = 0;
+    out.push(pool.splice(idx, 1)[0]);
+  }
+  return out;
+}
 
 // Per-title accent colours, ordered so neighbouring cards never share a hue family.
 // '#E6E6EA' is the noir look: black card, silver-white highlights.
@@ -137,8 +201,6 @@ export async function GET(request) {
     '';
   const popularOnly = searchParams.get('popular') === '1';
 
-  const randomPage = Math.floor(Math.random() * 12) + 1;
-  const randomPage2 = Math.floor(Math.random() * 8) + 1;
 
   try {
     // ── POPULAR SEARCHES (rotating trending picks) ──
@@ -286,172 +348,124 @@ export async function GET(request) {
     }
 
     // ── MAIN FEED ──
-    const pageNum = parseInt(page, 10) || 1;
-    const useRandom = pageNum === 1;
-    const p1 = useRandom ? randomPage : pageNum;
-    const p2 = useRandom ? randomPage2 : Math.max(1, pageNum - 1);
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const seed = searchParams.get('seed') || String(Math.floor(Math.random() * 1e9));
+    const P = (tag, max) => permPage(seed, `${mood}|${genre}|${providerId}|${tag}`, max, pageNum);
+    const exclude = new Set((searchParams.get('exclude') || '').split(',').filter(Boolean));
+    const taste = (searchParams.get('taste') || '').split(',').map((t) => t.trim()).filter((t) => NAME_TO_IDS[t]).slice(0, 4);
+    const avoid = new Set((searchParams.get('avoid') || '').split(',').map((t) => NAME_TO_IDS[t.trim()]?.movie).filter(Boolean));
+    const today = todayISO();
+    const monthsAgo = (n) => { const d = new Date(); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 10); };
 
-    let movieUrls = [];
-    let tvUrls = [];
     const genreQ = genre ? `&with_genres=${genre}` : '';
     const providerQ = providerId
       ? `&with_watch_providers=${providerId}&watch_region=US&with_watch_monetization_types=flatrate`
       : '';
+    const D = (type, q) => `${TMDB_BASE}/discover/${type}?api_key=${TMDB_KEY}&include_adult=false${q}`;
+    const L = (path, pg) => `${TMDB_BASE}/${path}?api_key=${TMDB_KEY}&page=${pg}`;
+
+    // Each source: url, how many to take, and minimum votes for quality
+    let sources = [];
+    const src = (url, take, minVotes = 100, minRating = 5.8) => sources.push({ url, take, minVotes, minRating });
 
     if (providerId) {
-      // Platform-specific feed (still respects mood + genre when set)
-      const sort =
-        mood === 'top rated'
-          ? 'vote_average.desc'
-          : mood === 'new' || mood === 'upcoming'
-            ? 'primary_release_date.desc'
-            : 'popularity.desc';
-      const base = `${genreQ}${providerQ}&vote_count.gte=50`;
-      movieUrls = [
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${base}&sort_by=${sort}&page=${p1}`,
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${base}&sort_by=popularity.desc&page=${p2}`,
-      ];
-      tvUrls = [
-        `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}${providerQ}&vote_count.gte=30&sort_by=popularity.desc&page=${p1}`,
-      ];
+      const sort = mood === 'top rated' ? 'vote_average.desc' : mood === 'new' || mood === 'upcoming' ? 'primary_release_date.desc' : 'popularity.desc';
+      src(D('movie', `${genreQ}${providerQ}&vote_count.gte=50&sort_by=${sort}&page=${P('a', 20)}`), 8, 50);
+      src(D('movie', `${genreQ}${providerQ}&vote_count.gte=300&sort_by=vote_average.desc&page=${P('b', 20)}`), 4, 300, 6.8);
+      src(D('tv', `${genreQ}${providerQ}&vote_count.gte=30&sort_by=popularity.desc&page=${P('c', 15)}`), 6, 30);
     } else if (mood === 'upcoming') {
-      movieUrls = [
-        `${TMDB_BASE}/movie/upcoming?api_key=${TMDB_KEY}&page=${p1}`,
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&primary_release_date.gte=${new Date().toISOString().slice(0, 10)}&sort_by=popularity.desc&page=${p2}`,
-      ];
-      tvUrls = [
-        `${TMDB_BASE}/tv/on_the_air?api_key=${TMDB_KEY}&page=${p1}`,
-        `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&sort_by=first_air_date.desc&page=${p2}`,
-      ];
+      src(D('movie', `${genreQ}&primary_release_date.gte=${today}&sort_by=popularity.desc&page=${P('a', 8)}`), 12, 0, 0);
+      src(L('movie/upcoming', P('b', 6)), 5, 0, 0);
+      src(D('tv', `${genreQ}&first_air_date.gte=${today}&sort_by=popularity.desc&page=${P('c', 5)}`), 4, 0, 0);
     } else if (mood === 'international') {
-      // Non-English titles that are currently hot
-      movieUrls = [
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&with_original_language=ko&sort_by=popularity.desc&vote_count.gte=100&page=${p1}`,
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&with_original_language=ja|es|fr|hi|de|it|pt|zh|th|tr&sort_by=popularity.desc&vote_count.gte=80&page=${p2}`,
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&with_original_language=es&sort_by=vote_average.desc&vote_count.gte=200&page=${Math.floor(Math.random() * 3) + 1}`,
-      ];
-      tvUrls = [
-        `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&with_original_language=ko|ja|es|fr|hi&sort_by=popularity.desc&vote_count.gte=50&page=${p1}`,
-      ];
+      src(D('movie', `${genreQ}&with_original_language=ko&sort_by=popularity.desc&vote_count.gte=100&page=${P('a', 15)}`), 4);
+      src(D('movie', `${genreQ}&with_original_language=ja|es|fr|hi|de|it|pt|zh|th|tr|da|sv|no&sort_by=popularity.desc&vote_count.gte=80&page=${P('b', 25)}`), 6, 80);
+      src(D('movie', `${genreQ}&without_original_language=en&sort_by=vote_average.desc&vote_count.gte=400&page=${P('c', 25)}`), 4, 400, 7);
+      src(D('tv', `${genreQ}&with_original_language=ko|ja|es|fr|hi|de|tr&sort_by=popularity.desc&vote_count.gte=50&page=${P('d', 15)}`), 5, 50);
     } else if (mood === 'awards') {
-      // High-rated, critically acclaimed
-      movieUrls = [
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&sort_by=vote_average.desc&vote_count.gte=5000&vote_average.gte=7.5&page=${p1}`,
-        `${TMDB_BASE}/movie/top_rated?api_key=${TMDB_KEY}&page=${p2}`,
-      ];
-      tvUrls = [
-        `${TMDB_BASE}/tv/top_rated?api_key=${TMDB_KEY}&page=${p1}`,
-        `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&sort_by=vote_average.desc&vote_count.gte=1000&vote_average.gte=7.5&page=${p2}`,
-      ];
+      src(D('movie', `${genreQ}&sort_by=vote_average.desc&vote_count.gte=3000&vote_average.gte=7.5&page=${P('a', 20)}`), 8, 3000, 7.5);
+      src(L('movie/top_rated', P('b', 40)), 5, 1000, 7.5);
+      src(D('tv', `${genreQ}&sort_by=vote_average.desc&vote_count.gte=800&vote_average.gte=7.8&page=${P('c', 15)}`), 5, 500, 7.5);
     } else if (mood === 'top rated') {
-      if (genre) {
-        movieUrls = [
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&sort_by=vote_average.desc&vote_count.gte=500&vote_average.gte=7&page=${p1}`,
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&sort_by=vote_average.desc&vote_count.gte=300&page=${p2}`,
-        ];
-        tvUrls = [
-          `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&sort_by=vote_average.desc&vote_count.gte=200&vote_average.gte=7&page=${p1}`,
-        ];
-      } else {
-        movieUrls = [
-          `${TMDB_BASE}/movie/top_rated?api_key=${TMDB_KEY}&page=${p1}`,
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&sort_by=vote_average.desc&vote_count.gte=2000&page=${p2}`,
-        ];
-        tvUrls = [`${TMDB_BASE}/tv/top_rated?api_key=${TMDB_KEY}&page=${p1}`];
-      }
+      src(D('movie', `${genreQ}&sort_by=vote_average.desc&vote_count.gte=1000&vote_average.gte=7&page=${P('a', 40)}`), 9, 500, 7);
+      src(D('movie', `${genreQ}&sort_by=vote_count.desc&vote_average.gte=7.4&page=${P('b', 30)}`), 4, 500, 7);
+      src(D('tv', `${genreQ}&sort_by=vote_average.desc&vote_count.gte=300&vote_average.gte=7.5&page=${P('c', 20)}`), 5, 200, 7);
     } else if (mood === 'new') {
-      const year = new Date().getFullYear();
-      if (genre) {
-        movieUrls = [
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&primary_release_year=${year}&sort_by=popularity.desc&page=${p1}`,
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&primary_release_year=${year}&sort_by=primary_release_date.desc&page=${p2}`,
-        ];
-        tvUrls = [
-          `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&first_air_date_year=${year}&sort_by=popularity.desc&page=${p1}`,
-        ];
-      } else {
-        movieUrls = [
-          `${TMDB_BASE}/movie/now_playing?api_key=${TMDB_KEY}&page=${p1}`,
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&sort_by=popularity.desc&primary_release_year=${year}&page=${p2}`,
-        ];
-        tvUrls = [
-          `${TMDB_BASE}/tv/on_the_air?api_key=${TMDB_KEY}&page=${p1}`,
-          `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}&sort_by=popularity.desc&first_air_date_year=${year}&page=${p2}`,
-        ];
-      }
+      src(D('movie', `${genreQ}&primary_release_date.gte=${monthsAgo(4)}&primary_release_date.lte=${today}&sort_by=popularity.desc&vote_count.gte=20&page=${P('a', 10)}`), 9, 20);
+      src(L('movie/now_playing', P('b', 6)), 4, 20);
+      src(D('tv', `${genreQ}&first_air_date.gte=${monthsAgo(4)}&first_air_date.lte=${today}&sort_by=popularity.desc&vote_count.gte=10&page=${P('c', 8)}`), 6, 10);
     } else if (mood === 'hidden gems') {
-      movieUrls = [
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&vote_average.gte=7.5&vote_count.lte=5000&vote_count.gte=400&sort_by=vote_average.desc&page=${p1}`,
-        `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&vote_average.gte=7.6&vote_count.lte=3000&vote_count.gte=250&sort_by=vote_count.desc&page=${p2}`,
-      ];
-      tvUrls = [
-        `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&vote_average.gte=7.5&vote_count.lte=2000&vote_count.gte=150&sort_by=vote_average.desc&page=${p1}`,
-      ];
+      src(D('movie', `${genreQ}&vote_average.gte=7.3&vote_count.gte=300&vote_count.lte=4000&sort_by=vote_average.desc&page=${P('a', 30)}`), 8, 300, 7.2);
+      src(D('movie', `${genreQ}&vote_average.gte=7.0&vote_count.gte=200&vote_count.lte=2500&sort_by=popularity.desc&primary_release_date.gte=${monthsAgo(60)}&page=${P('b', 20)}`), 5, 200, 7);
+      src(D('tv', `${genreQ}&vote_average.gte=7.5&vote_count.gte=100&vote_count.lte=2000&sort_by=vote_average.desc&page=${P('c', 20)}`), 5, 100, 7.4);
+    } else if (genre) {
+      // Trending within a genre
+      src(D('movie', `${genreQ}&sort_by=popularity.desc&vote_count.gte=200&vote_average.gte=6&page=${P('a', 25)}`), 7, 200, 6);
+      src(D('movie', `${genreQ}&sort_by=vote_count.desc&vote_average.gte=6.8&page=${P('b', 30)}`), 4, 500, 6.8);
+      src(D('movie', `${genreQ}&primary_release_date.gte=${monthsAgo(18)}&sort_by=popularity.desc&vote_count.gte=80&page=${P('c', 8)}`), 3, 80, 6);
+      const tvGenre = NAME_TO_IDS[GENRE_MAP[genre]]?.tv;
+      if (tvGenre) src(D('tv', `&with_genres=${tvGenre}&sort_by=popularity.desc&vote_count.gte=100&page=${P('d', 15)}`), 4, 100, 6.5);
     } else {
-      // trending — what's hot / everyone talking about
-      if (genre) {
-        movieUrls = [
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&sort_by=popularity.desc&vote_count.gte=200&vote_average.gte=6&page=${p1}`,
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}${genreQ}&sort_by=vote_count.desc&vote_average.gte=6&page=${p2}`,
-        ];
-        tvUrls = [
-          `${TMDB_BASE}/discover/tv?api_key=${TMDB_KEY}${genreQ}&sort_by=popularity.desc&vote_count.gte=100&page=${p1}`,
-        ];
-      } else {
-        movieUrls = [
-          `${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}&page=${Math.min(p1, 5)}`,
-          `${TMDB_BASE}/trending/movie/day?api_key=${TMDB_KEY}&page=${Math.min(p2, 5)}`,
-          `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&sort_by=popularity.desc&vote_count.gte=300&vote_average.gte=6&page=${Math.floor(Math.random() * 5) + 1}`,
-        ];
-        tvUrls = [
-          `${TMDB_BASE}/trending/tv/week?api_key=${TMDB_KEY}&page=${Math.min(p1, 5)}`,
-          `${TMDB_BASE}/trending/tv/day?api_key=${TMDB_KEY}&page=${Math.min(p2, 5)}`,
-        ];
+      // Default "For you" feed: a blend so it never feels like the same chart on repeat
+      src(L('trending/movie/week', P('tw', 12)), 4, 150, 6);
+      src(L('trending/tv/week', P('tt', 10)), 3, 100, 6.5);
+      if (pageNum <= 3) src(L('trending/movie/day', P('td', 4)), 2, 50, 6);
+      src(D('movie', `&sort_by=popularity.desc&vote_count.gte=400&vote_average.gte=6.4&page=${P('pop', 30)}`), 3, 400, 6.4);
+      src(D('movie', `&sort_by=vote_count.desc&vote_average.gte=7.2&page=${P('acc', 40)}`), 2, 1500, 7.2);
+      src(D('movie', `&primary_release_date.gte=${monthsAgo(18)}&primary_release_date.lte=${today}&sort_by=popularity.desc&vote_count.gte=150&page=${P('fresh', 10)}`), 2, 150, 6.2);
+      if (pageNum % 2 === 0) src(D('movie', `&vote_average.gte=7.4&vote_count.gte=300&vote_count.lte=3000&sort_by=vote_average.desc&page=${P('gem', 30)}`), 2, 300, 7.3);
+      // Taste: rotate through the genres this person saves most
+      if (taste.length) {
+        const t1 = taste[(pageNum - 1) % taste.length];
+        const t2 = taste[pageNum % taste.length];
+        src(D('movie', `&with_genres=${NAME_TO_IDS[t1].movie}&sort_by=popularity.desc&vote_count.gte=250&vote_average.gte=6.4&page=${P('t1' + t1, 20)}`), 3, 250, 6.4);
+        if (NAME_TO_IDS[t2].tv) src(D('tv', `&with_genres=${NAME_TO_IDS[t2].tv}&sort_by=popularity.desc&vote_count.gte=150&vote_average.gte=7&page=${P('t2' + t2, 12)}`), 2, 150, 7);
+        src(D('movie', `&with_genres=${NAME_TO_IDS[t2].movie}&sort_by=vote_count.desc&vote_average.gte=7&page=${P('t3' + t2, 25)}`), 2, 800, 7);
       }
     }
 
-    const allFetches = [...movieUrls, ...tvUrls].map((url) =>
-      fetch(url)
-        .then((r) => r.json())
-        .catch(() => ({ results: [] }))
+    const results = await Promise.all(
+      sources.map((s) => fetch(s.url, { next: { revalidate: 1800 } }).then((r) => r.json()).catch(() => ({ results: [] })))
     );
-    const allResults = await Promise.all(allFetches);
 
-    const movieResults = allResults.slice(0, movieUrls.length).flatMap((d) => d.results || []);
-    const tvResults = allResults.slice(movieUrls.length).flatMap((d) => d.results || []);
-
-    // Upcoming can have lower vote counts
-    const minVotesMovie = mood === 'upcoming' || mood === 'new' ? 20 : 100;
-    const minVotesTv = mood === 'upcoming' || mood === 'new' ? 10 : 50;
-    const minRating = mood === 'upcoming' ? 0 : 5.5;
-
-    const filterFn = (m, minVotes) =>
-      (m.backdrop_path || m.poster_path) &&
-      (m.vote_average || 0) >= minRating &&
-      (m.vote_count || 0) >= minVotes;
-
-    const movies = shuffle(movieResults.filter((m) => filterFn(m, minVotesMovie))).slice(0, 12);
-    const shows = shuffle(tvResults.filter((m) => filterFn(m, minVotesTv))).slice(0, 6);
-
-    const interleaved = [];
-    let mi = 0;
-    let ti = 0;
-    while (interleaved.length < 15 && (mi < movies.length || ti < shows.length)) {
-      if (mi < movies.length) interleaved.push(movies[mi++]);
-      if (mi < movies.length) interleaved.push(movies[mi++]);
-      if (ti < shows.length) interleaved.push(shows[ti++]);
+    const used = new Set();
+    const picked = [];
+    const leftovers = [];
+    sources.forEach((s, si) => {
+      const rows = seededShuffle(results[si]?.results || [], hashStr(`${seed}|${pageNum}|${si}`)).filter((m) => {
+        if (!(m.backdrop_path || m.poster_path) || !m.overview) return false;
+        if ((m.vote_count || 0) < s.minVotes || (m.vote_average || 0) < s.minRating) return false;
+        if (exclude.has(keyOf(m)) || exclude.has(String(m.id))) return false;
+        return true;
+      });
+      let took = 0;
+      for (const m of rows) {
+        const k = keyOf(m);
+        if (used.has(k)) continue;
+        // Soft-avoid genres the person keeps dismissing (unless it's what they asked for)
+        if (!genre && avoid.has(primaryGenre(m)) && Math.random() < 0.75) continue;
+        if (took < s.take) { used.add(k); picked.push(m); took++; } else leftovers.push(m);
+      }
+    });
+    // Top up from leftovers if quality filters left us short
+    for (const m of leftovers) {
+      if (picked.length >= 18) break;
+      const k = keyOf(m);
+      if (!used.has(k)) { used.add(k); picked.push(m); }
     }
+
+    const interleaved = diversify(seededShuffle(picked, hashStr(`${seed}|mix|${pageNum}`))).slice(0, 20);
 
     // ── Mix a couple of upcoming releases into the default feed ──
     // Only for the plain Trending feed (no platform/genre filter), so filtered feeds stay pure.
-    if (!providerId && !genre && mood === 'trending') {
+    if (!providerId && !genre && mood === 'trending' && pageNum % 2 === 1) {
       try {
-        const upPage = 1 + Math.floor(Math.random() * 3);
+        const upPage = permPage(seed, 'up', 5, Math.ceil(pageNum / 2));
         const upRes = await fetch(
           `${TMDB_BASE}/discover/movie?api_key=${TMDB_KEY}&primary_release_date.gte=${todayISO()}&sort_by=popularity.desc&with_original_language=en&page=${upPage}`
         );
         const upData = await upRes.json();
-        const seen = new Set(interleaved.map((m) => m.id));
+        const seen = new Set([...interleaved.map((m) => m.id), ...[...exclude].map((k) => Number(String(k).replace(/^[mt]/, '')))]);
         const picks = shuffle(
           (upData.results || []).filter(
             (m) => m.backdrop_path && m.overview && m.release_date > todayISO() && !seen.has(m.id)
