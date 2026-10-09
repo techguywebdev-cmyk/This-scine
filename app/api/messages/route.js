@@ -290,6 +290,22 @@ export async function POST(request) {
 
     // Notifications: keep the in-app row (fast), skip work for call signals, and only email on the
     // first message of a conversation so sending never waits on email.
+    if (msgType === 'call_signal') {
+      try {
+        const sig = JSON.parse(text);
+        if (sig && sig.kind === 'offer') {
+          const notify = await import('@/lib/notify').catch(() => null);
+          if (notify) {
+            const me = await clerkClient.users.getUser(userId).catch(() => null);
+            const fromName = me?.username || me?.firstName || 'Someone';
+            await Promise.race([
+              notify.pushUser({ userId: toUserId, category: 'messages', title: `${fromName} is calling`, body: sig.callType === 'video' ? 'Incoming video call' : 'Incoming audio call', url: '/?chat=' + userId, tag: 'call-' + userId }),
+              new Promise((r) => setTimeout(r, 1500)),
+            ]);
+          }
+        }
+      } catch {}
+    }
     if (msgType !== 'call_signal') {
       try {
         const priorRes = await fetch(
@@ -303,21 +319,21 @@ export async function POST(request) {
           headers: { ...headers, Prefer: 'return=minimal' },
           body: JSON.stringify({ user_id: toUserId, from_user_id: userId, type: isFirst ? 'message_request' : 'message', read: false }),
         }).catch(() => {});
-        let emailPromise = Promise.resolve();
-        if (isFirst) {
-          emailPromise = (async () => {
-            const { notifyUser } = await import('@/lib/notify').catch(() => ({ notifyUser: null }));
-            if (!notifyUser) return;
-            const [u, me] = await Promise.all([
-              clerkClient.users.getUser(toUserId).catch(() => null),
-              clerkClient.users.getUser(userId).catch(() => null),
-            ]);
+        // First message: email + push. Every later message: push only (no inbox spam).
+        const emailPromise = (async () => {
+          const notify = await import('@/lib/notify').catch(() => null);
+          if (!notify) return;
+          const me = await clerkClient.users.getUser(userId).catch(() => null);
+          const fromName = me?.username || me?.firstName || 'Someone';
+          const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'sticker' ? text : text.slice(0, 120);
+          if (isFirst) {
+            const u = await clerkClient.users.getUser(toUserId).catch(() => null);
             const recipientEmail = u?.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u?.emailAddresses?.[0]?.emailAddress || null;
-            const fromName = me?.username || me?.firstName || 'Someone';
-            const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'sticker' ? text : text.slice(0, 120);
-            await notifyUser({ userId: toUserId, email: recipientEmail, category: 'messages', title: 'New message request', body: `${fromName}: ${bodyPreview}`, url: '/' });
-          })().catch((e) => console.error('notifyUser error', e));
-        }
+            await notify.notifyUser({ userId: toUserId, email: recipientEmail, category: 'messages', title: 'New message request', body: `${fromName}: ${bodyPreview}`, url: '/?chat=' + userId, tag: 'chat-' + userId });
+          } else {
+            await notify.pushUser({ userId: toUserId, category: 'messages', title: fromName, body: bodyPreview, url: '/?chat=' + userId, tag: 'chat-' + userId });
+          }
+        })().catch((e) => console.error('notifyUser error', e));
         // Never hold the sender up for more than ~1.2s on notification side-work
         await Promise.race([Promise.all([notifPromise, emailPromise]), new Promise((r) => setTimeout(r, 1200))]);
       } catch (e) {

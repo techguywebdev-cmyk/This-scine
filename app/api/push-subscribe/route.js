@@ -1,4 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
+import { VAPID_PUBLIC_KEY } from '@/lib/notify';
+
+export const dynamic = 'force-dynamic';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
@@ -68,6 +71,5 @@ export async function DELETE() {
 
 // GET returns public VAPID key for client subscribe
 export async function GET() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY || '';
-  return Response.json({ publicKey, enabled: !!publicKey });
+  return Response.json({ publicKey: VAPID_PUBLIC_KEY, enabled: true, serverReady: !!process.env.VAPID_PRIVATE_KEY });
 }

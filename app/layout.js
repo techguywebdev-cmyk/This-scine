@@ -9,7 +9,12 @@ const interTight = Inter_Tight({ subsets: ['latin'], weight: ['500', '600', '700
 export const metadata = {
   title: 'CineScroll — Discover Movies',
   description: 'A cinematic movie discovery experience.',
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
+  appleWebApp: { capable: true, title: 'CineScroll', statusBarStyle: 'black-translucent' },
 };
+
+export const viewport = { themeColor: '#06060B' };
 
 export default function RootLayout({ children }) {
   return (

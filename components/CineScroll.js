@@ -946,8 +946,9 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     }
   };
   const enableWebPush=async()=>{
-    if(typeof window==='undefined'||!('Notification' in window)||!('serviceWorker' in navigator)){
-      showToast('Web push not supported on this browser');
+    if(typeof window==='undefined'||!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window)){
+      const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+      showToast(ios?'On iPhone: Share → Add to Home Screen, open from there, then enable':'Notifications are not supported in this browser');
       return;
     }
     setPushBusy(true);
@@ -956,16 +957,9 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
       if(perm!=='granted'){showToast('Permission denied');setPushBusy(false);return;}
       await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
-      const keyRes=await fetch('/api/push-subscribe');
+      const keyRes=await fetch('/api/push-subscribe',{cache:'no-store'});
       const keyData=await keyRes.json();
-      if(!keyData.enabled||!keyData.publicKey){
-        const next={...notifyPrefs,web:true};
-        setNotifyPrefs(next);
-        await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({notify_prefs:next})});
-        showToast('Web preference on — add VAPID keys to finish push');
-        setPushBusy(false);
-        return;
-      }
+      if(!keyData.publicKey)throw new Error('Push is not configured yet');
       const urlBase64ToUint8Array=(base64String)=>{
         const padding='='.repeat((4-base64String.length%4)%4);
         const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
@@ -975,8 +969,11 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
         return outputArray;
       };
       const reg=await navigator.serviceWorker.ready;
-      const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(keyData.publicKey)});
-      await fetch('/api/push-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+      let sub=await reg.pushManager.getSubscription();
+      if(sub){try{await sub.unsubscribe();}catch{}}
+      sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(keyData.publicKey)});
+      const saveRes=await fetch('/api/push-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON()})});
+      if(!saveRes.ok){const t=await saveRes.text();throw new Error('Could not save subscription ('+saveRes.status+') '+t.slice(0,80));}
       setHasWebPush(true);
       const next={...notifyPrefs,web:true};
       setNotifyPrefs(next);
@@ -984,7 +981,8 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
       showToast('Browser notifications enabled');
     }catch(e){
       console.error(e);
-      showToast('Could not enable web push');
+      const iosNoPwa=/iPhone|iPad|iPod/.test(navigator.userAgent)&&!window.matchMedia('(display-mode: standalone)').matches;
+      showToast(iosNoPwa?'On iPhone: Share → Add to Home Screen, then enable here':(e.message||'Could not enable notifications'));
     }
     setPushBusy(false);
   };
@@ -8439,6 +8437,30 @@ export default function CineScroll(){
     load();
   },[isLoaded,isSignedIn]);
 
+  // Opened from a push notification (?chat=<userId>): jump straight into that conversation
+  const[pushChatPeer,setPushChatPeer]=useState(null);
+  useEffect(()=>{
+    if(!isLoaded||!isSignedIn||typeof window==='undefined')return;
+    const openFromUrl=(href)=>{
+      try{
+        const u=new URL(href,window.location.origin);const id=u.searchParams.get('chat');
+        if(!id)return;
+        u.searchParams.delete('chat');window.history.replaceState(null,'',u.pathname+(u.search||''));
+        fetch(`/api/users/${encodeURIComponent(id)}`).then(r=>r.ok?r.json():null).then(p=>{
+          setPushChatPeer({user_id:id,username:p?.username||'member',display_name:p?.display_name,avatar_url:p?.avatar_url||null});
+        }).catch(()=>setPushChatPeer({user_id:id,username:'member',avatar_url:null}));
+      }catch{}
+    };
+    openFromUrl(window.location.href);
+    // Keep the push subscription registered with the service worker on every visit
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+      const onMsg=(e)=>{if(e.data&&e.data.type==='open-url')openFromUrl(e.data.url);};
+      navigator.serviceWorker.addEventListener('message',onMsg);
+      return()=>navigator.serviceWorker.removeEventListener('message',onMsg);
+    }
+  },[isLoaded,isSignedIn]);
+
   // Once per day: gentle nudge toward Tonight / Discover
   useEffect(()=>{
     if(!isLoaded||!isSignedIn)return;
@@ -8584,6 +8606,7 @@ export default function CineScroll(){
   return(
     <div style={{position:'fixed',inset:0,background:'#04040A',fontFamily:"var(--font-sans), 'Inter', system-ui, -apple-system, sans-serif",color:'#fff',overflow:'hidden'}}>
       {feedToast&&<Toast message={feedToast} accent={accent}/>}
+      {pushChatPeer&&<ChatWidget peer={pushChatPeer} onClose={()=>setPushChatPeer(null)} accent={accent}/>}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>

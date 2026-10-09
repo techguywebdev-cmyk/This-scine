@@ -272,6 +272,18 @@ export async function POST(request) {
     } catch (e) {
       console.error('notification insert error:', e);
     }
+    try {
+      const notify = await import('@/lib/notify');
+      const { clerkClient } = await import('@clerk/nextjs/server');
+      const me = await clerkClient.users.getUser(userId).catch(() => null);
+      const name = me?.username || me?.firstName || 'Someone';
+      await Promise.race([
+        notify.pushUser({ userId: targetId, category: 'follows', title: 'New follower', body: `${name} started following you`, url: '/', tag: 'follow' }),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+    } catch (e) {
+      console.error('follow push error:', e);
+    }
 
     return Response.json({ success: true });
   } catch (err) {
