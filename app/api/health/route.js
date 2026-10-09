@@ -24,6 +24,15 @@ export async function GET() {
         await c.fetch(`${base}/${key}`, { method: 'DELETE' }).catch(() => {});
       } else {
         out.r2Error = (await put.text()).replace(/<[^>]+>/g, ' ').trim().slice(0, 160);
+        // Narrow down the cause without exposing secrets
+        const list = await c.fetch(`${base}?list-type=2&max-keys=1`);
+        out.r2ListBucket = list.ok ? 'ok' : `failed ${list.status} ${(await list.text()).replace(/<[^>]+>/g, ' ').trim().slice(0, 80)}`;
+        const eu = await c.fetch(`https://${process.env.R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com/${process.env.R2_BUCKET}/${key}`, { method: 'PUT', body: 'ok' });
+        out.r2EuEndpointWrite = eu.ok ? 'ok' : `failed ${eu.status}`;
+        if (eu.ok) await c.fetch(`https://${process.env.R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com/${process.env.R2_BUCKET}/${key}`, { method: 'DELETE' }).catch(() => {});
+        out.bucketName = process.env.R2_BUCKET === process.env.R2_BUCKET.trim() ? process.env.R2_BUCKET : 'has extra spaces';
+        out.accountIdLength = (process.env.R2_ACCOUNT_ID || '').trim().length;
+        out.accessKeyIdLength = (process.env.R2_ACCESS_KEY_ID || '').trim().length;
       }
     } catch (e) {
       out.r2Write = `error: ${e.message}`.slice(0, 160);
