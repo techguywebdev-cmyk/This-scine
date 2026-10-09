@@ -38,59 +38,57 @@ export async function GET(req, { params }) {
       }
     }
 
+    // Everything below runs in parallel: one round-trip instead of six
+    const isSelf = viewerId === targetId;
+    const clerkP = clerkClient.users.getUser(targetId).catch(() => null);
+    const followerP = fetch(`${db('follows')}?following_id=eq.${targetId}&select=id`, { headers: countHeaders });
+    const followingP = fetch(`${db('follows')}?follower_id=eq.${targetId}&select=id`, { headers: countHeaders });
+    const settingsP = fetch(`${db('user_settings')}?user_id=eq.${targetId}&select=watchlist_public,bio,cover_url,nickname`, { headers }).then((r) => r.json()).catch(() => []);
+    const watchlistP = fetch(`${db('watchlist')}?user_id=eq.${targetId}&order=saved_at.desc&select=movie_id,title,year,rating,poster,backdrop,genre,overview,accent,gradient,is_tv,watched,saved_at`, { headers: countHeaders });
+    const viewerP = viewerId && !isSelf
+      ? Promise.all([
+          fetch(`${db('follows')}?follower_id=eq.${viewerId}&following_id=eq.${targetId}&select=id`, { headers }).then((r) => r.json()).catch(() => []),
+          fetch(`${db('follows')}?follower_id=eq.${targetId}&following_id=eq.${viewerId}&select=id`, { headers }).then((r) => r.json()).catch(() => []),
+          fetch(`${db('watchlist')}?user_id=eq.${viewerId}&select=movie_id`, { headers }).then((r) => r.json()).catch(() => []),
+        ])
+      : Promise.resolve(null);
+    const [clerkUser, followerRes, followingRes, settingsData, watchlistRes, viewerData] = await Promise.all([clerkP, followerP, followingP, settingsP, watchlistP, viewerP]);
+
     // 1. Clerk profile info
     let username = 'user';
     let hasUsername = false;
     let avatar_url = null;
     let display_name = null;
-    try {
-      const clerkUser = await clerkClient.users.getUser(targetId);
+    if (clerkUser) {
       username = publicHandle(clerkUser) || 'user';
       hasUsername = !!clerkUser.username;
       avatar_url = clerkUser.imageUrl || null;
-      display_name = clerkUser.firstName
-        ? `${clerkUser.firstName}${clerkUser.lastName ? ' ' + clerkUser.lastName : ''}`
-        : username;
-    } catch {
-      // user may no longer exist in Clerk; fall back to defaults
+      display_name = clerkUser.firstName ? `${clerkUser.firstName}${clerkUser.lastName ? ' ' + clerkUser.lastName : ''}` : username;
     }
 
     // 2. Follower / following counts
-    const followerRes = await fetch(`${db('follows')}?following_id=eq.${targetId}&select=id`, { headers: countHeaders });
     const followerCount = parseInt(followerRes.headers.get('content-range')?.split('/')[1] || '0', 10);
-
-    const followingRes = await fetch(`${db('follows')}?follower_id=eq.${targetId}&select=id`, { headers: countHeaders });
     const followingCount = parseInt(followingRes.headers.get('content-range')?.split('/')[1] || '0', 10);
 
-    // 3. Is the viewer following this user? Is this the viewer's own profile?
+    // 3. Viewer relationship
     let isFollowing = false;
     let followsYou = false;
     let viewerIds = null;
-    const isSelf = viewerId === targetId;
-    if (viewerId && !isSelf) {
-      const [a, b, w] = await Promise.all([
-        fetch(`${db('follows')}?follower_id=eq.${viewerId}&following_id=eq.${targetId}&select=id`, { headers }).then((r) => r.json()).catch(() => []),
-        fetch(`${db('follows')}?follower_id=eq.${targetId}&following_id=eq.${viewerId}&select=id`, { headers }).then((r) => r.json()).catch(() => []),
-        fetch(`${db('watchlist')}?user_id=eq.${viewerId}&select=movie_id`, { headers }).then((r) => r.json()).catch(() => []),
-      ]);
+    if (viewerData) {
+      const [a, b, w] = viewerData;
       isFollowing = Array.isArray(a) && a.length > 0;
       followsYou = Array.isArray(b) && b.length > 0;
       viewerIds = new Set((Array.isArray(w) ? w : []).map((x) => String(x.movie_id)));
     }
 
-    // 4. Watchlist privacy setting, bio, cover photo, and nickname (defaults applied if no row exists)
-    const settingsRes = await fetch(`${db('user_settings')}?user_id=eq.${targetId}&select=watchlist_public,bio,cover_url,nickname`, { headers });
-    const settingsData = await settingsRes.json();
+    // 4. Settings
     const settingsRow = Array.isArray(settingsData) && settingsData.length > 0 ? settingsData[0] : null;
     const watchlistPublic = settingsRow ? settingsRow.watchlist_public : true;
     const bio = settingsRow?.bio || '';
     const coverUrl = settingsRow?.cover_url || null;
-    // a custom nickname overrides the Clerk-derived display name (the bold name text),
-    // but never the @username handle, which stays tied to the unique Clerk identifier
     if (settingsRow?.nickname) display_name = settingsRow.nickname;
 
-    // 5. Watchlist rows + count + top genres
-    const watchlistRes = await fetch(`${db('watchlist')}?user_id=eq.${targetId}&order=saved_at.desc&select=movie_id,title,year,rating,poster,backdrop,genre,overview,accent,gradient,is_tv,watched,saved_at`, { headers: countHeaders });
+    // 5. Watchlist rows + count
     const watchlistRows = await watchlistRes.json();
     const watchlistCount = parseInt(watchlistRes.headers.get('content-range')?.split('/')[1] || '0', 10);
 

@@ -904,6 +904,40 @@ function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Co
   );
 }
 
+// ── Fast pages: short-lived cache + request de-duplication for read-only API calls ──
+// Screens open instantly when their data was fetched in the last minute (or prefetched),
+// and two components asking for the same thing share one request. Any write clears it.
+const API_CACHE_TTL=60000;
+const CACHEABLE=/^\/api\/(activity|follows|lists|list-id|users\/|settings|reviews|watchlist|reminders|leaderboard|arcs|providers|trailer|movie-details)/;
+function installApiCache(){
+  if(typeof window==='undefined'||window.__cineFetchPatched)return;
+  window.__cineFetchPatched=true;
+  const orig=window.fetch.bind(window);
+  const store=new Map();const inflight=new Map();
+  const toResponse=e=>new Response(e.body,{status:e.status,headers:{'Content-Type':e.type||'application/json'}});
+  window.fetch=async(input,init={})=>{
+    const url=typeof input==='string'?input:(input&&input.url)||'';
+    const method=((init&&init.method)||(input&&input.method)||'GET').toUpperCase();
+    let path='';try{const u=new URL(url,window.location.origin);if(u.origin===window.location.origin)path=u.pathname+u.search;}catch{}
+    if(!path.startsWith('/api/'))return orig(input,init);
+    if(method!=='GET'){store.clear();return orig(input,init);}
+    if(!CACHEABLE.test(path)||(init&&init.cache==='no-store'))return orig(input,init);
+    const hit=store.get(path);
+    if(hit&&Date.now()-hit.at<API_CACHE_TTL)return toResponse(hit);
+    if(inflight.has(path))return inflight.get(path).then(toResponse);
+    const p=orig(input,init).then(async res=>{
+      const body=await res.text();
+      const entry={body,status:res.status,type:res.headers.get('content-type'),at:Date.now()};
+      if(res.ok)store.set(path,entry);
+      return entry;
+    }).finally(()=>inflight.delete(path));
+    inflight.set(path,p);
+    return p.then(toResponse);
+  };
+  window.__cinePrefetch=(paths)=>paths.forEach(pth=>{window.fetch(pth).catch(()=>{});});
+}
+if(typeof window!=='undefined')installApiCache();
+
 // Web push: register the service worker, subscribe with the server key and store it on the account
 async function subscribePush(){
   if(typeof window==='undefined'||!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))throw new Error('unsupported');
@@ -2104,7 +2138,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
 
                   {/* FOLDERS */}
                   {tab==='lists'&&(loadingLists?spinner:userLists.length===0?empty('No public folders',profile.isSelf?'Make a folder public to show it here.':`${name.split(' ')[0]} hasn't shared any folders yet.`):(
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px 32px',paddingTop:18}}>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'18px 12px',paddingTop:18}}>
                       {userLists.map(list=>(
                         <button key={list.id} onClick={()=>setViewingList(list.id)} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',textAlign:'left',minWidth:0}}>
                           <FolderCoverFill posters={list.cover_url?[list.cover_url]:(list.posters||[])} accent={accentColor} locked={list.is_public===false} count={list.movie_count||0}/>
@@ -2668,8 +2702,8 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               {folders.length>0&&(
                 <>
                   <H right={onOpenFolders?<button onClick={()=>{onClose();onOpenFolders();}} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>See all</button>:null}>Popular folders</H>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px 48px', marginTop: 12 }}>
-                    {folders.slice(0, 4).map(f => (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '18px 12px', marginTop: 12 }}>
+                    {folders.slice(0, 6).map(f => (
                       <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ minWidth: 0, cursor: 'pointer' }}>
                         <FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} />
                         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
@@ -8375,7 +8409,7 @@ function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistI
 function FolderArt({poster,accent,locked,count,small=false}){
   const r=small?4:12;
   return(
-    <div style={{position:'relative',width:'100%',aspectRatio:'1/1.08'}}>
+    <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
       {/* tab + back panel */}
       <div style={{position:'absolute',left:0,top:0,width:'42%',height:'12%',borderRadius:`${r}px ${r}px 0 0`,background:`linear-gradient(180deg,${accent}66,${accent}40)`,clipPath:'polygon(0 0, 84% 0, 100% 100%, 0 100%)'}}/>
       <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:r,background:`linear-gradient(170deg,${accent}55 0%,${accent}22 60%,rgba(255,255,255,0.04) 100%)`,border:`1px solid ${accent}40`,boxShadow:'0 12px 28px rgba(0,0,0,0.4)'}}/>
@@ -8389,8 +8423,8 @@ function FolderArt({poster,accent,locked,count,small=false}){
       )}
       {/* pocket */}
       <div style={{position:'absolute',left:0,right:0,bottom:0,height:'38%',borderRadius:r,background:`linear-gradient(180deg,${accent}30,${accent}0d), #14141B`,borderTop:`1.5px solid ${accent}aa`,boxShadow:'inset 0 1px 0 rgba(255,255,255,0.08), 0 -8px 18px rgba(0,0,0,0.35)'}}>
-        {!small&&count!=null&&<div style={{position:'absolute',left:12,bottom:11,fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{count} title{count===1?'':'s'}</div>}
-        {locked&&<div style={{position:'absolute',right:small?3:10,bottom:small?3:9,width:small?13:20,height:small?13:20,borderRadius:'50%',background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?7:10} color="rgba(255,255,255,0.8)"/></div>}
+        {!small&&count!=null&&<div style={{position:'absolute',left:9,bottom:8,fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>{count} title{count===1?'':'s'}</div>}
+        {locked&&<div style={{position:'absolute',right:small?3:7,bottom:small?3:6,width:small?13:18,height:small?13:18,borderRadius:'50%',background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="lock" size={small?7:10} color="rgba(255,255,255,0.8)"/></div>}
       </div>
     </div>
   );
@@ -8625,14 +8659,14 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const FolderTile=({title,sub,posters,locked,onClick,dashed,count})=>(
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
       {dashed?(
-        <div style={{position:'relative',width:'100%',aspectRatio:'1/1.08'}}>
+        <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
           <div style={{position:'absolute',left:0,top:0,width:'40%',height:'10%',borderRadius:'10px 10px 0 0',border:`1.5px dashed ${accent}77`,borderBottom:'none'}}/>
-          <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={22} color={accent}/></div>
+          <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}77`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={18} color={accent}/></div>
         </div>
       ):(
         <FolderCoverFill posters={posters} accent={accent} locked={locked} count={count}/>
       )}
-      <div style={{fontSize:13,fontWeight:700,color:dashed?accent:'#fff',marginTop:9,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+      <div style={{fontSize:12,fontWeight:700,color:dashed?accent:'#fff',marginTop:7,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
       {sub&&<div style={{fontSize:11,color:T.text2,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sub}</div>}
     </div>
   );
@@ -8641,7 +8675,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
     <div role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} onKeyDown={e=>e.key==='Enter'&&onOpenList&&onOpenList(l.id)} style={{cursor:'pointer',minWidth:0}}>
       <FolderCoverFill posters={l.cover_url?[l.cover_url]:(l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[]))} accent={accent} count={l.movie_count||0}/>
       <div style={{display:'flex',alignItems:'center',gap:6,marginTop:9}}>
-        <div style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
+        <div style={{flex:1,minWidth:0,fontSize:12,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
         {l.avg_rating!=null&&<span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:11,fontWeight:700,color:'#fff',flexShrink:0}}><SvgIcon name="star" size={10} color="#FFD166" filled/>{l.avg_rating}</span>}
       </div>
       <div style={{fontSize:11,color:T.text2,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>by {l.display_name||l.username}{l.follower_count?` · ${l.follower_count} following`:''}</div>
@@ -8702,7 +8736,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
           <>
             <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
             {loading?<Spinner/>:(
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'22px 48px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'18px 12px'}}>
                 <FolderTile title="All saved" sub="Everything you've saved" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
                 {lists.map(l=>(
                   <FolderTile key={l.id} title={l.title} sub={l.is_public===false?'Private':'Public'} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
@@ -8724,7 +8758,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
             {loading?<Spinner/>:lists.length===0?(
               <div style={{padding:'20px 0',fontSize:12.5,color:T.text2}}>{tab==='following'?'You’re not following any folders yet. Browse Popular folders to find some.':'No public folders yet. Make one of yours public to be the first.'}</div>
             ):(
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'22px 48px',paddingTop:8}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'18px 12px',paddingTop:8}}>
                 {lists.map(l=><PublicTile key={l.id} l={l}/>)}
               </div>
             )}
@@ -8790,6 +8824,15 @@ export default function CineScroll(){
     try{await subscribePush();setFeedToast('Notifications on');setTimeout(()=>setFeedToast(null),2500);}
     catch(e){setFeedToast(e.message==='denied'?'Notifications blocked in browser settings':'Could not turn on notifications');setTimeout(()=>setFeedToast(null),3000);}
   };
+
+  // Install the API cache once, then prefetch the screens people open most
+  useEffect(()=>{installApiCache();},[]);
+  useEffect(()=>{
+    if(!isLoaded||!isSignedIn)return;
+    const go=()=>window.__cinePrefetch&&window.__cinePrefetch(['/api/activity?type=feed','/api/follows?type=following','/api/follows?type=stats','/api/follows?type=suggested','/api/lists?tab=mine','/api/settings']);
+    const t=setTimeout(()=>{if('requestIdleCallback' in window)window.requestIdleCallback(go,{timeout:3000});else go();},2500);
+    return()=>clearTimeout(t);
+  },[isLoaded,isSignedIn]);
 
   // Warm the profile cover in the background so the profile opens with it already painted
   useEffect(()=>{
