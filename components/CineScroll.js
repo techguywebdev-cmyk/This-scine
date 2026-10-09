@@ -2040,20 +2040,24 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
 
                   {/* ACTIVITY */}
                   {tab==='activity'&&(loadingActivity?spinner:activity.length===0?empty('Nothing yet',`When ${name.split(' ')[0]} saves, watches or reviews something, it shows up here.`):(
-                    <div>
-                      {activity.map((item,i)=>(
-                        <button key={item.id||i} onClick={()=>{if(item.type==='list_follow')return;if(item.movie_id&&onWatchTrailer)onWatchTrailer({id:item.movie_id,title:item.movie_title,poster:item.movie_poster,year:item.movie_year,rating:item.movie_rating,accent:item.movie_accent||accentColor,mediaType:item.is_tv?'tv':'movie',...(item.type==='reviewed'&&item.review_id?{initialTab:'comments',highlightCommentId:item.review_id}:{})});}}
-                          style={{display:'flex',gap:12,alignItems:'center',padding:'12px 0',borderTop:i?`1px solid ${T.hairline}`:'none',background:'none',border:'none',borderRadius:0,width:'100%',textAlign:'left',fontFamily:'inherit',cursor:item.movie_id&&item.type!=='list_follow'?'pointer':'default'}}>
-                          <div style={{width:40,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0,background:T.surface}}>
-                            {item.movie_poster&&<img src={item.movie_poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'14px 10px',paddingTop:16}}>
+                      {activity.map((item,i)=>{
+                        const tappable=item.movie_id&&item.type!=='list_follow';
+                        const tint=item.type==='watched'?'#7BFFB0':item.type==='reviewed'?'#FFD166':item.type==='saved'?accentColor:'#fff';
+                        return(
+                          <div key={item.id||i} style={{minWidth:0}}>
+                            <button onClick={()=>{if(!tappable||!onWatchTrailer)return;onWatchTrailer({id:item.movie_id,title:item.movie_title,poster:item.movie_poster,year:item.movie_year,rating:item.movie_rating,accent:item.movie_accent||accentColor,mediaType:item.is_tv?'tv':'movie',...(item.type==='reviewed'&&item.review_id?{initialTab:'comments',highlightCommentId:item.review_id}:{})});}}
+                              style={{position:'relative',display:'block',width:'100%',aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:GRADS[i%GRADS.length],border:'none',padding:0,cursor:tappable?'pointer':'default'}}>
+                              {item.movie_poster?<img src={item.movie_poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>:<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="folder" size={22} color="rgba(255,255,255,0.6)"/></div>}
+                              <span style={{position:'absolute',left:5,top:5,display:'inline-flex',alignItems:'center',gap:4,fontSize:9.5,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.62)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',borderRadius:4,padding:'2px 6px'}}>
+                                <span style={{width:5,height:5,borderRadius:'50%',background:tint}}/>{VERB[item.type]||'Activity'}
+                              </span>
+                            </button>
+                            <div style={{fontSize:11.5,fontWeight:600,color:'#fff',marginTop:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.movie_title}</div>
+                            <div style={{fontSize:10.5,color:T.text3,marginTop:2}}>{timeAgo(item.created_at)}</div>
                           </div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:11,fontWeight:700,color:accentColor,letterSpacing:0.2}}>{VERB[item.type]||'Activity'}<span style={{color:T.text3,fontWeight:500}}> · {timeAgo(item.created_at)}</span></div>
-                            <div style={{fontSize:14,fontWeight:700,color:'#fff',marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.movie_title}</div>
-                            {item.movie_year&&<div style={{fontSize:11.5,color:T.text2,marginTop:2}}>{item.movie_year}</div>}
-                          </div>
-                        </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   ))}
 
