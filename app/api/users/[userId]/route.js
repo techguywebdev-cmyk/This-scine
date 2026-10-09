@@ -64,11 +64,18 @@ export async function GET(req, { params }) {
 
     // 3. Is the viewer following this user? Is this the viewer's own profile?
     let isFollowing = false;
+    let followsYou = false;
+    let viewerIds = null;
     const isSelf = viewerId === targetId;
     if (viewerId && !isSelf) {
-      const res = await fetch(`${db('follows')}?follower_id=eq.${viewerId}&following_id=eq.${targetId}&select=id`, { headers });
-      const data = await res.json();
-      isFollowing = Array.isArray(data) && data.length > 0;
+      const [a, b, w] = await Promise.all([
+        fetch(`${db('follows')}?follower_id=eq.${viewerId}&following_id=eq.${targetId}&select=id`, { headers }).then((r) => r.json()).catch(() => []),
+        fetch(`${db('follows')}?follower_id=eq.${targetId}&following_id=eq.${viewerId}&select=id`, { headers }).then((r) => r.json()).catch(() => []),
+        fetch(`${db('watchlist')}?user_id=eq.${viewerId}&select=movie_id`, { headers }).then((r) => r.json()).catch(() => []),
+      ]);
+      isFollowing = Array.isArray(a) && a.length > 0;
+      followsYou = Array.isArray(b) && b.length > 0;
+      viewerIds = new Set((Array.isArray(w) ? w : []).map((x) => String(x.movie_id)));
     }
 
     // 4. Watchlist privacy setting, bio, cover photo, and nickname (defaults applied if no row exists)
@@ -98,6 +105,10 @@ export async function GET(req, { params }) {
     })();
 
     const canViewWatchlist = isSelf || watchlistPublic;
+    const rowsArr = Array.isArray(watchlistRows) ? watchlistRows : [];
+    const watchedCount = rowsArr.filter((r) => r.watched).length;
+    // Titles you both saved — only revealed when their watchlist is visible to you
+    const inCommon = viewerIds && canViewWatchlist ? rowsArr.filter((r) => viewerIds.has(String(r.movie_id))) : [];
 
     return Response.json({
       user_id: targetId,
@@ -114,6 +125,10 @@ export async function GET(req, { params }) {
       watchlistPublic,
       isSelf,
       isFollowing,
+      followsYou,
+      watchedCount,
+      inCommon: inCommon.slice(0, 20),
+      inCommonCount: inCommon.length,
       watchlist: canViewWatchlist ? (Array.isArray(watchlistRows) ? watchlistRows : []) : null,
     });
   } catch (err) {

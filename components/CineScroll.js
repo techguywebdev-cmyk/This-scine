@@ -1906,7 +1906,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
     {chatPeer&&<ChatWidget peer={chatPeer} onClose={()=>{const back=chatPeer?.fromMessages;setChatPeer(null);if(back)setShowMessages(true);}} accent={accentColor||accent}/>}
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:108,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(10px)',display:'flex',alignItems:'flex-end',animation:'fadeIn 0.2s ease'}}>
       {toast&&<Toast message={toast} accent={accent}/>}
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'90vh',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',height:'94vh',maxHeight:'94vh',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',display:'flex',flexDirection:'column',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.profile-scroll::-webkit-scrollbar{display:none}`}</style>
 
         {loading?(
@@ -1917,224 +1917,196 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
           <div style={{textAlign:'center',padding:'40px 20px',color:T.text3,fontSize:13}}>Couldn't load this profile</div>
         ):(
           <div className="profile-scroll" style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
-            {/* COVER PHOTO — aspect-ratio matches CoverCropModal's export (2.2:1) so the
-                saved crop displays without being re-cropped again by a mismatched container */}
-            <div style={{position:'relative',zIndex:2,width:'100%',aspectRatio:'2.5',flexShrink:0}}>
-              {/* cover fades into the page wash instead of ending on a hard dark band; the avatar can now sit over the edge without being clipped */}
-              <div style={{position:'absolute',inset:0,overflow:'hidden',borderRadius:'24px 24px 0 0',background:coverImg?'transparent':`linear-gradient(135deg,${accentColor}30,transparent)`,WebkitMaskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)',maskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)'}}>
-                {coverImg&&<CoverImg src={coverImg} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center top'}}/>}
-                <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(8,8,16,0.25) 0%,rgba(8,8,16,0) 40%)'}}/>
-              </div>
-              <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.25)',position:'absolute',top:10,left:'50%',transform:'translateX(-50%)'}}/>
-              <div style={{position:'absolute',top:14,right:14,display:'flex',gap:8,zIndex:2}}>
-                <button onClick={async()=>{
-                  const shareUrl=`https://this-scine.vercel.app/u/${profile.has_username?profile.username:(profile.user_id||userId)}`;
-                  const shareData={title:`${profile.display_name||profile.username} on CineScroll`,text:`Check out ${profile.display_name||profile.username}'s profile on CineScroll`,url:shareUrl};
-                  try{
-                    if(navigator.share){await navigator.share(shareData);}
-                    else{await navigator.clipboard.writeText(shareUrl);setShareCopied(true);showToast('Profile link copied');setTimeout(()=>setShareCopied(false),2000);}
-                  }catch{}
-                }} style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name={shareCopied?'check':'share'} size={13} color="rgba(255,255,255,0.8)"/></button>
-                <button onClick={onClose} style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={13} color="rgba(255,255,255,0.8)"/></button>
-              </div>
-              {/* Avatar anchored to the bottom of the cover via percentage offset, so the overlap
-                  stays proportionally consistent across any screen width */}
-              <div style={{position:'absolute',left:'6%',bottom:'-22%',width:'21%',aspectRatio:'1',minWidth:64,maxWidth:84,borderRadius:'50%',background:`${accentColor}25`,border:'3px solid rgba(6,6,11,0.92)',boxShadow:'0 8px 24px rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:700,color:accentColor,overflow:'hidden',zIndex:3}}>
-                {profile.avatar_url?<img src={profile.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(profile.display_name||profile.username||'U')[0].toUpperCase()}
-              </div>
-            </div>
-
-            <div style={{padding:'0 20px 32px',marginTop:'9%'}}>
-              {/* HEADER: name + follow */}
-              <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:18}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:19,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',lineHeight:1.2}}>{profile.display_name||profile.username}</div>
-                  <div style={{fontSize:12,color:T.text3,marginTop:2}}>@{profile.username}</div>
-                  {profile.bio&&<div style={{fontSize:12,color:T.text2,marginTop:6,lineHeight:1.5}}>{profile.bio}</div>}
+            {(()=>{
+              const name=profile.display_name||profile.username;
+              const toMovie=m=>({id:m.movie_id,title:m.title,poster:m.poster,year:m.year,rating:m.rating,genre:m.genre,overview:m.overview,accent:m.accent||accentColor,gradient:m.gradient,mediaType:m.is_tv?'tv':'movie'});
+              const saveIt=m=>{onAddToWatchlist&&onAddToWatchlist({id:m.movie_id,title:m.title,year:m.year,rating:m.rating,poster:m.poster,backdrop:m.backdrop,genre:m.genre,overview:m.overview,accent:m.accent||accentColor,gradient:m.gradient,isTV:m.is_tv,certification:m.certification||''});showToast(`Saved ${m.title}`);};
+              const shareProfile=async()=>{
+                const shareUrl=`https://this-scine.vercel.app/u/${profile.has_username?profile.username:(profile.user_id||userId)}`;
+                try{
+                  if(navigator.share){await navigator.share({title:`${name} on CineScroll`,text:`See what ${name} is watching on CineScroll`,url:shareUrl});}
+                  else{await navigator.clipboard.writeText(shareUrl);setShareCopied(true);showToast('Profile link copied');setTimeout(()=>setShareCopied(false),2000);}
+                }catch{}
+              };
+              const label={fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',fontWeight:700,color:accentColor};
+              const glassBtn={background:'rgba(0,0,0,0.38)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'none',borderRadius:'50%',width:34,height:34,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'};
+              const watchlist=profile.watchlist||[];
+              const recentPosters=watchlist.filter(m=>m.poster).slice(0,10);
+              const spinner=<div style={{display:'flex',justifyContent:'center',padding:30}}><div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accentColor}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>;
+              const empty=(t,sub)=><div style={{padding:'26px 0',textAlign:'left'}}><div style={{fontSize:13,fontWeight:700,color:T.text}}>{t}</div>{sub&&<div style={{fontSize:12,color:T.text2,marginTop:4,lineHeight:1.5}}>{sub}</div>}</div>;
+              const VERB={saved:'Saved',watched:'Watched',reviewed:'Reviewed',list_follow:'Followed folder',arc_complete:'Finished arc'};
+              return(
+              <>
+                {/* COVER */}
+                <div style={{position:'relative',width:'100%',aspectRatio:'1.9',flexShrink:0}}>
+                  <div style={{position:'absolute',inset:0,overflow:'hidden',borderRadius:'24px 24px 0 0',background:coverImg?'transparent':`radial-gradient(120% 120% at 20% 0%, ${accentColor}40, transparent 70%)`,WebkitMaskImage:'linear-gradient(to bottom,#000 45%,transparent 100%)',maskImage:'linear-gradient(to bottom,#000 45%,transparent 100%)'}}>
+                    {coverImg&&<CoverImg src={coverImg} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 30%'}}/>}
+                    <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(6,6,11,0.35) 0%,rgba(6,6,11,0) 35%)'}}/>
+                  </div>
+                  <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.3)',position:'absolute',top:10,left:'50%',transform:'translateX(-50%)'}}/>
+                  <div style={{position:'absolute',top:16,left:16,right:16,display:'flex',justifyContent:'space-between'}}>
+                    <button onClick={onClose} aria-label="Close" style={glassBtn}><SvgIcon name="close" size={14} color="#fff"/></button>
+                    <button onClick={shareProfile} aria-label="Share profile" style={glassBtn}><SvgIcon name={shareCopied?'check':'share'} size={14} color="#fff"/></button>
+                  </div>
                 </div>
-                {!profile.isSelf&&(
-                  <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-                    {currentUser&&currentUser.id!==userId&&(
-                      <button
-                        type="button"
-                        onClick={handleMessageRequest}
-                        title="Send message request"
-                        style={{background:T.surface2,border:`1px solid ${T.hairlineStrong}`,borderRadius:20,width:38,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}}
-                      >
-                        <SvgIcon name="chat" size={15} color={T.text2}/>
+
+                <div style={{padding:'0 20px 36px',marginTop:-58,position:'relative'}}>
+                  {/* IDENTITY */}
+                  <div style={{width:84,height:84,borderRadius:'50%',padding:3,background:`linear-gradient(135deg,${accentColor},${accentColor}55)`,boxShadow:'0 10px 30px rgba(0,0,0,0.5)'}}>
+                    <div style={{width:'100%',height:'100%',borderRadius:'50%',overflow:'hidden',background:'#14141B',border:'3px solid #0B0B12',boxSizing:'border-box',display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,fontWeight:700,color:accentColor}}>
+                      {profile.avatar_url?<img src={profile.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(name||'U')[0].toUpperCase()}
+                    </div>
+                  </div>
+                  <div style={{marginTop:12}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                      <span style={{fontFamily:T.serif,fontSize:22,fontWeight:700,letterSpacing:'-0.02em',color:'#fff',lineHeight:1.15}}>{name}</span>
+                      {profile.followsYou&&<span style={{fontSize:10.5,fontWeight:700,color:T.text2,background:'rgba(255,255,255,0.08)',borderRadius:6,padding:'3px 7px'}}>Follows you</span>}
+                    </div>
+                    <div style={{fontSize:12.5,color:T.text2,marginTop:3}}>@{profile.username}{profile.topGenres?.length?<span style={{color:T.text3}}> · into {profile.topGenres.slice(0,3).join(', ')}</span>:null}</div>
+                    {profile.bio&&<div style={{fontSize:13,color:'rgba(255,255,255,0.85)',marginTop:10,lineHeight:1.5}}>{profile.bio}</div>}
+                  </div>
+
+                  {/* STATS — one quiet line */}
+                  <div style={{display:'flex',gap:18,marginTop:14,flexWrap:'wrap'}}>
+                    {[
+                      [profile.followers,'followers',()=>setFollowListType('followers')],
+                      [profile.following,'following',()=>setFollowListType('following')],
+                      [profile.watchlistCount,'saved',()=>setTab('watchlist')],
+                      [profile.watchedCount||0,'watched',()=>setTab('activity')],
+                    ].map(([v,l,fn])=>(
+                      <button key={l} onClick={fn} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12.5,color:T.text2}}><b style={{color:'#fff',fontWeight:700}}>{v||0}</b> {l}</button>
+                    ))}
+                  </div>
+
+                  {/* ACTIONS */}
+                  {!profile.isSelf&&(
+                    <div style={{display:'flex',gap:10,marginTop:18}}>
+                      <button onClick={handleFollow} style={{flex:1,height:42,borderRadius:21,border:following?`1px solid ${T.hairlineStrong}`:'none',background:following?'transparent':accentColor,color:following?'#fff':'#07070F',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer',transition:'all .2s'}}>
+                        {following?'Following':profile.followsYou?'Follow back':'Follow'}
                       </button>
-                    )}
-                    <button onClick={handleFollow} style={{background:following?'transparent':accentColor,border:`1px solid ${following?T.hairlineStrong:accentColor}`,borderRadius:20,padding:'9px 20px',cursor:'pointer',fontSize:12,color:following?T.text2:'#07070F',fontFamily:'inherit',fontWeight:700,flexShrink:0,transition:'all 0.2s ease'}}>
-                      {following?'Following':'Follow'}
-                    </button>
+                      {currentUser&&currentUser.id!==userId&&(
+                        <button onClick={handleMessageRequest} style={{flex:1,height:42,borderRadius:21,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+                          <SvgIcon name="chat" size={14} color="#fff"/>Message
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* IN COMMON */}
+                  {!profile.isSelf&&profile.inCommonCount>0&&(
+                    <div style={{marginTop:26}}>
+                      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
+                        <span style={label}>You both saved</span>
+                        <span style={{fontSize:11.5,color:T.text2}}>{profile.inCommonCount} title{profile.inCommonCount===1?'':'s'}</span>
+                      </div>
+                      <div style={{display:'flex',gap:8,overflowX:'auto',scrollbarWidth:'none',margin:'12px -20px 0',padding:'0 20px'}}>
+                        {profile.inCommon.map(m=>(
+                          <button key={m.movie_id} onClick={()=>onWatchTrailer&&onWatchTrailer(toMovie(m))} style={{flexShrink:0,width:72,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:m.gradient||T.surface,border:'none',padding:0,cursor:'pointer'}}>
+                            {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RECENTLY SAVED SHELF */}
+                  {recentPosters.length>0&&(
+                    <div style={{marginTop:26}}>
+                      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
+                        <span style={label}>Recently saved</span>
+                        {watchlist.length>recentPosters.length&&<button onClick={()=>setTab('watchlist')} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:accentColor}}>See all</button>}
+                      </div>
+                      <div style={{display:'flex',gap:10,overflowX:'auto',scrollbarWidth:'none',margin:'12px -20px 0',padding:'0 20px'}}>
+                        {recentPosters.map(m=>(
+                          <div key={m.movie_id} style={{flexShrink:0,width:104}}>
+                            <button onClick={()=>onWatchTrailer&&onWatchTrailer(toMovie(m))} style={{position:'relative',display:'block',width:'100%',aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:m.gradient||T.surface,border:'none',padding:0,cursor:'pointer'}}>
+                              <img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+                              {m.watched&&<span style={{position:'absolute',top:5,left:5,fontSize:9.5,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.6)',borderRadius:4,padding:'2px 5px'}}>Watched</span>}
+                            </button>
+                            <div style={{fontSize:11.5,fontWeight:600,color:'#fff',marginTop:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                            {!profile.isSelf&&onAddToWatchlist&&<button onClick={()=>saveIt(m)} style={{display:'inline-flex',alignItems:'center',gap:4,background:'none',border:'none',padding:0,marginTop:3,cursor:'pointer',fontFamily:'inherit',fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.6)'}}><SvgIcon name="plus" size={11} color="rgba(255,255,255,0.6)"/>Save</button>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TABS */}
+                  <div style={{display:'flex',gap:22,borderBottom:`1px solid ${T.hairline}`,marginTop:28}}>
+                    {[['activity','Activity'],['watchlist','Watchlist'],['reviews','Reviews'],['lists','Folders']].map(([t,l])=>(
+                      <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',borderBottom:`2px solid ${tab===t?accentColor:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:500,color:tab===t?accentColor:'rgba(255,255,255,0.5)'}}>{l}</button>
+                    ))}
                   </div>
-                )}
-              </div>
 
-              {/* STATS */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,marginBottom:22,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
-                {[
-                  {label:'Followers',value:profile.followers,icon:'people',action:()=>setFollowListType('followers')},
-                  {label:'Following',value:profile.following,icon:'userPlus',action:()=>setFollowListType('following')},
-                  {label:'Watchlist',value:profile.watchlistCount,icon:'bookmark',action:()=>setTab('watchlist')},
-                ].map(s=>(
-                  <button key={s.label} onClick={s.action} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,border:'none',padding:'13px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',fontFamily:'inherit'}}>
-                    <SvgIcon name={s.icon} size={14} color={T.text3}/>
-                    <SerifStat size={18}>{s.value}</SerifStat>
-                    <Eyebrow style={{fontSize:8.5}}>{s.label}</Eyebrow>
-                  </button>
-                ))}
-              </div>
-
-              {/* TOP GENRES */}
-              {profile.topGenres&&profile.topGenres.length>0&&(
-                <div style={{marginBottom:22}}>
-                  <Eyebrow color={T.text3} style={{marginBottom:10}}>Top Genres</Eyebrow>
-                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                    {profile.topGenres.map(g=>(<span key={g} style={{fontSize:11,color:accentColor,background:`${accentColor}14`,border:`1px solid ${accentColor}30`,borderRadius:20,padding:'4px 12px',fontWeight:600}}>{g}</span>))}
-                  </div>
-                </div>
-              )}
-
-              {/* TABS */}
-              <div style={{display:'flex',gap:20,borderBottom:`1px solid ${T.hairline}`,marginBottom:18}}>
-                {[['activity','flame','Activity'],['watchlist','bookmark','Watchlist'],['reviews','star','Reviews'],['lists','folder','Folders']].map(([t,icon,label])=>(
-                  <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',cursor:'pointer',padding:'0 0 12px',fontFamily:'inherit',fontSize:12,fontWeight:tab===t?700:500,color:tab===t?accentColor:T.text3,borderBottom:`2px solid ${tab===t?accentColor:'transparent'}`,transition:'all 0.2s ease',display:'flex',alignItems:'center',gap:5}}>
-                    <SvgIcon name={icon} size={11} color={tab===t?accentColor:T.text3} filled={t==='activity'&&tab===t}/>
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* ACTIVITY TAB */}
-              {tab==='activity'&&(
-                loadingActivity?(
-                  <div style={{display:'flex',justifyContent:'center',padding:30}}><div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accentColor}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>
-                ):activity.length===0?(
-                  <div style={{textAlign:'center',padding:'24px 16px',fontSize:12,color:T.text3}}>No activity yet</div>
-                ):(
-                  <div style={{display:'flex',flexDirection:'column'}}>
-                    {activity.map((item,i)=>{
-                      const act=activityIcon(item.type);
-                      return(
+                  {/* ACTIVITY */}
+                  {tab==='activity'&&(loadingActivity?spinner:activity.length===0?empty('Nothing yet',`When ${name.split(' ')[0]} saves, watches or reviews something, it shows up here.`):(
+                    <div>
+                      {activity.map((item,i)=>(
                         <button key={item.id||i} onClick={()=>{if(item.type==='list_follow')return;if(item.movie_id&&onWatchTrailer)onWatchTrailer({id:item.movie_id,title:item.movie_title,poster:item.movie_poster,year:item.movie_year,rating:item.movie_rating,accent:item.movie_accent||accentColor,mediaType:item.is_tv?'tv':'movie',...(item.type==='reviewed'&&item.review_id?{initialTab:'comments',highlightCommentId:item.review_id}:{})});}}
-                          style={{display:'flex',gap:12,padding:'13px 0',borderTop:i>0?`1px solid ${T.hairline}`:'none',background:'none',border:'none',cursor:item.movie_id&&item.type!=='list_follow'?'pointer':'default',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
-                          {item.movie_poster?(
-                            <div style={{width:46,height:64,borderRadius:8,overflow:'hidden',flexShrink:0,background:GRADS[i%GRADS.length]}}><img src={item.movie_poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/></div>
-                          ):(
-                            <div style={{width:46,height:64,borderRadius:8,flexShrink:0,background:`${act.color}14`,border:`1px solid ${act.color}30`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name={act.icon} size={18} color={act.color}/></div>
-                          )}
+                          style={{display:'flex',gap:12,alignItems:'center',padding:'12px 0',borderTop:i?`1px solid ${T.hairline}`:'none',background:'none',border:'none',borderRadius:0,width:'100%',textAlign:'left',fontFamily:'inherit',cursor:item.movie_id&&item.type!=='list_follow'?'pointer':'default'}}>
+                          <div style={{width:40,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',flexShrink:0,background:T.surface}}>
+                            {item.movie_poster&&<img src={item.movie_poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                          </div>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
-                              <SvgIcon name={act.icon} size={11} color={act.color} filled={act.icon==='bookmark'||act.icon==='eye'}/>
-                              <span style={{fontSize:11,color:T.text2}}>{act.label}</span>
-                              <span style={{fontSize:10,color:T.text3,marginLeft:'auto'}}>{timeAgo(item.created_at)}</span>
-                            </div>
-                            <div style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:3}}>{item.movie_title}</div>
-                            {item.movie_year&&<div style={{fontSize:11,color:T.text3}}>{item.movie_year}</div>}
-                            {item.type==='reviewed'&&item.movie_rating&&(
-                              <div style={{display:'flex',gap:2,marginTop:5}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={10} color={s<=Math.round(item.movie_rating/2)?accentColor:T.hairlineStrong} filled={s<=Math.round(item.movie_rating/2)}/>)}</div>
-                            )}
+                            <div style={{fontSize:11,fontWeight:700,color:accentColor,letterSpacing:0.2}}>{VERB[item.type]||'Activity'}<span style={{color:T.text3,fontWeight:500}}> · {timeAgo(item.created_at)}</span></div>
+                            <div style={{fontSize:14,fontWeight:700,color:'#fff',marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.movie_title}</div>
+                            {item.movie_year&&<div style={{fontSize:11.5,color:T.text2,marginTop:2}}>{item.movie_year}</div>}
                           </div>
                         </button>
-                      );
-                    })}
-                  </div>
-                )
-              )}
+                      ))}
+                    </div>
+                  ))}
 
-              {/* WATCHLIST TAB */}
-              {tab==='watchlist'&&(
-                profile.watchlist===null?(
-                  <div style={{textAlign:'center',padding:'28px 16px',display:'flex',flexDirection:'column',alignItems:'center',gap:9}}>
-                    <SvgIcon name="bookmark" size={22} color={T.hairlineStrong}/>
-                    <div style={{fontSize:12.5,color:T.text3}}>This watchlist is private</div>
-                  </div>
-                ):profile.watchlist.length===0?(
-                  <div style={{textAlign:'center',padding:'28px 16px',fontSize:12.5,color:T.text3}}>No titles yet</div>
-                ):(
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
-                    {profile.watchlist.slice(0,12).map((m,i)=>(
-                      <button key={m.movie_id||i} onClick={()=>onWatchTrailer&&onWatchTrailer({id:m.movie_id,title:m.title,poster:m.poster,year:m.year,rating:m.rating,genre:m.genre,overview:m.overview,accent:m.accent||accentColor,gradient:m.gradient,mediaType:m.is_tv?'tv':'movie'})}
-                        style={{position:'relative',aspectRatio:'2/3',borderRadius:10,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],border:'none',cursor:'pointer',padding:0}}>
-                        {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
-                        {m.watched&&<div style={{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:'50%',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={9} color={accentColor}/></div>}
-                        {!profile.isSelf&&onAddToWatchlist&&(
-                          <div onClick={(e)=>{e.stopPropagation();onAddToWatchlist({id:m.movie_id,title:m.title,year:m.year,rating:m.rating,poster:m.poster,backdrop:m.backdrop,genre:m.genre,overview:m.overview,accent:m.accent||accentColor,gradient:m.gradient,isTV:m.is_tv,certification:m.certification||''});showToast('Added to your watchlist');}}
-                            style={{position:'absolute',bottom:5,right:5,width:24,height:24,borderRadius:'50%',background:'rgba(0,0,0,0.65)',backdropFilter:'blur(6px)',border:`1px solid ${accentColor}55`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                            <SvgIcon name="plus" size={12} color={accentColor}/>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )
-              )}
-
-              {/* REVIEWS TAB */}
-              {tab==='reviews'&&(
-                loadingReviews?(
-                  <div style={{display:'flex',justifyContent:'center',padding:30}}><div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accentColor}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>
-                ):reviews.length===0?(
-                  <div style={{textAlign:'center',padding:'28px 16px',fontSize:12.5,color:T.text3}}>No reviews yet</div>
-                ):(
-                  <div style={{display:'flex',flexDirection:'column'}}>
-                    {reviews.map((r,i)=>(
-                      <div key={r.id} style={{padding:'14px 0',borderTop:i>0?`1px solid ${T.hairline}`:'none'}}>
-                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7}}>
-                          <span style={{fontSize:14,fontWeight:700,color:T.text,fontFamily:T.serif}}>{r.movie_title}</span>
-                          <span style={{fontSize:11,color:T.text3}}>{timeAgo(r.created_at)}</span>
-                        </div>
-                        {r.rating>0&&<div style={{display:'flex',gap:2,marginBottom:7}}>{[1,2,3,4,5].map(s=><SvgIcon key={s} name="star" size={11} color={s<=r.rating?accentColor:T.hairlineStrong} filled={s<=r.rating}/>)}</div>}
-                        <p style={{fontSize:13,color:T.text2,lineHeight:1.55,margin:0}}>{r.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-
-              {/* LISTS TAB */}
-              {tab==='lists'&&(
-                loadingLists?(
-                  <div style={{display:'flex',justifyContent:'center',padding:30}}><div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accentColor}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>
-                ):userLists.length===0?(
-                  <div style={{textAlign:'center',padding:'28px 16px',display:'flex',flexDirection:'column',alignItems:'center',gap:9}}>
-                    <SvgIcon name="list" size={24} color={T.hairlineStrong}/>
-                    <div style={{fontSize:13,fontWeight:600,color:T.text2}}>No lists yet</div>
-                    <div style={{fontSize:11,color:T.text3}}>{profile.isSelf?'Create your first list from the Lists screen':'This user hasn\'t created any lists yet'}</div>
-                  </div>
-                ):(
-                  <div style={{display:'flex',flexDirection:'column',gap:1,borderBottom:`1px solid ${T.hairline}`,overflow:'hidden'}}>
-                    {userLists.map(list=>(
-                      <button key={list.id} onClick={()=>setViewingList(list.id)} style={{display:'flex',gap:12,alignItems:'center',background:'transparent',boxShadow:`0 -1px 0 ${T.hairline}`,border:'none',padding:'13px 14px',cursor:'pointer',textAlign:'left',fontFamily:'inherit',width:'100%'}}>
-                        <FolderCover posters={list.posters?.length?list.posters:(list.cover_poster?[list.cover_poster]:[])} accent={accentColor} size={56} locked={list.is_public===false}/>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',marginBottom:2}}>{list.title}</div>
-                          <div style={{fontSize:11,color:T.text3,display:'flex',alignItems:'center',gap:6}}>
-                            <span>{list.movie_count} title{list.movie_count!==1?'s':''}</span>
-                            {list.avg_rating&&<><SvgIcon name="star" size={9} color={accentColor} filled/><span style={{color:accentColor,fontWeight:600}}>{list.avg_rating}</span></>}
-                            <span>· {list.follower_count} follower{list.follower_count!==1?'s':''}</span>
+                  {/* WATCHLIST */}
+                  {tab==='watchlist'&&(profile.watchlist===null?empty('This watchlist is private',`${name.split(' ')[0]} keeps their saves to themselves.`):watchlist.length===0?empty('No titles yet'):(
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'14px 10px',paddingTop:16}}>
+                      {watchlist.slice(0,60).map((m,i)=>(
+                        <div key={m.movie_id||i} style={{minWidth:0}}>
+                          <button onClick={()=>onWatchTrailer&&onWatchTrailer(toMovie(m))} style={{position:'relative',display:'block',width:'100%',aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:m.gradient||GRADS[i%GRADS.length],border:'none',cursor:'pointer',padding:0}}>
+                            {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                            {m.watched&&<span style={{position:'absolute',top:5,left:5,fontSize:9.5,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.6)',borderRadius:4,padding:'2px 5px'}}>Watched</span>}
+                          </button>
+                          <div style={{display:'flex',alignItems:'center',gap:4,marginTop:6}}>
+                            <div style={{flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                            {!profile.isSelf&&onAddToWatchlist&&<button onClick={()=>saveIt(m)} aria-label={`Save ${m.title}`} style={{background:'none',border:'none',padding:2,cursor:'pointer',display:'flex'}}><SvgIcon name="plus" size={13} color={accentColor}/></button>}
                           </div>
                         </div>
-                        <SvgIcon name="chevron" size={12} color={T.text3}/>
-                      </button>
-                    ))}
-                  </div>
-                )
-              )}
+                      ))}
+                    </div>
+                  ))}
 
-              {/* FIND FRIENDS CTA (other profiles only) */}
-              {!profile.isSelf&&(
-                <div style={{marginTop:24,display:'flex',alignItems:'center',gap:12,paddingTop:20,borderTop:`1px solid ${T.hairline}`}}>
-                  <div style={{width:34,height:34,borderRadius:10,background:`${accentColor}14`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="people" size={15} color={accentColor}/></div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:700,color:accentColor}}>Find Friends</div>
-                    <div style={{fontSize:11,color:T.text3,marginTop:1}}>Connect and see what your friends are watching</div>
-                  </div>
-                  <span style={{display:'flex',transform:'rotate(-90deg)'}}><SvgIcon name="chevron" size={13} color={T.text3}/></span>
+                  {/* REVIEWS */}
+                  {tab==='reviews'&&(loadingReviews?spinner:reviews.length===0?empty('No reviews yet'):(
+                    <div>
+                      {reviews.map((r,i)=>(
+                        <div key={r.id} style={{padding:'14px 0',borderTop:i?`1px solid ${T.hairline}`:'none'}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10}}>
+                            <span style={{fontSize:14,fontWeight:700,color:'#fff'}}>{r.movie_title}</span>
+                            <span style={{fontSize:11,color:T.text3,flexShrink:0}}>{timeAgo(r.created_at)}</span>
+                          </div>
+                          {r.rating>0&&<div style={{display:'flex',gap:2,marginTop:6}}>{[1,2,3,4,5].map(n=><SvgIcon key={n} name="star" size={11} color={n<=r.rating?'#FFD166':T.hairlineStrong} filled={n<=r.rating}/>)}</div>}
+                          <p style={{fontSize:13,color:'rgba(255,255,255,0.85)',lineHeight:1.55,margin:'8px 0 0'}}>{r.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* FOLDERS */}
+                  {tab==='lists'&&(loadingLists?spinner:userLists.length===0?empty('No public folders',profile.isSelf?'Make a folder public to show it here.':`${name.split(' ')[0]} hasn't shared any folders yet.`):(
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px 32px',paddingTop:18}}>
+                      {userLists.map(list=>(
+                        <button key={list.id} onClick={()=>setViewingList(list.id)} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',textAlign:'left',minWidth:0}}>
+                          <FolderCoverFill posters={list.cover_url?[list.cover_url]:(list.posters||[])} accent={accentColor} locked={list.is_public===false} count={list.movie_count||0}/>
+                          <div style={{fontSize:13,fontWeight:700,color:'#fff',marginTop:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{list.title}</div>
+                          <div style={{fontSize:11,color:T.text2,marginTop:2}}>{list.follower_count||0} follower{list.follower_count===1?'':'s'}</div>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </>
+              );
+            })()}
           </div>
         )}
       </div>
