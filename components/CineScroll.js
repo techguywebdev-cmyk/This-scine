@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
-import CineArcs from './CineArcs';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 // Neutrals carry the visual weight since the accent color is dynamic (shifts per
@@ -8583,7 +8582,17 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
   const[view,setView]=useState('home'); // home | all
   const[allFilter,setAllFilter]=useState('towatch');
   const[toast,setToast]=useState(null);
+  const[menuFor,setMenuFor]=useState(null);
+  const[wallPosters,setWallPosters]=useState([]);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),2600);};
+  // Header poster wall: your own saves first, trending as a fallback; reshuffled every visit
+  useEffect(()=>{
+    const mine=(watchlist||[]).map(m=>m.poster).filter(Boolean);
+    const shuffle=a=>{const x=[...a];for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]];}return x;};
+    if(mine.length>=5){setWallPosters(shuffle(mine).slice(0,5));return;}
+    fetch('/api/movies?popular=1').then(r=>r.json()).then(d=>{const pop=(d.movies||[]).map(m=>m.poster).filter(Boolean);setWallPosters([...shuffle(mine),...shuffle(pop)].slice(0,5));}).catch(()=>setWallPosters(mine.slice(0,5)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const fetchLists=useCallback(async(t)=>{
     setLoading(true);
@@ -8687,72 +8696,145 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
     </div>
   );
 
+  const shown=[...(allFilter==='towatch'?toWatch:watchedList)].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0));
+  const glassBtn={background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'none',borderRadius:'50%',width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'};
+  const section={display:'flex',alignItems:'baseline',justifyContent:'space-between',margin:'26px 0 12px'};
+  const sectionLabel={fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',fontWeight:700,color:accent};
+
+  const SimpleFolder=({title,posters,locked,count,onClick})=>(
+    <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e=>e.key==='Enter'&&onClick()} style={{cursor:'pointer',minWidth:0}}>
+      <FolderCoverFill posters={posters} accent={accent} locked={locked} count={count}/>
+      <div style={{fontSize:12,fontWeight:600,color:'#fff',marginTop:7,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+    </div>
+  );
+
   return(
     <div style={{position:'fixed',inset:0,zIndex:120,background:ambient(accent),display:'flex',flexDirection:'column',animation:'playerSlideUp 0.38s cubic-bezier(0.22,1,0.36,1)',visibility:openListId?'hidden':'visible'}}>
-      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
       {toast&&<Toast message={toast} accent={accent}/>}
       {showCreate&&<CreateListSheet onClose={()=>setShowCreate(false)} accent={accent} onCreated={(l)=>{showToast(`Created ${l?.title||'folder'}`);fetchLists('mine');}}/>}
       {filingMovie&&<AddToListSheet movie={filingMovie} onClose={()=>{setFilingMovie(null);fetchLists('mine');}} accent={accent} isSaved={watchlistIds?.has(filingMovie.id)} onEnsureSaved={onSave}/>}
-
-      {/* Header */}
-      <div style={{padding:'max(18px, env(safe-area-inset-top)) 20px 0',flexShrink:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:6}}>
-          <button onClick={view==='all'?()=>setView('home'):onClose} aria-label="Back" style={{background:'none',border:'none',width:36,height:36,marginLeft:-8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <h1 style={{flex:1,fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:T.text,margin:0}}>{view==='all'?'All saved':'Watchlist'}</h1>
-          {view==='home'&&onOpenArcs&&<button onClick={onOpenArcs} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12.5,fontWeight:700,color:accent}}>Cine Arcs</button>}
-        </div>
-        <div style={{fontSize:12,color:T.text2,marginTop:2}}>
-          {view==='all'?`${toWatch.length} to watch · ${watchedList.length} watched`:`${saved.length} saved · ${tab==='mine'?lists.length:'—'} folders`}
-        </div>
-        {view==='home'?<Tabs/>:(
-          <div style={{display:'flex',gap:24,borderBottom:`1px solid ${T.hairline}`,marginTop:16}}>
-            {[['towatch',`To watch (${toWatch.length})`],['watched',`Watched (${watchedList.length})`]].map(([t,label])=>(
-              <button key={t} onClick={()=>setAllFilter(t)} style={{background:'none',border:'none',borderBottom:`2px solid ${allFilter===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:allFilter===t?700:500,color:allFilter===t?accent:'rgba(255,255,255,0.5)'}}>{label}</button>
+      {menuFor&&(
+        <div onClick={()=>setMenuFor(null)} style={{position:'fixed',inset:0,zIndex:140,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'flex-end',animation:'fadeIn .2s ease'}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',background:ambient(accent),borderRadius:'20px 20px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',padding:'14px 20px calc(18px + env(safe-area-inset-bottom))',animation:'playerSlideUp .28s cubic-bezier(0.22,1,0.36,1)'}}>
+            <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.25)',margin:'0 auto 14px'}}/>
+            <div style={{display:'flex',gap:12,alignItems:'center',paddingBottom:12,borderBottom:`1px solid ${T.hairline}`}}>
+              <div style={{width:40,aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:T.surface,flexShrink:0}}>{menuFor.poster&&<img src={menuFor.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}</div>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{menuFor.title}</div>
+                <div style={{fontSize:11.5,color:T.text2,marginTop:2}}>{[menuFor.year,menuFor.is_tv?'Series':null].filter(Boolean).join(' · ')}</div>
+              </div>
+            </div>
+            {[
+              ['play','Watch trailer',()=>onWatchTrailer(asMovie(menuFor))],
+              ['folder','Add to folder',()=>setFilingMovie(asMovie(menuFor))],
+              ['check',menuFor.watched?'Mark as not watched':'Mark as watched',()=>onMarkWatched&&onMarkWatched(asMovie(menuFor))],
+            ].map(([ic,l,fn])=>(
+              <button key={l} onClick={()=>{const f=fn;setMenuFor(null);f();}} style={{display:'flex',alignItems:'center',gap:14,width:'100%',background:'none',border:'none',borderBottom:`1px solid ${T.hairline}`,padding:'15px 0',cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:600,color:'#fff',textAlign:'left'}}>
+                <SvgIcon name={ic} size={17} color={accent} filled={ic==='play'}/>{l}
+              </button>
             ))}
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Header — poster wall like Friends */}
+      <div style={{position:'relative',padding:'max(18px, env(safe-area-inset-top)) 20px 0',flexShrink:0}}>
+        <div aria-hidden="true" style={{position:'absolute',left:0,right:0,top:0,height:'calc(190px + env(safe-area-inset-top))',overflow:'hidden',pointerEvents:'none',WebkitMaskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)',maskImage:'linear-gradient(to bottom,#000 55%,transparent 100%)'}}>
+          <div style={{position:'absolute',left:-18,right:-18,top:-34,display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,transform:'rotate(-4deg)'}}>
+            {(wallPosters.length?wallPosters:Array(5).fill(null)).map((src,i)=>(
+              <div key={i} style={{aspectRatio:'2/3',borderRadius:4,overflow:'hidden',background:'rgba(255,255,255,0.05)',transform:`translateY(${i%2?22:0}px)`}}>
+                {src&&<img src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block',animation:'fadeIn .6s ease'}}/>}
+              </div>
+            ))}
+          </div>
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg, rgba(6,6,11,0.35) 0%, rgba(6,6,11,0.1) 40%, rgba(6,6,11,0.55) 100%)'}}/>
+        </div>
+        <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+          <button onClick={onClose} aria-label="Back" style={{...glassBtn,marginLeft:-4}}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div style={{flex:1}}/>
+          {isSignedIn&&tab==='mine'&&<button onClick={()=>setShowCreate(true)} aria-label="New folder" style={glassBtn}><SvgIcon name="plus" size={18} color="#fff"/></button>}
+        </div>
+        <h1 style={{position:'relative',fontFamily:T.serif,fontSize:26,letterSpacing:'-0.02em',fontWeight:800,color:'#fff',margin:'78px 0 0',textShadow:'0 2px 18px rgba(0,0,0,0.6)'}}>Watchlist</h1>
+        <div style={{position:'relative',fontSize:12,color:T.text2,marginTop:2}}>
+          <b style={{color:'#fff'}}>{toWatch.length}</b> to watch<span style={{margin:'0 8px'}}>·</span><b style={{color:'#fff'}}>{watchedList.length}</b> watched
+        </div>
+        <div style={{position:'relative',display:'flex',gap:24,marginTop:16,borderBottom:`1px solid ${T.hairline}`}}>
+          {[['mine','Mine'],['following','Following'],['trending','Popular']].map(([t,label])=>(
+            <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',borderBottom:`2px solid ${tab===t?accent:'transparent'}`,marginBottom:-1,padding:'0 0 11px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?700:500,color:tab===t?accent:'rgba(255,255,255,0.5)'}}>{label}</button>
+          ))}
+        </div>
       </div>
 
       <div style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',padding:'0 20px calc(40px + env(safe-area-inset-bottom))'}}>
         {!isSignedIn?(
-          <div style={{padding:'48px 0'}}>
+          <div style={{padding:'40px 0'}}>
             <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:16,fontWeight:700,color:'#fff'}}>Your watchlist lives here</div>
-            <div style={{fontSize:12.5,color:T.text2,marginTop:6,lineHeight:1.5}}>Sign in to save films and sort them into folders like “Date night” or “Weekend binge”.</div>
+            <div style={{fontSize:12.5,color:T.text2,marginTop:6,lineHeight:1.5}}>Sign in to save films and sort them into folders.</div>
           </div>
-        ):view==='all'?(
-          (allFilter==='towatch'?toWatch:watchedList).length===0?(
-            <div style={{padding:'28px 0',fontSize:12.5,color:T.text2}}>{allFilter==='towatch'?'Nothing waiting. Tap Save on any film in your feed to add it here.':'Films you mark as watched show up here.'}</div>
-          ):(allFilter==='towatch'?toWatch:watchedList).map(m=><SavedRow key={m.movie_id} m={m}/>)
         ):tab==='mine'?(
           <>
-            <Label right={<span style={{fontSize:12,color:T.text2}}>Private unless you share them</span>}>Folders</Label>
+            {/* Folders */}
+            <div style={section}><span style={sectionLabel}>Folders</span></div>
             {loading?<Spinner/>:(
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'18px 12px'}}>
-                <FolderTile title="All saved" sub="Everything you've saved" count={saved.length} posters={[...saved].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).map(m=>m.poster).filter(Boolean).slice(0,1)} onClick={()=>setView('all')}/>
                 {lists.map(l=>(
-                  <FolderTile key={l.id} title={l.title} sub={l.is_public===false?'Private':'Public'} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
+                  <SimpleFolder key={l.id} title={l.title} count={l.movie_count||0} posters={l.cover_url?[l.cover_url]:(l.posters||[])} locked={l.is_public===false} onClick={()=>onOpenList&&onOpenList(l.id)}/>
                 ))}
-                <FolderTile title="New folder" dashed onClick={()=>setShowCreate(true)}/>
+                <div role="button" tabIndex={0} onClick={()=>setShowCreate(true)} style={{cursor:'pointer',minWidth:0}}>
+                  <div style={{position:'relative',width:'100%',aspectRatio:'5/6'}}>
+                    <div style={{position:'absolute',left:0,right:0,top:'7%',bottom:0,borderRadius:12,border:`1.5px dashed ${accent}66`,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="plus" size={18} color={accent}/></div>
+                  </div>
+                  <div style={{fontSize:12,fontWeight:600,color:accent,marginTop:7}}>New folder</div>
+                </div>
               </div>
             )}
 
-            <Label right={saved.length>6?<button onClick={()=>setView('all')} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:accent}}>See all</button>:null}>Recently saved</Label>
-            {toWatch.length===0?(
-              <div style={{fontSize:12.5,color:T.text2,lineHeight:1.5,padding:'4px 0'}}>Tap Save on any film in your feed. It lands here, and you can file it into a folder.</div>
-            ):[...toWatch].sort((a,b)=>(b.saved_at||0)-(a.saved_at||0)).slice(0,6).map(m=><SavedRow key={m.movie_id} m={m}/>)}
+            {/* Saved titles */}
+            <div style={section}>
+              <span style={sectionLabel}>Saved</span>
+              <div style={{display:'flex',gap:14}}>
+                {[['towatch','To watch'],['watched','Watched']].map(([t,l])=>(
+                  <button key={t} onClick={()=>setAllFilter(t)} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:allFilter===t?'#fff':'rgba(255,255,255,0.4)'}}>{l}</button>
+                ))}
+              </div>
+            </div>
+            {shown.length===0?(
+              <div style={{fontSize:12.5,color:T.text2,lineHeight:1.5,padding:'4px 0'}}>{allFilter==='towatch'?'Tap Save on any film in your feed and it lands here.':'Films you mark as watched show up here.'}</div>
+            ):(
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px 10px'}}>
+                {shown.map(m=>(
+                  <div key={m.movie_id} style={{position:'relative',minWidth:0}}>
+                    <button onClick={()=>onWatchTrailer(asMovie(m))} aria-label={m.title} style={{display:'block',width:'100%',aspectRatio:'2/3',borderRadius:3,overflow:'hidden',background:m.gradient||T.surface,border:'none',padding:0,cursor:'pointer'}}>
+                      {m.poster&&<img src={m.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:m.watched?0.6:1}}/>}
+                    </button>
+                    <button onClick={e=>{e.stopPropagation();setMenuFor(m);}} aria-label="More" style={{position:'absolute',top:5,right:5,width:26,height:26,borderRadius:'50%',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      <SvgIcon name="dots" size={13} color="#fff"/>
+                    </button>
+                    <div style={{fontSize:11.5,fontWeight:600,color:m.watched?'rgba(255,255,255,0.55)':'#fff',marginTop:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         ):(
           <>
-            <div style={{fontSize:12,color:T.text2,padding:'16px 0 6px',lineHeight:1.5}}>
-              {tab==='following'?'Public folders you follow. They update when their owners add titles.':'The most-followed and best-rated public folders right now.'}
-            </div>
             {loading?<Spinner/>:lists.length===0?(
-              <div style={{padding:'20px 0',fontSize:12.5,color:T.text2}}>{tab==='following'?'You’re not following any folders yet. Browse Popular folders to find some.':'No public folders yet. Make one of yours public to be the first.'}</div>
+              <div style={{padding:'28px 0'}}>
+                <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>{tab==='following'?'No folders followed yet':'No public folders yet'}</div>
+                <div style={{fontSize:12,color:T.text2,marginTop:4,lineHeight:1.5}}>{tab==='following'?'Follow a public folder and it shows up here.':'Make one of yours public to be the first.'}</div>
+              </div>
             ):(
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'18px 12px',paddingTop:8}}>
-                {lists.map(l=><PublicTile key={l.id} l={l}/>)}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'18px 12px',paddingTop:20}}>
+                {lists.map(l=>(
+                  <div key={l.id} role="button" tabIndex={0} onClick={()=>onOpenList&&onOpenList(l.id)} style={{cursor:'pointer',minWidth:0}}>
+                    <FolderCoverFill posters={l.cover_url?[l.cover_url]:(l.posters?.length?l.posters:(l.cover_poster?[l.cover_poster]:[]))} accent={accent} count={l.movie_count||0}/>
+                    <div style={{fontSize:12,fontWeight:600,color:'#fff',marginTop:7,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.title}</div>
+                    <div style={{fontSize:10.5,color:T.text3,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.display_name||l.username}</div>
+                  </div>
+                ))}
               </div>
             )}
           </>
@@ -9190,8 +9272,7 @@ export default function CineScroll(){
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData} onWatchTrailer={(m)=>{setShowProfile(false);setTrailerMovie(m);}} onDiscover={()=>{setShowProfile(false);setTimeout(()=>setShowFilter(true),50);}}/>}
-      {showArcs&&<CineArcs onClose={()=>setShowArcs(false)} accent={accent} onWatchTrailer={setTrailerMovie} watchlist={watchlist} user={user}/>}
-      {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList} onOpenArcs={()=>{setShowLists(false);setShowArcs(true);}}/>}
+      {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList}/>}
       {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onFillFromFeed={(l)=>{setTargetFolder({id:l.id,title:l.title});setShowLists(false);setTopLevelList(null);}} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}
       {folderMovie&&<AddToListSheet movie={folderMovie} onClose={()=>setFolderMovie(null)} accent={folderMovie.accent||accent} isSaved={watchlistIds.has(folderMovie.id)} onEnsureSaved={handleSave}/>}
       {targetFolder&&!showLists&&!topLevelList&&(
