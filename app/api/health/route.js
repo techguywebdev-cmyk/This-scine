@@ -13,7 +13,7 @@ export async function GET() {
   if (r2Enabled()) {
     try {
       const { AwsClient } = await import('aws4fetch');
-      const c = new AwsClient({ accessKeyId: process.env.R2_ACCESS_KEY_ID, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY, service: 's3', region: 'auto' });
+      const c = new AwsClient({ accessKeyId: (process.env.R2_ACCESS_KEY_ID || '').trim(), secretAccessKey: (process.env.R2_SECRET_ACCESS_KEY || '').trim(), service: 's3', region: 'auto' });
       const key = `health/ping-${Date.now()}.txt`;
       const base = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${process.env.R2_BUCKET}`;
       const put = await c.fetch(`${base}/${key}`, { method: 'PUT', body: 'ok', headers: { 'Content-Type': 'text/plain' } });
@@ -33,6 +33,8 @@ export async function GET() {
         out.bucketName = process.env.R2_BUCKET === process.env.R2_BUCKET.trim() ? process.env.R2_BUCKET : 'has extra spaces';
         out.accountIdLength = (process.env.R2_ACCOUNT_ID || '').trim().length;
         out.accessKeyIdLength = (process.env.R2_ACCESS_KEY_ID || '').trim().length;
+        out.secretKeyLength = (process.env.R2_SECRET_ACCESS_KEY || '').trim().length;
+        out.secretHadSpaces = (process.env.R2_SECRET_ACCESS_KEY || '') !== (process.env.R2_SECRET_ACCESS_KEY || '').trim();
       }
     } catch (e) {
       out.r2Write = `error: ${e.message}`.slice(0, 160);
