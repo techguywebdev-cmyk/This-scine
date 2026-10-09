@@ -1917,7 +1917,7 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
               <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.25)',position:'absolute',top:10,left:'50%',transform:'translateX(-50%)'}}/>
               <div style={{position:'absolute',top:14,right:14,display:'flex',gap:8,zIndex:2}}>
                 <button onClick={async()=>{
-                  const shareUrl=`https://this-scine.vercel.app/u/${profile.username||userId}`;
+                  const shareUrl=`https://this-scine.vercel.app/u/${profile.has_username?profile.username:(profile.user_id||userId)}`;
                   const shareData={title:`${profile.display_name||profile.username} on CineScroll`,text:`Check out ${profile.display_name||profile.username}'s profile on CineScroll`,url:shareUrl};
                   try{
                     if(navigator.share){await navigator.share(shareData);}

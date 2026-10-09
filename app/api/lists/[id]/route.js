@@ -1,4 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { publicHandle } from '@/lib/handle';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
@@ -41,7 +42,7 @@ export async function GET(req, { params }) {
     try {
       const u = await clerkClient.users.getUser(list.user_id);
       creator.username =
-        u.username || u.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user';
+        publicHandle(u) || 'user';
       creator.display_name = u.firstName
         ? `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}`
         : creator.username;

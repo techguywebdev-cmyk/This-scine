@@ -1,4 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { publicHandle } from '@/lib/handle';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
@@ -22,7 +23,7 @@ async function getUserMap(userIds) {
     });
     for (const u of users) {
       map[u.id] = {
-        username: u.username || u.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user',
+        username: publicHandle(u) || 'user',
         avatar_url: u.imageUrl || null,
       };
     }

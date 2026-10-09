@@ -1,4 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { publicHandle } from '@/lib/handle';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
@@ -24,7 +25,7 @@ async function enrichUsers(userIds) {
     });
     for (const u of users || []) {
       map[u.id] = {
-        username: u.username || u.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user',
+        username: publicHandle(u) || 'user',
         display_name: u.firstName
           ? `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}`
           : u.username || 'user',
@@ -41,7 +42,7 @@ async function enrichUsers(userIds) {
     try {
       const u = await clerkClient.users.getUser(id);
       map[id] = {
-        username: u.username || u.emailAddresses?.[0]?.emailAddress?.split('@')[0] || map[id]?.username || 'user',
+        username: publicHandle(u) || map[id]?.username || 'user',
         display_name: u.firstName
           ? `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}`
           : u.username || map[id]?.display_name || 'user',
@@ -164,7 +165,7 @@ export async function POST(request) {
       const u = await clerkClient.users.getUser(userId);
       resolvedAvatar = u.imageUrl || resolvedAvatar;
       resolvedUsername =
-        resolvedUsername || u.username || u.firstName || u.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user';
+        resolvedUsername || publicHandle(u) || 'user';
     } catch {}
 
     const payload = {

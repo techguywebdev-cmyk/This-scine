@@ -1,4 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { publicHandle } from '@/lib/handle';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dmZpaG96eHlib2lya2FpeHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjYxMDEsImV4cCI6MjA5NTY0MjEwMX0.y6zfENBPd6iJvFEf5-nRFeiWvVTzlDMAkNLr4CGfsGc';
@@ -39,11 +40,13 @@ export async function GET(req, { params }) {
 
     // 1. Clerk profile info
     let username = 'user';
+    let hasUsername = false;
     let avatar_url = null;
     let display_name = null;
     try {
       const clerkUser = await clerkClient.users.getUser(targetId);
-      username = clerkUser.username || clerkUser.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'user';
+      username = publicHandle(clerkUser) || 'user';
+      hasUsername = !!clerkUser.username;
       avatar_url = clerkUser.imageUrl || null;
       display_name = clerkUser.firstName
         ? `${clerkUser.firstName}${clerkUser.lastName ? ' ' + clerkUser.lastName : ''}`
@@ -98,6 +101,7 @@ export async function GET(req, { params }) {
 
     return Response.json({
       user_id: targetId,
+      has_username: hasUsername,
       username,
       display_name,
       avatar_url,
