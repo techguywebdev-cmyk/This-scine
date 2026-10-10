@@ -3100,16 +3100,16 @@ export function SimilarSheet({movie,onClose,accent,onSelect,onScrollAll,onTraile
                 <div style={{fontFamily:T.serif,fontWeight:700,fontSize:26,letterSpacing:'-0.02em',lineHeight:1.08,color:'#fff',marginTop:5,textShadow:'0 2px 18px rgba(0,0,0,0.6)',overflow:'hidden',textOverflow:'ellipsis',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{movie?.title}</div>
               </div>
             </div>
-            {!!source?.keywords?.length&&(
-              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:14}}>
-                {source.keywords.slice(0,3).map(k=>(<span key={k} style={{...glass,borderRadius:14,padding:'5px 11px',fontSize:11.5,fontWeight:600,color:'rgba(255,255,255,0.85)',textTransform:'capitalize'}}>{k}</span>))}
+            <div style={{display:'flex',alignItems:'center',gap:10,marginTop:14}}>
+              <div style={{flex:1,minWidth:0,display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',WebkitMaskImage:'linear-gradient(to right,#000 82%,transparent)',maskImage:'linear-gradient(to right,#000 82%,transparent)',paddingRight:18}}>
+                {(source?.keywords||[]).slice(0,3).map(k=>(<span key={k} style={{...glass,flexShrink:0,borderRadius:14,padding:'5px 11px',fontSize:11.5,fontWeight:600,color:'rgba(255,255,255,0.85)',textTransform:'capitalize',whiteSpace:'nowrap'}}>{k}</span>))}
               </div>
-            )}
-            {!loading&&items.length>0&&onScrollAll&&(
-              <button onClick={()=>{onScrollAll(items);onClose();}} style={{marginTop:16,width:'100%',height:46,display:'flex',alignItems:'center',justifyContent:'center',gap:8,...glass,borderRadius:23,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-                <SvgIcon name="play" size={13} color="#fff" filled/>Scroll these in your feed
-              </button>
-            )}
+              {!loading&&items.length>0&&onScrollAll&&(
+                <button onClick={()=>{onScrollAll(items);onClose();}} style={{flexShrink:0,height:36,display:'flex',alignItems:'center',gap:7,...glass,borderRadius:18,padding:'0 15px',color:'#fff',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                  <SvgIcon name="play" size={12} color="#fff" filled/>Play all
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
