@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { T, ambient, track } from './shared';
+import { ImportMotion, InviteMotion } from './WelcomeMotion';
 
 // First-run flow for new accounts: pick titles you love → import history → invite a friend.
 const NEED = 5;
@@ -140,11 +141,7 @@ export function Welcome({ user, accent = '#F5A623', onDone }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px 24px calc(22px + env(safe-area-inset-bottom))', animation: 'wlUp .45s ease' }}>
           <div />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ position: 'relative', height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {picked.slice(0, 3).map((m, i) => (
-                <img key={keyOf(m)} src={(m.poster || '').replace('/w500/', '/w342/')} alt="" style={{ position: 'absolute', width: 86, aspectRatio: '2/3', objectFit: 'cover', borderRadius: 8, boxShadow: '0 18px 40px rgba(0,0,0,0.55)', transform: `translateX(${(i - 1) * 62}px) rotate(${(i - 1) * 8}deg) translateY(${i === 1 ? -8 : 6}px)`, zIndex: i === 1 ? 2 : 1 }} />
-              ))}
-            </div>
+            <ImportMotion posters={picked.length ? picked : pool} accent={accent} />
             <div style={{ ...eyebrow(accent), marginTop: 26 }}>Your feed is tuned</div>
             <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, marginTop: 10 }}>Already log films<br />somewhere?</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 10, lineHeight: 1.55, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>Bring your Letterboxd or IMDb history across — everything you’ve watched, rated and saved, in under a minute.</div>
@@ -160,12 +157,7 @@ export function Welcome({ user, accent = '#F5A623', onDone }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px 24px calc(22px + env(safe-area-inset-bottom))', animation: 'wlUp .45s ease' }}>
           <div />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ width: 84, height: 84, borderRadius: '50%', overflow: 'hidden', boxShadow: `0 0 0 3px ${accent}`, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, zIndex: 1 }}>
-                {user?.imageUrl ? <img src={user.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (name[0] || '🙂')}
-              </div>
-              <div style={{ width: 84, height: 84, borderRadius: '50%', marginLeft: -18, border: '2px dashed rgba(255,255,255,0.4)', background: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, color: 'rgba(255,255,255,0.75)' }}>+</div>
-            </div>
+            <InviteMotion user={user} name={name} accent={accent} posters={picked.length ? picked : pool} />
             <div style={{ ...eyebrow(accent), marginTop: 26 }}>Better together</div>
             <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, marginTop: 10 }}>Bring a friend</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 10, lineHeight: 1.55, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>See what they’re saving, find films you both want, and press play at the same moment with a watch party.</div>
