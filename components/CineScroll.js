@@ -3512,31 +3512,31 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                 })}
               </div>
 
-              {/* Genre */}
-              <H right={activeGenre ? <button onClick={() => chooseGenre('')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: accent, fontFamily: 'inherit' }}>Any genre</button> : null}>Genre</H>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 22px', paddingTop: 6 }}>
-                {GENRE_OPTIONS.filter(g => g.id).map(g => {
-                  const on = activeGenre === g.id;
+              {/* Genre — glass chips */}
+              <H>Genre</H>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 4 }}>
+                {[{ id: '', label: 'Any genre' }, ...GENRE_OPTIONS.filter(g => g.id)].map(g => {
+                  const on = (activeGenre || '') === g.id;
                   return (
-                    <button key={g.id} onClick={() => chooseGenre(g.id)}
-                      style={{ background: 'none', border: 'none', borderBottom: `2px solid ${on ? accent : 'transparent'}`, padding: '8px 0 6px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.65)', fontFamily: 'inherit' }}>
+                    <button key={g.id || 'any'} onClick={() => chooseGenre(g.id)} aria-pressed={on}
+                      style={{ height: 34, padding: '0 14px', borderRadius: 17, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: on ? 700 : 600, color: on ? accent : 'rgba(255,255,255,0.8)', background: on ? `${accent}14` : 'rgba(0,0,0,0.25)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: `1px solid ${on ? accent : 'rgba(255,255,255,0.12)'}`, transition: 'all .2s' }}>
                       {g.label}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Platforms */}
-              <H right={<span style={{ fontSize: 12, color:T.text2 }}>Only show what you can stream</span>}>Platforms</H>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20 }}>
+              {/* Platforms — tinted tiles */}
+              <H>Platforms</H>
+              <div style={{ fontSize: 11.5, color: T.text2, marginTop: -4, marginBottom: 10 }}>Only show what you can stream</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
                 {PLATFORMS.map(p => {
                   const on = activeProvider === p.name;
                   return (
-                    <div key={p.name} role="button" tabIndex={0} onClick={() => choosePlatform(p)} onKeyDown={(e) => e.key === 'Enter' && choosePlatform(p)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
-                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: on ? `0 0 10px ${p.color}` : 'none' }} />
-                      <span style={{ flex: 1, fontSize: 13, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.75)' }}>{p.name}</span>
-                      {on && <SvgIcon name="check" size={16} color={accent} />}
+                    <div key={p.name} role="button" tabIndex={0} aria-pressed={on} onClick={() => choosePlatform(p)} onKeyDown={(e) => e.key === 'Enter' && choosePlatform(p)}
+                      style={{ position: 'relative', height: 64, borderRadius: 10, cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `radial-gradient(120% 120% at 0% 0%, ${p.color}${on ? '55' : '33'}, transparent 70%), rgba(255,255,255,0.03)`, boxShadow: on ? `inset 0 0 0 2px ${accent}` : 'inset 0 0 0 1px rgba(255,255,255,0.08)', transition: 'box-shadow .2s, background .2s' }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{p.name}</span>
+                      {on && <div style={{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="check" size={10} color="#07070F" /></div>}
                     </div>
                   );
                 })}
