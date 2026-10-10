@@ -89,7 +89,7 @@ export async function POST(req) {
   const text = String(body.text || '').trim().slice(0, 700);
   if (kind === 'text' && !text) return Response.json({ error: 'Write something first' }, { status: 400 });
   if (kind !== 'text' && !body.media_url) return Response.json({ error: 'Add a photo or video' }, { status: 400 });
-  const row = { user_id: userId, kind, text: text || null, media_url: kind === 'text' ? null : body.media_url, bg: /^#[0-9a-fA-F]{6}$/.test(body.bg || '') ? body.bg : null, meta: body.meta && typeof body.meta === 'object' ? body.meta : null };
+  const row = { user_id: userId, kind, text: text || null, media_url: kind === 'text' ? null : body.media_url, bg: /^#[0-9a-fA-F]{6}$/.test(body.bg || '') ? body.bg : null, meta: body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta) && JSON.stringify(body.meta).length <= 2000 ? body.meta : null };
   const res = await fetch(db('statuses'), { method: 'POST', headers, body: JSON.stringify(row) });
   if (!res.ok) return Response.json({ error: `Could not post (${res.status})` }, { status: 500 });
   const data = await res.json();

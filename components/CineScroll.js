@@ -998,35 +998,180 @@ const applyMention=(value,u)=>String(value||'').replace(/@([a-zA-Z0-9_.]{0,30})$
 const STATUS_BGS=['#F5A623','#818CF8','#2DD4BF','#FF6B8A','#A3E635','#B07FEF','#38BDF8','#E6E6EA'];
 const statusBg=(bg)=>bg==='#E6E6EA'?'radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.10), transparent 60%), #000':`radial-gradient(120% 90% at 0% 0%, ${bg}cc, transparent 65%), radial-gradient(120% 90% at 100% 100%, ${bg}99, transparent 65%), linear-gradient(160deg, ${bg}55, #0B0B12)`;
 const statusAgo=(ts)=>{const m=Math.floor((Date.now()-new Date(ts))/60000);if(m<1)return'just now';if(m<60)return`${m}m ago`;return`${Math.floor(m/60)}h ago`;};
+// Editor vocab — saved in statuses.meta and replayed by the viewer
+const STATUS_FONTS={serif:['Serif',T.serif,700,false],sans:['Modern','inherit',800,false],mono:['Type','ui-monospace, SFMono-Regular, Menlo, monospace',600,false],classic:['Classic',T.serif,500,true]};
+const STATUS_TEXT_COLORS=['#FFFFFF','#07070F','#F5A623','#FF6B8A','#2DD4BF','#818CF8','#A3E635'];
+const STATUS_FILTERS=[['none','Normal',''],['vivid','Vivid','saturate(1.45) contrast(1.08)'],['warm','Warm','sepia(0.28) saturate(1.25) hue-rotate(-8deg)'],['cool','Cool','saturate(1.1) hue-rotate(14deg) brightness(1.03)'],['fade','Fade','contrast(0.84) brightness(1.08) saturate(0.78)'],['mono','Mono','grayscale(1) contrast(1.1)'],['noir','Noir','grayscale(1) contrast(1.45) brightness(0.9)']];
+const statusFilterCss=(preset,adj={})=>{const p=(STATUS_FILTERS.find(f=>f[0]===preset)||STATUS_FILTERS[0])[2];const parts=[p];if(adj.b&&adj.b!==1)parts.push(`brightness(${adj.b})`);if(adj.c&&adj.c!==1)parts.push(`contrast(${adj.c})`);if(adj.s&&adj.s!==1)parts.push(`saturate(${adj.s})`);return parts.filter(Boolean).join(' ');};
+const safeFilter=(f)=>typeof f==='string'&&/^[a-z0-9().,\s%-]{0,240}$/i.test(f)?f:'';
+function statusTextCss(t,{len=0,overlay=false}={}){
+  t=t||{};const f=STATUS_FONTS[t.font]||STATUS_FONTS.serif;
+  const sz=Math.min(1.8,Math.max(0.6,Number(t.size)||1));
+  const color=STATUS_TEXT_COLORS.includes(t.color)?t.color:'#FFFFFF';
+  const base=len>140?22:len>60?28:34;
+  return{fontFamily:f[1],fontWeight:f[2],fontStyle:f[3]?'italic':'normal',textAlign:['left','right'].includes(t.align)?t.align:'center',fontSize:overlay?`${(6.2*sz).toFixed(2)}cqw`:Math.round(base*sz),lineHeight:1.25,letterSpacing:t.font==='mono'?'0':'-0.02em',color,textShadow:color==='#07070F'?'none':'0 2px 18px rgba(0,0,0,0.35)',whiteSpace:'pre-wrap',wordBreak:'break-word'};
+}
+function StatusOverlayText({ov,text}){
+  const css=statusTextCss(ov,{overlay:true});const box=ov?.style==='box';const dark=css.color==='#07070F';
+  return(
+    <div style={{...css,textShadow:box||dark?'none':'0 1px 12px rgba(0,0,0,0.75)',color:box?(dark?'#fff':'#07070F'):css.color}}>
+      {box?<span style={{background:css.color,padding:'0.06em 0.32em',borderRadius:'0.22em',boxDecorationBreak:'clone',WebkitBoxDecorationBreak:'clone',lineHeight:1.5}}>{text}</span>:text}
+    </div>
+  );
+}
+let _canvasFilterOk;
+const canvasFilterOk=()=>{if(_canvasFilterOk!==undefined)return _canvasFilterOk;try{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.filter='grayscale(1)';x.fillStyle='#f00';x.fillRect(0,0,1,1);const d=x.getImageData(0,0,1,1).data;_canvasFilterOk=Math.abs(d[0]-d[1])<12;}catch{_canvasFilterOk=false;}return _canvasFilterOk;};
+const IMG_FRAMES=[['fit','Original',null],['9:16','Story',9/16],['4:5','Portrait',4/5],['1:1','Square',1]];
+const VID_FRAMES=[['fit','Original',null],['fill','Fill',9/16]];
+const EDIT0={frame:'fit',zoom:1,rot:0,nx:0,ny:0,filter:'none',adj:{b:1,c:1,s:1}};
+const OV0={x:0.5,y:0.8,font:'sans',align:'center',color:'#FFFFFF',size:1,style:'plain'};
+
+const RotateIcon=({color='#fff'})=>(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>);
+const AlignIcon=({align,color='#fff'})=>(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round"><path d="M4 6h16"/>{align==='left'?<><path d="M4 12h10"/><path d="M4 18h13"/></>:align==='right'?<><path d="M10 12h10"/><path d="M7 18h13"/></>:<><path d="M7 12h10"/><path d="M5.5 18h13"/></>}</svg>);
+
+function EdChip({on,onClick,children,accent,style}){
+  return <button onClick={onClick} style={{flexShrink:0,border:'none',borderRadius:16,height:32,padding:'0 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,background:on?'#fff':'rgba(255,255,255,0.1)',color:on?'#07070F':'rgba(255,255,255,0.8)',display:'flex',alignItems:'center',gap:6,...style}}>{children}</button>;
+}
+function EdSlider({label,value,min,max,step=0.01,onChange,accent,fmt}){
+  return(
+    <label style={{display:'flex',alignItems:'center',gap:12,fontSize:11.5,fontWeight:700,color:'rgba(255,255,255,0.75)'}}>
+      <span style={{width:74,flexShrink:0}}>{label}</span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(parseFloat(e.target.value))} style={{flex:1,accentColor:accent}}/>
+      <span style={{width:38,textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#fff'}}>{fmt?fmt(value):value}</span>
+    </label>
+  );
+}
+function TextStyleControls({ts,setTs,accent,overlay}){
+  const nextAlign={center:'left',left:'right',right:'center'};
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none'}}>
+        {Object.entries(STATUS_FONTS).map(([k,f])=>(<EdChip key={k} on={ts.font===k} onClick={()=>setTs({...ts,font:k})} style={{fontFamily:f[1],fontStyle:f[3]?'italic':'normal'}}>{f[0]}</EdChip>))}
+        <EdChip on={false} onClick={()=>setTs({...ts,align:nextAlign[ts.align]||'center'})}><AlignIcon align={ts.align}/></EdChip>
+        {overlay&&<EdChip on={ts.style==='box'} onClick={()=>setTs({...ts,style:ts.style==='box'?'plain':'box'})}>Highlight</EdChip>}
+      </div>
+      <div style={{display:'flex',gap:9,alignItems:'center'}}>
+        {STATUS_TEXT_COLORS.map(c=>(<button key={c} onClick={()=>setTs({...ts,color:c})} aria-label="Text colour" style={{width:24,height:24,borderRadius:'50%',background:c,border:ts.color===c?'2.5px solid #fff':'2px solid rgba(255,255,255,0.25)',boxShadow:ts.color===c?`0 0 0 2px ${accent}`:'none',cursor:'pointer',padding:0,flexShrink:0}}/>))}
+      </div>
+      <EdSlider label="Text size" value={ts.size} min={0.6} max={1.8} onChange={v=>setTs({...ts,size:v})} accent={accent} fmt={v=>`${Math.round(v*100)}%`}/>
+    </div>
+  );
+}
 
 export function StatusComposer({accent,onClose,onPosted}){
   const[mode,setMode]=useState('text');
   const[text,setText]=useState('');
   const[bg,setBg]=useState(STATUS_BGS[0]);
+  const[ts,setTs]=useState({font:'serif',align:'center',color:'#FFFFFF',size:1});
+  const[textTool,setTextTool]=useState('bg');
   const[file,setFile]=useState(null);
-  const[preview,setPreview]=useState(null);
+  const[media,setMedia]=useState(null); // {url,isVideo,isGif,w,h}
+  const[edit,setEdit]=useState(EDIT0);
+  const[ov,setOv]=useState(OV0);
+  const[tool,setTool]=useState('crop');
+  const[stage,setStage]=useState({w:0,h:0});
   const[busy,setBusy]=useState(false);
   const[err,setErr]=useState(null);
   const fileRef=useRef(null);
-  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
-  const pick=(f)=>{if(!f)return;if(!/^image\/|^video\//.test(f.type)){setErr('Pick a photo or video');return;}setErr(null);setFile(f);setPreview(URL.createObjectURL(f));setMode('media');};
+  const stageRef=useRef(null);
+  const frameRef=useRef(null);
+  const ptrs=useRef(new Map());
+  const gesture=useRef(null);
+
+  useEffect(()=>()=>{if(media?.url)URL.revokeObjectURL(media.url);},[media?.url]);
+  useEffect(()=>{
+    const el=stageRef.current;if(!el)return;
+    const ro=new ResizeObserver(([e])=>setStage({w:e.contentRect.width,h:e.contentRect.height}));
+    ro.observe(el);return()=>ro.disconnect();
+  },[mode,!!media]);// eslint-disable-line react-hooks/exhaustive-deps
+
+  const pick=(f)=>{
+    if(!f)return;if(!/^image\/|^video\//.test(f.type)){setErr('Pick a photo or video');return;}
+    setErr(null);const url=URL.createObjectURL(f);const isVideo=f.type.startsWith('video/');
+    const done=(w,h)=>{setFile(f);setMedia({url,isVideo,isGif:f.type==='image/gif',w:w||1080,h:h||1920});setEdit(EDIT0);setTool(isVideo||f.type==='image/gif'?'filter':'crop');setMode('media');};
+    if(isVideo){const v=document.createElement('video');v.preload='metadata';v.onloadedmetadata=()=>done(v.videoWidth,v.videoHeight);v.onerror=()=>done();v.src=url;}
+    else{const im=new Image();im.onload=()=>done(im.naturalWidth,im.naturalHeight);im.onerror=()=>done();im.src=url;}
+  };
+
+  // ── geometry ──
+  const editable=media&&!media.isVideo&&!media.isGif;
+  const frames=media?.isVideo?VID_FRAMES:editable?IMG_FRAMES:IMG_FRAMES.slice(0,1);
+  const rotated=media&&edit.rot%180!==0;
+  const ew=media?(rotated?media.h:media.w):1, eh=media?(rotated?media.w:media.h):1;
+  const R=(frames.find(f=>f[0]===edit.frame)?.[2])||ew/eh;
+  const FW=Math.max(1,Math.min(stage.w,stage.h*R)), FH=FW/R;
+  const clampEdit=(e)=>{
+    const ewx=e.rot%180?media.h:media.w, ehx=e.rot%180?media.w:media.h;
+    const Rx=(frames.find(f=>f[0]===e.frame)?.[2])||ewx/ehx;
+    const z=Math.min(5,Math.max(1,e.zoom));
+    const mx=Math.max(0,(Math.max(1,ewx/(ehx*Rx))*z-1)/2), my=Math.max(0,(Math.max(1,ehx*Rx/ewx)*z-1)/2);
+    return{...e,zoom:z,nx:Math.max(-mx,Math.min(mx,e.nx)),ny:Math.max(-my,Math.min(my,e.ny))};
+  };
+  const upd=(patch)=>setEdit(e=>clampEdit({...e,...patch}));
+  const S=media?Math.max(FW/ew,FH/eh)*edit.zoom:1;
+  const fcss=statusFilterCss(edit.filter,edit.adj);
+
+  // ── gestures: drag to move, pinch / wheel to zoom ──
+  const onDown=(e)=>{
+    if(!editable)return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    ptrs.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const p=[...ptrs.current.values()];
+    gesture.current=p.length>=2?{type:'pinch',d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),zoom:edit.zoom}:{type:'pan',x:e.clientX,y:e.clientY,nx:edit.nx,ny:edit.ny};
+  };
+  const onMove=(e)=>{
+    if(!ptrs.current.has(e.pointerId)||!gesture.current)return;
+    ptrs.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const g=gesture.current;const p=[...ptrs.current.values()];
+    if(g.type==='pinch'&&p.length>=2){upd({zoom:g.zoom*Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)/(g.d||1)});}
+    else if(g.type==='pan'){upd({nx:g.nx+(e.clientX-g.x)/FW,ny:g.ny+(e.clientY-g.y)/FH});}
+  };
+  const onUp=(e)=>{ptrs.current.delete(e.pointerId);const p=[...ptrs.current.values()];gesture.current=p.length===1?{type:'pan',x:p[0].x,y:p[0].y,nx:edit.nx,ny:edit.ny}:null;};
+  useEffect(()=>{
+    const el=frameRef.current;if(!el||!editable)return;
+    const wheel=(e)=>{e.preventDefault();setEdit(ed=>clampEdit({...ed,zoom:ed.zoom*Math.exp(-e.deltaY*0.0018)}));};
+    el.addEventListener('wheel',wheel,{passive:false});return()=>el.removeEventListener('wheel',wheel);
+  });
+  // drag the text overlay around the frame
+  const ovDrag=useRef(null);
+  const ovDown=(e)=>{e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);ovDrag.current={x:e.clientX,y:e.clientY,ox:ov.x,oy:ov.y,moved:false};};
+  const ovMove=(e)=>{const d=ovDrag.current;if(!d)return;e.stopPropagation();const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)+Math.abs(dy)>3)d.moved=true;setOv(o=>({...o,x:Math.max(0.06,Math.min(0.94,d.ox+dx/FW)),y:Math.max(0.05,Math.min(0.95,d.oy+dy/FH))}));};
+  const ovUp=(e)=>{e.stopPropagation();const d=ovDrag.current;ovDrag.current=null;if(d&&!d.moved)setTool('text');};
+
+  // bake the framed photo (crop / zoom / rotate / filter) into a JPEG
+  const renderImage=async()=>{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=media.url;});
+    const long=Math.min(1600,Math.max(ew,eh));
+    const OW=Math.round(R>=1?long:long*R), OH=Math.round(R>=1?long/R:long);
+    const c=document.createElement('canvas');c.width=OW;c.height=OH;const ctx=c.getContext('2d');
+    ctx.fillStyle='#000';ctx.fillRect(0,0,OW,OH);
+    let baked=!fcss;
+    if(fcss&&canvasFilterOk()){ctx.filter=fcss;baked=true;}
+    const s=Math.max(OW/ew,OH/eh)*edit.zoom;
+    ctx.translate(OW/2+edit.nx*OW,OH/2+edit.ny*OH);ctx.rotate(edit.rot*Math.PI/180);
+    ctx.drawImage(img,-media.w*s/2,-media.h*s/2,media.w*s,media.h*s);
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.86));
+    if(!blob)throw new Error('Could not process photo');
+    return{file:new File([blob],'status.jpg',{type:'image/jpeg'}),ar:OW/OH,baked};
+  };
+
   const post=async()=>{
     setBusy(true);setErr(null);
     try{
       let body;
-      if(mode==='text'){if(!text.trim())throw new Error('Write something first');body={kind:'text',text,bg};}
+      if(mode==='text'){if(!text.trim())throw new Error('Write something first');body={kind:'text',text,bg,meta:{text:ts}};}
       else{
-        if(!file)throw new Error('Add a photo or video');
-        const isVideo=file.type.startsWith('video/');
-        let up=file;
-        if(!isVideo&&file.type!=='image/gif'){
-          try{const bmp=await createImageBitmap(file);const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.84));if(b&&b.size<file.size)up=new File([b],'status.jpg',{type:'image/jpeg'});}catch{}
-        }
+        if(!file||!media)throw new Error('Add a photo or video');
+        const isVideo=media.isVideo;
+        let up=file;const meta={};
+        if(editable){const r=await renderImage();up=r.file;meta.ar=r.ar;if(!r.baked&&fcss)meta.filter=fcss;}
+        else{meta.ar=R;if(fcss)meta.filter=fcss;if(isVideo&&edit.frame==='fill')meta.fit='cover';}
+        if(text.trim())meta.overlay=ov;
         if(up.size>(isVideo?4.4:8)*1024*1024)throw new Error(isVideo?'Videos must be under 4MB — try a shorter clip':'Photo is too large');
         const form=new FormData();form.append('file',up,up.name||'status');form.append('kind',isVideo?'video':'image');
         const r=await fetch('/api/upload-chat-media',{method:'POST',body:form});const d=await r.json().catch(()=>({}));
         if(!r.ok||!d.url)throw new Error(d.error||'Upload failed');
-        body={kind:isVideo?'video':'image',media_url:d.url,text};
+        body={kind:isVideo?'video':'image',media_url:d.url,text,meta};
       }
       const r=await fetch('/api/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       const d=await r.json().catch(()=>({}));
@@ -1035,39 +1180,116 @@ export function StatusComposer({accent,onClose,onPosted}){
     }catch(e){setErr(e.message||'Could not post');}
     setBusy(false);
   };
+
+  const mediaTools=editable?[['crop','Crop'],['filter','Filters'],['adjust','Adjust'],['text','Text']]:[...(media?.isVideo?[['crop','Frame']]:[]),['filter','Filters'],['adjust','Adjust'],['text','Text']];
+  const glassBtn={width:38,height:38,borderRadius:'50%',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'};
+  const tabBtn=(on)=>({flex:1,border:'none',background:'transparent',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:on?'#fff':'rgba(255,255,255,0.5)',padding:'8px 0',borderBottom:`2px solid ${on?accent:'transparent'}`});
+  const textCss=statusTextCss(ts,{len:text.length});
+
   return(
-    <div style={{position:'fixed',inset:0,zIndex:300,background:mode==='text'?statusBg(bg):'#000',display:'flex',flexDirection:'column',animation:'fadeIn .2s ease',transition:'background .3s'}}>
+    <div style={{position:'fixed',inset:0,zIndex:300,background:mode==='text'?statusBg(bg):`radial-gradient(90% 60% at 50% 0%, ${accent}22, transparent 70%), #050508`,display:'flex',flexDirection:'column',animation:'fadeIn .2s ease',transition:'background .3s'}}>
       <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-      <input ref={fileRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={e=>pick(e.target.files?.[0])}/>
+      <input ref={fileRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={e=>{pick(e.target.files?.[0]);e.target.value='';}}/>
       <div style={{display:'flex',alignItems:'center',gap:10,padding:'max(14px, env(safe-area-inset-top)) 16px 10px'}}>
-        <button onClick={onClose} aria-label="Close" style={{width:38,height:38,borderRadius:'50%',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={15} color="#fff"/></button>
+        <button onClick={onClose} aria-label="Close" style={glassBtn}><SvgIcon name="close" size={15} color="#fff"/></button>
         <div style={{flex:1}}/>
         <div style={{display:'flex',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',borderRadius:20,padding:3}}>
           {[['text','Text'],['media','Photo / Video']].map(([m,l])=>(
             <button key={m} onClick={()=>{if(m==='media'&&!file){fileRef.current?.click();return;}setMode(m);}} style={{border:'none',borderRadius:17,padding:'7px 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,background:mode===m?'#fff':'transparent',color:mode===m?'#07070F':'rgba(255,255,255,0.75)'}}>{l}</button>
           ))}
         </div>
+        <div style={{flex:1}}/>
+        {mode==='media'&&media?<button onClick={()=>fileRef.current?.click()} aria-label="Change media" style={glassBtn}><SvgIcon name="image" size={16} color="#fff"/></button>:<div style={{width:38}}/>}
       </div>
-      <div style={{flex:1,minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative'}}>
+
+      {/* stage */}
+      <div ref={stageRef} style={{flex:1,minHeight:0,margin:mode==='media'?'4px 16px 0':'0 24px',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
         {mode==='text'?(
-          <textarea autoFocus value={text} onChange={e=>setText(e.target.value.slice(0,700))} placeholder="What are you watching?" style={{width:'100%',maxWidth:520,background:'transparent',border:'none',outline:'none',resize:'none',textAlign:'center',color:bg==='#E6E6EA'?'#fff':'#fff',fontFamily:T.serif,fontSize:text.length>140?22:text.length>60?28:34,fontWeight:700,lineHeight:1.25,letterSpacing:'-0.02em',minHeight:200,textShadow:'0 2px 18px rgba(0,0,0,0.35)'}}/>
-        ):preview?(
-          file?.type.startsWith('video/')?<video src={preview} autoPlay loop muted playsInline style={{maxWidth:'100%',maxHeight:'100%',borderRadius:12}}/>:<img src={preview} alt="" style={{maxWidth:'100%',maxHeight:'100%',borderRadius:12,objectFit:'contain'}}/>
+          <textarea autoFocus value={text} onChange={e=>setText(e.target.value.slice(0,700))} placeholder="What are you watching?" style={{width:'100%',maxWidth:520,background:'transparent',border:'none',outline:'none',resize:'none',minHeight:200,...textCss}}/>
+        ):media?(
+          <div ref={frameRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+            style={{position:'relative',width:FW,height:FH,overflow:'hidden',borderRadius:6,background:'#000',touchAction:'none',cursor:editable?'grab':'default',containerType:'inline-size',boxShadow:'0 20px 60px rgba(0,0,0,0.5)'}}>
+            {media.isVideo?(
+              <video src={media.url} autoPlay loop muted playsInline style={{width:'100%',height:'100%',objectFit:edit.frame==='fill'?'cover':'contain',filter:fcss||undefined}}/>
+            ):(
+              <img src={media.url} alt="" draggable={false} style={{position:'absolute',left:'50%',top:'50%',width:media.w*S,height:media.h*S,maxWidth:'none',transform:`translate(-50%,-50%) translate(${edit.nx*FW}px,${edit.ny*FH}px) rotate(${edit.rot}deg)`,filter:fcss||undefined,pointerEvents:'none',userSelect:'none'}}/>
+            )}
+            {editable&&tool==='crop'&&(
+              <div style={{position:'absolute',inset:0,pointerEvents:'none',backgroundImage:'linear-gradient(rgba(255,255,255,0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.22) 1px, transparent 1px)',backgroundSize:'33.333% 33.333%',backgroundPosition:'-1px -1px',boxShadow:'inset 0 0 0 1px rgba(255,255,255,0.5)'}}/>
+            )}
+            {(text||tool==='text')&&(
+              <div onPointerDown={ovDown} onPointerMove={ovMove} onPointerUp={ovUp} onPointerCancel={ovUp}
+                style={{position:'absolute',left:`${ov.x*100}%`,top:`${ov.y*100}%`,transform:'translate(-50%,-50%)',maxWidth:'88%',width:'max-content',cursor:'move',touchAction:'none',padding:4,borderRadius:6,outline:tool==='text'?'1.5px dashed rgba(255,255,255,0.55)':'none'}}>
+                <StatusOverlayText ov={ov} text={text||'Your text'}/>
+              </div>
+            )}
+          </div>
         ):(
           <button onClick={()=>fileRef.current?.click()} style={{background:'rgba(255,255,255,0.06)',border:`1.5px dashed ${accent}77`,borderRadius:16,padding:'34px 26px',cursor:'pointer',fontFamily:'inherit',color:'#fff',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
             <SvgIcon name="image" size={26} color={accent}/><span style={{fontSize:13,fontWeight:700}}>Choose a photo or video</span>
           </button>
         )}
       </div>
-      <div style={{padding:'10px 16px calc(16px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:12}}>
+
+      {/* editor panels */}
+      <div style={{padding:'10px 16px calc(14px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:12,maxWidth:560,width:'100%',margin:'0 auto',boxSizing:'border-box'}}>
         {err&&<div style={{fontSize:12.5,color:'#FF8FA3',textAlign:'center'}}>{err}</div>}
         {mode==='text'?(
-          <div style={{display:'flex',gap:10,justifyContent:'center'}}>
-            {STATUS_BGS.map(c=>(<button key={c} onClick={()=>setBg(c)} aria-label="Background" style={{width:28,height:28,borderRadius:'50%',background:c==='#E6E6EA'?'#000':c,border:bg===c?'2.5px solid #fff':'2px solid rgba(255,255,255,0.25)',cursor:'pointer',padding:0}}/>))}
-          </div>
-        ):(
-          <input value={text} onChange={e=>setText(e.target.value.slice(0,200))} placeholder="Add a caption…" style={{background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
-        )}
+          <>
+            <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.12)'}}>
+              {[['bg','Background'],['font','Font & colour']].map(([k,l])=>(<button key={k} onClick={()=>setTextTool(k)} style={tabBtn(textTool===k)}>{l}</button>))}
+            </div>
+            {textTool==='bg'?(
+              <div style={{display:'flex',gap:10,justifyContent:'center',padding:'4px 0'}}>
+                {STATUS_BGS.map(c=>(<button key={c} onClick={()=>setBg(c)} aria-label="Background" style={{width:28,height:28,borderRadius:'50%',background:c==='#E6E6EA'?'#000':c,border:bg===c?'2.5px solid #fff':'2px solid rgba(255,255,255,0.25)',cursor:'pointer',padding:0}}/>))}
+              </div>
+            ):<TextStyleControls ts={ts} setTs={setTs} accent={accent}/>}
+          </>
+        ):media?(
+          <>
+            <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.12)'}}>
+              {mediaTools.map(([k,l])=>(<button key={k} onClick={()=>setTool(k)} style={tabBtn(tool===k)}>{l}</button>))}
+            </div>
+            <div style={{minHeight:142,display:'flex',flexDirection:'column',gap:10,justifyContent:'center'}}>
+              {tool==='crop'&&(
+                <>
+                  <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none'}}>
+                    {frames.map(([k,l])=>(<EdChip key={k} on={edit.frame===k} onClick={()=>upd({frame:k,nx:0,ny:0})}>{l}</EdChip>))}
+                    {editable&&<EdChip on={false} onClick={()=>upd({rot:(edit.rot+90)%360,nx:0,ny:0})}><RotateIcon/>Rotate</EdChip>}
+                    {editable&&(edit.zoom!==1||edit.rot||edit.nx||edit.ny||edit.frame!=='fit')&&<EdChip on={false} onClick={()=>setEdit(e=>({...e,frame:'fit',zoom:1,rot:0,nx:0,ny:0}))}>Reset</EdChip>}
+                  </div>
+                  {editable&&<EdSlider label="Zoom" value={edit.zoom} min={1} max={5} onChange={v=>upd({zoom:v})} accent={accent} fmt={v=>`${v.toFixed(1)}×`}/>}
+                  {editable&&<div style={{fontSize:11,color:'rgba(255,255,255,0.5)',textAlign:'center'}}>Drag to reposition · pinch or scroll to zoom</div>}
+                </>
+              )}
+              {tool==='filter'&&(
+                <div style={{display:'flex',gap:10,overflowX:'auto',scrollbarWidth:'none',paddingBottom:2}}>
+                  {STATUS_FILTERS.map(([k,l,css])=>(
+                    <button key={k} onClick={()=>upd({filter:k})} style={{flexShrink:0,background:'none',border:'none',padding:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:6,fontFamily:'inherit'}}>
+                      <div style={{width:56,height:70,borderRadius:6,overflow:'hidden',border:edit.filter===k?`2px solid ${accent}`:'2px solid transparent',background:'#111'}}>
+                        {media.isVideo?<div style={{width:'100%',height:'100%',background:`linear-gradient(160deg, ${accent}, #222 70%)`,filter:css||undefined}}/>:<img src={media.url} alt="" style={{width:'100%',height:'100%',objectFit:'cover',filter:css||undefined}}/>}
+                      </div>
+                      <span style={{fontSize:11,fontWeight:700,color:edit.filter===k?'#fff':'rgba(255,255,255,0.6)'}}>{l}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {tool==='adjust'&&(
+                <>
+                  {[['b','Brightness'],['c','Contrast'],['s','Saturation']].map(([k,l])=>(
+                    <EdSlider key={k} label={l} value={edit.adj[k]} min={0.5} max={1.5} onChange={v=>setEdit(e=>({...e,adj:{...e.adj,[k]:v}}))} accent={accent} fmt={v=>`${v>=1?'+':''}${Math.round((v-1)*100)}`}/>
+                  ))}
+                </>
+              )}
+              {tool==='text'&&(
+                <>
+                  <input value={text} onChange={e=>setText(e.target.value.slice(0,200))} placeholder="Add text — drag it on the photo to place it" style={{background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:22,padding:'10px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+                  <TextStyleControls ts={ov} setTs={setOv} accent={accent} overlay/>
+                </>
+              )}
+            </div>
+          </>
+        ):null}
         <button onClick={post} disabled={busy} style={{alignSelf:'flex-end',display:'flex',alignItems:'center',gap:8,background:accent,border:'none',borderRadius:24,height:46,padding:'0 22px',cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:700,color:'#07070F',opacity:busy?0.7:1}}>
           {busy?'Posting…':'Post status'}<SvgIcon name="send" size={14} color="#07070F"/>
         </button>
@@ -1145,13 +1367,25 @@ export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
       {/* content */}
       <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:item.kind==='text'?statusBg(item.bg||accent):'#000'}}>
         {item.kind==='text'?(
-          <div style={{padding:'0 28px',maxWidth:560,textAlign:'center',fontFamily:T.serif,fontWeight:700,letterSpacing:'-0.02em',color:'#fff',fontSize:(item.text||'').length>140?22:(item.text||'').length>60?28:34,lineHeight:1.25,textShadow:'0 2px 18px rgba(0,0,0,0.35)',whiteSpace:'pre-wrap'}}>{item.text}</div>
-        ):item.kind==='video'?(
-          <video key={item.id} ref={videoRef} src={item.media_url} autoPlay playsInline onTimeUpdate={e=>{const v=e.currentTarget;if(v.duration)setProgress(v.currentTime/v.duration);}} onEnded={next} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-        ):(
-          <img key={item.id} src={item.media_url} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-        )}
-        {item.kind!=='text'&&item.text&&<div style={{position:'absolute',left:16,right:16,bottom:'calc(110px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:15,color:'#fff',fontWeight:600,textShadow:'0 2px 12px rgba(0,0,0,0.8)'}}>{item.text}</div>}
+          <div style={{padding:'0 28px',maxWidth:560,width:'100%',boxSizing:'border-box',...statusTextCss(item.meta?.text,{len:(item.text||'').length})}}>{item.text}</div>
+        ):(()=>{
+          const m=item.meta||{};const ar=Number(m.ar)>0.2&&Number(m.ar)<5?Number(m.ar):null;const f=safeFilter(m.filter)||undefined;
+          const el=item.kind==='video'
+            ?<video key={item.id} ref={videoRef} src={item.media_url} autoPlay playsInline onTimeUpdate={e=>{const v=e.currentTarget;if(v.duration)setProgress(v.currentTime/v.duration);}} onEnded={next} style={{width:'100%',height:'100%',objectFit:m.fit==='cover'?'cover':'contain',filter:f}}/>
+            :<img key={item.id} src={item.media_url} alt="" style={{width:'100%',height:'100%',objectFit:'contain',filter:f}}/>;
+          if(!ar)return el;
+          return(
+            <div style={{position:'relative',width:`min(100vw, calc(100dvh * ${ar}))`,aspectRatio:String(ar),maxHeight:'100%',overflow:'hidden',containerType:'inline-size'}}>
+              {el}
+              {m.overlay&&item.text&&(
+                <div style={{position:'absolute',left:`${(Number(m.overlay.x)||0.5)*100}%`,top:`${(Number(m.overlay.y)||0.8)*100}%`,transform:'translate(-50%,-50%)',maxWidth:'88%',width:'max-content',padding:4,pointerEvents:'none'}}>
+                  <StatusOverlayText ov={m.overlay} text={item.text}/>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        {item.kind!=='text'&&item.text&&!item.meta?.overlay&&<div style={{position:'absolute',left:16,right:16,bottom:'calc(110px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:15,color:'#fff',fontWeight:600,textShadow:'0 2px 12px rgba(0,0,0,0.8)'}}>{item.text}</div>}
       </div>
       {/* tap zones */}
       <div style={{position:'absolute',inset:'90px 0 140px 0',display:'flex'}} onPointerDown={()=>setPaused(true)} onPointerUp={()=>setPaused(false)} onPointerLeave={()=>setPaused(false)}>
