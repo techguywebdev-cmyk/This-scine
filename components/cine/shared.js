@@ -1297,6 +1297,8 @@ export const CommentPanel = dynamic(() => import('./Comments').then((m) => m.Com
 export const PartyInvite = dynamic(() => import('./PartyInvite').then((m) => m.PartyInvite), { ssr: false, loading: () => null });
 export const StartPartySheet = dynamic(() => import('./StartParty').then((m) => m.StartPartySheet), { ssr: false, loading: () => null });
 export const PartyRoom = dynamic(() => import('./Party').then((m) => m.PartyRoom), { ssr: false, loading: () => null });
+export const SafetySheet = dynamic(() => import('./Safety').then((m) => m.SafetySheet), { ssr: false, loading: () => null });
+export const BlockedList = dynamic(() => import('./Safety').then((m) => m.BlockedList), { ssr: false, loading: () => null });
 export const Welcome = dynamic(() => import('./Welcome').then((m) => m.Welcome), { ssr: false, loading: () => null });
 export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });
 export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => m.CreateListSheet), { ssr: false, loading: () => null });
@@ -1304,7 +1306,7 @@ export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => 
 // Warm the on-demand chunks while the browser is idle so first opens feel instant
 export function prefetchScreens() {
   if (typeof window === 'undefined') return;
-  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); import('./StartParty'); import('./PartyInvite'); };
+  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); import('./StartParty'); import('./PartyInvite'); import('./Safety'); };
   if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 6000 }); else setTimeout(load, 4000);
 }
 

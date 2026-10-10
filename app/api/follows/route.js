@@ -1,6 +1,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
 import { SUPABASE_KEY, clean } from '@/lib/db';
+import { blockState, blockedIds, blockedResponse } from '@/lib/blocks';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -255,6 +256,7 @@ export async function POST(request) {
     if (!targetId || targetId === userId) {
       return Response.json({ error: 'Invalid targetId' }, { status: 400 });
     }
+    if (await blockState(userId, targetId)) return blockedResponse();
 
     await fetch(db('follows'), {
       method: 'POST',

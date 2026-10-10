@@ -1,6 +1,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
 import { SUPABASE_KEY, clean } from '@/lib/db';
+import { blockState, blockedIds, blockedResponse } from '@/lib/blocks';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -40,6 +41,12 @@ export async function GET(req, { params }) {
 
     // Everything below runs in parallel: one round-trip instead of six
     const isSelf = viewerId === targetId;
+    const blocked = viewerId && !isSelf ? await blockState(viewerId, targetId) : null;
+    if (blocked === 'by_them') return Response.json({ error: 'User not found' }, { status: 404 });
+    if (blocked === 'by_me') {
+      const cu = await clerkClient.users.getUser(targetId).catch(() => null);
+      return Response.json({ user_id: targetId, blocked: 'by_me', isSelf: false, username: cu ? publicHandle(cu) : 'user', display_name: [cu?.firstName, cu?.lastName].filter(Boolean).join(' ') || cu?.username || 'User', avatar_url: cu?.imageUrl || null, followers: 0, following: 0, watchlistCount: 0, topGenres: [], watchlist: null, inCommon: [], inCommonCount: 0 });
+    }
     const clerkP = clerkClient.users.getUser(targetId).catch(() => null);
     const followerP = fetch(`${db('follows')}?following_id=eq.${targetId}&select=id`, { headers: countHeaders });
     const followingP = fetch(`${db('follows')}?follower_id=eq.${targetId}&select=id`, { headers: countHeaders });

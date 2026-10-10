@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
+import { BlockedList, PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
 
 export function loadCanvasImage(url) {
   return new Promise((resolve) => {
@@ -188,7 +188,7 @@ export function CineScoreRing({score,accent}){
 }
 export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loadingData,onDiscover,onWatchTrailer}){
   const{user}=useUser();const{signOut}=useClerk();
-  const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
+  const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[showBlocked,setShowBlocked]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
   const[watchlistPublic,setWatchlistPublic]=useState(true);const[loadingSettings,setLoadingSettings]=useState(true);const[notifyPrefs,setNotifyPrefs]=useState({email:true,web:true,app:true,messages:true,follows:true,activity:true});const[hasWebPush,setHasWebPush]=useState(false);const[pushBusy,setPushBusy]=useState(false);
   const[bio,setBio]=useState('');const[bioInput,setBioInput]=useState('');const[savingBio,setSavingBio]=useState(false);
   const[nickname,setNickname]=useState('');const[nicknameInput,setNicknameInput]=useState('');const[savingNickname,setSavingNickname]=useState(false);
@@ -652,6 +652,14 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
               <div style={{marginBottom:32}}>
                 <Eyebrow color={accent} style={{marginBottom:4}}>Privacy</Eyebrow>
                 <SetRow title="Public watchlist" sub={watchlistPublic?'Anyone can see your watchlist':'Only you can see your watchlist'} right={<Switch on={watchlistPublic} onClick={togglePrivacy} disabled={loadingSettings} label="Public watchlist"/>}/>
+                <button type="button" onClick={()=>setShowBlocked(v=>!v)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',borderTop:`1px solid ${T.hairline}`,background:'none',borderLeft:'none',borderRight:'none',borderBottom:'none',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>Blocked accounts</div>
+                    <div style={{fontSize:11.5,color:T.text3,marginTop:2}}>People who can’t contact or follow you</div>
+                  </div>
+                  <span style={{color:T.text3,fontSize:14,transform:showBlocked?'rotate(90deg)':'none',transition:'transform .2s'}}>›</span>
+                </button>
+                {showBlocked&&<div style={{paddingBottom:6}}><BlockedList accent={accent}/></div>}
               </div>
 
               {/* Notifications */}

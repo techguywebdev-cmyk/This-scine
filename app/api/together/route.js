@@ -1,5 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { SUPABASE_URL, SUPABASE_KEY, clean } from '@/lib/db';
+import { blockState, blockedIds, blockedResponse } from '@/lib/blocks';
 
 export const dynamic = 'force-dynamic';
 const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
@@ -41,6 +42,7 @@ export async function GET(req) {
   }
   const peer = clean(sp.get('with'));
   if (!peer || peer === userId) return Response.json({ error: 'Pick a friend' }, { status: 400 });
+  if (await blockState(userId, peer)) return blockedResponse();
 
   const [settings, mine, theirs, a, b] = await Promise.all([
     fetch(`${db('user_settings')}?user_id=eq.${peer}&select=watchlist_public`, { headers }).then((r) => r.json()).catch(() => []),

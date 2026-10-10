@@ -13,7 +13,7 @@ export const TMDB_GENRE_IDS = {
 };
 export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWatchlist}){
   const{user:currentUser}=useUser();
-  const[profile,setProfile]=useState(null);
+  const[profile,setProfile]=useState(null);const[reloadKey,setReloadKey]=useState(0);
   const[showTogether,setShowTogether]=useState(false);
   const[loading,setLoading]=useState(true);
   const[following,setFollowing]=useState(false);
@@ -42,7 +42,11 @@ export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWa
       .then(r=>r.json())
       .then(d=>{setProfile(d);setFollowing(!!d.isFollowing);setLoading(false);})
       .catch(()=>setLoading(false));
-  },[userId]);
+  },[userId,reloadKey]);
+  // Blocked from here (or anywhere) → show the blocked state
+  useEffect(()=>{const fn=(e)=>{if(e.detail?.userId&&(e.detail.userId===userId||e.detail.userId===profile?.user_id))setReloadKey(k=>k+1);};window.addEventListener('cine:blocked',fn);return()=>window.removeEventListener('cine:blocked',fn);},[userId,profile?.user_id]);
+  const openSafety=()=>window.dispatchEvent(new CustomEvent('cine:safety',{detail:{user:{user_id:profile?.user_id||userId,display_name:profile?.display_name,username:profile?.has_username?profile?.username:null,avatar_url:profile?.avatar_url},kind:'user',targetId:profile?.user_id||userId}}));
+  const unblock=async()=>{await fetch('/api/safety',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'unblock',userId:profile?.user_id||userId})}).catch(()=>{});setReloadKey(k=>k+1);};
 
   // Cover photo: use the user's custom upload if set, otherwise a randomized backdrop from their #1 genre
   useEffect(()=>{
@@ -192,6 +196,17 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
               const spinner=<div style={{display:'flex',justifyContent:'center',padding:30}}><div style={{width:22,height:22,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accentColor}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/></div>;
               const empty=(t,sub)=><div style={{padding:'26px 0',textAlign:'left'}}><div style={{fontSize:13,fontWeight:700,color:T.text}}>{t}</div>{sub&&<div style={{fontSize:12,color:T.text2,marginTop:4,lineHeight:1.5}}>{sub}</div>}</div>;
               const VERB={saved:'Saved',watched:'Watched',reviewed:'Reviewed',list_follow:'Followed folder',arc_complete:'Finished arc'};
+              if(profile.blocked==='by_me')return(
+                <div style={{padding:'16px 20px 40px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between'}}><button onClick={onClose} aria-label="Close" style={glassBtn}><SvgIcon name="close" size={14} color="#fff"/></button></div>
+                  <div style={{textAlign:'center',marginTop:28}}>
+                    <div style={{width:84,height:84,borderRadius:'50%',overflow:'hidden',margin:'0 auto',background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,fontWeight:800,color:'#fff',filter:'grayscale(1)',opacity:0.7}}>{profile.avatar_url?<img src={profile.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(name||'U')[0]}</div>
+                    <div style={{fontFamily:T.serif,fontSize:22,fontWeight:800,color:'#fff',marginTop:14}}>{name}</div>
+                    <div style={{fontSize:13.5,color:T.text2,marginTop:8,lineHeight:1.55,maxWidth:300,marginLeft:'auto',marginRight:'auto'}}>You blocked this account. They can’t message, call, follow or invite you.</div>
+                    <button onClick={unblock} style={{marginTop:20,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:22,height:44,padding:'0 22px',color:'#fff',fontFamily:'inherit',fontSize:14,fontWeight:800,cursor:'pointer'}}>Unblock</button>
+                  </div>
+                </div>
+              );
               return(
               <>
                 {/* COVER */}
@@ -203,7 +218,10 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                   <div style={{width:34,height:4,borderRadius:2,background:'rgba(255,255,255,0.3)',position:'absolute',top:10,left:'50%',transform:'translateX(-50%)'}}/>
                   <div style={{position:'absolute',top:16,left:16,right:16,display:'flex',justifyContent:'space-between'}}>
                     <button onClick={onClose} aria-label="Close" style={glassBtn}><SvgIcon name="close" size={14} color="#fff"/></button>
-                    <button onClick={shareProfile} aria-label="Share profile" style={glassBtn}><SvgIcon name={shareCopied?'check':'share'} size={14} color="#fff"/></button>
+                    <div style={{display:'flex',gap:8}}>
+                      <button onClick={shareProfile} aria-label="Share profile" style={glassBtn}><SvgIcon name={shareCopied?'check':'share'} size={14} color="#fff"/></button>
+                      {!profile.isSelf&&currentUser&&currentUser.id!==(profile.user_id||userId)&&<button onClick={openSafety} aria-label="More options" style={glassBtn}><SvgIcon name="dots" size={16} color="#fff"/></button>}
+                    </div>
                   </div>
                 </div>
 

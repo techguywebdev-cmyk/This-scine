@@ -115,6 +115,7 @@ export function ChatWidget({ peer, onClose, accent }) {
   const { user } = useUser();
   const [messages, setMessages] = useState([]);
   const [peerInfo, setPeerInfo] = useState(peer || null);
+  const [blocked, setBlocked] = useState(null); // 'by_me' | 'by_them' | null
   const [showPeerProfile, setShowPeerProfile] = useState(false);
   const [showTogether, setShowTogether] = useState(false);
   const [partyStatus, setPartyStatus] = useState({});
@@ -179,6 +180,12 @@ export function ChatWidget({ peer, onClose, accent }) {
   const callModeRef = useRef(null);
   const callStatusRef = useRef('idle');
   const peerId = peer?.user_id || peer?.id;
+  useEffect(() => {
+    const fn = (e) => { if (e.detail?.userId && e.detail.userId === peerId) setBlocked('by_me'); };
+    window.addEventListener('cine:blocked', fn); return () => window.removeEventListener('cine:blocked', fn);
+  }, [peerId]);
+  const openSafety = () => window.dispatchEvent(new CustomEvent('cine:safety', { detail: { user: { user_id: peerId, display_name: peerInfo?.display_name, username: peerInfo?.username, avatar_url: peerInfo?.avatar_url }, kind: 'user', targetId: peerId } }));
+  const unblockPeer = async () => { await fetch('/api/safety', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'unblock', userId: peerId }) }).catch(() => {}); setBlocked(null); };
 
   const DEFAULT_ICE = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
   const iceServersRef = useRef(DEFAULT_ICE);
@@ -331,6 +338,7 @@ export function ChatWidget({ peer, onClose, accent }) {
         }
         setMessages(list);
         if (d.peer) setPeerInfo((p) => ({ ...p, ...d.peer }));
+        if ('blocked' in d) setBlocked(d.blocked || null);
         setLoading(false);
         scrollBottom();
       })
@@ -1494,6 +1502,7 @@ export function ChatWidget({ peer, onClose, accent }) {
             return pending.length ? [...visible, ...pending] : visible;
           });
           if (d.peer) setPeerInfo((p) => ({ ...p, ...d.peer }));
+        if ('blocked' in d) setBlocked(d.blocked || null);
           setLoading(false);
         }
       } catch {}
@@ -1658,6 +1667,7 @@ export function ChatWidget({ peer, onClose, accent }) {
           <button
             type="button"
             onClick={() => setShowTogether(true)}
+            disabled={!!blocked}
             aria-label="Watch together"
             title="Watch together"
             style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, lineHeight: 1 }}
@@ -1669,7 +1679,7 @@ export function ChatWidget({ peer, onClose, accent }) {
             onClick={() => startCall('audio')}
             aria-label="Start audio call"
             title="Audio call"
-            disabled={!!callMode || callStatus === 'incoming'}
+            disabled={!!blocked || !!callMode || callStatus === 'incoming'}
             style={{
               width: 40,
               height: 40,
@@ -1680,7 +1690,7 @@ export function ChatWidget({ peer, onClose, accent }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: callMode ? 0.4 : 1,
+              opacity: (callMode || blocked) ? 0.4 : 1,
               transition: 'background 0.15s ease, opacity 0.15s ease',
             }}
           >
@@ -1691,7 +1701,7 @@ export function ChatWidget({ peer, onClose, accent }) {
             onClick={() => startCall('video')}
             aria-label="Start video call"
             title="Video call"
-            disabled={!!callMode || callStatus === 'incoming'}
+            disabled={!!blocked || !!callMode || callStatus === 'incoming'}
             style={{
               width: 40,
               height: 40,
@@ -1702,11 +1712,20 @@ export function ChatWidget({ peer, onClose, accent }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: callMode ? 0.4 : 1,
+              opacity: (callMode || blocked) ? 0.4 : 1,
               transition: 'background 0.15s ease, opacity 0.15s ease',
             }}
           >
             <SvgIcon name="video" size={18} color="rgba(255,255,255,0.88)" />
+          </button>
+          <button
+            type="button"
+            onClick={openSafety}
+            aria-label="More options"
+            title="Report or block"
+            style={{ width: 34, height: 40, borderRadius: 17, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          >
+            <SvgIcon name="dots" size={18} color="rgba(255,255,255,0.75)" />
           </button>
         </div>
 
@@ -2692,7 +2711,12 @@ export function ChatWidget({ peer, onClose, accent }) {
         )}
 
         {/* Composer */}
-        {recording ? (
+        {blocked ? (
+          <div style={{ padding: '14px 18px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{blocked === 'by_me' ? 'You blocked this account. You can’t message or call each other.' : 'You can’t reply to this conversation.'}</div>
+            {blocked === 'by_me' && <button onClick={unblockPeer} style={{ marginTop: 10, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 18, height: 36, padding: '0 18px', color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Unblock</button>}
+          </div>
+        ) : recording ? (
           <div
             style={{
               padding: '12px 14px',

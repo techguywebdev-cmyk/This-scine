@@ -441,6 +441,13 @@ export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
   const[sent,setSent]=useState(null);
   const[viewers,setViewers]=useState(null);
   const videoRef=useRef(null);
+  const safetyOpenRef=useRef(false);
+  useEffect(()=>{
+    const closed=()=>{if(safetyOpenRef.current){safetyOpenRef.current=false;setPaused(false);}};
+    const blocked=(e)=>{if(e.detail?.userId&&people.some(p=>p.user_id===e.detail.userId)){onChanged&&onChanged();onClose();}};
+    window.addEventListener('cine:safety-closed',closed);window.addEventListener('cine:blocked',blocked);
+    return()=>{window.removeEventListener('cine:safety-closed',closed);window.removeEventListener('cine:blocked',blocked);};
+  },[people,onClose,onChanged]);
   const item=person?.items?.[si];
   const DURATION=item?.kind==='video'?null:6000;
 
@@ -533,6 +540,7 @@ export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
             <div style={{fontSize:14,fontWeight:700,color:'#fff'}}>{person.isSelf?'Your status':(person.display_name||person.username)}</div>
             <div style={{fontSize:11.5,color:'rgba(255,255,255,0.7)'}}>{statusAgo(item.created_at)}</div>
           </div>
+          {!person.isSelf&&<button onClick={()=>{safetyOpenRef.current=true;setPaused(true);window.dispatchEvent(new CustomEvent('cine:safety',{detail:{user:{user_id:person.user_id,display_name:person.display_name,username:person.username,avatar_url:person.avatar_url},kind:'status',targetId:item.id,snapshot:{kind:item.kind,text:item.text||null,media_url:item.media_url||null}}}));}} aria-label="Report or block" style={{width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.35)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="dots" size={16} color="#fff"/></button>}
           {person.isSelf&&<button onClick={del} aria-label="Delete" style={{width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.35)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="trash" size={15} color="#fff"/></button>}
           <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.35)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={15} color="#fff"/></button>
         </div>

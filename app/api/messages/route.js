@@ -1,6 +1,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
 import { SUPABASE_KEY, clean } from '@/lib/db';
+import { blockState, blockedIds, blockedResponse } from '@/lib/blocks';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -127,8 +128,9 @@ export async function GET(req) {
         }
       }
 
-      const peerMap = await getUserMap([withId]);
+      const [peerMap, blocked] = await Promise.all([getUserMap([withId]), blockState(userId, withId)]);
       return Response.json({
+        blocked,
         messages: messages.map((m) => mapMessage(m, userId)),
         peer: {
           user_id: withId,
@@ -209,6 +211,9 @@ export async function GET(req) {
       });
     }
 
+    const hidden = await blockedIds(userId);
+    const visible = threads.filter((t) => !hidden.has(t.peer_id));
+    threads.length = 0; threads.push(...visible);
     const peerIds = threads.map((t) => t.peer_id);
     const userMap = await getUserMap(peerIds);
 
@@ -243,6 +248,7 @@ export async function POST(request) {
     if (!text && !mediaUrl) {
       return Response.json({ error: 'Message is empty' }, { status: 400 });
     }
+    if (await blockState(userId, toUserId)) return blockedResponse();
     // call_signal carries SDP — allow larger payloads; normal chat stays capped
     const maxLen = msgType === 'call_signal' ? 20000 : 1000;
     if (text.length > maxLen) {

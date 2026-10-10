@@ -1,6 +1,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { createHmac } from 'crypto';
 import { SUPABASE_URL, SUPABASE_KEY, clean } from '@/lib/db';
+import { blockState, blockedIds, blockedResponse } from '@/lib/blocks';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 20;
@@ -132,6 +133,7 @@ export async function POST(req) {
     const guest = clean(body.with);
     const m = body.movie || {};
     if (!guest || guest === userId || !m.id) return Response.json({ error: 'Pick a friend and a film' }, { status: 400 });
+    if (await blockState(userId, guest)) return blockedResponse();
     let scheduledFor = null;
     if (body.scheduledFor) {
       const t = Date.parse(body.scheduledFor);
