@@ -1915,6 +1915,19 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     }catch(err){showToast(err.message||'Could not save — try again');}
     setSavingNickname(false);
   };
+  const aboutDirty=nicknameInput!==nickname||bioInput!==bio;
+  const savingAbout=savingNickname||savingBio;
+  const saveAbout=async()=>{
+    if(nicknameInput!==nickname&&bioInput!==bio){
+      setSavingNickname(true);setSavingBio(true);
+      try{const data=await patchSettings({nickname:nicknameInput,bio:bioInput});setNickname((data&&typeof data.nickname==='string')?data.nickname:nicknameInput.trim());setBio(bioInput);showToast('Profile updated');}
+      catch(err){showToast(err.message||'Could not save — try again');}
+      setSavingNickname(false);setSavingBio(false);return;
+    }
+    if(nicknameInput!==nickname)return saveNickname();
+    if(bioInput!==bio)return saveBio();
+  };
+  const cancelAbout=()=>{setNicknameInput(nickname);setBioInput(bio);};
   const uploadCoverBlob=async(blobOrFile)=>{
     setUploadingCover(true);
     try{
@@ -2174,46 +2187,37 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                     {uploadingAvatar?<div style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>:<SvgIcon name="edit" size={14} color="#fff"/>}
                   </div>
                 </button>
+                <button onClick={()=>avatarInputRef.current?.click()} disabled={uploadingAvatar} aria-label="Change profile photo" style={{position:'absolute',left:56,top:46,width:28,height:28,borderRadius:'50%',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:`2px solid ${T.bg}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0,zIndex:2}}>
+                  <SvgIcon name="edit" size={12} color="#fff"/>
+                </button>
                 <div style={{position:'relative',paddingTop:18}}>
                   <div style={{fontSize:19,fontWeight:700,color:T.text,fontFamily:T.serif,letterSpacing:'-0.02em',lineHeight:1.2}}>{nickname||user?.firstName||user?.username||'Cinephile'}</div>
                   <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,flexShrink:0}}/><span style={{fontSize:11,color:T.text2,fontWeight:500}}>{user?.primaryEmailAddress?.emailAddress}</span></div>
                 </div>
               </div>
 
-              {/* NICKNAME */}
-              <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.hairline}`}}>
-                <div style={{width:30,height:30,borderRadius:9,background:`${accent}14`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}><SvgIcon name="user" size={14} color={accent}/></div>
-                <div style={{flex:1,minWidth:0}}>
-                  <Eyebrow color={accent} style={{marginBottom:7}}>Display Name</Eyebrow>
-                  <input value={nicknameInput} onChange={e=>setNicknameInput(e.target.value)} maxLength={40} placeholder={user?.firstName||user?.username||'Your name'} style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',padding:0,color:T.text,fontSize:14.5,fontWeight:600,outline:'none',fontFamily:'inherit'}}/>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
-                    <span style={{fontSize:10.5,color:T.text3}}>Shown instead of your name · @{user?.username||'handle'} stays the same</span>
-                    {nicknameInput!==nickname&&(
-                      <button onClick={saveNickname} disabled={savingNickname} style={{background:savingNickname?'rgba(255,255,255,0.08)':accent,border:'none',borderRadius:14,padding:'5px 16px',cursor:savingNickname?'default':'pointer',fontSize:11,fontWeight:700,color:savingNickname?T.text2:'#07070F',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
-                        {savingNickname&&<div style={{width:10,height:10,border:'1.5px solid rgba(255,255,255,0.3)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>}
-                        {savingNickname?'Saving':'Save'}
-                      </button>
-                    )}
+              {/* ABOUT YOU — name + bio */}
+              <div style={{marginBottom:26}}>
+                <Eyebrow color={accent} style={{marginBottom:12}}>About you</Eyebrow>
+                <label style={{display:'block'}}>
+                  <span style={{display:'block',fontSize:11.5,fontWeight:600,color:T.text2,marginBottom:6}}>Display name</span>
+                  <input value={nicknameInput} onChange={e=>setNicknameInput(e.target.value)} maxLength={40} placeholder={user?.firstName||user?.username||'Your name'} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.04)',border:`1px solid ${T.hairlineStrong}`,borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:15,fontWeight:600,outline:'none',fontFamily:'inherit',transition:'border-color .2s, background .2s'}}/>
+                  <span style={{display:'block',fontSize:11,color:T.text3,marginTop:6}}>Shown on your profile · @{user?.username||'handle'} stays the same</span>
+                </label>
+                <label style={{display:'block',marginTop:16}}>
+                  <span style={{display:'flex',justifyContent:'space-between',fontSize:11.5,fontWeight:600,color:T.text2,marginBottom:6}}>Bio<span style={{fontWeight:500,color:T.text3}}>{bioInput!==bio?`${bioInput.length}/160`:''}</span></span>
+                  <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film…" rows={3} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.04)',border:`1px solid ${T.hairlineStrong}`,borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5,transition:'border-color .2s, background .2s'}}/>
+                </label>
+                <style>{`.cs-field:focus{border-color:${accent}88 !important;background:rgba(255,255,255,0.06) !important}`}</style>
+                {aboutDirty&&(
+                  <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:12,animation:'fadeIn .2s ease'}}>
+                    <button onClick={cancelAbout} disabled={savingAbout} style={{background:'none',border:'none',height:36,padding:'0 12px',cursor:'pointer',fontSize:12.5,fontWeight:700,color:T.text2,fontFamily:'inherit'}}>Cancel</button>
+                    <button onClick={saveAbout} disabled={savingAbout} style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.16)',borderRadius:18,height:36,padding:'0 16px',cursor:savingAbout?'default':'pointer',fontSize:12.5,fontWeight:700,color:'#fff',fontFamily:'inherit'}}>
+                      {savingAbout?<div style={{width:11,height:11,border:'1.5px solid rgba(255,255,255,0.3)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>:<SvgIcon name="check" size={13} color="#fff"/>}
+                      {savingAbout?'Saving…':'Save changes'}
+                    </button>
                   </div>
-                </div>
-              </div>
-
-              {/* BIO */}
-              <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,marginBottom:26}}>
-                <div style={{width:30,height:30,borderRadius:9,background:`${accent}14`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}><SvgIcon name="edit" size={13} color={accent}/></div>
-                <div style={{flex:1,minWidth:0}}>
-                  <Eyebrow color={accent} style={{marginBottom:7}}>Bio</Eyebrow>
-                  <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film..." rows={2} style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',padding:0,color:T.text,fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5}}/>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
-                    <span style={{fontSize:10.5,color:T.text3}}>{bioInput!==bio?`${bioInput.length}/160`:''}</span>
-                    {bioInput!==bio&&(
-                      <button onClick={saveBio} disabled={savingBio} style={{background:savingBio?'rgba(255,255,255,0.08)':accent,border:'none',borderRadius:14,padding:'5px 16px',cursor:savingBio?'default':'pointer',fontSize:11,fontWeight:700,color:savingBio?T.text2:'#07070F',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6}}>
-                        {savingBio&&<div style={{width:10,height:10,border:'1.5px solid rgba(255,255,255,0.3)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>}
-                        {savingBio?'Saving':'Save'}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
 
               <div style={{position:'relative',marginBottom:26}}>
