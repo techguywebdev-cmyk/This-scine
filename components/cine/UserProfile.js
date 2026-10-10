@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { ChatWidget, CoverImg, FolderCoverFill, FollowListModal, GRADS, ListDetailSheet, SvgIcon, T, Toast, ambient, coverCache } from './shared';
+import { TogetherSheet, ChatWidget, CoverImg, FolderCoverFill, FollowListModal, GRADS, ListDetailSheet, SvgIcon, T, Toast, ambient, coverCache } from './shared';
 
 // Full TMDB genre name -> id map (movie genre list), used for profile cover photo lookups
 export const TMDB_GENRE_IDS = {
@@ -14,6 +14,7 @@ export const TMDB_GENRE_IDS = {
 export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWatchlist}){
   const{user:currentUser}=useUser();
   const[profile,setProfile]=useState(null);
+  const[showTogether,setShowTogether]=useState(false);
   const[loading,setLoading]=useState(true);
   const[following,setFollowing]=useState(false);
   const[toast,setToast]=useState(null);
@@ -247,6 +248,12 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                       )}
                     </div>
                   )}
+                  {!profile.isSelf&&currentUser&&currentUser.id!==userId&&(
+                    <button onClick={()=>setShowTogether(true)} style={{width:'100%',height:42,marginTop:10,borderRadius:21,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                      <span style={{fontSize:15}}>🍿</span>Watch together
+                    </button>
+                  )}
+                  {showTogether&&<TogetherSheet peer={{user_id:userId,username:profile.username,display_name:profile.display_name||profile.username,avatar_url:profile.avatar_url||null}} accent={accentColor||accent} onClose={()=>setShowTogether(false)}/>}
 
                   {/* IN COMMON */}
                   {!profile.isSelf&&profile.inCommonCount>0&&(

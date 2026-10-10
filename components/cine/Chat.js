@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { SvgIcon, T, UserProfileSheet, ambient, statusBg } from './shared';
+import { TogetherSheet, SvgIcon, T, UserProfileSheet, ambient, statusBg } from './shared';
 
 export const CHAT_THEMES = {
   classic: {
@@ -116,6 +116,7 @@ export function ChatWidget({ peer, onClose, accent }) {
   const [messages, setMessages] = useState([]);
   const [peerInfo, setPeerInfo] = useState(peer || null);
   const [showPeerProfile, setShowPeerProfile] = useState(false);
+  const [showTogether, setShowTogether] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -1648,6 +1649,15 @@ export function ChatWidget({ peer, onClose, accent }) {
 
           <button
             type="button"
+            onClick={() => setShowTogether(true)}
+            aria-label="Watch together"
+            title="Watch together"
+            style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, lineHeight: 1 }}
+          >
+            🍿
+          </button>
+          <button
+            type="button"
             onClick={() => startCall('audio')}
             aria-label="Start audio call"
             title="Audio call"
@@ -1692,6 +1702,7 @@ export function ChatWidget({ peer, onClose, accent }) {
           </button>
         </div>
 
+        {showTogether && peerId && <TogetherSheet peer={{ user_id: peerId, username: peerInfo?.username, display_name: peerInfo?.display_name || peerInfo?.username, avatar_url: peerInfo?.avatar_url || null }} accent={accent} onClose={() => setShowTogether(false)} />}
         {/* Incoming call */}
         {callStatus === 'incoming' && incomingCall && (
           <div

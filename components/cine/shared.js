@@ -690,6 +690,21 @@ export function track(name,props){
     (window.__cineOrigFetch||fetch)('/api/track',{method:'POST',body,keepalive:true}).catch(()=>{});
   }catch{}
 }
+// Crash reporting: browser errors land in the same events table (deduped, max 5 per visit)
+if(typeof window!=='undefined'&&!window.__cineErrHooked){
+  window.__cineErrHooked=true;
+  const seen=new Set();let n=0;
+  const report=(msg,src,line,stack)=>{
+    try{
+      const m=String(msg||'').slice(0,200);if(!m||seen.has(m)||n>=5)return;
+      if(/ResizeObserver loop|Script error\.?$|AbortError|The play\(\) request was interrupted/i.test(m))return;
+      seen.add(m);n++;
+      track('client_error',{msg:m,src:String(src||'').split('?')[0].slice(-80),line:line||null,stack:String(stack||'').slice(0,240),path:location.pathname});
+    }catch{}
+  };
+  window.addEventListener('error',e=>report(e.message,e.filename,e.lineno,e.error&&e.error.stack));
+  window.addEventListener('unhandledrejection',e=>{const r=e.reason;report(r&&r.message?r.message:String(r),'promise',null,r&&r.stack);});
+}
 // Map the app's own write calls to events, so features don't each need tracking code
 export const TRACK_MAP=[[/^\/api\/watchlist/,'POST','save'],[/^\/api\/watchlist/,'DELETE','unsave'],[/^\/api\/follows/,'POST','follow'],[/^\/api\/messages/,'POST','message'],[/^\/api\/reviews/,'POST','review'],[/^\/api\/lists(\?|$)/,'POST','folder_create']];
 export function trackFromRequest(path,method,init){
@@ -1278,11 +1293,12 @@ export const SimilarSheet = dynamic(() => import('./Similar').then((m) => m.Simi
 export const NotificationsPanel = dynamic(() => import('./Notifications').then((m) => m.NotificationsPanel), { ssr: false, loading: () => null });
 export const AddToListSheet = dynamic(() => import('./AddToList').then((m) => m.AddToListSheet), { ssr: false, loading: () => null });
 export const CommentPanel = dynamic(() => import('./Comments').then((m) => m.CommentPanel), { ssr: false, loading: () => null });
+export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });
 export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => m.CreateListSheet), { ssr: false, loading: () => null });
 
 // Warm the on-demand chunks while the browser is idle so first opens feel instant
 export function prefetchScreens() {
   if (typeof window === 'undefined') return;
-  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); };
+  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); };
   if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 6000 }); else setTimeout(load, 4000);
 }

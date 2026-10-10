@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_KEY, clean } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 // Only these events are accepted — keeps the table meaningful and cheap
-const NAMES = new Set(['session_start', 'title_open', 'save', 'unsave', 'watched', 'share', 'follow', 'message', 'review', 'status_post', 'status_react', 'folder_create', 'signup', 'import']);
+const NAMES = new Set(['session_start', 'title_open', 'save', 'unsave', 'watched', 'share', 'follow', 'message', 'review', 'status_post', 'status_react', 'folder_create', 'signup', 'import', 'together_pick', 'together_open', 'client_error']);
 
 // POST /api/track { name, props?, anonId? }   (also accepts sendBeacon text bodies)
 export async function POST(req) {
@@ -15,7 +15,7 @@ export async function POST(req) {
   let userId = null;
   try { userId = auth().userId || null; } catch {}
   let props = body.props && typeof body.props === 'object' && !Array.isArray(body.props) ? body.props : null;
-  if (props && JSON.stringify(props).length > 600) props = null;
+  if (props && JSON.stringify(props).length > (name === 'client_error' ? 900 : 600)) props = null;
   const row = { name, user_id: userId, anon_id: clean(body.anonId).slice(0, 40) || null, props };
   await fetch(`${SUPABASE_URL}/rest/v1/events`, {
     method: 'POST',
