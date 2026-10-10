@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, Fragment } from 'react';
-import { T, ambient, SvgIcon, track } from './shared';
+import { T, ambient, SvgIcon, track, fmtWhen, untilLabel } from './shared';
+import { RecapPanel } from './Recap';
 
 // ── Watch party room ──
 // Each person plays the film in their own streaming app; the room keeps a shared clock, a synced 3-2-1,
@@ -90,7 +91,13 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
 
   // load + auto-join as guest
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => { if (party && me && party.guest_id === me && party.status === 'invited') act('join'); }, [party?.status, me]); // eslint-disable-line react-hooks/exhaustive-deps
+  const schedAt = party?.scheduled_for ? Date.parse(party.scheduled_for) : null;
+  const early = !!schedAt && schedAt - (Date.now() + skewRef.current) > 10 * 60000;
+  useEffect(() => {
+    if (!party || !me) return;
+    if (party.status === 'invited' && party.guest_id === me) act('join');
+    else if (party.status === 'accepted' && !early) act('join');
+  }, [party?.status, me, early]); // eslint-disable-line react-hooks/exhaustive-deps
   const [introMin, setIntroMin] = useState(false);
   const [introFade, setIntroFade] = useState(false);
   useEffect(() => { const t = setTimeout(() => setIntroMin(true), 4300); return () => clearTimeout(t); }, []);
@@ -162,7 +169,8 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
   const peerOnline = peer && !!online[peer.user_id];
   const pausedByMe = party?.paused_by === me;
 
-  const react = (e) => { burst(e); broadcast('react', { emoji: e }); track('party_react'); };
+  const react = (e) => { burst(e); broadcast('react', { emoji: e }); track('party_react'); const k = `cs_party_rx_${partyId}`; try { const t = JSON.parse(localStorage.getItem(k) || '{}'); t[e] = (t[e] || 0) + 1; localStorage.setItem(k, JSON.stringify(t)); } catch {} };
+  const myReactions = () => { try { return JSON.parse(localStorage.getItem(`cs_party_rx_${partyId}`) || '{}'); } catch { return {}; } };
   const request = (k, label) => {
     setSheet(null);
     if (k === 'back') act('seek', { deltaMs: -10000 });
@@ -228,7 +236,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70 }}>
               <Face u={u} size={46} online={!!on} ring={rd && (party?.status === 'lobby' || party?.status === 'invited') ? accent : '#0B0B12'} />
               <div style={{ fontSize: 12, fontWeight: 700 }}>{i === 0 ? 'You' : first(u)}</div>
-              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)' }}>{(party?.status === 'lobby' || party?.status === 'invited') ? (rd ? 'Ready ✓' : (i === 1 && !on ? 'Not here yet' : 'Getting ready')) : (on ? 'Here' : 'Away')}</div>
+              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)' }}>{early ? (i === 1 ? (party?.status === 'accepted' ? 'Going ✓' : (party?.host_id === me ? 'Invited' : 'Host')) : 'Going ✓') : (party?.status === 'lobby' || party?.status === 'invited' || party?.status === 'accepted') ? (rd ? 'Ready ✓' : (i === 1 && !on ? 'Not here yet' : 'Getting ready')) : (on ? 'Here' : 'Away')}</div>
             </div>
           ))}
         </div>
@@ -248,7 +256,24 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
 
         {/* state-specific controls */}
         <div style={{ paddingTop: 18 }}>
-          {party && (party.status === 'invited' || party.status === 'lobby') && (
+          {party && (party.status === 'invited' || party.status === 'accepted') && early && (
+            <div style={{ animation: 'pUp .3s ease', textAlign: 'center' }}>
+              <div style={eyebrow(accent)}>Scheduled</div>
+              <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 800, marginTop: 6 }}>{fmtWhen(party.scheduled_for)}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>Starts {untilLabel(party.scheduled_for, Date.now() + skewRef.current)} · {party.status === 'accepted' ? `${first(peer)} is in ✓` : party.host_id === me ? `waiting for ${first(peer)} to answer` : 'you’re invited'}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 10 }}>The room opens 10 minutes before. We’ll remind you both.</div>
+              {party.status === 'invited' && party.guest_id === me && (
+                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                  <button onClick={async () => { await act('decline'); onClose(); }} style={{ ...bigBtn, flex: 1, color: 'rgba(255,255,255,0.75)' }}>Can’t make it</button>
+                  <button onClick={() => act('join')} style={{ ...bigBtn, flex: 1.3, background: `${accent}2e`, borderColor: accent }}>🍿 I’m in</button>
+                </div>
+              )}
+              {party.host_id === me && <button onClick={async () => { await act('cancel'); onClose(); }} style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>Cancel watch party</button>}
+              {party.guest_id === me && party.status === 'accepted' && <button onClick={async () => { await act('decline'); onClose(); }} style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>I can’t make it anymore</button>}
+            </div>
+          )}
+
+          {party && (party.status === 'invited' || party.status === 'lobby' || party.status === 'accepted') && !early && (
             <div style={{ animation: 'pUp .3s ease' }}>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 1.5 }}>
                 {party.status === 'invited' && party.host_id === me ? <span style={{ animation: 'pPulse 1.6s ease infinite' }}>Waiting for {first(peer)} to join…</span> : <>Open <b>{movie.title}</b>{providers?.length ? <> on <b>{providers.slice(0, 2).map((p) => p.provider_name).join(' or ')}</b></> : ''} and have it ready at 0:00.</>}
@@ -282,15 +307,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
           )}
 
           {party?.status === 'ended' && (
-            <div style={{ animation: 'pUp .3s ease', textAlign: 'center' }}>
-              <div style={{ fontSize: 40 }}>🎉</div>
-              <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 800, marginTop: 4 }}>You finished it together</div>
-              <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>Marked as watched for both of you.</div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                <button onClick={() => { window.dispatchEvent(new CustomEvent('cine:open-title', { detail: { id: movie.id, title: movie.title, poster: movie.poster, backdrop: movie.backdrop, year: movie.year, rating: movie.rating, isTV: !!movie.is_tv, mediaType: movie.is_tv ? 'tv' : 'movie', initialTab: 'comments' } })); onClose(); }} style={{ ...bigBtn, flex: 1 }}>⭐ Rate it</button>
-                <button onClick={onClose} style={{ ...bigBtn, flex: 1, color: 'rgba(255,255,255,0.75)' }}>Close</button>
-              </div>
-            </div>
+            <RecapPanel party={party} self={self} peer={peer} movie={movie} accent={accent} onRate={(n) => act('rate', { rating: n, reactions: myReactions() })} onClose={onClose} />
           )}
 
           {party?.status === 'expired' && (

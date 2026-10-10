@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { TogetherSheet, SvgIcon, T, UserProfileSheet, ambient, statusBg } from './shared';
+import { fmtWhen, untilLabel, TogetherSheet, SvgIcon, T, UserProfileSheet, ambient, statusBg } from './shared';
 
 export const CHAT_THEMES = {
   classic: {
@@ -2472,7 +2472,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                       ) : m.msg_type === 'party' && m.meta ? (
                         <button
                           type="button"
-                          onClick={() => { const st = partyStatus[m.meta.party_id]; if (st === 'expired' || st === 'declined') return; window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } })); }}
+                          onClick={() => { const st = partyStatus[m.meta.party_id]?.status; if (st === 'expired' || st === 'declined') return; window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } })); }}
                           style={{ position: 'relative', display: 'block', width: 260, textAlign: 'left', padding: 0, borderRadius: 18, overflow: 'hidden', cursor: 'pointer', fontFamily: 'inherit', background: '#111', border: `1px solid ${accent}66` }}
                         >
                           {(m.meta.backdrop || m.meta.poster) && <img src={m.meta.backdrop || m.meta.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />}
@@ -2480,12 +2480,12 @@ export function ChatWidget({ peer, onClose, accent }) {
                           <span style={{ position: 'relative', display: 'block', padding: '46px 14px 14px' }}>
                             <span style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: accent }}>🍿 Watch party</span>
                             <span style={{ display: 'block', fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 4, lineHeight: 1.2 }}>{m.meta.title}</span>
-                            <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>{mine ? 'You invited them to watch together' : 'Invited you to watch together'}</span>
+                            <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>{m.meta.scheduled_for ? `🗓 ${fmtWhen(m.meta.scheduled_for)}` : mine ? 'You invited them to watch together' : 'Invited you to watch together'}</span>
                             {(() => {
-                              const st = partyStatus[m.meta.party_id] || 'invited';
+                              const ps = partyStatus[m.meta.party_id] || {}; const st = ps.status || 'invited'; const at = ps.at || m.meta.scheduled_for; const future = at && Date.parse(at) - Date.now() > 10 * 60000;
                               const live = st === 'lobby' || st === 'playing' || st === 'paused';
                               const done = st === 'ended' || st === 'expired' || st === 'declined';
-                              const label = st === 'ended' ? 'Ended' : st === 'expired' ? 'Expired' : st === 'declined' ? 'Declined' : live ? (st === 'lobby' ? 'In the lobby · Join' : 'Live now · Join') : mine ? 'Open room' : 'Join';
+                              const label = st === 'ended' ? 'Ended' : st === 'expired' ? 'Expired' : st === 'declined' ? 'Declined' : live ? (st === 'lobby' ? 'In the lobby · Join' : 'Live now · Join') : future ? (st === 'accepted' ? `Going · ${untilLabel(at)}` : mine ? `Invited · ${untilLabel(at)}` : `${fmtWhen(at)} · Answer`) : (st === 'accepted' || at) ? 'Room open · Join' : mine ? 'Open room' : 'Join';
                               return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: 10, height: 34, padding: '0 16px', borderRadius: 17, background: done ? 'transparent' : 'rgba(0,0,0,0.35)', border: `1px solid ${done ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.18)'}`, fontSize: 12.5, fontWeight: 800, color: done ? 'rgba(255,255,255,0.5)' : '#fff' }}>{live && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3DDC84' }} />}{label}</span>;
                             })()}
                           </span>

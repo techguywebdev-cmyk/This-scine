@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
+import { PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
 
 export function loadCanvasImage(url) {
   return new Promise((resolve) => {
@@ -636,6 +636,7 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                   </div>
                 ))}
               </div>
+              <PartyHistoryRow target="me" title="Watch parties" accent={accent} style={{marginBottom:32}}/>
               {sortedGenres.length>0&&(
                 <div style={{marginBottom:32}}>
                   <Eyebrow style={{marginBottom:12}}>Top Genres</Eyebrow>

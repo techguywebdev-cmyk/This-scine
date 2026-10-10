@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { T, ambient, SvgIcon, track } from './shared';
+import { T, ambient, SvgIcon, track, fmtWhen } from './shared';
 
 // "🍿 Watch with…" — one picker used everywhere a film appears.
 // Opened via: window.dispatchEvent(new CustomEvent('cine:watch-with', { detail: { movie } }))
@@ -20,7 +20,26 @@ export const toPartyMovie = (m) => ({
   accent: m.accent || m.movie_accent || null,
 });
 
-export function StartPartySheet({ movie: movieIn, candidates, label, accent = '#F5A623', onClose }) {
+// Quick "when" options: now, tonight 9pm (or tomorrow if it's late), Saturday 8pm, or a custom time
+function whenOptions() {
+  const now = new Date();
+  const at = (d, h, m = 0) => { const x = new Date(d); x.setHours(h, m, 0, 0); return x; };
+  const tonight = at(now, 21);
+  const opts = [['now', 'Now', null]];
+  if (tonight - now > 20 * 60000) opts.push(['tonight', 'Tonight 9 PM', tonight.toISOString()]);
+  else { const t = new Date(now); t.setDate(t.getDate() + 1); opts.push(['tomorrow', 'Tomorrow 9 PM', at(t, 21).toISOString()]); }
+  const sat = new Date(now); sat.setDate(sat.getDate() + ((6 - sat.getDay() + 7) % 7 || 7));
+  const satAt = at(sat, 20);
+  if (satAt - now > 20 * 60000) opts.push(['sat', `${sat.getDay() === now.getDay() ? 'Today' : 'Sat'} 8 PM`, satAt.toISOString()]);
+  return opts;
+}
+const toLocalInput = (d) => { const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+
+export function StartPartySheet({ movie: movieIn, candidates, label, preselect, accent = '#F5A623', onClose }) {
+  const opts = useMemo(whenOptions, []);
+  const [when, setWhen] = useState('now');
+  const [custom, setCustom] = useState('');
+  const scheduledFor = when === 'now' ? null : when === 'custom' ? (custom ? new Date(custom).toISOString() : null) : (opts.find((o) => o[0] === when)?.[2] || null);
   const pool = useMemo(() => (candidates || []).map(toPartyMovie).filter((m) => m.id), [candidates]);
   const pickFrom = (avoid) => { const opts = pool.filter((m) => m.id !== avoid); const src = opts.length ? opts : pool; return src[Math.floor(Math.random() * src.length)] || null; };
   const [movie, setMovie] = useState(() => (movieIn ? toPartyMovie(movieIn) : pickFrom(null)));
@@ -28,6 +47,7 @@ export function StartPartySheet({ movie: movieIn, candidates, label, accent = '#
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(null);
   const [err, setErr] = useState(null);
+  const [sentTo, setSentTo] = useState(null);
 
   useEffect(() => {
     if (!movie?.id) return;
@@ -40,16 +60,18 @@ export function StartPartySheet({ movie: movieIn, candidates, label, accent = '#
     if (busy || !movie) return;
     setBusy(f.user_id); setErr(null);
     try {
-      const r = await fetch('/api/party', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', with: f.user_id, movie }) });
+      const r = await fetch('/api/party', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', with: f.user_id, movie, scheduledFor, whenLabel: scheduledFor ? fmtWhen(scheduledFor) : null }) });
       const d = await r.json();
       if (!r.ok || !d.party?.id) throw new Error(d.error || 'Could not start the party');
-      track('party_start', { from: candidates ? 'pick' : 'title' });
+      track('party_start', { from: candidates ? 'pick' : 'title', scheduled: !!scheduledFor });
+      if (scheduledFor) { setSentTo({ name: f.display_name, when: fmtWhen(scheduledFor) }); setBusy(null); return; }
       window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: d.party.id } }));
       onClose();
     } catch (e) { setErr(e.message); setBusy(null); }
   };
 
-  const shown = (friends || []).filter((f) => !q.trim() || `${f.display_name} ${f.username}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const ordered = preselect && friends ? [...friends].sort((a, b) => (b.user_id === preselect) - (a.user_id === preselect)) : friends;
+  const shown = (ordered || []).filter((f) => !q.trim() || `${f.display_name} ${f.username}`.toLowerCase().includes(q.trim().toLowerCase()));
   const anySaved = (friends || []).some((f) => f.alsoSaved);
 
   return (
@@ -74,6 +96,13 @@ export function StartPartySheet({ movie: movieIn, candidates, label, accent = '#
           {candidates && pool.length > 1 && (
             <button onClick={() => setMovie(pickFrom(movie?.id))} style={{ marginTop: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}>🎲 Pick another</button>
           )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {[...opts, ['custom', '🗓 Pick a time', null]].map(([k, l]) => (
+              <button key={k} onClick={() => { setWhen(k); if (k === 'custom' && !custom) { const d = new Date(Date.now() + 2 * 3600e3); d.setMinutes(0, 0, 0); setCustom(toLocalInput(d)); } }} style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 17, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: when === k ? '#07070F' : '#fff', background: when === k ? '#fff' : 'rgba(0,0,0,0.3)', border: `1px solid ${when === k ? '#fff' : 'rgba(255,255,255,0.14)'}` }}>{l}</button>
+            ))}
+          </div>
+          {when === 'custom' && <input type="datetime-local" value={custom} min={toLocalInput(new Date(Date.now() + 6 * 60000))} onChange={(e) => setCustom(e.target.value)} style={{ marginTop: 10, width: '100%', boxSizing: 'border-box', ...glass, borderRadius: 12, padding: '10px 12px', color: '#fff', fontFamily: 'inherit', fontSize: 14, colorScheme: 'dark' }} />}
+          {scheduledFor && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 8 }}>🗓 {fmtWhen(scheduledFor)} — we’ll remind you both 15 minutes before.</div>}
           {friends && friends.length > 6 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, ...glass, borderRadius: 20, padding: '0 14px' }}>
               <SvgIcon name="search" size={14} color="rgba(255,255,255,0.55)" />
@@ -82,7 +111,15 @@ export function StartPartySheet({ movie: movieIn, candidates, label, accent = '#
           )}
           {err && <div style={{ fontSize: 12.5, color: '#FF8FA3', marginTop: 10 }}>{err}</div>}
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 20px calc(20px + env(safe-area-inset-bottom))', marginTop: 6 }}>
+        {sentTo && (
+          <div style={{ padding: '30px 20px calc(30px + env(safe-area-inset-bottom))', textAlign: 'center', animation: 'spIn .3s ease' }}>
+            <div style={{ fontSize: 40 }}>🗓</div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 800, marginTop: 8 }}>Invite sent to {String(sentTo.name).split(' ')[0]}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>{sentTo.when} · we’ll remind you both 15 minutes before</div>
+            <button onClick={onClose} style={{ ...glass, marginTop: 20, height: 46, padding: '0 28px', borderRadius: 23, color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Done</button>
+          </div>
+        )}
+        {!sentTo && <div style={{ flex: 1, overflowY: 'auto', padding: '8px 20px calc(20px + env(safe-area-inset-bottom))', marginTop: 6 }}>
           {movie && friends === null && <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)', padding: '18px 0' }}>Finding your friends…</div>}
           {friends && friends.length === 0 && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', padding: '18px 0', lineHeight: 1.5 }}>Follow a few friends first, then you can watch together.</div>}
           {anySaved && !q && <div style={{ ...eyebrow('rgba(255,255,255,0.5)'), margin: '10px 0 2px' }}>They want to watch it too</div>}
@@ -97,12 +134,12 @@ export function StartPartySheet({ movie: movieIn, candidates, label, accent = '#
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name}</div>
                     <div style={{ fontSize: 11.5, color: f.alsoSaved ? accent : 'rgba(255,255,255,0.5)', marginTop: 2, fontWeight: f.alsoSaved ? 700 : 500 }}>{f.alsoSaved ? '🍿 Also saved it' : f.alsoWatched ? 'Has seen it' : `@${f.username}`}</div>
                   </div>
-                  <span style={{ ...glass, height: 34, borderRadius: 17, padding: '0 14px', display: 'inline-flex', alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{busy === f.user_id ? 'Starting…' : 'Invite'}</span>
+                  <span style={{ ...glass, height: 34, borderRadius: 17, padding: '0 14px', display: 'inline-flex', alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{busy === f.user_id ? (scheduledFor ? 'Sending…' : 'Starting…') : (scheduledFor ? 'Invite' : 'Start')}</span>
                 </button>
               </div>
             );
           })}
-        </div>
+        </div>}
       </div>
     </>
   );

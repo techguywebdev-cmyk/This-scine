@@ -149,6 +149,7 @@ export function TogetherSheet({ peer, accent = '#F5A623', onClose }) {
                   </div>
                   <div style={{ position: 'relative', display: 'flex', gap: 8, padding: '0 14px 14px', flexWrap: 'wrap' }}>
                     <button onClick={startParty} disabled={starting} style={{ ...pill, width: '100%', height: 46, borderRadius: 23, fontSize: 14, background: `${accent}2e`, borderColor: accent, opacity: starting ? 0.7 : 1 }}>{starting ? 'Starting…' : <>🍿 Start watch party with {name}</>}</button>
+                    <button onClick={() => { window.dispatchEvent(new CustomEvent('cine:watch-with', { detail: { movie: { id: pick.movie_id, title: pick.title, poster: pick.poster, backdrop: pick.backdrop, year: pick.year, rating: pick.rating, is_tv: !!pick.is_tv, accent: pick.accent }, preselect: peer.user_id } })); onClose(); }} style={{ ...pill, width: '100%', height: 40, borderRadius: 20 }}>🗓 Schedule for later</button>
                     <button onClick={() => openTitle(pick)} style={pill}><SvgIcon name="play" size={12} color="#fff" filled />Trailer</button>
                     <button onClick={sendPick} disabled={sent} style={{ ...pill, opacity: sent ? 0.7 : 1 }}>{sent ? <><SvgIcon name="check" size={13} color="#fff" />Sent</> : <><SvgIcon name="send" size={12} color="#fff" />Send to {name}</>}</button>
                     {both.length > 1 && <button onClick={pickOne} style={{ ...pill, background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: '0 6px' }}>Another</button>}

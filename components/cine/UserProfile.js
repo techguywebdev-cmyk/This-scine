@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { TogetherSheet, ChatWidget, CoverImg, FolderCoverFill, FollowListModal, GRADS, ListDetailSheet, SvgIcon, T, Toast, ambient, coverCache } from './shared';
+import { PartyHistoryRow, TogetherSheet, ChatWidget, CoverImg, FolderCoverFill, FollowListModal, GRADS, ListDetailSheet, SvgIcon, T, Toast, ambient, coverCache } from './shared';
 
 // Full TMDB genre name -> id map (movie genre list), used for profile cover photo lookups
 export const TMDB_GENRE_IDS = {
@@ -273,6 +273,9 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                       </div>
                     </div>
                   )}
+
+                  {/* WATCHED TOGETHER */}
+                  {!profile.isSelf&&currentUser&&currentUser.id!==userId&&<PartyHistoryRow target={profile.user_id||userId} title="Watched together" accent={accentColor||accent} style={{marginTop:26}}/>}
 
                   {/* RECENTLY SAVED SHELF */}
                   {recentPosters.length>0&&(

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { ChatWidget, FollowListModal, MessagesInbox, NotificationsPanel, StatusComposer, StatusViewer, SvgIcon, T, Toast, UserProfileSheet, ambient , track } from './shared';
+import { ChatWidget, FollowListModal, MessagesInbox, NotificationsPanel, StatusComposer, StatusViewer, SvgIcon, T, Toast, UserProfileSheet, ambient , track, fmtWhen, untilLabel } from './shared';
 
 // ─── FRIENDS SCREEN ───────────────────────────────────────────────────────────
 export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
@@ -31,12 +31,16 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const [showMessages, setShowMessages] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [partyInvites, setPartyInvites] = useState([]);
+  const [upcoming, setUpcoming] = useState([]);
   useEffect(() => {
     if (!isSignedIn) return;
     let alive = true;
     const load = () => fetch('/api/party?pending=1', { cache: 'no-store' }).then((r) => r.json()).then((d) => { if (alive) setPartyInvites(d.pending || []); }).catch(() => {});
+    const loadUp = () => fetch('/api/party?upcoming=1', { cache: 'no-store' }).then((r) => r.json()).then((d) => { if (alive) setUpcoming(d.upcoming || []); }).catch(() => {});
+    loadUp(); const tu = setInterval(loadUp, 60000);
+    const onCheck = () => { load(); loadUp(); }; window.addEventListener('cine:party-check', onCheck);
     load(); const t = setInterval(load, 30000);
-    return () => { alive = false; clearInterval(t); };
+    return () => { alive = false; clearInterval(t); clearInterval(tu); window.removeEventListener('cine:party-check', onCheck); };
   }, [isSignedIn]);
   const inviteFriends = async () => {
     const handle = user?.username || user?.id;
@@ -656,6 +660,30 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                       <span style={{ height: 32, padding: '0 14px', borderRadius: 16, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.18)', display: 'inline-flex', alignItems: 'center', fontSize: 12.5, fontWeight: 800, color: '#fff', flexShrink: 0 }}>Join</span>
                     </button>
                   )}
+                  {/* Upcoming scheduled watch parties */}
+                  {(() => {
+                    const shown = new Set(partyInvites.map((x) => x.id));
+                    const list = upcoming.filter((x) => !shown.has(x.id) && x.scheduled_for);
+                    if (!list.length) return null;
+                    return (
+                      <div style={{ marginTop: 18 }}>
+                        <div style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: accent, marginBottom: 6 }}>Upcoming watch parties</div>
+                        {list.map((x, i) => (
+                          <button key={x.id} onClick={() => window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: x.id } }))} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', background: 'none', border: 'none', borderTop: i ? '1px solid rgba(255,255,255,0.08)' : 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', color: '#fff' }}>
+                            <div style={{ position: 'relative', width: 34, aspectRatio: '2/3', borderRadius: 3, overflow: 'visible', flexShrink: 0, background: 'rgba(255,255,255,0.06)' }}>
+                              {x.movie?.poster && <img src={x.movie.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 3 }} />}
+                              {x.peer?.avatar_url && <img src={x.peer.avatar_url} alt="" style={{ position: 'absolute', right: -7, bottom: -5, width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', boxShadow: '0 0 0 2px rgba(0,0,0,0.6)' }} />}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.movie?.title}</div>
+                              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.65)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🗓 {fmtWhen(x.scheduled_for)} · with {x.peer?.display_name || x.peer?.username || 'a friend'}{x.status === 'invited' && x.isHost ? ' · awaiting reply' : ''}</div>
+                            </div>
+                            <span style={{ fontSize: 11.5, fontWeight: 800, color: accent, flexShrink: 0 }}>{untilLabel(x.scheduled_for)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   {/* Status + your circle */}
                   {(() => {
                     const mine = statusPeople.find(p => p.isSelf);

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { T, ambient, track } from './shared';
+import { T, ambient, track, fmtWhen, untilLabel } from './shared';
 
 // Full-screen incoming watch-party invite — styled like an incoming call so it can't be missed.
 const first = (u) => { const n = String(u?.display_name || u?.username || 'A friend').trim(); const w = n.split(/\s+/)[0]; return w.length <= 3 && n.length > w.length ? (n.length > 16 ? n.slice(0, 15) + '…' : n) : w; };
@@ -18,6 +18,7 @@ export function PartyInvite({ invite, accent = '#F5A623', onJoin, onLater, onDec
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: accent }}>Watch party invite</div>
         <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 10, lineHeight: 1.2 }}>{first(host)} wants to watch<br />with you</div>
+        {invite.scheduled_for && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, ...glass, borderRadius: 16, padding: '7px 14px', fontSize: 13, fontWeight: 700 }}>🗓 {fmtWhen(invite.scheduled_for)} · {untilLabel(invite.scheduled_for)}</div>}
       </div>
 
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -35,7 +36,7 @@ export function PartyInvite({ invite, accent = '#F5A623', onJoin, onLater, onDec
         <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{[m.year, m.is_tv ? 'Series' : null, m.runtime_min ? `${m.runtime_min} min` : null].filter(Boolean).join(' · ')}</div>
         <div style={{ display: 'flex', gap: 12, marginTop: 26 }}>
           <button onClick={() => go(onLater)} style={{ ...glass, flex: 1, height: 54, borderRadius: 27, color: 'rgba(255,255,255,0.85)', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Not now</button>
-          <button onClick={() => go(onJoin)} style={{ ...glass, flex: 1.4, height: 54, borderRadius: 27, background: `${accent}33`, borderColor: accent, color: '#fff', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>🍿 Join</button>
+          <button onClick={() => go(onJoin)} style={{ ...glass, flex: 1.4, height: 54, borderRadius: 27, background: `${accent}33`, borderColor: accent, color: '#fff', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>{invite.scheduled_for && Date.parse(invite.scheduled_for) - Date.now() > 10 * 60000 ? '🍿 I’m in' : '🍿 Join'}</button>
         </div>
         <button onClick={() => go(onDecline)} style={{ marginTop: 16, background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>Can’t make it — let {first(host)} know</button>
       </div>

@@ -1306,3 +1306,58 @@ export function prefetchScreens() {
   const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); import('./StartParty'); import('./PartyInvite'); };
   if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 6000 }); else setTimeout(load, 4000);
 }
+
+// ── Time labels for scheduled watch parties ──
+export function fmtWhen(iso) {
+  if (!iso) return '';
+  const d = new Date(iso); const now = new Date();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(d) - day(now)) / 864e5);
+  if (diff === 0) return `${d.getHours() >= 17 ? 'Tonight' : 'Today'} ${time}`;
+  if (diff === 1) return `Tomorrow ${time}`;
+  if (diff > 1 && diff < 7) return `${d.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+  return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
+}
+export function untilLabel(iso, now = Date.now()) {
+  const ms = Date.parse(iso) - now;
+  if (!(ms > 0)) return 'now';
+  const m = Math.round(ms / 60000);
+  if (m < 60) return `in ${Math.max(1, m)} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  if (h < 24) return `in ${h}h${r ? ` ${r}m` : ''}`;
+  const dd = Math.round(h / 24);
+  return `in ${dd} day${dd === 1 ? '' : 's'}`;
+}
+
+// ── "Watched together" history: posters from finished watch parties ──
+export function PartyHistoryRow({ target = 'me', title = 'Watched together', accent = '#F5A623', style }) {
+  const [items, setItems] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/party?history=${encodeURIComponent(target)}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : { history: [] })).then((d) => { if (alive) setItems(d.history || []); }).catch(() => alive && setItems([]));
+    return () => { alive = false; };
+  }, [target]);
+  if (!items || !items.length) return null;
+  const open = (h) => window.dispatchEvent(new CustomEvent('cine:open-title', { detail: { id: h.movie?.id, title: h.movie?.title, poster: h.movie?.poster, backdrop: h.movie?.backdrop, year: h.movie?.year, isTV: !!h.movie?.is_tv, mediaType: h.movie?.is_tv ? 'tv' : 'movie' } }));
+  return (
+    <div style={style}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: accent }}>🍿 {title}</span>
+        <span style={{ fontSize: 11.5, color: T.text2 }}>{items.length} {items.length === 1 ? 'film' : 'films'}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', margin: '12px -20px 0', padding: '0 20px 4px' }}>
+        {items.map((h) => (
+          <button key={h.id} onClick={() => open(h)} style={{ flexShrink: 0, width: 84, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '2/3', borderRadius: 3, overflow: 'visible' }}>
+              <div style={{ width: '100%', height: '100%', borderRadius: 3, overflow: 'hidden', background: T.surface }}>{h.movie?.poster && <img src={h.movie.poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}</div>
+              {target === 'me' && h.peer && <div style={{ position: 'absolute', right: -5, bottom: -5, width: 26, height: 26, borderRadius: '50%', overflow: 'hidden', boxShadow: '0 0 0 2px #0B0B12', background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff' }}>{h.peer.avatar_url ? <img src={h.peer.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (h.peer.display_name || '?')[0]}</div>}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#fff', marginTop: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.movie?.title}</div>
+            {(h.myRating || h.theirRating) && <div style={{ fontSize: 10.5, color: accent, marginTop: 2 }}>{'★'.repeat(h.myRating || h.theirRating)}</div>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
