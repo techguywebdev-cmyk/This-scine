@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { T, track } from './shared';
+import { T, ambient, track } from './shared';
 
 // Report / block sheet, opened anywhere via:
 //   window.dispatchEvent(new CustomEvent('cine:safety', { detail: { user, kind, targetId, snapshot, mode } }))
@@ -71,8 +71,8 @@ export function SafetySheet({ user, kind = 'user', targetId = null, snapshot = n
 
   return (
     <div onClick={() => !busy && onClose()} style={{ position: 'fixed', inset: 0, zIndex: 520, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', animation: 'sfIn .2s ease' }}>
-      <style>{`@keyframes sfIn{from{opacity:0}to{opacity:1}}@keyframes sfUp{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}`}</style>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: '88vh', overflowY: 'auto', background: 'linear-gradient(180deg, #17161f, #0d0c12)', borderRadius: '24px 24px 0 0', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none', padding: '10px 22px calc(22px + env(safe-area-inset-bottom))', color: '#fff', animation: 'sfUp .25s ease' }}>
+      <style>{`@keyframes sfIn{from{opacity:0}to{opacity:1}}@keyframes sfUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 560, maxHeight: '88dvh', overflowY: 'auto', background: ambient(accent), borderRadius: '22px 22px 0 0', borderTop: `1px solid ${T.hairline}`, padding: '10px 22px calc(22px + env(safe-area-inset-bottom))', color: '#fff', animation: 'sfUp .32s cubic-bezier(0.22,1,0.36,1)' }}>
         <div style={{ width: 34, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)', margin: '0 auto 14px' }} />
 
         {view === 'menu' && (
