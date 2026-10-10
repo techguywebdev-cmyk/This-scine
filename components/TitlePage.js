@@ -1,5 +1,6 @@
 // Public, server-rendered page for a film or show. Matches the app's look; every CTA leads into the app.
 import TrailerLite from '@/components/TrailerLite';
+import PageBeacon from '@/components/PageBeacon';
 import { APP_NAME } from '@/lib/brand';
 import { ambient, accentForId, titlePath } from '@/lib/look';
 
@@ -18,6 +19,7 @@ export function TitlePage({ t, reviews }) {
   const btn = { ...glass, height: 50, borderRadius: 25, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#fff', fontSize: 14.5, fontWeight: 800, textDecoration: 'none', padding: '0 14px', whiteSpace: 'nowrap' };
   return (
     <main style={{ position: 'fixed', inset: 0, background: ambient(A), color: '#fff', fontFamily: "var(--font-sans), Inter, system-ui, sans-serif" }}>
+      <PageBeacon props={{ type: t.type, id: t.id }} />
       <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
         {/* Backdrop */}
         <div style={{ position: 'relative', height: 'min(56vw, 420px)', minHeight: 230 }}>
