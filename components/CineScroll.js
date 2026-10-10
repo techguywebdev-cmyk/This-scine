@@ -7293,6 +7293,14 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const [viewingProfile, setViewingProfile] = useState(null);
   const [chatPeer, setChatPeer] = useState(null);
   const [showMessages, setShowMessages] = useState(false);
+  const [fabHidden, setFabHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const onFeedScroll = (e) => {
+    const y = e.currentTarget.scrollTop; const d = y - lastScrollY.current;
+    if (Math.abs(d) < 6) return;
+    setFabHidden(d > 0 && y > 80);
+    lastScrollY.current = y;
+  };
   const [followListType, setFollowListType] = useState(null);
   const [savedHere, setSavedHere] = useState(() => new Set());
   const [heroPosters, setHeroPosters] = useState([]);
@@ -7821,6 +7829,15 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
       )}
       {viewingProfile && <UserProfileSheet userId={viewingProfile} onClose={() => setViewingProfile(null)} accent={accent} onWatchTrailer={onWatchTrailer} onAddToWatchlist={onAddToWatchlist} />}
 
+      {/* Floating chat — bottom-right, slides away while scrolling down */}
+      {isSignedIn && !showMessages && !chatPeer && !composeStatus && viewStatusAt == null && !showNotifs && !viewingProfile && !followListType && (
+        <button onClick={() => setShowMessages(true)} aria-label={stats.pending > 0 ? `Messages, ${stats.pending} unread` : 'Messages'}
+          style={{ position: 'absolute', right: 18, bottom: 'calc(22px + env(safe-area-inset-bottom))', zIndex: 5, width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.16)', boxShadow: '0 10px 30px rgba(0,0,0,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: fabHidden ? 'translateY(120px)' : 'translateY(0)', opacity: fabHidden ? 0 : 1, transition: 'transform .3s cubic-bezier(0.22,1,0.36,1), opacity .25s' }}>
+          <SvgIcon name="chat" size={23} color="#fff" />
+          {stats.pending > 0 && <span style={{ position: 'absolute', top: 2, right: 0, minWidth: 18, height: 18, borderRadius: 9, background: accent, border: '2px solid #0B0B12', color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', boxSizing: 'border-box' }}>{stats.pending > 99 ? '99+' : stats.pending}</span>}
+        </button>
+      )}
+
       {/* Header */}
       <div style={{ position: 'relative', padding: 'max(18px, env(safe-area-inset-top)) 20px 0', flexShrink: 0 }}>
         {/* Poster wall — reshuffled on every visit */}
@@ -7839,10 +7856,6 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <div style={{ flex: 1 }} />
-          <button onClick={() => setShowMessages(true)} aria-label="Messages" style={{ position: 'relative', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '50%', marginLeft: 6, border: 'none', width: 38, height: 38, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <SvgIcon name="chat" size={20} color="#fff" />
-            {stats.pending > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight:700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{stats.pending}</span>}
-          </button>
           <button onClick={() => setShowNotifs(true)} aria-label="Notifications" style={{ position: 'relative', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: '50%', marginLeft: 6, border: 'none', width: 38, height: 38, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <SvgIcon name="bell" size={20} color="#fff" />
             {unreadCount > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 16, height: 16, borderRadius: 8, background: accent, color: '#06060B', fontSize: 10, fontWeight:700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>}
@@ -7863,7 +7876,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', padding: '0 20px calc(40px + env(safe-area-inset-bottom))' }}>
+      <div onScroll={onFeedScroll} style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', padding: '0 20px calc(110px + env(safe-area-inset-bottom))' }}>
         {!isSignedIn ? (
           <div style={{ textAlign: 'center', padding: '56px 12px' }}>
             <div style={{ fontFamily:T.serif, fontSize:14,letterSpacing:'-0.02em', fontWeight:700, color:T.text }}>See what your friends are watching</div>
