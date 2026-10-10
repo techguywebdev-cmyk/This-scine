@@ -1,11 +1,7 @@
 // Server-rendered layout for /privacy and /terms — matches the app's ambient look without client JS.
 import { APP_NAME, LEGAL_UPDATED } from '@/lib/brand';
+import { ambient } from '@/lib/look';
 
-const NOIR = '#E6E6EA';
-// Same ambient gradient as the app (components/cine/shared.js → ambient), built from the accent passed in ?a=
-const ambient = (a) => a === NOIR
-  ? 'radial-gradient(120% 70% at 0% 0%, rgba(255,255,255,0.06) 0%, transparent 70%), #000000'
-  : `radial-gradient(120% 70% at 0% 0%, ${a}2e 0%, transparent 70%), radial-gradient(120% 70% at 100% 100%, ${a}24 0%, transparent 70%), linear-gradient(165deg, ${a}1f 0%, ${a}12 50%, ${a}1c 100%), #06060B`;
 export const accentFrom = (sp) => { const v = String(sp?.a || '').replace(/^#/, ''); return /^[0-9a-fA-F]{6}$/.test(v) ? `#${v.toUpperCase()}` : '#F5A623'; };
 const serif = "var(--font-display), 'Inter Tight', system-ui, sans-serif";
 

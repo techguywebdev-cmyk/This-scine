@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import { SvgIcon, T, ambient, track } from './shared';
+import { titlePath } from '../../lib/look';
 
 // ── Share a film: send to friends in-app (DM) or share a link anywhere ──
 export function ShareSheet({movie,accent,onClose}){
@@ -14,7 +15,7 @@ export function ShareSheet({movie,accent,onClose}){
   const[sending,setSending]=useState(false);
   const[done,setDone]=useState(null);
   const type=movie?.isTV||movie?.mediaType==='tv'?'tv':'movie';
-  const link=`${typeof window!=='undefined'?window.location.origin:'https://this-scine.vercel.app'}/?m=${type}-${movie?.id}`;
+  const link=`${typeof window!=='undefined'?window.location.origin:'https://this-scine.vercel.app'}${titlePath(type,movie?.id,movie?.title)}`;
   useEffect(()=>{
     if(!isSignedIn){setFriends([]);return;}
     Promise.all([

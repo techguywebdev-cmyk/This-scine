@@ -47,16 +47,17 @@ export default function CineScroll(){
   },[isLoaded,isSignedIn]);
 
   // Shared link (?m=movie-123 / ?m=tv-456): put that title first in the feed
-  const sharedRef=useRef(null);
+  const sharedRef=useRef(null);const pendingActRef=useRef(null);const[sharedReady,setSharedReady]=useState(0);
   useEffect(()=>{
     if(typeof window==='undefined')return;
     const u=new URL(window.location.href);const m=u.searchParams.get('m');
     if(!m)return;
     const [type,id]=m.split('-');if(!id)return;
-    u.searchParams.delete('m');window.history.replaceState(null,'',u.pathname+(u.search||''));
+    const act=u.searchParams.get('act');if(act==='save'||act==='party')pendingActRef.current=act;
+    u.searchParams.delete('m');u.searchParams.delete('act');window.history.replaceState(null,'',u.pathname+(u.search||''));
     fetch(`/api/movies?item=${encodeURIComponent(id)}&itemType=${type==='tv'?'tv':'movie'}`).then(r=>r.ok?r.json():null).then(d=>{
       const mv=d&&d.movies&&d.movies[0];if(!mv)return;
-      sharedRef.current=mv;
+      sharedRef.current=mv;setSharedReady(n=>n+1);
       setMovies(p=>[mv,...p.filter(x=>!(x.id===mv.id&&!!x.isTV===!!mv.isTV))]);
       setActiveIndex(0);setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
     }).catch(()=>{});
@@ -233,6 +234,17 @@ export default function CineScroll(){
 
   const[targetFolder,setTargetFolder]=useState(null);
   const[savePrompt,setSavePrompt]=useState(null);const[folderMovie,setFolderMovie]=useState(null);const savePromptTimer=useRef(null);
+  // Actions requested from a public title page (?m=…&act=save|party), run once the title and sign-in state are ready
+  const saveRef=useRef(null);
+  useEffect(()=>{
+    const act=pendingActRef.current,mv=sharedRef.current;
+    if(!act||!mv||!isLoaded)return;
+    if(!isSignedIn){setShowAuth(true);return;}// runs again after they sign in
+    if(!profileReady)return;
+    pendingActRef.current=null;
+    if(act==='save'){if(!watchlistIds.has(mv.id))saveRef.current&&saveRef.current(mv);setFeedToast(`Saved ${mv.title} to your watchlist`);setTimeout(()=>setFeedToast(null),2600);}
+    else window.dispatchEvent(new CustomEvent('cine:watch-with',{detail:{movie:mv}}));
+  },[sharedReady,isLoaded,isSignedIn,profileReady]);
   const handleSave=async(movie)=>{
     const already=watchlistIds.has(movie.id);
     if(!already){
@@ -381,6 +393,7 @@ export default function CineScroll(){
   const handleSimilarSelect=m=>{setMovies(p=>[m,...p]);setTimeout(()=>scrollTo(0),50);};
   // Drop the whole similar set right after the current card and jump to it
   const handleSimilarScrollAll=list=>{const at=activeIndex+1;setMovies(p=>{const ids=new Set(list.map(x=>x.id));const before=p.slice(0,at);const after=p.slice(at).filter(x=>!ids.has(x.id));return[...before,...list,...after];});setTimeout(()=>scrollTo(at),80);};
+  saveRef.current=handleSave;
   const accent=movies[activeIndex]?.accent||'#F5A623';
   const activeGenreLabel=GENRE_OPTIONS.find(g=>g.id===activeGenre)?.label||'All';
 
