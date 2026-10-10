@@ -2461,6 +2461,21 @@ export function ChatWidget({ peer, onClose, accent }) {
                             <div style={{ background: mine ? accent : themBubble, color: mine ? '#0A0A0F' : 'rgba(255,255,255,0.92)', borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6, padding: '10px 14px', fontSize: 14, lineHeight: 1.45 }}>{m.text}</div>
                           )}
                         </div>
+                      ) : m.msg_type === 'party' && m.meta ? (
+                        <button
+                          type="button"
+                          onClick={() => window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } }))}
+                          style={{ position: 'relative', display: 'block', width: 260, textAlign: 'left', padding: 0, borderRadius: 18, overflow: 'hidden', cursor: 'pointer', fontFamily: 'inherit', background: '#111', border: `1px solid ${accent}66` }}
+                        >
+                          {(m.meta.backdrop || m.meta.poster) && <img src={m.meta.backdrop || m.meta.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />}
+                          <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.1), rgba(6,6,11,0.9))' }} />
+                          <span style={{ position: 'relative', display: 'block', padding: '46px 14px 14px' }}>
+                            <span style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: accent }}>🍿 Watch party</span>
+                            <span style={{ display: 'block', fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 4, lineHeight: 1.2 }}>{m.meta.title}</span>
+                            <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>{mine ? 'You invited them to watch together' : 'Invited you to watch together'}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 10, height: 34, padding: '0 16px', borderRadius: 17, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.18)', fontSize: 12.5, fontWeight: 800, color: '#fff' }}>{mine ? 'Open room' : 'Join'}</span>
+                          </span>
+                        </button>
                       ) : m.msg_type === 'title' && m.meta ? (
                         <button
                           type="button"

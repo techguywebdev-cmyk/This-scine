@@ -43,6 +43,7 @@ export function TogetherSheet({ peer, accent = '#F5A623', onClose }) {
   const [providers, setProviders] = useState(null);
   const [shown, setShown] = useState([]);
   const [sent, setSent] = useState(false);
+  const [starting, setStarting] = useState(false);
   const name = (peer?.display_name || peer?.username || 'your friend').split(' ')[0];
 
   useEffect(() => {
@@ -78,6 +79,16 @@ export function TogetherSheet({ peer, accent = '#F5A623', onClose }) {
     setSent(true);
   };
 
+  const startParty = async () => {
+    if (!pick || starting) return;
+    setStarting(true);
+    try {
+      const r = await fetch('/api/party', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', with: peer.user_id, movie: { id: pick.movie_id, title: pick.title, poster: pick.poster, backdrop: pick.backdrop, year: pick.year, rating: pick.rating, is_tv: !!pick.is_tv, accent: pick.accent } }) });
+      const d = await r.json();
+      if (r.ok && d.party?.id) { track('party_start'); window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: d.party.id } })); onClose(); }
+    } catch {}
+    setStarting(false);
+  };
   const me = { avatar_url: user?.imageUrl, display_name: user?.firstName || user?.username };
   const both = data?.both || [];
   const pill = { ...glass, height: 40, borderRadius: 20, padding: '0 16px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 };
@@ -137,6 +148,7 @@ export function TogetherSheet({ peer, accent = '#F5A623', onClose }) {
                     </div>
                   </div>
                   <div style={{ position: 'relative', display: 'flex', gap: 8, padding: '0 14px 14px', flexWrap: 'wrap' }}>
+                    <button onClick={startParty} disabled={starting} style={{ ...pill, width: '100%', height: 46, borderRadius: 23, fontSize: 14, background: `${accent}2e`, borderColor: accent, opacity: starting ? 0.7 : 1 }}>{starting ? 'Starting…' : <>🍿 Start watch party with {name}</>}</button>
                     <button onClick={() => openTitle(pick)} style={pill}><SvgIcon name="play" size={12} color="#fff" filled />Trailer</button>
                     <button onClick={sendPick} disabled={sent} style={{ ...pill, opacity: sent ? 0.7 : 1 }}>{sent ? <><SvgIcon name="check" size={13} color="#fff" />Sent</> : <><SvgIcon name="send" size={12} color="#fff" />Send to {name}</>}</button>
                     {both.length > 1 && <button onClick={pickOne} style={{ ...pill, background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: '0 6px' }}>Another</button>}

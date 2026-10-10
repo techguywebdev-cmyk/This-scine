@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
-import { AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 // AUTH GATE
 function AuthGate({onClose,accent}){
@@ -90,6 +90,14 @@ export default function CineScroll(){
     return()=>clearTimeout(t);
   },[isLoaded,isSignedIn]);
 
+  // Watch party room: from chat cards, the Together sheet, or a push link (?party=<id>)
+  const[partyId,setPartyId]=useState(null);
+  useEffect(()=>{
+    const open=(e)=>{if(e.detail&&e.detail.id)setPartyId(e.detail.id);};
+    window.addEventListener('cine:open-party',open);
+    try{const q=new URLSearchParams(window.location.search).get('party');if(q){setPartyId(q);const u=new URL(window.location.href);u.searchParams.delete('party');window.history.replaceState({},'',u.toString());}}catch{}
+    return()=>window.removeEventListener('cine:open-party',open);
+  },[]);
   // Letterboxd / IMDb import can be opened from anywhere; reload saves when it finishes
   const[showImport,setShowImport]=useState(false);
   useEffect(()=>{
@@ -464,6 +472,7 @@ export default function CineScroll(){
       </div>
 
 
+      {partyId&&isSignedIn&&<PartyRoom partyId={partyId} accent={accent} onClose={()=>setPartyId(null)}/>}
       {showImport&&<ImportSheet accent={accent} onClose={()=>setShowImport(false)} onImported={({matched})=>{if(matched)track('import',{matched});}}/>}
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}

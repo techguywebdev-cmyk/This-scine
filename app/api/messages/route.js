@@ -172,6 +172,7 @@ export async function GET(req) {
       else if (m.msg_type === 'sticker') preview = m.text || 'Sticker';
       else if (m.msg_type === 'gif') preview = 'GIF';
       else if (m.msg_type === 'title') preview = `🎬 ${m.text || 'Shared a film'}`;
+      else if (m.msg_type === 'party') preview = m.text || '🍿 Watch party invite';
       else if (m.msg_type === 'status_reply') preview = m.meta?.reaction ? `Reacted ${m.text} to a status` : `Replied to a status: ${m.text || ''}`;
       // Guard: never surface raw signal JSON
       if (typeof preview === 'string' && preview.trim().startsWith('{') && preview.includes('"kind"')) {
