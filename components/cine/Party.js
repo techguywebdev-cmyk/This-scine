@@ -19,7 +19,7 @@ const fmt = (ms) => {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
 };
-const first = (u) => (u?.display_name || u?.username || 'Friend').split(' ')[0];
+const first = (u) => { const n = String(u?.display_name || u?.username || 'Friend').trim(); const w = n.split(/\s+/)[0]; return w.length <= 3 && n.length > w.length ? (n.length > 16 ? n.slice(0, 15) + '…' : n) : w; };
 
 function Face({ u, size = 40, ring = '#0B0B12', online }) {
   const letter = first(u)[0]?.toUpperCase();
@@ -52,7 +52,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
   const busyRef = useRef(false);
   const dataRef = useRef(null); dataRef.current = data;
 
-  const accent = data?.party?.movie?.accent || accentIn;
+  const accent = accentIn; // always the app's own accent, so the room matches the rest of CineScroll
   const party = data?.party;
   const me = data?.me;
   const peer = data?.peer;
@@ -206,8 +206,6 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
 
       {/* backdrop */}
       <div style={{ position: 'absolute', inset: 0, background: ambient(accent) }} />
-      {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', inset: -40, width: 'calc(100% + 80px)', height: 'calc(100% + 80px)', objectFit: 'cover', filter: 'blur(34px) saturate(1.1)', opacity: 0.16, mixBlendMode: 'screen' }} />}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0) 40%, rgba(6,6,11,0.55) 100%)' }} />
 
       {/* room */}
       <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', maxWidth: 560, margin: '0 auto', padding: 'max(14px, env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom))', boxSizing: 'border-box', animation: 'pIn .4s ease' }}>
@@ -396,7 +394,6 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
       {/* intro: both faces glide together, meet with a pulse, the room "builds", then fades into the room */}
       {intro && (
         <div onClick={() => { if (data) { setIntroFade(true); setTimeout(() => setIntro(false), 400); } }} style={{ position: 'absolute', inset: 0, zIndex: 9, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: ambient(accent), transition: 'opacity .6s ease, transform .6s ease', opacity: introFade ? 0 : 1, transform: introFade ? 'scale(1.04)' : 'scale(1)', pointerEvents: introFade ? 'none' : 'auto' }}>
-          {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(30px)', opacity: 0.18, mixBlendMode: 'screen', animation: 'pIn 1.2s ease' }} />}
           {/* soft glow that blooms when the faces meet */}
           <div style={{ position: 'absolute', width: 360, height: 360, borderRadius: '50%', background: `radial-gradient(circle, ${accent}55, transparent 65%)`, animation: 'iGlow 2.4s ease 1.1s both' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

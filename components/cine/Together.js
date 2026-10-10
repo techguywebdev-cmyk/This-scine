@@ -44,7 +44,7 @@ export function TogetherSheet({ peer, accent = '#F5A623', onClose }) {
   const [shown, setShown] = useState([]);
   const [sent, setSent] = useState(false);
   const [starting, setStarting] = useState(false);
-  const name = (peer?.display_name || peer?.username || 'your friend').split(' ')[0];
+  const name = (() => { const n = String(peer?.display_name || peer?.username || 'your friend').trim(); const w = n.split(/\s+/)[0]; return w.length <= 3 && n.length > w.length ? (n.length > 16 ? n.slice(0, 15) + '…' : n) : w; })();
 
   useEffect(() => {
     let alive = true;
