@@ -994,6 +994,225 @@ function MentionSuggest({value,onPick,accent}){
 }
 const applyMention=(value,u)=>String(value||'').replace(/@([a-zA-Z0-9_.]{0,30})$/,`@${u.username} `);
 
+// ── Status (24h stories): text or photo/video, friends react & reply into DMs ──
+const STATUS_BGS=['#F5A623','#818CF8','#2DD4BF','#FF6B8A','#A3E635','#B07FEF','#38BDF8','#E6E6EA'];
+const statusBg=(bg)=>bg==='#E6E6EA'?'radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.10), transparent 60%), #000':`radial-gradient(120% 90% at 0% 0%, ${bg}cc, transparent 65%), radial-gradient(120% 90% at 100% 100%, ${bg}99, transparent 65%), linear-gradient(160deg, ${bg}55, #0B0B12)`;
+const statusAgo=(ts)=>{const m=Math.floor((Date.now()-new Date(ts))/60000);if(m<1)return'just now';if(m<60)return`${m}m ago`;return`${Math.floor(m/60)}h ago`;};
+
+export function StatusComposer({accent,onClose,onPosted}){
+  const[mode,setMode]=useState('text');
+  const[text,setText]=useState('');
+  const[bg,setBg]=useState(STATUS_BGS[0]);
+  const[file,setFile]=useState(null);
+  const[preview,setPreview]=useState(null);
+  const[busy,setBusy]=useState(false);
+  const[err,setErr]=useState(null);
+  const fileRef=useRef(null);
+  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
+  const pick=(f)=>{if(!f)return;if(!/^image\/|^video\//.test(f.type)){setErr('Pick a photo or video');return;}setErr(null);setFile(f);setPreview(URL.createObjectURL(f));setMode('media');};
+  const post=async()=>{
+    setBusy(true);setErr(null);
+    try{
+      let body;
+      if(mode==='text'){if(!text.trim())throw new Error('Write something first');body={kind:'text',text,bg};}
+      else{
+        if(!file)throw new Error('Add a photo or video');
+        const isVideo=file.type.startsWith('video/');
+        let up=file;
+        if(!isVideo&&file.type!=='image/gif'){
+          try{const bmp=await createImageBitmap(file);const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.84));if(b&&b.size<file.size)up=new File([b],'status.jpg',{type:'image/jpeg'});}catch{}
+        }
+        if(up.size>(isVideo?4.4:8)*1024*1024)throw new Error(isVideo?'Videos must be under 4MB — try a shorter clip':'Photo is too large');
+        const form=new FormData();form.append('file',up,up.name||'status');form.append('kind',isVideo?'video':'image');
+        const r=await fetch('/api/upload-chat-media',{method:'POST',body:form});const d=await r.json().catch(()=>({}));
+        if(!r.ok||!d.url)throw new Error(d.error||'Upload failed');
+        body={kind:isVideo?'video':'image',media_url:d.url,text};
+      }
+      const r=await fetch('/api/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'Could not post');
+      onPosted&&onPosted();onClose();
+    }catch(e){setErr(e.message||'Could not post');}
+    setBusy(false);
+  };
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:300,background:mode==='text'?statusBg(bg):'#000',display:'flex',flexDirection:'column',animation:'fadeIn .2s ease',transition:'background .3s'}}>
+      <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <input ref={fileRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={e=>pick(e.target.files?.[0])}/>
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'max(14px, env(safe-area-inset-top)) 16px 10px'}}>
+        <button onClick={onClose} aria-label="Close" style={{width:38,height:38,borderRadius:'50%',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={15} color="#fff"/></button>
+        <div style={{flex:1}}/>
+        <div style={{display:'flex',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',borderRadius:20,padding:3}}>
+          {[['text','Text'],['media','Photo / Video']].map(([m,l])=>(
+            <button key={m} onClick={()=>{if(m==='media'&&!file){fileRef.current?.click();return;}setMode(m);}} style={{border:'none',borderRadius:17,padding:'7px 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,background:mode===m?'#fff':'transparent',color:mode===m?'#07070F':'rgba(255,255,255,0.75)'}}>{l}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{flex:1,minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 24px',position:'relative'}}>
+        {mode==='text'?(
+          <textarea autoFocus value={text} onChange={e=>setText(e.target.value.slice(0,700))} placeholder="What are you watching?" style={{width:'100%',maxWidth:520,background:'transparent',border:'none',outline:'none',resize:'none',textAlign:'center',color:bg==='#E6E6EA'?'#fff':'#fff',fontFamily:T.serif,fontSize:text.length>140?22:text.length>60?28:34,fontWeight:700,lineHeight:1.25,letterSpacing:'-0.02em',minHeight:200,textShadow:'0 2px 18px rgba(0,0,0,0.35)'}}/>
+        ):preview?(
+          file?.type.startsWith('video/')?<video src={preview} autoPlay loop muted playsInline style={{maxWidth:'100%',maxHeight:'100%',borderRadius:12}}/>:<img src={preview} alt="" style={{maxWidth:'100%',maxHeight:'100%',borderRadius:12,objectFit:'contain'}}/>
+        ):(
+          <button onClick={()=>fileRef.current?.click()} style={{background:'rgba(255,255,255,0.06)',border:`1.5px dashed ${accent}77`,borderRadius:16,padding:'34px 26px',cursor:'pointer',fontFamily:'inherit',color:'#fff',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+            <SvgIcon name="image" size={26} color={accent}/><span style={{fontSize:13,fontWeight:700}}>Choose a photo or video</span>
+          </button>
+        )}
+      </div>
+      <div style={{padding:'10px 16px calc(16px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:12}}>
+        {err&&<div style={{fontSize:12.5,color:'#FF8FA3',textAlign:'center'}}>{err}</div>}
+        {mode==='text'?(
+          <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+            {STATUS_BGS.map(c=>(<button key={c} onClick={()=>setBg(c)} aria-label="Background" style={{width:28,height:28,borderRadius:'50%',background:c==='#E6E6EA'?'#000':c,border:bg===c?'2.5px solid #fff':'2px solid rgba(255,255,255,0.25)',cursor:'pointer',padding:0}}/>))}
+          </div>
+        ):(
+          <input value={text} onChange={e=>setText(e.target.value.slice(0,200))} placeholder="Add a caption…" style={{background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:22,padding:'11px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+        )}
+        <button onClick={post} disabled={busy} style={{alignSelf:'flex-end',display:'flex',alignItems:'center',gap:8,background:accent,border:'none',borderRadius:24,height:46,padding:'0 22px',cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:700,color:'#07070F',opacity:busy?0.7:1}}>
+          {busy?'Posting…':'Post status'}<SvgIcon name="send" size={14} color="#07070F"/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
+  const{user}=useUser();
+  const[pi,setPi]=useState(startIndex);
+  const person=people[pi];
+  const firstUnseen=Math.max(0,(person?.items||[]).findIndex(i=>!i.seen));
+  const[si,setSi]=useState(person?.isSelf?0:firstUnseen);
+  const[paused,setPaused]=useState(false);
+  const[progress,setProgress]=useState(0);
+  const[reply,setReply]=useState('');
+  const[sent,setSent]=useState(null);
+  const[viewers,setViewers]=useState(null);
+  const videoRef=useRef(null);
+  const item=person?.items?.[si];
+  const DURATION=item?.kind==='video'?null:6000;
+
+  const next=useCallback(()=>{
+    if(!person)return;
+    if(si<person.items.length-1){setSi(si+1);return;}
+    if(pi<people.length-1){const np=people[pi+1];setPi(pi+1);setSi(np.isSelf?0:Math.max(0,np.items.findIndex(i=>!i.seen)));return;}
+    onClose();
+  },[si,pi,person,people,onClose]);
+  const prev=()=>{if(si>0){setSi(si-1);return;}if(pi>0){setPi(pi-1);setSi(0);}};
+
+  // mark seen
+  useEffect(()=>{
+    if(!item||person.isSelf||item.seen)return;
+    item.seen=true;
+    fetch('/api/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({view:item.id})}).then(()=>onChanged&&onChanged()).catch(()=>{});
+  },[item?.id]);// eslint-disable-line react-hooks/exhaustive-deps
+
+  // timer for text/photo (video drives its own progress)
+  const pausedRef=useRef(false);
+  const nextRef=useRef(next);
+  nextRef.current=next;
+  useEffect(()=>{
+    setProgress(0);setSent(null);setViewers(null);
+    if(!item||!DURATION)return;
+    let elapsed=0;
+    const id=setInterval(()=>{
+      if(pausedRef.current)return;
+      elapsed+=50;
+      const p=Math.min(1,elapsed/DURATION);
+      setProgress(p);
+      if(p>=1){clearInterval(id);nextRef.current();}
+    },50);
+    return()=>clearInterval(id);
+  },[pi,si]);// eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{pausedRef.current=paused;const v=videoRef.current;if(v){paused?v.pause():v.play().catch(()=>{});}},[paused]);
+
+  const send=async(textToSend,reaction)=>{
+    if(!textToSend.trim()||!person||person.isSelf)return;
+    setReply('');setPaused(false);
+    await fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({toUserId:person.user_id,msg_type:'status_reply',text:textToSend.trim(),meta:{status_id:item.id,kind:item.kind,text:item.text,media_url:item.media_url,bg:item.bg,reaction:!!reaction}})}).catch(()=>{});
+    setSent(reaction?`${textToSend} sent`:'Reply sent');
+    setTimeout(()=>setSent(null),1600);
+  };
+  const del=async()=>{
+    await fetch('/api/status',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:item.id})}).catch(()=>{});
+    onChanged&&onChanged();onClose();
+  };
+  const loadViewers=async()=>{setPaused(true);const d=await fetch(`/api/status?viewers=${item.id}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>({viewers:[]}));setViewers(d.viewers||[]);};
+
+  if(!person||!item)return null;
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:320,background:'#000',display:'flex',flexDirection:'column',animation:'fadeIn .2s ease',userSelect:'none'}}>
+      <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      {/* content */}
+      <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:item.kind==='text'?statusBg(item.bg||accent):'#000'}}>
+        {item.kind==='text'?(
+          <div style={{padding:'0 28px',maxWidth:560,textAlign:'center',fontFamily:T.serif,fontWeight:700,letterSpacing:'-0.02em',color:'#fff',fontSize:(item.text||'').length>140?22:(item.text||'').length>60?28:34,lineHeight:1.25,textShadow:'0 2px 18px rgba(0,0,0,0.35)',whiteSpace:'pre-wrap'}}>{item.text}</div>
+        ):item.kind==='video'?(
+          <video key={item.id} ref={videoRef} src={item.media_url} autoPlay playsInline onTimeUpdate={e=>{const v=e.currentTarget;if(v.duration)setProgress(v.currentTime/v.duration);}} onEnded={next} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+        ):(
+          <img key={item.id} src={item.media_url} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+        )}
+        {item.kind!=='text'&&item.text&&<div style={{position:'absolute',left:16,right:16,bottom:'calc(110px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:15,color:'#fff',fontWeight:600,textShadow:'0 2px 12px rgba(0,0,0,0.8)'}}>{item.text}</div>}
+      </div>
+      {/* tap zones */}
+      <div style={{position:'absolute',inset:'90px 0 140px 0',display:'flex'}} onPointerDown={()=>setPaused(true)} onPointerUp={()=>setPaused(false)} onPointerLeave={()=>setPaused(false)}>
+        <div style={{flex:1}} onClick={prev}/><div style={{flex:2}} onClick={next}/>
+      </div>
+      {/* top: progress + who */}
+      <div style={{position:'relative',padding:'max(10px, env(safe-area-inset-top)) 12px 0',background:'linear-gradient(to bottom, rgba(0,0,0,0.55), transparent)'}}>
+        <div style={{display:'flex',gap:4}}>
+          {person.items.map((it,i)=>(
+            <div key={it.id} style={{flex:1,height:2.5,borderRadius:2,background:'rgba(255,255,255,0.3)',overflow:'hidden'}}>
+              <div style={{height:'100%',background:'#fff',width:i<si?'100%':i===si?`${progress*100}%`:'0%'}}/>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginTop:12}}>
+          <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',background:`${accent}33`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:700,color:accent,flexShrink:0}}>{person.avatar_url?<img src={person.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(person.display_name||person.username||'U')[0].toUpperCase()}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:700,color:'#fff'}}>{person.isSelf?'Your status':(person.display_name||person.username)}</div>
+            <div style={{fontSize:11.5,color:'rgba(255,255,255,0.7)'}}>{statusAgo(item.created_at)}</div>
+          </div>
+          {person.isSelf&&<button onClick={del} aria-label="Delete" style={{width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.35)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="trash" size={15} color="#fff"/></button>}
+          <button onClick={onClose} aria-label="Close" style={{width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.35)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={15} color="#fff"/></button>
+        </div>
+      </div>
+      <div style={{flex:1}}/>
+      {/* bottom */}
+      <div style={{position:'relative',padding:'0 14px calc(16px + env(safe-area-inset-bottom))',background:'linear-gradient(to top, rgba(0,0,0,0.6), transparent)'}}>
+        {sent&&<div style={{textAlign:'center',fontSize:12.5,fontWeight:700,color:'#fff',marginBottom:10}}>{sent}</div>}
+        {person.isSelf?(
+          <button onClick={loadViewers} style={{display:'flex',alignItems:'center',gap:8,margin:'0 auto',background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'none',borderRadius:20,height:38,padding:'0 16px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#fff'}}>
+            <SvgIcon name="eye" size={15} color="#fff"/>Seen by {item.views||0}
+          </button>
+        ):(
+          <>
+            <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:12}}>
+              {['❤️','😂','😮','🔥','👏','😢'].map(e=>(<button key={e} onClick={()=>send(e,true)} style={{width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'none',cursor:'pointer',fontSize:21,lineHeight:1}}>{e}</button>))}
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <input value={reply} onChange={e=>setReply(e.target.value)} onFocus={()=>setPaused(true)} onBlur={()=>setPaused(false)} onKeyDown={e=>e.key==='Enter'&&send(reply)} placeholder={`Reply to ${(person.display_name||person.username||'').split(' ')[0]}…`} style={{flex:1,minWidth:0,background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:24,padding:'12px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
+              <button onClick={()=>send(reply)} aria-label="Send" style={{width:46,height:46,borderRadius:'50%',background:accent,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><SvgIcon name="send" size={16} color="#07070F"/></button>
+            </div>
+          </>
+        )}
+      </div>
+      {viewers&&(
+        <div onClick={()=>{setViewers(null);setPaused(false);}} style={{position:'absolute',inset:0,zIndex:2,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end'}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'60vh',overflowY:'auto',background:ambient(accent),borderRadius:'20px 20px 0 0',padding:'16px 20px calc(18px + env(safe-area-inset-bottom))'}}>
+            <div style={{fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',fontWeight:700,color:accent,marginBottom:10}}>Seen by {viewers.length}</div>
+            {viewers.length===0?<div style={{fontSize:12.5,color:T.text2}}>No views yet.</div>:viewers.map(v=>(
+              <div key={v.user_id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderTop:`1px solid ${T.hairline}`}}>
+                <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',background:`${accent}33`,flexShrink:0}}>{v.avatar_url&&<img src={v.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
+                <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:700,color:'#fff'}}>{v.display_name||v.username}</div><div style={{fontSize:11.5,color:T.text2}}>{statusAgo(v.viewed_at)}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Share a film: send to friends in-app (DM) or share a link anywhere ──
 export function ShareSheet({movie,accent,onClose}){
   const{isSignedIn}=useUser();
@@ -6098,7 +6317,7 @@ function ChatWidget({ peer, onClose, accent }) {
                     </div>
                   );
                 }
-                const isSticker = m.msg_type === 'sticker' || (m.msg_type !== 'title' && m.text && [...m.text].length <= 3 && !/[a-zA-Z0-9]/.test(m.text || ''));
+                const isSticker = m.msg_type === 'sticker' || (m.msg_type !== 'title' && m.msg_type !== 'status_reply' && m.text && [...m.text].length <= 3 && !/[a-zA-Z0-9]/.test(m.text || ''));
                 const isVoice = m.msg_type === 'voice' || (!!m.media_url && (m.text === 'Voice note' || m.msg_type === 'voice'));
                 const isGif = m.msg_type === 'gif' || (m.media_url && (m.text === 'GIF' || m.msg_type === 'gif'));
                 const mine = !!m.from_me;
@@ -6159,6 +6378,18 @@ function ChatWidget({ peer, onClose, accent }) {
                       ) : m.msg_type === 'video' && m.media_url ? (
                         <div style={{ borderRadius: 14, overflow: 'hidden', maxWidth: 240, border: '1px solid rgba(255,255,255,0.06)' }}>
                           <video src={m.media_url} controls playsInline style={{ width: '100%', display: 'block', background: '#000' }} />
+                        </div>
+                      ) : m.msg_type === 'status_reply' && m.meta ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', gap: 4, maxWidth: 260 }}>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 6, paddingRight: 10, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.hairline}` }}>
+                            <div style={{ width: 34, height: 48, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: m.meta.kind === 'text' ? statusBg(m.meta.bg || accent) : '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {m.meta.kind === 'image' && m.meta.media_url ? <img src={m.meta.media_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : m.meta.kind === 'video' ? <SvgIcon name="play" size={12} color="#fff" filled /> : <span style={{ fontSize: 8, color: '#fff', fontWeight: 700, padding: 2, textAlign: 'center', lineHeight: 1.1, overflow: 'hidden' }}>{(m.meta.text || '').slice(0, 24)}</span>}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.3 }}>{mine ? 'You replied to their status' : 'Replied to your status'}{m.meta.text && m.meta.kind !== 'text' ? <div style={{ color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{m.meta.text}</div> : null}</div>
+                          </div>
+                          {m.meta.reaction ? <div style={{ fontSize: 38, lineHeight: 1.1 }}>{m.text}</div> : (
+                            <div style={{ background: mine ? accent : themBubble, color: mine ? '#0A0A0F' : 'rgba(255,255,255,0.92)', borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6, padding: '10px 14px', fontSize: 14, lineHeight: 1.45 }}>{m.text}</div>
+                          )}
                         </div>
                       ) : m.msg_type === 'title' && m.meta ? (
                         <button
@@ -6689,6 +6920,13 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const [followListType, setFollowListType] = useState(null);
   const [savedHere, setSavedHere] = useState(() => new Set());
   const [heroPosters, setHeroPosters] = useState([]);
+  const [statusPeople, setStatusPeople] = useState([]);
+  const [composeStatus, setComposeStatus] = useState(false);
+  const [viewStatusAt, setViewStatusAt] = useState(null);
+  const loadStatuses = useCallback(() => {
+    fetch('/api/status', { cache: 'no-store' }).then(r => r.json()).then(d => setStatusPeople(d.people || [])).catch(() => {});
+  }, []);
+  useEffect(() => { if (isSignedIn) loadStatuses(); }, [isSignedIn, loadStatuses]);
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   // A fresh wall of posters every visit
@@ -7200,6 +7438,8 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background:ambient(accent), display: 'flex', flexDirection: 'column', animation: 'playerSlideUp 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes revealIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}div::-webkit-scrollbar{display:none}input::placeholder{color:rgba(255,255,255,0.35)}`}</style>
       {toast && <Toast message={toast} accent={accent} />}
+      {composeStatus && <StatusComposer accent={accent} onClose={() => setComposeStatus(false)} onPosted={() => { loadStatuses(); showToast('Status posted · visible for 24 hours'); }} />}
+      {viewStatusAt != null && statusPeople[viewStatusAt] && <StatusViewer people={statusPeople} startIndex={viewStatusAt} accent={accent} onClose={() => { setViewStatusAt(null); loadStatuses(); }} onChanged={() => {}} />}
       {showNotifs && <NotificationsPanel onClose={() => setShowNotifs(false)} accent={accent} notifications={notifications} loading={loadingNotifs} onMarkRead={handleMarkRead} onFollowBack={handleFollowBack} onOpenChat={(p) => setChatPeer(p)} />}
       {chatPeer && <ChatWidget peer={chatPeer} onClose={() => { const back = chatPeer?.fromMessages; setChatPeer(null); if (back) setShowMessages(true); }} accent={accent} />}
       {showMessages && (
@@ -7267,21 +7507,47 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
             {tab === 'feed' && (
               loadingFeed ? <Spinner /> : (
                 <>
-                  {/* Your circle */}
-                  {friends.length > 0 && (
-                    <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -20px', padding: '18px 20px 4px' }}>
-                      {[...friends].sort((a, b) => (activeRecently.has(b.user_id) ? 1 : 0) - (activeRecently.has(a.user_id) ? 1 : 0)).map(f => (
-                        <button key={f.user_id} onClick={() => setPersonFilter(cur => cur === f.user_id ? null : f.user_id)} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: personFilter && personFilter !== f.user_id ? 0.4 : 1, transition: 'opacity .2s' }}>
-                          <Avatar u={f} size={58} ring={activeRecently.has(f.user_id) || personFilter === f.user_id} />
-                          <span style={{ fontSize: 11, fontWeight: personFilter === f.user_id ? 700 : 400, color: personFilter === f.user_id ? accent : activeRecently.has(f.user_id) ? '#fff' : 'rgba(255,255,255,0.6)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.display_name || f.username}</span>
+                  {/* Status + your circle */}
+                  {(() => {
+                    const mine = statusPeople.find(p => p.isSelf);
+                    const others = statusPeople.filter(p => !p.isSelf);
+                    const withStatus = new Set(others.map(p => p.user_id));
+                    const rest = [...friends].filter(f => !withStatus.has(f.user_id)).sort((a, b) => (activeRecently.has(b.user_id) ? 1 : 0) - (activeRecently.has(a.user_id) ? 1 : 0));
+                    const ringStyle = (unseen) => ({ padding: 2.5, borderRadius: '50%', background: unseen ? `conic-gradient(${accent}, #FF6B8A, ${accent})` : 'rgba(255,255,255,0.28)' });
+                    const label = { fontSize: 11, width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
+                    return (
+                      <div style={{ display: 'flex', gap: 14, overflowX: 'auto', scrollbarWidth: 'none', margin: '0 -20px', padding: '18px 20px 4px' }}>
+                        {/* You */}
+                        <div style={{ flexShrink: 0, width: 64, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, position: 'relative' }}>
+                          <button onClick={() => mine ? setViewStatusAt(statusPeople.indexOf(mine)) : setComposeStatus(true)} aria-label={mine ? 'View your status' : 'Add a status'} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                            <div style={mine ? ringStyle(false) : { padding: 2.5 }}>
+                              <div style={{ border: `2px solid ${T.bg}`, borderRadius: '50%' }}><Avatar u={{ avatar_url: user?.imageUrl, username: user?.username || user?.firstName }} size={54} /></div>
+                            </div>
+                          </button>
+                          <button onClick={() => setComposeStatus(true)} aria-label="Add a status" style={{ position: 'absolute', right: 2, top: 42, width: 22, height: 22, borderRadius: '50%', background: accent, border: `2px solid ${T.bg}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}><SvgIcon name="plus" size={12} color="#07070F" /></button>
+                          <span style={{ ...label, color: '#fff', fontWeight: 600 }}>{mine ? 'Your status' : 'Add status'}</span>
+                        </div>
+                        {/* Friends with a status */}
+                        {others.map(p => (
+                          <button key={p.user_id} onClick={() => setViewStatusAt(statusPeople.indexOf(p))} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                            <div style={ringStyle(!p.allSeen)}><div style={{ border: `2px solid ${T.bg}`, borderRadius: '50%' }}><Avatar u={p} size={54} /></div></div>
+                            <span style={{ ...label, color: p.allSeen ? 'rgba(255,255,255,0.6)' : '#fff', fontWeight: p.allSeen ? 400 : 700 }}>{(p.display_name || p.username || '').split(' ')[0]}</span>
+                          </button>
+                        ))}
+                        {/* Everyone else you follow (tap to filter the feed) */}
+                        {rest.map(f => (
+                          <button key={f.user_id} onClick={() => setPersonFilter(cur => cur === f.user_id ? null : f.user_id)} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: personFilter && personFilter !== f.user_id ? 0.4 : 1, transition: 'opacity .2s' }}>
+                            <div style={{ padding: 2.5 }}><div style={{ border: `2px solid ${personFilter === f.user_id ? accent : 'transparent'}`, borderRadius: '50%' }}><Avatar u={f} size={54} /></div></div>
+                            <span style={{ ...label, fontWeight: personFilter === f.user_id ? 700 : 400, color: personFilter === f.user_id ? accent : 'rgba(255,255,255,0.6)' }}>{(f.display_name || f.username || '').split(' ')[0]}</span>
+                          </button>
+                        ))}
+                        <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 59, height: 59, borderRadius: '50%', border: '1.5px dashed rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="userPlus" size={18} color="#fff" /></div>
+                          <span style={{ ...label, color: 'rgba(255,255,255,0.6)' }}>Find</span>
                         </button>
-                      ))}
-                      <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 62, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 58, height: 58, borderRadius: '50%', border: '1.5px dashed rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="plus" size={20} color="#fff" /></div>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Add</span>
-                      </button>
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Buzzing in your circle */}
                   {buzzing.length > 0 && activityFilter === 'all' && (

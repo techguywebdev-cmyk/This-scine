@@ -140,7 +140,7 @@ export async function GET(req) {
     }
 
     let res = await fetch(
-      `${db('messages')}?or=(from_user_id.eq.${userId},to_user_id.eq.${userId})&order=created_at.desc&limit=100&select=id,from_user_id,to_user_id,text,created_at,read,msg_type,media_url`,
+      `${db('messages')}?or=(from_user_id.eq.${userId},to_user_id.eq.${userId})&order=created_at.desc&limit=100&select=id,from_user_id,to_user_id,text,created_at,read,msg_type,media_url,meta`,
       { headers }
     );
     if (!res.ok) {
@@ -172,6 +172,7 @@ export async function GET(req) {
       else if (m.msg_type === 'sticker') preview = m.text || 'Sticker';
       else if (m.msg_type === 'gif') preview = 'GIF';
       else if (m.msg_type === 'title') preview = `🎬 ${m.text || 'Shared a film'}`;
+      else if (m.msg_type === 'status_reply') preview = m.meta?.reaction ? `Reacted ${m.text} to a status` : `Replied to a status: ${m.text || ''}`;
       // Guard: never surface raw signal JSON
       if (typeof preview === 'string' && preview.trim().startsWith('{') && preview.includes('"kind"')) {
         preview = 'Call update';
@@ -256,6 +257,14 @@ export async function POST(request) {
       msg_type: msgType,
       media_url: mediaUrl,
     };
+    // A reply/reaction to a status carries a small snapshot of the status it answers
+    if (msgType === 'status_reply' && body.meta && typeof body.meta === 'object') {
+      const m = body.meta;
+      payload.meta = {
+        status_id: m.status_id || null, kind: ['text', 'image', 'video'].includes(m.kind) ? m.kind : 'text',
+        text: m.text ? String(m.text).slice(0, 160) : null, media_url: m.media_url || null, bg: m.bg || null, reaction: !!m.reaction,
+      };
+    }
     // A shared film/show travels as structured data so the chat can render a tappable card
     if (msgType === 'title' && body.meta && typeof body.meta === 'object') {
       const m = body.meta;
@@ -335,7 +344,7 @@ export async function POST(request) {
           if (!notify) return;
           const me = await clerkClient.users.getUser(userId).catch(() => null);
           const fromName = me?.username || me?.firstName || 'Someone';
-          const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'title' ? `Shared “${body.meta?.title || 'a film'}” with you` : msgType === 'sticker' ? text : text.slice(0, 120);
+          const bodyPreview = msgType === 'voice' ? 'Voice note' : msgType === 'status_reply' ? (body.meta?.reaction ? `Reacted ${text} to your status` : `Replied to your status: ${text.slice(0, 100)}`) : msgType === 'title' ? `Shared “${body.meta?.title || 'a film'}” with you` : msgType === 'sticker' ? text : text.slice(0, 120);
           if (isFirst) {
             const u = await clerkClient.users.getUser(toUserId).catch(() => null);
             const recipientEmail = u?.emailAddresses?.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress || u?.emailAddresses?.[0]?.emailAddress || null;
