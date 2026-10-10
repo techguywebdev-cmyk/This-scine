@@ -2201,14 +2201,14 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 <Eyebrow color={accent} style={{marginBottom:12}}>About you</Eyebrow>
                 <label style={{display:'block'}}>
                   <span style={{display:'block',fontSize:11.5,fontWeight:600,color:T.text2,marginBottom:6}}>Display name</span>
-                  <input value={nicknameInput} onChange={e=>setNicknameInput(e.target.value)} maxLength={40} placeholder={user?.firstName||user?.username||'Your name'} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.04)',border:`1px solid ${T.hairlineStrong}`,borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:15,fontWeight:600,outline:'none',fontFamily:'inherit',transition:'border-color .2s, background .2s'}}/>
+                  <input value={nicknameInput} onChange={e=>setNicknameInput(e.target.value)} maxLength={40} placeholder={user?.firstName||user?.username||'Your name'} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'1px solid rgba(255,255,255,0.14)',borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:15,fontWeight:600,outline:'none',fontFamily:'inherit',transition:'border-color .2s, background .2s'}}/>
                   <span style={{display:'block',fontSize:11,color:T.text3,marginTop:6}}>Shown on your profile · @{user?.username||'handle'} stays the same</span>
                 </label>
                 <label style={{display:'block',marginTop:16}}>
                   <span style={{display:'flex',justifyContent:'space-between',fontSize:11.5,fontWeight:600,color:T.text2,marginBottom:6}}>Bio<span style={{fontWeight:500,color:T.text3}}>{bioInput!==bio?`${bioInput.length}/160`:''}</span></span>
-                  <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film…" rows={3} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,0.04)',border:`1px solid ${T.hairlineStrong}`,borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5,transition:'border-color .2s, background .2s'}}/>
+                  <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film…" rows={3} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'1px solid rgba(255,255,255,0.14)',borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5,transition:'border-color .2s, background .2s'}}/>
                 </label>
-                <style>{`.cs-field:focus{border-color:${accent}88 !important;background:rgba(255,255,255,0.06) !important}`}</style>
+                <style>{`.cs-field:focus{border-color:${accent}99 !important}.cs-field::placeholder{color:rgba(255,255,255,0.3)}`}</style>
                 {aboutDirty&&(
                   <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:12,animation:'fadeIn .2s ease'}}>
                     <button onClick={cancelAbout} disabled={savingAbout} style={{background:'none',border:'none',height:36,padding:'0 12px',cursor:'pointer',fontSize:12.5,fontWeight:700,color:T.text2,fontFamily:'inherit'}}>Cancel</button>
