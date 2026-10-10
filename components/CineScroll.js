@@ -1053,6 +1053,7 @@ const uploadWithProgress=(form,onP)=>new Promise((res,rej)=>{
   x.send(form);
 });
 
+const UploadIcon=({color='#fff'})=>(<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>);
 const RotateIcon=({color='#fff'})=>(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>);
 const AlignIcon=({align,color='#fff'})=>(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round"><path d="M4 6h16"/>{align==='left'?<><path d="M4 12h10"/><path d="M4 18h13"/></>:align==='right'?<><path d="M10 12h10"/><path d="M7 18h13"/></>:<><path d="M7 12h10"/><path d="M5.5 18h13"/></>}</svg>);
 
@@ -1258,8 +1259,9 @@ export function StatusComposer({accent,onClose,onPosted}){
 
   const mediaTools=editable?[['crop','Crop'],['filter','Filters'],['adjust','Adjust'],['text','Text']]:[...(media?.isVideo?[['crop','Frame']]:[]),['filter','Filters'],['adjust','Adjust'],['text','Text']];
   const glassBtn={width:38,height:38,borderRadius:'50%',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'};
-  const tabBtn=(on)=>({flex:1,border:'none',background:'transparent',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:on?'#fff':'rgba(255,255,255,0.5)',padding:'8px 0',borderBottom:`2px solid ${on?ac:'transparent'}`});
-  const primaryBtn={display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:ac,border:'none',borderRadius:22,height:44,padding:'0 20px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#07070F',boxShadow:`0 8px 24px ${ac}40`};
+  const tabBtn=(on)=>({flex:1,border:'none',background:'transparent',cursor:'pointer',fontFamily:'inherit',fontSize:12.5,fontWeight:on?800:600,color:on?'#fff':'rgba(255,255,255,0.45)',padding:'6px 0',transition:'color .2s'});
+  // glass pill — same treatment as the app's other floating buttons
+  const primaryBtn={display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'rgba(0,0,0,0.35)',backdropFilter:'blur(14px)',WebkitBackdropFilter:'blur(14px)',border:'1px solid rgba(255,255,255,0.16)',borderRadius:22,height:44,padding:'0 20px',cursor:'pointer',fontFamily:'inherit',fontSize:13,fontWeight:700,color:'#fff'};
   const textCss=statusTextCss(ts,{len:text.length});
   const pct=Math.round((progress||0)*100);
 
@@ -1289,19 +1291,19 @@ export function StatusComposer({accent,onClose,onPosted}){
                 <span style={{fontVariantNumeric:'tabular-nums',opacity:0.8}}>{pct}%</span>
               </div>
               <div style={{height:4,borderRadius:2,background:'rgba(255,255,255,0.18)',overflow:'hidden'}}>
-                <div style={{height:'100%',width:`${pct}%`,background:ac,borderRadius:2,transition:'width .25s ease'}}/>
+                <div style={{height:'100%',width:`${pct}%`,background:'#fff',borderRadius:2,transition:'width .25s ease'}}/>
               </div>
             </div>
           ):(
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>{setReview(null);setErr(null);}} style={{...primaryBtn,flex:1,background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',color:'#fff',boxShadow:'none'}}>Edit</button>
-              <button onClick={share} style={{...primaryBtn,flex:2}}>Share status<SvgIcon name="send" size={14} color="#07070F"/></button>
+              <button onClick={()=>{setReview(null);setErr(null);}} style={{...primaryBtn,flex:1,color:'rgba(255,255,255,0.8)'}}>Edit</button>
+              <button onClick={share} style={{...primaryBtn,flex:2}}>Share status<SvgIcon name="send" size={14} color="#fff"/></button>
             </div>
           )}
         </div>
         {done&&(
           <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.35)',pointerEvents:'none'}}>
-            <div style={{width:76,height:76,borderRadius:'50%',background:ac,display:'flex',alignItems:'center',justifyContent:'center',animation:'popIn .45s ease',boxShadow:`0 12px 40px ${ac}66`}}><SvgIcon name="check" size={32} color="#07070F"/></div>
+            <div style={{width:76,height:76,borderRadius:'50%',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(14px)',WebkitBackdropFilter:'blur(14px)',border:'1px solid rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',animation:'popIn .45s ease'}}><SvgIcon name="check" size={32} color="#fff"/></div>
           </div>
         )}
       </div>
@@ -1317,7 +1319,7 @@ export function StatusComposer({accent,onClose,onPosted}){
         <div style={{flex:1}}/>
         <div style={{display:'flex',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',borderRadius:20,padding:3}}>
           {[['text','Text'],['media','Photo / Video']].map(([m,l])=>(
-            <button key={m} onClick={()=>{if(m==='media'&&!file){fileRef.current?.click();return;}setMode(m);}} style={{border:'none',borderRadius:17,padding:'7px 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,background:mode===m?'#fff':'transparent',color:mode===m?'#07070F':'rgba(255,255,255,0.75)'}}>{l}</button>
+            <button key={m} onClick={()=>setMode(m)} style={{border:'none',borderRadius:17,padding:'7px 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,background:mode===m?'#fff':'transparent',color:mode===m?'#07070F':'rgba(255,255,255,0.75)'}}>{l}</button>
           ))}
         </div>
         <div style={{flex:1}}/>
@@ -1346,8 +1348,10 @@ export function StatusComposer({accent,onClose,onPosted}){
             )}
           </div>
         ):(
-          <button onClick={()=>fileRef.current?.click()} style={{background:'rgba(255,255,255,0.06)',border:`1.5px dashed ${ac}77`,borderRadius:16,padding:'34px 26px',cursor:'pointer',fontFamily:'inherit',color:'#fff',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
-            <SvgIcon name="image" size={26} color={ac}/><span style={{fontSize:13,fontWeight:700}}>Choose a photo or video</span>
+          <button onClick={()=>fileRef.current?.click()} aria-label="Upload a photo or video" style={{background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',color:'#fff',display:'flex',flexDirection:'column',alignItems:'center',gap:14}}>
+            <div style={{width:84,height:84,borderRadius:'50%',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(14px)',WebkitBackdropFilter:'blur(14px)',border:'1px solid rgba(255,255,255,0.18)',display:'flex',alignItems:'center',justifyContent:'center'}}><UploadIcon/></div>
+            <span style={{fontSize:14,fontWeight:700}}>Upload</span>
+            <span style={{fontSize:11.5,color:'rgba(255,255,255,0.55)',marginTop:-8}}>Photo or video · videos up to 4MB</span>
           </button>
         )}
       </div>
@@ -1357,7 +1361,7 @@ export function StatusComposer({accent,onClose,onPosted}){
         {err&&<div style={{fontSize:12.5,color:'#FF8FA3',textAlign:'center'}}>{err}</div>}
         {mode==='text'?(
           <>
-            <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.12)'}}>
+            <div style={{display:'flex'}}>
               {[['bg','Background'],['font','Font & colour']].map(([k,l])=>(<button key={k} onClick={()=>setTextTool(k)} style={tabBtn(textTool===k)}>{l}</button>))}
             </div>
             {textTool==='bg'?(
@@ -1368,7 +1372,7 @@ export function StatusComposer({accent,onClose,onPosted}){
           </>
         ):media?(
           <>
-            <div style={{display:'flex',borderBottom:'1px solid rgba(255,255,255,0.12)'}}>
+            <div style={{display:'flex'}}>
               {mediaTools.map(([k,l])=>(<button key={k} onClick={()=>setTool(k)} style={tabBtn(tool===k)}>{l}</button>))}
             </div>
             <div style={{minHeight:142,display:'flex',flexDirection:'column',gap:10,justifyContent:'center'}}>
@@ -1412,9 +1416,9 @@ export function StatusComposer({accent,onClose,onPosted}){
             </div>
           </>
         ):null}
-        <button onClick={prepare} disabled={preparing} style={{...primaryBtn,alignSelf:'flex-end',opacity:preparing?0.7:1}}>
-          {preparing?'Preparing…':'Next'}<span style={{display:'flex',transform:'rotate(-90deg)'}}><SvgIcon name="chevron" size={13} color="#07070F"/></span>
-        </button>
+        {(mode==='text'||media)&&<button onClick={prepare} disabled={preparing} style={{...primaryBtn,alignSelf:'flex-end',opacity:preparing?0.7:1}}>
+          {preparing?'Preparing…':'Next'}<span style={{display:'flex',transform:'rotate(-90deg)'}}><SvgIcon name="chevron" size={13} color="#fff"/></span>
+        </button>}
       </div>
     </div>
   );
@@ -7610,27 +7614,24 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
           <span style={{ fontSize: 11.5, color: T.text2 }}>{sec.people.length} {sec.people.length === 1 ? 'person' : 'people'} · {titles} {sec.type === 'reviewed' ? (titles === 1 ? 'review' : 'reviews') : (titles === 1 ? 'title' : 'titles')}</span>
         </div>
 
-        {/* Faces */}
-        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', scrollbarWidth: 'none', margin: '12px -20px 0', padding: '2px 20px 2px' }}>
-          {sec.people.map(p => {
+        {/* Faces — overlapping stack, tap one to reveal */}
+        <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', scrollbarWidth: 'none', margin: '14px -20px 0', padding: '6px 20px 6px 23px' }}>
+          {sec.people.map((p, i) => {
             const on = openId === p.user_id;
             const nm = p.user.display_name || p.user.username || 'User';
             return (
-              <button key={p.user_id} onClick={() => toggle(p.user_id)} aria-expanded={on} aria-label={`${nm} ${meta.verb} ${p.items.length}`}
-                style={{ flexShrink: 0, width: 60, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: openId && !on ? 0.45 : 1, transition: 'opacity .2s' }}>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ borderRadius: '50%', boxShadow: on ? `0 0 0 2px ${T.bg}, 0 0 0 4px ${accent}` : 'none', transition: 'box-shadow .2s' }}>
-                    <Avatar u={p.user} size={52} />
-                  </div>
-                  <span style={{ position: 'absolute', right: -4, bottom: -2, minWidth: 18, height: 18, padding: '0 5px', boxSizing: 'border-box', borderRadius: 9, background: on ? accent : 'rgba(20,20,28,0.95)', border: `1.5px solid ${on ? accent : 'rgba(255,255,255,0.18)'}`, color: on ? '#06060B' : '#fff', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{p.items.length}</span>
+              <button key={p.user_id} onClick={() => toggle(p.user_id)} aria-expanded={on} aria-label={`${nm} ${meta.verb} ${p.items.length}`} title={nm}
+                style={{ flexShrink: 0, marginLeft: i ? -13 : 0, position: 'relative', zIndex: on ? sec.people.length + 1 : sec.people.length - i, background: 'none', border: 'none', padding: 0, cursor: 'pointer', borderRadius: '50%', transform: on ? 'translateY(-3px) scale(1.06)' : 'none', opacity: openId && !on ? 0.5 : 1, transition: 'transform .2s, opacity .2s' }}>
+                <div style={{ borderRadius: '50%', boxShadow: on ? `0 0 0 3px #0B0B12, 0 0 0 5px ${accent}` : '0 0 0 3px #0B0B12' }}>
+                  <Avatar u={p.user} size={50} />
                 </div>
-                <span style={{ fontSize: 11, fontWeight: on ? 700 : 500, color: on ? '#fff' : 'rgba(255,255,255,0.65)', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nm.split(' ')[0]}</span>
+                {on && <span style={{ position: 'absolute', right: -3, bottom: -3, minWidth: 18, height: 18, padding: '0 5px', boxSizing: 'border-box', borderRadius: 9, background: accent, border: '2px solid #0B0B12', color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{p.items.length}</span>}
               </button>
             );
           })}
         </div>
 
-        {!open && <div style={{ fontSize: 11.5, color: T.text3, marginTop: 10 }}>Tap someone to see what they {meta.verb}</div>}
+        {!open && <div style={{ fontSize: 11.5, color: T.text3, marginTop: 8 }}>{(() => { const n = sec.people.map(p => (p.user.display_name || p.user.username || 'User').split(' ')[0]); return n.length === 1 ? n[0] : n.length === 2 ? `${n[0]} and ${n[1]}` : `${n[0]}, ${n[1]} and ${n.length - 2} more`; })()} · tap a face to see</div>}
 
         {/* Revealed */}
         {open && (() => {
@@ -7849,8 +7850,6 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                   {(() => {
                     const mine = statusPeople.find(p => p.isSelf);
                     const others = statusPeople.filter(p => !p.isSelf);
-                    const withStatus = new Set(others.map(p => p.user_id));
-                    const rest = [...friends].filter(f => !withStatus.has(f.user_id)).sort((a, b) => (activeRecently.has(b.user_id) ? 1 : 0) - (activeRecently.has(a.user_id) ? 1 : 0));
                     const ringStyle = (unseen) => ({ padding: 2.5, borderRadius: '50%', background: unseen ? `conic-gradient(${accent}, #FF6B8A, ${accent})` : 'rgba(255,255,255,0.28)' });
                     const label = { fontSize: 11, width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
                     return (
@@ -7870,13 +7869,6 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                           <button key={p.user_id} onClick={() => setViewStatusAt(statusPeople.indexOf(p))} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                             <div style={ringStyle(!p.allSeen)}><div style={{ border: `2px solid ${T.bg}`, borderRadius: '50%' }}><Avatar u={p} size={54} /></div></div>
                             <span style={{ ...label, color: p.allSeen ? 'rgba(255,255,255,0.6)' : '#fff', fontWeight: p.allSeen ? 400 : 700 }}>{(p.display_name || p.username || '').split(' ')[0]}</span>
-                          </button>
-                        ))}
-                        {/* Everyone else you follow (tap to filter the feed) */}
-                        {rest.map(f => (
-                          <button key={f.user_id} onClick={() => setPersonFilter(cur => cur === f.user_id ? null : f.user_id)} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: personFilter && personFilter !== f.user_id ? 0.4 : 1, transition: 'opacity .2s' }}>
-                            <div style={{ padding: 2.5 }}><div style={{ border: `2px solid ${personFilter === f.user_id ? accent : 'transparent'}`, borderRadius: '50%' }}><Avatar u={f} size={54} /></div></div>
-                            <span style={{ ...label, fontWeight: personFilter === f.user_id ? 700 : 400, color: personFilter === f.user_id ? accent : 'rgba(255,255,255,0.6)' }}>{(f.display_name || f.username || '').split(' ')[0]}</span>
                           </button>
                         ))}
                         <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
