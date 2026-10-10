@@ -7,8 +7,9 @@ const serif = "var(--font-display), 'Inter Tight', system-ui, sans-serif";
 
 export function LegalPage({ eyebrow, title, intro, sections, other }) {
   return (
-    <main style={{ minHeight: '100vh', background: bg, backgroundAttachment: 'fixed', color: '#fff', fontFamily: "var(--font-sans), Inter, system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '28px 20px 80px' }}>
+    <main style={{ position: 'fixed', inset: 0, background: bg, color: '#fff', fontFamily: "var(--font-sans), Inter, system-ui, sans-serif" }}>
+      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: 'max(28px, env(safe-area-inset-top)) 20px calc(80px + env(safe-area-inset-bottom))' }}>
         <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 18, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>← {APP_NAME}</a>
         <div style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: A, marginTop: 36 }}>{eyebrow}</div>
         <h1 style={{ fontFamily: serif, fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '10px 0 0' }}>{title}</h1>
@@ -24,6 +25,7 @@ export function LegalPage({ eyebrow, title, intro, sections, other }) {
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 36, paddingTop: 20, fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>
           See also our <a href={other.href} style={{ color: A }}>{other.label}</a>.
         </div>
+      </div>
       </div>
     </main>
   );
