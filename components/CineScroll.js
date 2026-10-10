@@ -3512,15 +3512,16 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                 })}
               </div>
 
-              {/* Genre — glass chips */}
+              {/* Genre — plain text, 2-column grid */}
               <H>Genre</H>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20 }}>
                 {[{ id: '', label: 'Any genre' }, ...GENRE_OPTIONS.filter(g => g.id)].map(g => {
                   const on = (activeGenre || '') === g.id;
                   return (
                     <button key={g.id || 'any'} onClick={() => chooseGenre(g.id)} aria-pressed={on}
-                      style={{ height: 34, padding: '0 14px', borderRadius: 17, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: on ? 700 : 600, color: on ? accent : 'rgba(255,255,255,0.8)', background: on ? `${accent}14` : 'rgba(0,0,0,0.25)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: `1px solid ${on ? accent : 'rgba(255,255,255,0.12)'}`, transition: 'all .2s' }}>
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'none', border: 'none', padding: '11px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.75)', textAlign: 'left', transition: 'color .2s' }}>
                       {g.label}
+                      {on && <SvgIcon name="check" size={14} color={accent} />}
                     </button>
                   );
                 })}
@@ -3529,7 +3530,7 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
               {/* Platforms — tinted tiles */}
               <H>Platforms</H>
               <div style={{ fontSize: 11.5, color: T.text2, marginTop: -4, marginBottom: 10 }}>Only show what you can stream</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {PLATFORMS.map(p => {
                   const on = activeProvider === p.name;
                   return (
