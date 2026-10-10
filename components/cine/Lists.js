@@ -162,6 +162,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
             </div>
             {[
               ['play','Watch trailer',()=>onWatchTrailer(asMovie(menuFor))],
+              ['people','Watch with a friend',()=>window.dispatchEvent(new CustomEvent('cine:watch-with',{detail:{movie:asMovie(menuFor)}}))],
               ['folder','Add to folder',()=>setFilingMovie(asMovie(menuFor))],
               ['check',menuFor.watched?'Mark as not watched':'Mark as watched',()=>onMarkWatched&&onMarkWatched(asMovie(menuFor))],
             ].map(([ic,l,fn])=>(

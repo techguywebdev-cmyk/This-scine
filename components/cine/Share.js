@@ -96,7 +96,10 @@ export function ShareSheet({movie,accent,onClose}){
             )}
           </>
         ):<div style={{padding:'16px 20px 0',fontSize:12.5,color:T.text2}}>Sign in to send films to friends.</div>}
-        <div style={{display:'flex',gap:10,padding:'16px 20px calc(18px + env(safe-area-inset-bottom))'}}>
+        <div style={{padding:'16px 20px 0'}}>
+          <button onClick={()=>{onClose();setTimeout(()=>window.dispatchEvent(new CustomEvent('cine:watch-with',{detail:{movie:movie}})),120);}} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,height:46,borderRadius:23,border:`1px solid ${accent}`,background:`${accent}22`,color:'#fff',fontFamily:'inherit',fontSize:13.5,fontWeight:800,cursor:'pointer'}}><span style={{fontSize:16}}>🍿</span>Start a watch party instead</button>
+        </div>
+        <div style={{display:'flex',gap:10,padding:'12px 20px calc(18px + env(safe-area-inset-bottom))'}}>
           <button onClick={external} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:8,height:44,borderRadius:22,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer'}}><SvgIcon name="share" size={15} color="#fff"/>Share via…</button>
           <button onClick={copy} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:8,height:44,borderRadius:22,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer'}}><SvgIcon name="list" size={15} color="#fff"/>Copy link</button>
         </div>

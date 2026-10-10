@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { SUPABASE_URL, SUPABASE_KEY, clean } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,34 @@ const COLS = 'movie_id,title,year,rating,poster,backdrop,genre,overview,accent,i
 export async function GET(req) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const peer = clean(new URL(req.url).searchParams.get('with'));
+  const sp = new URL(req.url).searchParams;
+  // GET /api/together?movie=<id> → people you follow, best match first ("also saved it" respects private watchlists)
+  const movieId = clean(sp.get('movie'));
+  if (movieId) {
+    const [fol, back] = await Promise.all([
+      fetch(`${db('follows')}?follower_id=eq.${userId}&select=following_id`, { headers }).then((r) => r.json()).catch(() => []),
+      fetch(`${db('follows')}?following_id=eq.${userId}&select=follower_id`, { headers }).then((r) => r.json()).catch(() => []),
+    ]);
+    const ids = [...new Set((Array.isArray(fol) ? fol : []).map((f) => f.following_id).filter(Boolean))].slice(0, 200);
+    if (!ids.length) return Response.json({ friends: [] });
+    const mutual = new Set((Array.isArray(back) ? back : []).map((f) => f.follower_id));
+    const [saved, settings] = await Promise.all([
+      fetch(`${db('watchlist')}?movie_id=eq.${movieId}&user_id=in.(${ids.join(',')})&select=user_id,watched`, { headers }).then((r) => r.json()).catch(() => []),
+      fetch(`${db('user_settings')}?user_id=in.(${ids.join(',')})&select=user_id,watchlist_public,nickname`, { headers }).then((r) => r.json()).catch(() => []),
+    ]);
+    const priv = new Set(); const nick = {};
+    (Array.isArray(settings) ? settings : []).forEach((r) => { if (r.watchlist_public === false) priv.add(r.user_id); if (r.nickname) nick[r.user_id] = r.nickname; });
+    const savedMap = {};
+    (Array.isArray(saved) ? saved : []).forEach((r) => { if (!priv.has(r.user_id) || mutual.has(r.user_id)) savedMap[r.user_id] = r.watched ? 'watched' : 'saved'; });
+    let users = [];
+    try {
+      const { data } = await clerkClient.users.getUserList({ userId: ids, limit: ids.length });
+      users = (data || []).map((u) => ({ user_id: u.id, username: u.username || u.firstName || 'user', display_name: nick[u.id] || (u.firstName ? `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}` : (u.username || 'Friend')), avatar_url: u.imageUrl || null, alsoSaved: savedMap[u.id] === 'saved', alsoWatched: savedMap[u.id] === 'watched', mutual: mutual.has(u.id) }));
+    } catch {}
+    users.sort((a, b) => (b.alsoSaved - a.alsoSaved) || (b.mutual - a.mutual) || a.display_name.localeCompare(b.display_name));
+    return Response.json({ friends: users }, { headers: { 'Cache-Control': 'no-store' } });
+  }
+  const peer = clean(sp.get('with'));
   if (!peer || peer === userId) return Response.json({ error: 'Pick a friend' }, { status: 400 });
 
   const [settings, mine, theirs, a, b] = await Promise.all([

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
-import { PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 // AUTH GATE
 function AuthGate({onClose,accent}){
@@ -90,6 +90,11 @@ export default function CineScroll(){
     return()=>clearTimeout(t);
   },[isLoaded,isSignedIn]);
 
+  // "Watch with…" picker, opened from any film (player, share, watchlist, folders, friends)
+  const isSignedInRef=useRef(false);isSignedInRef.current=!!isSignedIn;
+  const openSignInRef=useRef(null);openSignInRef.current=openSignIn;
+  const[watchWith,setWatchWith]=useState(null);
+  useEffect(()=>{const fn=(e)=>{if(!e.detail)return;if(!isSignedInRef.current){openSignInRef.current&&openSignInRef.current();return;}setWatchWith(e.detail);};window.addEventListener('cine:watch-with',fn);return()=>window.removeEventListener('cine:watch-with',fn);},[]);
   // Watch party room: from chat cards, the Together sheet, or a push link (?party=<id>)
   const[partyId,setPartyId]=useState(null);
   useEffect(()=>{
@@ -472,6 +477,7 @@ export default function CineScroll(){
       </div>
 
 
+      {watchWith&&<StartPartySheet movie={watchWith.movie} candidates={watchWith.candidates} label={watchWith.label} accent={accent} onClose={()=>setWatchWith(null)}/>}
       {partyId&&isSignedIn&&<PartyRoom partyId={partyId} accent={accent} onClose={()=>setPartyId(null)}/>}
       {showImport&&<ImportSheet accent={accent} onClose={()=>setShowImport(false)} onImported={({matched})=>{if(matched)track('import',{matched});}}/>}
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>

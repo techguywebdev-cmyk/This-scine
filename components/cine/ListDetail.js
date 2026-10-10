@@ -301,6 +301,9 @@ export function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,wat
                 <button onClick={()=>setShowPicker(true)} style={{marginLeft:'auto',marginRight:12,display:'flex',alignItems:'center',gap:5,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#fff'}}><SvgIcon name="plus" size={12} color="#fff"/>Add</button>
               )}
               {movies.length>0&&activeTab==='films'&&(
+                <button onClick={()=>window.dispatchEvent(new CustomEvent('cine:watch-with',{detail:{candidates:movies,label:`From ${list.title||'this folder'}`}}))} aria-label="Pick from this folder and watch with a friend" title="Pick & watch together" style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:20,padding:'7px 13px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#fff',fontFamily:'inherit',flexShrink:0,marginRight:8}}>🍿 Pick</button>
+              )}
+              {movies.length>0&&activeTab==='films'&&(
                 <button onClick={()=>{setPlaylistStartIdx(0);setShowPlaylist(true);}} style={{display:'flex',alignItems:'center',gap:6,background:accentColor,border:'none',borderRadius:20,padding:'8px 16px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit',flexShrink:0}}>
                   <SvgIcon name="play" size={12} color="#07070F" filled/>Play All
                 </button>

@@ -487,6 +487,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       <div style={{padding:'18px 18px 0',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:9}}>
           <h1 style={{flex:1,minWidth:0,fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:'clamp(20px,5vw,27px)',fontWeight:700,color:T.text,margin:0,lineHeight:1.15,letterSpacing:-0.3}}>{movie?.title}</h1>
+          <button onClick={()=>window.dispatchEvent(new CustomEvent('cine:watch-with',{detail:{movie:movie}}))} aria-label="Watch with a friend" title="Watch with a friend" style={{flexShrink:0,marginTop:2,width:34,height:34,borderRadius:'50%',background:`${accent}1a`,border:`1px solid ${accent}44`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,padding:0}}>🍿</button>
           <button onClick={()=>setShowShare(true)} aria-label="Share" style={{flexShrink:0,marginTop:2,display:'flex',alignItems:'center',gap:6,background:`${accent}1a`,border:`1px solid ${accent}44`,borderRadius:18,height:34,padding:'0 13px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:accent}}>
             <SvgIcon name="share" size={13} color={accent}/>Share
           </button>
@@ -1293,6 +1294,7 @@ export const SimilarSheet = dynamic(() => import('./Similar').then((m) => m.Simi
 export const NotificationsPanel = dynamic(() => import('./Notifications').then((m) => m.NotificationsPanel), { ssr: false, loading: () => null });
 export const AddToListSheet = dynamic(() => import('./AddToList').then((m) => m.AddToListSheet), { ssr: false, loading: () => null });
 export const CommentPanel = dynamic(() => import('./Comments').then((m) => m.CommentPanel), { ssr: false, loading: () => null });
+export const StartPartySheet = dynamic(() => import('./StartParty').then((m) => m.StartPartySheet), { ssr: false, loading: () => null });
 export const PartyRoom = dynamic(() => import('./Party').then((m) => m.PartyRoom), { ssr: false, loading: () => null });
 export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });
 export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => m.CreateListSheet), { ssr: false, loading: () => null });
@@ -1300,6 +1302,6 @@ export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => 
 // Warm the on-demand chunks while the browser is idle so first opens feel instant
 export function prefetchScreens() {
   if (typeof window === 'undefined') return;
-  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); };
+  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); import('./StartParty'); };
   if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 6000 }); else setTimeout(load, 4000);
 }

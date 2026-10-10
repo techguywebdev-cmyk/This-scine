@@ -449,9 +449,12 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                         {it.movie_poster && <img src={it.movie_poster} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                       </button>
                       <div style={{ fontSize: 11.5, fontWeight: 600, color: '#fff', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.movie_title}</div>
-                      <button onClick={() => saveFromFeed(it)} disabled={savedHere.has(it.movie_id)} style={{ ...actionBtn, fontSize: 11, marginTop: 4, color: savedHere.has(it.movie_id) ? accent : 'rgba(255,255,255,0.6)', cursor: savedHere.has(it.movie_id) ? 'default' : 'pointer' }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                                            <button onClick={() => saveFromFeed(it)} disabled={savedHere.has(it.movie_id)} style={{ ...actionBtn, fontSize: 11,  color: savedHere.has(it.movie_id) ? accent : 'rgba(255,255,255,0.6)', cursor: savedHere.has(it.movie_id) ? 'default' : 'pointer' }}>
                         <SvgIcon name="bookmark" size={11} color={savedHere.has(it.movie_id) ? accent : 'rgba(255,255,255,0.6)'} filled={savedHere.has(it.movie_id)} />{savedHere.has(it.movie_id) ? 'Saved' : 'Save'}
                       </button>
+                      <button onClick={() => window.dispatchEvent(new CustomEvent('cine:watch-with', { detail: { movie: toMovie(it) } }))} aria-label={`Watch ${it.movie_title} with a friend`} style={{ ...actionBtn, fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>🍿 Watch</button>
+                      </div>
                     </div>
                   ))}
                 </div>
