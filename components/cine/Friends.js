@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { ChatWidget, FollowListModal, MessagesInbox, NotificationsPanel, StatusComposer, StatusViewer, SvgIcon, T, Toast, UserProfileSheet, ambient } from './shared';
+import { ChatWidget, FollowListModal, MessagesInbox, NotificationsPanel, StatusComposer, StatusViewer, SvgIcon, T, Toast, UserProfileSheet, ambient , track } from './shared';
 
 // ─── FRIENDS SCREEN ───────────────────────────────────────────────────────────
 export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlist }) {
@@ -29,6 +29,16 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const [viewingProfile, setViewingProfile] = useState(null);
   const [chatPeer, setChatPeer] = useState(null);
   const [showMessages, setShowMessages] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const inviteFriends = async () => {
+    const handle = user?.username || user?.id;
+    if (!handle) return;
+    const url = `${window.location.origin}/u/${encodeURIComponent(handle)}`;
+    const text = `Join me on CineScroll — let's see what we both want to watch 🍿`;
+    track('share', { via: 'invite' });
+    try { if (navigator.share) { await navigator.share({ title: 'CineScroll', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(`${text} ${url}`); setInviteCopied(true); setTimeout(() => setInviteCopied(false), 1800); } catch {}
+  };
   const [fabHidden, setFabHidden] = useState(false);
   const lastScrollY = useRef(0);
   const onFeedScroll = (e) => {
@@ -652,6 +662,10 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                         <button onClick={() => setTab('find')} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                           <div style={{ width: 59, height: 59, borderRadius: '50%', border: '1.5px dashed rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="userPlus" size={18} color="#fff" /></div>
                           <span style={{ ...label, color: 'rgba(255,255,255,0.6)' }}>Find</span>
+                        </button>
+                        <button onClick={inviteFriends} style={{ flexShrink: 0, width: 64, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 59, height: 59, borderRadius: '50%', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="share" size={17} color="#fff" /></div>
+                          <span style={{ ...label, color: 'rgba(255,255,255,0.6)' }}>{inviteCopied ? 'Copied' : 'Invite'}</span>
                         </button>
                       </div>
                     );
