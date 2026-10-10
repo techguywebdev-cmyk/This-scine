@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
-import { StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 // AUTH GATE
 function AuthGate({onClose,accent}){
@@ -95,6 +95,25 @@ export default function CineScroll(){
   const openSignInRef=useRef(null);openSignInRef.current=openSignIn;
   const[watchWith,setWatchWith]=useState(null);
   useEffect(()=>{const fn=(e)=>{if(!e.detail)return;if(!isSignedInRef.current){openSignInRef.current&&openSignInRef.current();return;}setWatchWith(e.detail);};window.addEventListener('cine:watch-with',fn);return()=>window.removeEventListener('cine:watch-with',fn);},[]);
+  // Incoming watch-party invites: checked on load, every 25s while visible, and when you come back to the tab
+  const[incoming,setIncoming]=useState(null);
+  const dismissInvite=(id)=>{try{const d=JSON.parse(sessionStorage.getItem('cs_party_dismissed')||'[]');sessionStorage.setItem('cs_party_dismissed',JSON.stringify([...d,id].slice(-30)));}catch{}};
+  useEffect(()=>{
+    if(!isSignedIn)return;
+    let alive=true;
+    const check=async()=>{
+      if(document.visibilityState!=='visible')return;
+      try{
+        const r=await fetch('/api/party?pending=1',{cache:'no-store'});const d=await r.json();
+        let gone=[];try{gone=JSON.parse(sessionStorage.getItem('cs_party_dismissed')||'[]');}catch{}
+        const next=(d.pending||[]).find(x=>!gone.includes(x.id));
+        if(alive)setIncoming(cur=>cur&&cur.id===next?.id?cur:(next||null));
+      }catch{}
+    };
+    check();const t=setInterval(check,25000);const vis=()=>check();
+    document.addEventListener('visibilitychange',vis);window.addEventListener('focus',vis);window.addEventListener('cine:party-check',vis);
+    return()=>{alive=false;clearInterval(t);document.removeEventListener('visibilitychange',vis);window.removeEventListener('focus',vis);window.removeEventListener('cine:party-check',vis);};
+  },[isSignedIn]);
   // Watch party room: from chat cards, the Together sheet, or a push link (?party=<id>)
   const[partyId,setPartyId]=useState(null);
   useEffect(()=>{
@@ -477,6 +496,7 @@ export default function CineScroll(){
       </div>
 
 
+      {incoming&&!partyId&&<PartyInvite invite={incoming} accent={accent} onJoin={()=>{dismissInvite(incoming.id);setIncoming(null);setPartyId(incoming.id);}} onLater={()=>{dismissInvite(incoming.id);setIncoming(null);}} onDecline={()=>{const id=incoming.id;dismissInvite(id);setIncoming(null);fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'decline',id})}).catch(()=>{});}}/>}
       {watchWith&&<StartPartySheet movie={watchWith.movie} candidates={watchWith.candidates} label={watchWith.label} accent={accent} onClose={()=>setWatchWith(null)}/>}
       {partyId&&isSignedIn&&<PartyRoom partyId={partyId} accent={accent} onClose={()=>setPartyId(null)}/>}
       {showImport&&<ImportSheet accent={accent} onClose={()=>setShowImport(false)} onImported={({matched})=>{if(matched)track('import',{matched});}}/>}

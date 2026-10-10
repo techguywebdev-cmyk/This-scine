@@ -30,6 +30,14 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
   const [chatPeer, setChatPeer] = useState(null);
   const [showMessages, setShowMessages] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [partyInvites, setPartyInvites] = useState([]);
+  useEffect(() => {
+    if (!isSignedIn) return;
+    let alive = true;
+    const load = () => fetch('/api/party?pending=1', { cache: 'no-store' }).then((r) => r.json()).then((d) => { if (alive) setPartyInvites(d.pending || []); }).catch(() => {});
+    load(); const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, [isSignedIn]);
   const inviteFriends = async () => {
     const handle = user?.username || user?.id;
     if (!handle) return;
@@ -637,6 +645,17 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
             {tab === 'feed' && (
               loadingFeed ? <Spinner /> : (
                 <>
+                  {/* Watch parties waiting for you */}
+                  {partyInvites.length > 0 && (
+                    <button onClick={() => window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: partyInvites[0].id } }))} style={{ width: '100%', marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: `${accent}1f`, border: `1px solid ${accent}66`, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                      <div style={{ width: 34, aspectRatio: '2/3', borderRadius: 3, overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.06)' }}>{partyInvites[0].movie?.poster && <img src={partyInvites[0].movie.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>🍿 {partyInvites.length === 1 ? 'A watch party is waiting' : `${partyInvites.length} watch parties waiting`}</div>
+                        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(partyInvites[0].host?.display_name || 'A friend')} · {partyInvites[0].movie?.title}</div>
+                      </div>
+                      <span style={{ height: 32, padding: '0 14px', borderRadius: 16, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.18)', display: 'inline-flex', alignItems: 'center', fontSize: 12.5, fontWeight: 800, color: '#fff', flexShrink: 0 }}>Join</span>
+                    </button>
+                  )}
                   {/* Status + your circle */}
                   {(() => {
                     const mine = statusPeople.find(p => p.isSelf);

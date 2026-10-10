@@ -1294,6 +1294,7 @@ export const SimilarSheet = dynamic(() => import('./Similar').then((m) => m.Simi
 export const NotificationsPanel = dynamic(() => import('./Notifications').then((m) => m.NotificationsPanel), { ssr: false, loading: () => null });
 export const AddToListSheet = dynamic(() => import('./AddToList').then((m) => m.AddToListSheet), { ssr: false, loading: () => null });
 export const CommentPanel = dynamic(() => import('./Comments').then((m) => m.CommentPanel), { ssr: false, loading: () => null });
+export const PartyInvite = dynamic(() => import('./PartyInvite').then((m) => m.PartyInvite), { ssr: false, loading: () => null });
 export const StartPartySheet = dynamic(() => import('./StartParty').then((m) => m.StartPartySheet), { ssr: false, loading: () => null });
 export const PartyRoom = dynamic(() => import('./Party').then((m) => m.PartyRoom), { ssr: false, loading: () => null });
 export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });
@@ -1302,6 +1303,6 @@ export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => 
 // Warm the on-demand chunks while the browser is idle so first opens feel instant
 export function prefetchScreens() {
   if (typeof window === 'undefined') return;
-  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); import('./StartParty'); };
+  const load = () => { import('./Chat'); import('./Messages'); import('./Friends'); import('./ListPlayer'); import('./Profile'); import('./ListDetail'); import('./UserProfile'); import('./Status'); import('./Lists'); import('./CoverCrop'); import('./Share'); import('./Filter'); import('./Similar'); import('./Notifications'); import('./AddToList'); import('./Comments'); import('./CreateList'); import('./Together'); import('./Party'); import('./StartParty'); import('./PartyInvite'); };
   if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 6000 }); else setTimeout(load, 4000);
 }

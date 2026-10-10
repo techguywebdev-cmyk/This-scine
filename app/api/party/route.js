@@ -11,6 +11,12 @@ const db = (p) => `${SUPABASE_URL}/rest/v1/${p}`;
 const COUNTDOWN_MS = 3600; // both screens count 3-2-1 before the clock (re)starts
 const REASONS = { water: '💧 getting water', snacks: '🍿 grabbing snacks', bathroom: '🚻 bathroom break', call: '📞 taking a call', other: '⚡ something came up' };
 
+const INVITE_TTL_MS = 3 * 3600 * 1000; // unanswered invites expire after 3 hours
+const OPEN = ['invited', 'lobby', 'playing', 'paused'];
+const effective = (p) => (p && p.status === 'invited' && Date.now() - Date.parse(p.updated_at || p.created_at) > INVITE_TTL_MS ? { ...p, status: 'expired' } : p);
+async function pushTo(userId, title, body, url, tag) {
+  try { const notify = await import('@/lib/notify'); await notify.pushUser({ userId, category: 'messages', title, body, url, tag }); } catch {}
+}
 const channelFor = (id) => `cs-party-${createHmac('sha256', process.env.CALL_CHANNEL_SECRET || SUPABASE_KEY).update(`party:${id}`).digest('base64url').slice(0, 32)}`;
 const clockNow = (p, now = Date.now()) => {
   const base = Number(p.clock_offset_ms) || 0;
@@ -40,10 +46,10 @@ async function people(ids) {
   } catch {}
   return out;
 }
-const view = (p, me, folks) => ({
+const view = (p0, me, folks) => { const p = effective(p0); return ({
   party: p, me, peer: folks[p.host_id === me ? p.guest_id : p.host_id] || null, self: folks[me] || null,
   serverNow: Date.now(), clockMs: clockNow(p), channel: channelFor(p.id),
-});
+}); };
 
 async function runtimeMin(movie) {
   if (!TMDB_KEY || !movie?.id) return null;
@@ -58,7 +64,27 @@ async function runtimeMin(movie) {
 export async function GET(req) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const id = clean(new URL(req.url).searchParams.get('id'));
+  const sp = new URL(req.url).searchParams;
+  // GET /api/party?pending=1 → invites waiting for me (newest first)
+  if (sp.get('pending')) {
+    const since = new Date(Date.now() - INVITE_TTL_MS).toISOString();
+    const r = await fetch(`${db('watch_parties')}?guest_id=eq.${userId}&status=eq.invited&updated_at=gt.${since}&order=updated_at.desc&limit=5&select=*`, { headers, cache: 'no-store' });
+    const rows = await r.json().catch(() => []);
+    const list = Array.isArray(rows) ? rows : [];
+    const folks = list.length ? await people([...new Set(list.map((x) => x.host_id))]) : {};
+    return Response.json({ pending: list.map((x) => ({ id: x.id, movie: x.movie, host: folks[x.host_id] || { user_id: x.host_id, display_name: 'A friend' }, updated_at: x.updated_at })) }, { headers: { 'Cache-Control': 'no-store' } });
+  }
+  // GET /api/party?statuses=id1,id2 → live status for chat cards
+  if (sp.get('statuses')) {
+    const ids = sp.get('statuses').split(',').map(clean).filter(Boolean).slice(0, 40);
+    if (!ids.length) return Response.json({ statuses: {} });
+    const r = await fetch(`${db('watch_parties')}?id=in.(${ids.join(',')})&or=(host_id.eq.${userId},guest_id.eq.${userId})&select=id,status,updated_at,created_at`, { headers, cache: 'no-store' });
+    const rows = await r.json().catch(() => []);
+    const out = {};
+    (Array.isArray(rows) ? rows : []).forEach((x) => { out[x.id] = effective(x).status; });
+    return Response.json({ statuses: out }, { headers: { 'Cache-Control': 'no-store' } });
+  }
+  const id = clean(sp.get('id'));
   const p = id && (await load(id));
   if (!p || (p.host_id !== userId && p.guest_id !== userId)) return Response.json({ error: 'Party not found' }, { status: 404 });
   const folks = await people([p.host_id, p.guest_id]);
@@ -81,10 +107,24 @@ export async function POST(req) {
       id: Number(m.id) || m.id, title: String(m.title || '').slice(0, 200), poster: m.poster || null, backdrop: m.backdrop || null,
       year: m.year ? String(m.year).slice(0, 4) : null, rating: m.rating || null, is_tv: !!m.is_tv, accent: m.accent || null,
     };
+    // One open party per pair: reuse it instead of stacking duplicates
+    const pair = `or=(and(host_id.eq.${userId},guest_id.eq.${guest}),and(host_id.eq.${guest},guest_id.eq.${userId}))`;
+    const ex = await fetch(`${db('watch_parties')}?${pair}&status=in.(${OPEN.join(',')})&order=updated_at.desc&limit=1&select=*`, { headers, cache: 'no-store' }).then((x) => x.json()).catch(() => []);
+    const open = Array.isArray(ex) && ex[0] ? effective(ex[0]) : null;
+    if (open && (open.status === 'playing' || open.status === 'paused')) {
+      // already watching together — just return the live room
+      return Response.json(view(open, userId, await people([userId, guest])));
+    }
     movie.runtime_min = await runtimeMin(movie);
-    const r = await fetch(db('watch_parties'), { method: 'POST', headers, body: JSON.stringify({ host_id: userId, guest_id: guest, movie, status: 'invited', ready: {} }) });
-    const rows = await r.json().catch(() => []);
-    const p = Array.isArray(rows) ? rows[0] : null;
+    let p = null;
+    if (open && open.status !== 'expired') {
+      p = await save(open.id, { movie, host_id: userId, guest_id: guest, status: 'invited', ready: {}, clock_offset_ms: 0, clock_started_at: null, paused_by: null, pause_reason: null });
+    } else {
+      if (open && open.status === 'expired') await save(open.id, { status: 'expired' });
+      const r = await fetch(db('watch_parties'), { method: 'POST', headers, body: JSON.stringify({ host_id: userId, guest_id: guest, movie, status: 'invited', ready: {} }) });
+      const rows = await r.json().catch(() => []);
+      p = Array.isArray(rows) ? rows[0] : null;
+    }
     if (!p) return Response.json({ error: 'Could not start the party' }, { status: 500 });
     // invite lands in their chat as a card, plus a push
     const folks = await people([userId, guest]);
@@ -107,10 +147,15 @@ export async function POST(req) {
   const now = Date.now();
   let patch = null;
 
+  const eff = effective(p);
+  if (eff.status === 'expired' && action !== 'cancel') return Response.json({ error: 'This invite has expired — start a new one' }, { status: 409 });
+    let notifyHost = null;
   if (action === 'join') {
-    if (p.status === 'invited' || p.status === 'declined') patch = { status: 'lobby' };
+    if (p.status === 'invited' || p.status === 'declined') { patch = { status: 'lobby' }; if (userId === p.guest_id) notifyHost = 'joined'; }
   } else if (action === 'decline') {
-    if (p.guest_id === userId && p.status === 'invited') patch = { status: 'declined' };
+    if (p.guest_id === userId && p.status === 'invited') { patch = { status: 'declined' }; notifyHost = 'declined'; }
+  } else if (action === 'cancel') {
+    if (p.host_id === userId && (p.status === 'invited' || p.status === 'lobby')) patch = { status: 'ended', ended_at: new Date(now).toISOString() };
   } else if (action === 'ready') {
     const ready = { ...(p.ready || {}), [userId]: body.ready !== false };
     patch = { ready };
@@ -142,5 +187,11 @@ export async function POST(req) {
 
   const next = patch ? (await save(p.id, patch)) || { ...p, ...patch } : p;
   const folks = await people([p.host_id, p.guest_id]);
+  if (notifyHost) {
+    const who = (folks[userId]?.display_name || 'Your friend').split(' ')[0];
+    const t = p.movie?.title || 'the film';
+    if (notifyHost === 'joined') await pushTo(p.host_id, `${who} joined your watch party 🍿`, `${t} — tap to get ready together`, `/?party=${p.id}`, `party-${p.id}`);
+    else await pushTo(p.host_id, `${who} can’t make it right now`, `Your ${t} watch party`, `/?chat=${userId}`, `party-${p.id}`);
+  }
   return Response.json(view(next, userId, folks));
 }

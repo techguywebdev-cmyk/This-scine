@@ -256,6 +256,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
               <button onClick={() => act('ready', { ready: !iReady })} style={{ ...bigBtn, width: '100%', marginTop: 14, background: iReady ? `${accent}26` : glass.background, borderColor: iReady ? accent : 'rgba(255,255,255,0.14)' }}>
                 {iReady ? <><SvgIcon name="check" size={16} color="#fff" />Ready — waiting for {first(peer)}</> : "I'm ready"}
               </button>
+              {party.status === 'invited' && party.host_id === me && <div style={{ textAlign: 'center', marginTop: 12 }}><button onClick={async () => { await act('cancel'); onClose(); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>Cancel invite</button></div>}
             </div>
           )}
 
@@ -292,6 +293,13 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
             </div>
           )}
 
+          {party?.status === 'expired' && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>This invite expired</div>
+              <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>Start a new watch party whenever you’re both free.</div>
+              <button onClick={onClose} style={{ ...bigBtn, width: '100%', marginTop: 14 }}>Close</button>
+            </div>
+          )}
           {party?.status === 'declined' && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{first(peer)} can’t make it right now</div>

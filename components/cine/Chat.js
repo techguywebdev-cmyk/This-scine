@@ -117,6 +117,7 @@ export function ChatWidget({ peer, onClose, accent }) {
   const [peerInfo, setPeerInfo] = useState(peer || null);
   const [showPeerProfile, setShowPeerProfile] = useState(false);
   const [showTogether, setShowTogether] = useState(false);
+  const [partyStatus, setPartyStatus] = useState({});
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -185,6 +186,13 @@ export function ChatWidget({ peer, onClose, accent }) {
   useEffect(() => {
     fetch('/api/ice').then(r => r.ok ? r.json() : null).then(d => { if (d && Array.isArray(d.iceServers) && d.iceServers.length) iceServersRef.current = d.iceServers; }).catch(() => {});
   }, []);
+
+  // Live status for watch-party cards in this thread
+  const partyIdsKey = messages.filter((m) => m.msg_type === 'party' && m.meta?.party_id).map((m) => m.meta.party_id).slice(-20).join(',');
+  useEffect(() => {
+    if (!partyIdsKey) return;
+    fetch(`/api/party?statuses=${partyIdsKey}`, { cache: 'no-store' }).then((r) => r.json()).then((d) => setPartyStatus(d.statuses || {})).catch(() => {});
+  }, [partyIdsKey]);
 
   // Instant signalling over a realtime socket (database polling stays as the fallback)
   const rtChannelRef = useRef(null);
@@ -2464,7 +2472,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                       ) : m.msg_type === 'party' && m.meta ? (
                         <button
                           type="button"
-                          onClick={() => window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } }))}
+                          onClick={() => { const st = partyStatus[m.meta.party_id]; if (st === 'expired' || st === 'declined') return; window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } })); }}
                           style={{ position: 'relative', display: 'block', width: 260, textAlign: 'left', padding: 0, borderRadius: 18, overflow: 'hidden', cursor: 'pointer', fontFamily: 'inherit', background: '#111', border: `1px solid ${accent}66` }}
                         >
                           {(m.meta.backdrop || m.meta.poster) && <img src={m.meta.backdrop || m.meta.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />}
@@ -2473,7 +2481,13 @@ export function ChatWidget({ peer, onClose, accent }) {
                             <span style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: accent }}>🍿 Watch party</span>
                             <span style={{ display: 'block', fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 4, lineHeight: 1.2 }}>{m.meta.title}</span>
                             <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>{mine ? 'You invited them to watch together' : 'Invited you to watch together'}</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginTop: 10, height: 34, padding: '0 16px', borderRadius: 17, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.18)', fontSize: 12.5, fontWeight: 800, color: '#fff' }}>{mine ? 'Open room' : 'Join'}</span>
+                            {(() => {
+                              const st = partyStatus[m.meta.party_id] || 'invited';
+                              const live = st === 'lobby' || st === 'playing' || st === 'paused';
+                              const done = st === 'ended' || st === 'expired' || st === 'declined';
+                              const label = st === 'ended' ? 'Ended' : st === 'expired' ? 'Expired' : st === 'declined' ? 'Declined' : live ? (st === 'lobby' ? 'In the lobby · Join' : 'Live now · Join') : mine ? 'Open room' : 'Join';
+                              return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: 10, height: 34, padding: '0 16px', borderRadius: 17, background: done ? 'transparent' : 'rgba(0,0,0,0.35)', border: `1px solid ${done ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.18)'}`, fontSize: 12.5, fontWeight: 800, color: done ? 'rgba(255,255,255,0.5)' : '#fff' }}>{live && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3DDC84' }} />}{label}</span>;
+                            })()}
                           </span>
                         </button>
                       ) : m.msg_type === 'title' && m.meta ? (
