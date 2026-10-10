@@ -549,6 +549,7 @@ function StreamingBadges({ movieId, mediaType, title, year }) {
 
 // INLINE PLAYER
 export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialTab, highlightCommentId }) {
+  useEffect(() => { if (movie?.id) track('title_open', { id: String(movie.id), tv: !!(movie.isTV || movie.mediaType === 'tv') }); }, [movie?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [trailerKey, setTrailerKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -1024,10 +1025,30 @@ function CoverCropModal({file,onCancel,onSave,accent,aspect=2.5,title='Adjust Co
 // and two components asking for the same thing share one request. Any write clears it.
 const API_CACHE_TTL=60000;
 const CACHEABLE=/^\/api\/(activity|follows|lists|list-id|users\/|settings|reviews|watchlist|reminders|leaderboard|arcs|providers|trailer|movie-details)/;
+// ── Usage tracking (first-party, no third parties): powers the week-2 retention number ──
+function anonId(){try{let id=localStorage.getItem('cs_anon');if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2)).replace(/[^a-z0-9-]/gi,'');localStorage.setItem('cs_anon',id);}return id;}catch{return null;}}
+export function track(name,props){
+  if(typeof window==='undefined')return;
+  try{
+    const body=JSON.stringify({name,props:props||null,anonId:anonId()});
+    if(navigator.sendBeacon){navigator.sendBeacon('/api/track',new Blob([body],{type:'text/plain'}));return;}
+    (window.__cineOrigFetch||fetch)('/api/track',{method:'POST',body,keepalive:true}).catch(()=>{});
+  }catch{}
+}
+// Map the app's own write calls to events, so features don't each need tracking code
+const TRACK_MAP=[[/^\/api\/watchlist/,'POST','save'],[/^\/api\/watchlist/,'DELETE','unsave'],[/^\/api\/follows/,'POST','follow'],[/^\/api\/messages/,'POST','message'],[/^\/api\/reviews/,'POST','review'],[/^\/api\/lists(\?|$)/,'POST','folder_create']];
+function trackFromRequest(path,method,init){
+  try{
+    if(path.startsWith('/api/status')&&method==='POST'){const b=typeof init?.body==='string'?init.body:'';if(b.includes('"view"'))return;track('status_post');return;}
+    if(path.startsWith('/api/watchlist')&&method==='PATCH'){const b=typeof init?.body==='string'?init.body:'';if(b.includes('"watched":true'))track('watched');return;}
+    const hit=TRACK_MAP.find(([re,m])=>m===method&&re.test(path));
+    if(hit)track(hit[2]);
+  }catch{}
+}
 function installApiCache(){
   if(typeof window==='undefined'||window.__cineFetchPatched)return;
   window.__cineFetchPatched=true;
-  const orig=window.fetch.bind(window);
+  const orig=window.fetch.bind(window);window.__cineOrigFetch=orig;
   const store=new Map();const inflight=new Map();
   const toResponse=e=>new Response(e.body,{status:e.status,headers:{'Content-Type':e.type||'application/json'}});
   window.fetch=async(input,init={})=>{
@@ -1035,7 +1056,7 @@ function installApiCache(){
     const method=((init&&init.method)||(input&&input.method)||'GET').toUpperCase();
     let path='';try{const u=new URL(url,window.location.origin);if(u.origin===window.location.origin)path=u.pathname+u.search;}catch{}
     if(!path.startsWith('/api/'))return orig(input,init);
-    if(method!=='GET'){store.clear();return orig(input,init);}
+    if(method!=='GET'){store.clear();if(!path.startsWith('/api/track'))trackFromRequest(path,method,init);return orig(input,init);}
     if(!CACHEABLE.test(path)||(init&&init.cache==='no-store'))return orig(input,init);
     const hit=store.get(path);
     if(hit&&Date.now()-hit.at<API_CACHE_TTL)return toResponse(hit);
@@ -1052,6 +1073,7 @@ function installApiCache(){
   window.__cinePrefetch=(paths)=>paths.forEach(pth=>{window.fetch(pth).catch(()=>{});});
 }
 if(typeof window!=='undefined')installApiCache();
+if(typeof window!=='undefined'){try{if(!sessionStorage.getItem('cs_session')){sessionStorage.setItem('cs_session','1');setTimeout(()=>track('session_start',{path:location.pathname}),1500);}}catch{}}
 
 // ── @mentions ──
 // Highlights @handles in comment text
@@ -1722,7 +1744,7 @@ export function ShareSheet({movie,accent,onClose}){
   },[q]);
   const shown=(friends||[]).filter(u=>!q.trim()||`${u.username} ${u.display_name||''}`.toLowerCase().includes(q.trim().toLowerCase()));
   const toggle=id=>setPicked(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
-  const send=async()=>{
+  const send=async()=>{track('share',{via:'dm'});
     if(!picked.size)return;
     setSending(true);
     const meta={id:movie.id,type,title:movie.title,poster:movie.poster||null,backdrop:movie.backdrop||null,year:movie.year||null,rating:movie.rating||null,accent:movie.accent||null};
@@ -1732,11 +1754,11 @@ export function ShareSheet({movie,accent,onClose}){
     setDone(ids.length===1?`Sent to ${(friends||[]).find(u=>u.user_id===ids[0])?.display_name||(friends||[]).find(u=>u.user_id===ids[0])?.username||'1 person'}`:`Sent to ${ids.length} people`);
     setTimeout(onClose,1100);
   };
-  const external=async()=>{
+  const external=async()=>{track('share',{via:'external'});
     const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on CineScroll`;
     try{if(navigator.share){await navigator.share({title:movie.title,text,url:link});return;}await navigator.clipboard.writeText(`${text} ${link}`);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}
   };
-  const copy=async()=>{try{await navigator.clipboard.writeText(link);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}};
+  const copy=async()=>{track('share',{via:'link'});try{await navigator.clipboard.writeText(link);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}};
   return(
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,0.6)',backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',display:'flex',alignItems:'flex-end',animation:'fadeIn .2s ease'}}>
       <style>{`@keyframes shareUp{from{transform:translateY(100%)}to{transform:none}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
