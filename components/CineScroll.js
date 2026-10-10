@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
+import ImportSheet from './ImportSheet';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 // Neutrals carry the visual weight since the accent color is dynamic (shifts per
@@ -2250,6 +2251,16 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 )}
               </div>
 
+              {/* Import history */}
+              <button onClick={()=>window.dispatchEvent(new CustomEvent('cine:open-import'))} style={{width:'100%',display:'flex',alignItems:'center',gap:14,background:'none',border:'none',borderBottom:`1px solid ${T.hairline}`,padding:'0 0 28px',marginBottom:32,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                <div style={{width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:'#fff'}}>Import from Letterboxd or IMDb</div>
+                  <div style={{fontSize:12,color:T.text2,marginTop:2}}>Bring everything you’ve watched in one go</div>
+                </div>
+                <span style={{display:'flex',transform:'rotate(-90deg)'}}><SvgIcon name="chevron" size={14} color={T.text2}/></span>
+              </button>
+
               <div style={{position:'relative',marginBottom:32}}>
                 <AccentGlow accent={accent} size={160} style={{right:-40,top:-40}}/>
                 <div style={{position:'relative',display:'flex',alignItems:'center',gap:16,marginBottom:18}}>
@@ -2398,7 +2409,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 )}
               </div>
               {loadingData||(loadingProviders&&watchlistPlatform)?(<div style={{textAlign:'center',padding:24,color:T.text3,fontSize:13,display:'flex',flexDirection:'column',alignItems:'center',gap:8}}><div style={{width:20,height:20,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>{loadingProviders?'Checking platforms...':'Loading...'}</div>)
-              :filteredWatchlist.length===0?(<div style={{textAlign:'center',padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}><SvgIcon name="bookmark" size={26} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text3}}>{watchlistSearch?'No matches':watchlistPlatform?`Nothing on ${watchlistPlatform} in your watchlist`:'Your watchlist is empty'}</div>{!watchlistSearch&&!watchlistPlatform&&<button onClick={()=>{if(onDiscover){onDiscover();}else if(onClose){onClose();}}} style={{marginTop:4,background:accent,border:'none',borderRadius:20,padding:'10px 18px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Discover movies</button>}{watchlistPlatform&&<button onClick={()=>setWatchlistPlatform('')} style={{marginTop:4,background:'transparent',border:`1px solid ${T.hairlineStrong}`,borderRadius:20,padding:'10px 18px',cursor:'pointer',fontSize:12,fontWeight:600,color:T.text2,fontFamily:'inherit'}}>Show all titles</button>}</div>)
+              :filteredWatchlist.length===0?(<div style={{textAlign:'center',padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}><SvgIcon name="bookmark" size={26} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text3}}>{watchlistSearch?'No matches':watchlistPlatform?`Nothing on ${watchlistPlatform} in your watchlist`:'Your watchlist is empty'}</div>{!watchlistSearch&&!watchlistPlatform&&<button onClick={()=>window.dispatchEvent(new CustomEvent('cine:open-import'))} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontSize:12.5,fontWeight:700,color:'#fff',fontFamily:'inherit'}}>Import from Letterboxd or IMDb</button>}{!watchlistSearch&&!watchlistPlatform&&<button onClick={()=>{if(onDiscover){onDiscover();}else if(onClose){onClose();}}} style={{marginTop:4,background:accent,border:'none',borderRadius:20,padding:'10px 18px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Discover movies</button>}{watchlistPlatform&&<button onClick={()=>setWatchlistPlatform('')} style={{marginTop:4,background:'transparent',border:`1px solid ${T.hairlineStrong}`,borderRadius:20,padding:'10px 18px',cursor:'pointer',fontSize:12,fontWeight:600,color:T.text2,fontFamily:'inherit'}}>Show all titles</button>}</div>)
               :(
                 <div style={{display:'flex',flexDirection:'column',padding:'0 18px 12px'}}>
                   {filteredWatchlist.map((m,i)=>(
@@ -9785,7 +9796,7 @@ export function ListsScreen({onClose,accent,onWatchTrailer,onSave,watchlistIds,w
               </div>
             </div>
             {shown.length===0?(
-              <div style={{fontSize:12.5,color:T.text2,lineHeight:1.5,padding:'4px 0'}}>{allFilter==='towatch'?'Tap Save on any film in your feed and it lands here.':'Films you mark as watched show up here.'}</div>
+              <div style={{padding:'4px 0'}}><div style={{fontSize:12.5,color:T.text2,lineHeight:1.5}}>{allFilter==='towatch'?'Tap Save on any film in your feed and it lands here.':'Films you mark as watched show up here.'}</div><button onClick={()=>window.dispatchEvent(new CustomEvent('cine:open-import'))} style={{marginTop:10,background:'none',border:'none',padding:0,cursor:'pointer',fontFamily:'inherit',fontSize:12.5,fontWeight:700,color:'#fff',display:'inline-flex',alignItems:'center',gap:6}}><SvgIcon name="plus" size={12} color="#fff"/>Import from Letterboxd or IMDb</button></div>
             ):(
               <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px 10px'}}>
                 {shown.map(m=>(
@@ -9892,6 +9903,14 @@ export default function CineScroll(){
     return()=>clearTimeout(t);
   },[isLoaded,isSignedIn]);
 
+  // Letterboxd / IMDb import can be opened from anywhere; reload saves when it finishes
+  const[showImport,setShowImport]=useState(false);
+  useEffect(()=>{
+    const open=()=>setShowImport(true);
+    const refresh=async()=>{try{const r=await fetch('/api/watchlist',{cache:'no-store'});const d=await r.json();const items=d.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));}catch{}};
+    window.addEventListener('cine:open-import',open);window.addEventListener('cine:watchlist-refresh',refresh);
+    return()=>{window.removeEventListener('cine:open-import',open);window.removeEventListener('cine:watchlist-refresh',refresh);};
+  },[]);
   // Shared film cards (chat, notifications) open the player from anywhere
   useEffect(()=>{
     const fn=(e)=>{if(e.detail&&e.detail.id)setTrailerMovie(e.detail);};
@@ -10258,6 +10277,7 @@ export default function CineScroll(){
       </div>
 
 
+      {showImport&&<ImportSheet accent={accent} onClose={()=>setShowImport(false)} onImported={({matched})=>{if(matched)track('import',{matched});}}/>}
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}
       {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}

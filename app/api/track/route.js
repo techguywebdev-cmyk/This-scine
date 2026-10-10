@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_KEY, clean } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 // Only these events are accepted — keeps the table meaningful and cheap
-const NAMES = new Set(['session_start', 'title_open', 'save', 'unsave', 'watched', 'share', 'follow', 'message', 'review', 'status_post', 'status_react', 'folder_create', 'signup']);
+const NAMES = new Set(['session_start', 'title_open', 'save', 'unsave', 'watched', 'share', 'follow', 'message', 'review', 'status_post', 'status_react', 'folder_create', 'signup', 'import']);
 
 // POST /api/track { name, props?, anonId? }   (also accepts sendBeacon text bodies)
 export async function POST(req) {
