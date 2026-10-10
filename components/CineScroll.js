@@ -2009,6 +2009,21 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     if(onWatchTrailer){ onWatchTrailer(payload); }
     else { setPlayerMovie(payload); }
   };
+  const profGlass={width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0};
+  const Switch=({on,onClick,disabled,label})=>(
+    <button type="button" onClick={onClick} disabled={disabled} role="switch" aria-checked={!!on} aria-label={label} style={{width:40,height:24,borderRadius:12,border:`1px solid ${on?'transparent':'rgba(255,255,255,0.16)'}`,cursor:disabled?'default':'pointer',background:on?accent:'rgba(255,255,255,0.08)',position:'relative',flexShrink:0,padding:0,transition:'background .2s ease'}}>
+      <span style={{position:'absolute',top:2,left:on?18:2,width:18,height:18,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,0.35)',transition:'left .2s ease'}}/>
+    </button>
+  );
+  const SetRow=({title,sub,right})=>(
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'13px 0',borderTop:`1px solid ${T.hairline}`}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>{title}</div>
+        {sub&&<div style={{fontSize:11.5,color:T.text3,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sub}</div>}
+      </div>
+      {right}
+    </div>
+  );
   return(
     <>
     {playerMovie&&<InlinePlayer movie={playerMovie} onClose={()=>setPlayerMovie(null)} accent={playerMovie.accent||accent}/>}
@@ -2023,15 +2038,15 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
         <div style={{padding:'16px 18px 0',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <span style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>My Profile</span>
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
-            <button onClick={()=>setShowOwnPreview(true)} title="Preview public profile" style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="eye" size={15} color={T.text2}/></button>
-            <button onClick={()=>{bioRef.current?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>bioRef.current?.focus(),300);}} title="Edit Profile" style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="edit" size={15} color={T.text2}/></button>
-            <button onClick={onClose} style={{background:'transparent',border:'none',width:30,height:30,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={15} color={T.text2}/></button>
+            <button onClick={()=>setShowOwnPreview(true)} title="Preview public profile" style={profGlass}><SvgIcon name="eye" size={15} color="#fff"/></button>
+            <button onClick={()=>{bioRef.current?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>bioRef.current?.focus(),300);}} title="Edit Profile" style={profGlass}><SvgIcon name="edit" size={15} color="#fff"/></button>
+            <button onClick={onClose} aria-label="Close" style={profGlass}><SvgIcon name="close" size={15} color="#fff"/></button>
           </div>
         </div>
         <div style={{display:'flex',padding:'18px 18px 0',gap:16,flexShrink:0,borderBottom:`1px solid ${T.hairline}`,overflowX:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
           {[['profile','Profile'],['watchlist','Watchlist'],['watched','Watched'],['reviews','Reviews']].map(([t,label])=>(
-            <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',cursor:'pointer',padding:'0 0 14px',fontFamily:'inherit',fontSize:12.5,fontWeight:tab===t?700:500,color:tab===t?accent:T.text3,borderBottom:`2px solid ${tab===t?accent:'transparent'}`,transition:'all 0.2s ease',letterSpacing:0.2,flexShrink:0}}>
-              {label}{t==='watchlist'&&watchlist.length>0?` (${watchlist.length})`:''}{t==='watched'&&watched>0?` (${watched})`:''}
+            <button key={t} onClick={()=>setTab(t)} style={{background:'none',border:'none',cursor:'pointer',padding:'0 0 14px',fontFamily:'inherit',fontSize:13,fontWeight:tab===t?800:600,color:tab===t?'#fff':T.text3,transition:'color 0.2s ease',letterSpacing:0.2,flexShrink:0}}>
+              {label}
             </button>
           ))}
         </div>
@@ -2142,93 +2157,31 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                   <Eyebrow style={{marginBottom:12}}>Top Genres</Eyebrow>
                   {sortedGenres.map(([genre,count])=>(
                     <div key={genre} style={{marginBottom:10}}>
-                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}><span style={{fontSize:12.5,color:T.text,fontWeight:500}}>{genre}</span><span style={{fontSize:11,color:T.text3}}>{count} films</span></div>
+                      <div style={{marginBottom:6}}><span style={{fontSize:13,color:T.text,fontWeight:500}}>{genre}</span></div>
                       <div style={{height:2,borderRadius:2,background:T.hairline}}><div style={{height:'100%',borderRadius:2,background:accent,width:`${(count/sortedGenres[0][1])*100}%`,transition:'width 0.8s ease'}}/></div>
                     </div>
                   ))}
                 </div>
               )}
-              <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px',marginBottom:14,display:'flex',alignItems:'center',gap:12}}>
-                <div style={{width:36,height:36,borderRadius:10,background:`${accent}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <SvgIcon name={watchlistPublic?'eye':'bookmark'} size={16} color={accent}/>
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Public Watchlist</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.3)',marginTop:1}}>{watchlistPublic?'Anyone can see your watchlist':'Only you can see your watchlist'}</div>
-                </div>
-                <button onClick={togglePrivacy} disabled={loadingSettings} role="switch" aria-checked={watchlistPublic} style={{width:44,height:26,borderRadius:13,border:'none',cursor:loadingSettings?'default':'pointer',background:watchlistPublic?accent:'rgba(255,255,255,0.12)',position:'relative',flexShrink:0,transition:'background 0.2s ease',padding:0}}>
-                  <div style={{position:'absolute',top:3,left:watchlistPublic?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
-                </button>
+              {/* Privacy */}
+              <div style={{marginBottom:26}}>
+                <Eyebrow color={accent} style={{marginBottom:4}}>Privacy</Eyebrow>
+                <SetRow title="Public watchlist" sub={watchlistPublic?'Anyone can see your watchlist':'Only you can see your watchlist'} right={<Switch on={watchlistPublic} onClick={togglePrivacy} disabled={loadingSettings} label="Public watchlist"/>}/>
               </div>
 
               {/* Notifications */}
-              <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'14px',marginBottom:14}}>
-                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:`${accent}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <SvgIcon name="bell" size={16} color={accent}/>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Notifications</div>
-                    <div style={{fontSize:11,color:'rgba(255,255,255,0.3)',marginTop:1}}>Email, browser, and app alerts</div>
-                  </div>
-                </div>
-
-                {/* Email — primary row */}
-                <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderTop:`1px solid ${T.hairline}`}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>Email</div>
-                    <div style={{fontSize:11,color:T.text3,marginTop:2}}>
-                      {user?.primaryEmailAddress?.emailAddress
-                        ? `Send to ${user.primaryEmailAddress.emailAddress}`
-                        : 'Messages & follows to your inbox'}
-                    </div>
-                  </div>
-                  <button type="button" onClick={()=>toggleNotify('email')} disabled={loadingSettings} role="switch" aria-checked={!!notifyPrefs.email} style={{width:44,height:26,borderRadius:13,border:'none',cursor:'pointer',background:notifyPrefs.email?accent:'rgba(255,255,255,0.12)',position:'relative',flexShrink:0,padding:0}}>
-                    <div style={{position:'absolute',top:3,left:notifyPrefs.email?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
-                  </button>
-                </div>
-
-                {/* Web push */}
-                <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderTop:`1px solid ${T.hairline}`}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>Web push</div>
-                    <div style={{fontSize:11,color:T.text3,marginTop:2}}>{hasWebPush?'Enabled on this browser':'Browser alerts when you\'re away'}</div>
-                  </div>
-                  {hasWebPush?(
-                    <button type="button" onClick={()=>toggleNotify('web')} disabled={loadingSettings} role="switch" aria-checked={!!notifyPrefs.web} style={{width:44,height:26,borderRadius:13,border:'none',cursor:'pointer',background:notifyPrefs.web?accent:'rgba(255,255,255,0.12)',position:'relative',flexShrink:0,padding:0}}>
-                      <div style={{position:'absolute',top:3,left:notifyPrefs.web?23:3,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
-                    </button>
-                  ):(
-                    <button type="button" onClick={enableWebPush} disabled={pushBusy||loadingSettings} style={{background:`${accent}18`,border:`1px solid ${accent}44`,borderRadius:16,padding:'7px 12px',cursor:'pointer',fontSize:11,fontWeight:700,color:accent,fontFamily:'inherit',flexShrink:0}}>
-                      {pushBusy?'…':'Enable'}
-                    </button>
-                  )}
-                </div>
-
-                {/* App */}
-                <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderTop:`1px solid ${T.hairline}`}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>App</div>
-                    <div style={{fontSize:11,color:T.text3,marginTop:2}}>Native push on iOS & Android</div>
-                  </div>
-                  <span style={{fontSize:10,color:T.text3,fontWeight:600,flexShrink:0}}>Coming soon</span>
-                </div>
-
-                <div style={{marginTop:4,paddingTop:10,borderTop:`1px solid ${T.hairline}`}}>
-                  <div style={{fontSize:10,letterSpacing:1.2,color:T.text3,fontWeight:700,textTransform:'uppercase',marginBottom:8}}>Notify me about</div>
-                  {[
-                    {key:'messages',label:'Messages & requests'},
-                    {key:'follows',label:'New followers'},
-                    {key:'activity',label:'Likes & list activity'},
-                  ].map(row=>(
-                    <div key={row.key} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0'}}>
-                      <span style={{fontSize:12.5,color:T.text2}}>{row.label}</span>
-                      <button type="button" onClick={()=>toggleNotify(row.key)} disabled={loadingSettings} role="switch" aria-checked={!!notifyPrefs[row.key]} style={{width:40,height:24,borderRadius:12,border:'none',cursor:'pointer',background:notifyPrefs[row.key]?accent:'rgba(255,255,255,0.12)',position:'relative',flexShrink:0,padding:0}}>
-                        <div style={{position:'absolute',top:3,left:notifyPrefs[row.key]?20:3,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left 0.2s ease'}}/>
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div style={{marginBottom:26}}>
+                <Eyebrow color={accent} style={{marginBottom:4}}>Notifications</Eyebrow>
+                <SetRow title="Email" sub={user?.primaryEmailAddress?.emailAddress?`Send to ${user.primaryEmailAddress.emailAddress}`:'Messages & follows to your inbox'} right={<Switch on={notifyPrefs.email} onClick={()=>toggleNotify('email')} disabled={loadingSettings} label="Email notifications"/>}/>
+                <SetRow title="Web push" sub={hasWebPush?'On for this browser':'Alerts when you’re away'} right={hasWebPush
+                  ?<Switch on={notifyPrefs.web} onClick={()=>toggleNotify('web')} disabled={loadingSettings} label="Web push"/>
+                  :<button type="button" onClick={enableWebPush} disabled={pushBusy||loadingSettings} style={{background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:16,height:30,padding:'0 13px',cursor:'pointer',fontSize:11.5,fontWeight:700,color:'#fff',fontFamily:'inherit',flexShrink:0}}>{pushBusy?'…':'Turn on'}</button>}/>
+                <div style={{fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',fontWeight:700,color:T.text3,margin:'18px 0 4px'}}>Notify me about</div>
+                {[
+                  {key:'messages',label:'Messages & requests'},
+                  {key:'follows',label:'New followers'},
+                  {key:'activity',label:'Likes, mentions & folder activity'},
+                ].map(row=>(<SetRow key={row.key} title={row.label} right={<Switch on={notifyPrefs[row.key]} onClick={()=>toggleNotify(row.key)} disabled={loadingSettings} label={row.label}/>}/>))}
               </div>
 
                             <button type="button" onClick={()=>setShowTmdb(true)} style={{display:'block',width:'100%',background:'none',border:'none',padding:'0 0 14px',cursor:'pointer',textAlign:'center',fontFamily:'inherit'}}>
@@ -2253,7 +2206,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                   </div>
                 </div>
               )}
-<button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:signedOut?`${accent}10`:'rgba(255,255,255,0.03)',border:`1px solid ${signedOut?accent+'44':'rgba(255,255,255,0.07)'}`,borderRadius:14,padding:'13px',cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',transition:'all 0.3s ease'}}>
+<button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:'rgba(0,0,0,0.25)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:22,padding:'12px',marginBottom:'calc(10px + env(safe-area-inset-bottom))',cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',transition:'all 0.3s ease'}}>
                 {signedOut?(<><div style={{width:16,height:16,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={10} color="#000"/></div><span style={{fontSize:13,color:accent,fontWeight:600}}>Signed out</span></>):signingOut?(<><div style={{width:14,height:14,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/><span style={{fontSize:13,color:'rgba(255,255,255,0.5)'}}>Signing out...</span></>):(<><SvgIcon name="logout" size={15} color="rgba(255,255,255,0.4)"/><span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Sign out</span></>)}
               </button>
             </div>
