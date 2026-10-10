@@ -1,13 +1,14 @@
-import { LegalPage } from '@/components/LegalPage';
+import { LegalPage, accentFrom } from '@/components/LegalPage';
 import { APP_NAME, OPERATOR, CONTACT_EMAIL } from '@/lib/brand';
 
 export const metadata = { title: `Privacy policy · ${APP_NAME}`, description: `How ${APP_NAME} collects, uses and protects your information.` };
 
-const mail = <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: '#F5A623' }}>{CONTACT_EMAIL}</a>;
-
-export default function Privacy() {
+export default function Privacy({ searchParams }) {
+  const accent = accentFrom(searchParams);
+  const mail = <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: accent }}>{CONTACT_EMAIL}</a>;
   return (
     <LegalPage
+      accent={accent}
       eyebrow="Your data"
       title="Privacy policy"
       intro={<>{APP_NAME} is a film and TV discovery app with social features, run by {OPERATOR}. This policy explains what we collect, why, who helps us run the service, and the choices you have. We don’t sell your data and we don’t show ads.</>}

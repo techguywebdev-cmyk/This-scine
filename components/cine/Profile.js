@@ -683,8 +683,8 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                 </span>
               </button>
               <div style={{display:'flex',justifyContent:'center',gap:14,paddingBottom:16,marginTop:-4}}>
-                <a href="/privacy" target="_blank" rel="noopener" style={{fontSize:11,color:T.text3,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.15)',textUnderlineOffset:3}}>Privacy policy</a>
-                <a href="/terms" target="_blank" rel="noopener" style={{fontSize:11,color:T.text3,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.15)',textUnderlineOffset:3}}>Terms of use</a>
+                <a href={`/privacy?a=${String(accent||'').replace('#','')}`} target="_blank" rel="noopener" style={{fontSize:11,color:T.text3,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.15)',textUnderlineOffset:3}}>Privacy policy</a>
+                <a href={`/terms?a=${String(accent||'').replace('#','')}`} target="_blank" rel="noopener" style={{fontSize:11,color:T.text3,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.15)',textUnderlineOffset:3}}>Terms of use</a>
               </div>
               {showTmdb&&(
                 <div onClick={()=>setShowTmdb(false)} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24,animation:'fadeIn 0.2s ease'}}>

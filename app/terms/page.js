@@ -1,13 +1,14 @@
-import { LegalPage } from '@/components/LegalPage';
+import { LegalPage, accentFrom } from '@/components/LegalPage';
 import { APP_NAME, OPERATOR, CONTACT_EMAIL } from '@/lib/brand';
 
 export const metadata = { title: `Terms of use · ${APP_NAME}`, description: `The rules for using ${APP_NAME}.` };
 
-const mail = <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: '#F5A623' }}>{CONTACT_EMAIL}</a>;
-
-export default function Terms() {
+export default function Terms({ searchParams }) {
+  const accent = accentFrom(searchParams);
+  const mail = <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: accent }}>{CONTACT_EMAIL}</a>;
   return (
     <LegalPage
+      accent={accent}
       eyebrow="The rules"
       title="Terms of use"
       intro={<>These terms are an agreement between you and {OPERATOR}, who runs {APP_NAME}. By creating an account or using the app you agree to them. If you don’t agree, please don’t use {APP_NAME}.</>}

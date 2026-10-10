@@ -24,7 +24,7 @@ function AuthGate({onClose,accent}){
           <SvgIcon name="user" size={16} color={T.text2}/>
           <span style={{fontSize:14,fontWeight:600,color:T.text2}}>Sign in with Email</span>
         </button>
-        <div style={{position:'relative',textAlign:'center',fontSize:11.5,color:T.text3,lineHeight:1.5,marginTop:14}}>By continuing you agree to our <a href="/terms" target="_blank" rel="noopener" style={{color:T.text2}}>Terms</a> and <a href="/privacy" target="_blank" rel="noopener" style={{color:T.text2}}>Privacy policy</a>.</div>
+        <div style={{position:'relative',textAlign:'center',fontSize:11.5,color:T.text3,lineHeight:1.5,marginTop:14}}>By continuing you agree to our <a href={`/terms?a=${String(accent||'').replace('#','')}`} target="_blank" rel="noopener" style={{color:T.text2}}>Terms</a> and <a href={`/privacy?a=${String(accent||'').replace('#','')}`} target="_blank" rel="noopener" style={{color:T.text2}}>Privacy policy</a>.</div>
       </div>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
     </div>
