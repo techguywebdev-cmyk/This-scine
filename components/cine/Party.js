@@ -91,7 +91,15 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
   // load + auto-join as guest
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { if (party && me && party.guest_id === me && party.status === 'invited') act('join'); }, [party?.status, me]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const t = setTimeout(() => setIntro(false), 2100); return () => clearTimeout(t); }, []);
+  const [introMin, setIntroMin] = useState(false);
+  const [introFade, setIntroFade] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setIntroMin(true), 4300); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    if (!intro || !introMin || !data) return;
+    setIntroFade(true);
+    const t = setTimeout(() => setIntro(false), 650);
+    return () => clearTimeout(t);
+  }, [intro, introMin, data]);
   useEffect(() => { track('party_open'); const prev = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = prev; }; }, []);
   // clock tick
   useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 250); return () => clearInterval(t); }, []);
@@ -175,7 +183,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
   const pill = { ...glass, height: 40, borderRadius: 20, padding: '0 15px', color: '#fff', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, flexShrink: 0 };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 460, background: '#06060B', color: '#fff', overflow: 'hidden', fontFamily: 'inherit' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 460, background: ambient(accent), color: '#fff', overflow: 'hidden', fontFamily: 'inherit' }}>
       <style>{`
         @keyframes pIn{from{opacity:0}to{opacity:1}}
         @keyframes pL{0%{transform:translateX(-140px) scale(.8);opacity:0}60%{transform:translateX(12px) scale(1.05);opacity:1}100%{transform:translateX(0) scale(1)}}
@@ -187,11 +195,19 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
         @keyframes pFloat{0%{transform:translate(-50%,0) scale(.3);opacity:0}12%{opacity:1;transform:translate(calc(-50% + var(--dx)*.15),-30px) scale(1.15) rotate(var(--rot))}100%{transform:translate(calc(-50% + var(--dx)),calc(var(--rise)*-1)) scale(.85);opacity:0}}
         @keyframes pSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @keyframes pToast{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes iL{0%{transform:translateX(-170px) scale(.7);opacity:0}70%{transform:translateX(10px) scale(1.04);opacity:1}100%{transform:translateX(0) scale(1)}}
+        @keyframes iR{0%{transform:translateX(170px) scale(.7);opacity:0}70%{transform:translateX(-10px) scale(1.04);opacity:1}100%{transform:translateX(0) scale(1)}}
+        @keyframes iRing{0%{transform:scale(.6);opacity:0}8%{opacity:.9}100%{transform:scale(2.6);opacity:0}}
+        @keyframes iGlow{0%{transform:scale(.3);opacity:0}40%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:.65}}
+        @keyframes iPop{0%{transform:translateX(-50%) scale(0);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
+        @keyframes iUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes iFill{from{width:0}to{width:100%}}
       `}</style>
 
       {/* backdrop */}
-      {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', inset: -40, width: 'calc(100% + 80px)', height: 'calc(100% + 80px)', objectFit: 'cover', filter: 'blur(26px) brightness(0.45) saturate(1.2)', transform: 'scale(1.05)' }} />}
-      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(120% 70% at 50% 0%, ${accent}33, transparent 60%), linear-gradient(180deg, rgba(6,6,11,0.35), rgba(6,6,11,0.92) 75%)` }} />
+      <div style={{ position: 'absolute', inset: 0, background: ambient(accent) }} />
+      {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', inset: -40, width: 'calc(100% + 80px)', height: 'calc(100% + 80px)', objectFit: 'cover', filter: 'blur(34px) saturate(1.1)', opacity: 0.16, mixBlendMode: 'screen' }} />}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0) 40%, rgba(6,6,11,0.55) 100%)' }} />
 
       {/* room */}
       <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', maxWidth: 560, margin: '0 auto', padding: 'max(14px, env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom))', boxSizing: 'border-box', animation: 'pIn .4s ease' }}>
@@ -377,17 +393,29 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
         </div>
       )}
 
-      {/* intro: both faces slide together over the film */}
+      {/* intro: both faces glide together, meet with a pulse, the room "builds", then fades into the room */}
       {intro && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 9, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#06060B', animation: 'pOut .45s ease 1.65s forwards' }}>
-          {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(14px) brightness(0.4)', animation: 'pIn .6s ease' }} />}
+        <div onClick={() => { if (data) { setIntroFade(true); setTimeout(() => setIntro(false), 400); } }} style={{ position: 'absolute', inset: 0, zIndex: 9, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: ambient(accent), transition: 'opacity .6s ease, transform .6s ease', opacity: introFade ? 0 : 1, transform: introFade ? 'scale(1.04)' : 'scale(1)', pointerEvents: introFade ? 'none' : 'auto' }}>
+          {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(30px)', opacity: 0.18, mixBlendMode: 'screen', animation: 'pIn 1.2s ease' }} />}
+          {/* soft glow that blooms when the faces meet */}
+          <div style={{ position: 'absolute', width: 360, height: 360, borderRadius: '50%', background: `radial-gradient(circle, ${accent}55, transparent 65%)`, animation: 'iGlow 2.4s ease 1.1s both' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <div style={{ animation: 'pL .9s cubic-bezier(.2,.8,.2,1) both' }}><Face u={self} size={96} /></div>
-            <div style={{ marginLeft: -22, animation: 'pR .9s cubic-bezier(.2,.8,.2,1) both' }}><Face u={peer} size={96} ring={accent} /></div>
+            <div style={{ animation: 'iL 1.25s cubic-bezier(.16,.84,.24,1) .15s both' }}><Face u={self} size={104} /></div>
+            <div style={{ marginLeft: -24, animation: 'iR 1.25s cubic-bezier(.16,.84,.24,1) .15s both' }}><Face u={peer} size={104} ring={accent} /></div>
+            {/* pulse rings from the meeting point */}
+            <span style={{ position: 'absolute', left: '50%', top: '50%', width: 120, height: 120, marginLeft: -60, marginTop: -60, borderRadius: '50%', border: `2px solid ${accent}`, animation: 'iRing 1.6s ease-out 1.25s both' }} />
+            <span style={{ position: 'absolute', left: '50%', top: '50%', width: 120, height: 120, marginLeft: -60, marginTop: -60, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.6)', animation: 'iRing 1.6s ease-out 1.55s both' }} />
+            <span style={{ position: 'absolute', left: '50%', top: -18, transform: 'translateX(-50%)', fontSize: 26, animation: 'iPop .6s cubic-bezier(.3,1.6,.5,1) 1.35s both' }}>🍿</span>
           </div>
-          <div style={{ position: 'relative', ...eyebrow(accent), marginTop: 26, animation: 'pUp .5s ease .5s both' }}>Watch party</div>
-          <div style={{ position: 'relative', fontFamily: T.serif, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 8, animation: 'pUp .5s ease .65s both' }}>{data ? `You & ${first(peer)}` : 'Getting the room ready…'}</div>
-          {movie.title && <div style={{ position: 'relative', fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 6, animation: 'pUp .5s ease .8s both' }}>{movie.title}</div>}
+          <div style={{ position: 'relative', ...eyebrow(accent), marginTop: 34, animation: 'iUp .7s ease 1.6s both' }}>Watch party</div>
+          <div style={{ position: 'relative', fontFamily: T.serif, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 8, animation: 'iUp .7s ease 1.85s both' }}>{peer ? `You & ${first(peer)}` : 'Your watch party'}</div>
+          {movie.title && <div style={{ position: 'relative', fontSize: 15, color: 'rgba(255,255,255,0.75)', marginTop: 6, animation: 'iUp .7s ease 2.1s both' }}>{movie.title}</div>}
+          <div style={{ position: 'relative', width: 180, marginTop: 30, animation: 'iUp .6s ease 2.4s both' }}>
+            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 2, background: '#fff', animation: 'iFill 1.8s cubic-bezier(.4,0,.2,1) 2.5s both' }} />
+            </div>
+            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginTop: 10 }}>{introMin && !data ? 'Almost there…' : 'Setting up your room…'}</div>
+          </div>
         </div>
       )}
     </div>
