@@ -24,6 +24,7 @@ function AuthGate({onClose,accent}){
           <SvgIcon name="user" size={16} color={T.text2}/>
           <span style={{fontSize:14,fontWeight:600,color:T.text2}}>Sign in with Email</span>
         </button>
+        <div style={{position:'relative',textAlign:'center',fontSize:11.5,color:T.text3,lineHeight:1.5,marginTop:14}}>By continuing you agree to our <a href="/terms" target="_blank" rel="noopener" style={{color:T.text2}}>Terms</a> and <a href="/privacy" target="_blank" rel="noopener" style={{color:T.text2}}>Privacy policy</a>.</div>
       </div>
       <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
     </div>
@@ -125,6 +126,7 @@ export default function CineScroll(){
   // Letterboxd / IMDb import can be opened from anywhere; reload saves when it finishes
   const[showImport,setShowImport]=useState(false);
   const[safety,setSafety]=useState(null);
+  useEffect(()=>{try{const u=new URL(window.location.href);if(u.searchParams.get('deleted')==='1'){u.searchParams.delete('deleted');window.history.replaceState(null,'',u.pathname+u.search);setFeedToast('Your account and data were deleted');setTimeout(()=>setFeedToast(null),4000);}}catch{}},[]);
   useEffect(()=>{const fn=(e)=>{if(e.detail?.user||e.detail?.targetId)setSafety(e.detail);};window.addEventListener('cine:safety',fn);return()=>window.removeEventListener('cine:safety',fn);},[]);
   // First-run onboarding: new (empty) accounts pick titles → import → invite. ?welcome=1 forces it for testing.
   const[welcome,setWelcome]=useState(null);// null | accent string while open

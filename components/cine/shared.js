@@ -1298,6 +1298,7 @@ export const PartyInvite = dynamic(() => import('./PartyInvite').then((m) => m.P
 export const StartPartySheet = dynamic(() => import('./StartParty').then((m) => m.StartPartySheet), { ssr: false, loading: () => null });
 export const PartyRoom = dynamic(() => import('./Party').then((m) => m.PartyRoom), { ssr: false, loading: () => null });
 export const SafetySheet = dynamic(() => import('./Safety').then((m) => m.SafetySheet), { ssr: false, loading: () => null });
+export const DeleteAccountSheet = dynamic(() => import('./Safety').then((m) => m.DeleteAccountSheet), { ssr: false, loading: () => null });
 export const BlockedList = dynamic(() => import('./Safety').then((m) => m.BlockedList), { ssr: false, loading: () => null });
 export const Welcome = dynamic(() => import('./Welcome').then((m) => m.Welcome), { ssr: false, loading: () => null });
 export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });

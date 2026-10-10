@@ -170,3 +170,44 @@ export function BlockedList({ accent = '#F5A623' }) {
     </div>
   );
 }
+
+// Settings → Delete account (permanent)
+export function DeleteAccountSheet({ accent = '#F5A623', onClose, onDeleted }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const ok = text.trim().toUpperCase() === 'DELETE';
+  const go = async () => {
+    if (!ok || busy) return;
+    setBusy(true); setErr('');
+    try {
+      const r = await fetch('/api/account', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: 'DELETE' }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Something went wrong');
+      try { Object.keys(localStorage).filter((k) => k.startsWith('cs_') || k.startsWith('cine_')).forEach((k) => localStorage.removeItem(k)); } catch {}
+      onDeleted();
+    } catch (e) { setErr(e.message); setBusy(false); }
+  };
+  const btn = { ...glass, width: '100%', height: 52, borderRadius: 26, color: '#fff', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, cursor: 'pointer' };
+  const items = ['Your profile, bio, cover and sign-in', 'Your watchlist, watched films, reviews and folders', 'Your messages, statuses, photos and voice notes', 'Followers, following, watch parties and blocks'];
+  return (
+    <div onClick={() => !busy && onClose()} style={{ position: 'fixed', inset: 0, zIndex: 520, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', animation: 'sfIn .2s ease' }}>
+      <style>{`@keyframes sfIn{from{opacity:0}to{opacity:1}}@keyframes sfUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 560, maxHeight: '88dvh', overflowY: 'auto', background: ambient(accent), borderRadius: '22px 22px 0 0', borderTop: `1px solid ${T.hairline}`, padding: '10px 22px calc(22px + env(safe-area-inset-bottom))', color: '#fff', animation: 'sfUp .32s cubic-bezier(0.22,1,0.36,1)' }}>
+        <div style={{ width: 34, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.25)', margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: '#ff8a8a' }}>Permanent</div>
+        <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 800, marginTop: 8 }}>Delete your account?</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8, lineHeight: 1.55 }}>This can’t be undone. We’ll erase:</div>
+        <div style={{ marginTop: 10 }}>
+          {items.map((t) => <div key={t} style={{ display: 'flex', gap: 10, padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 13.5, color: 'rgba(255,255,255,0.85)' }}><span style={{ color: '#ff8a8a' }}>✕</span>{t}</div>)}
+        </div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 10, lineHeight: 1.5 }}>Conversations you were part of disappear for the other person too.</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginTop: 18 }}>Type DELETE to confirm</div>
+        <input value={text} onChange={(e) => setText(e.target.value)} autoCapitalize="characters" autoComplete="off" placeholder="DELETE" style={{ width: '100%', boxSizing: 'border-box', marginTop: 8, height: 48, borderRadius: 14, background: 'rgba(0,0,0,0.3)', border: `1px solid ${ok ? 'rgba(255,99,99,0.7)' : 'rgba(255,255,255,0.14)'}`, color: '#fff', padding: '0 14px', fontFamily: 'inherit', fontSize: 15, letterSpacing: 2, outline: 'none' }} />
+        {err && <div style={{ color: '#ff8a8a', fontSize: 13, marginTop: 10 }}>{err}</div>}
+        <button disabled={!ok || busy} onClick={go} style={{ ...btn, marginTop: 16, background: ok ? 'rgba(255,77,77,0.22)' : glass.background, borderColor: ok ? 'rgba(255,99,99,0.7)' : 'rgba(255,255,255,0.14)', opacity: !ok || busy ? 0.6 : 1 }}>{busy ? 'Deleting everything…' : 'Delete my account'}</button>
+        <button disabled={busy} onClick={onClose} style={{ ...btn, marginTop: 10 }}>Keep my account</button>
+      </div>
+    </div>
+  );
+}

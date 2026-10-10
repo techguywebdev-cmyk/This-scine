@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
-import { BlockedList, PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
+import { DeleteAccountSheet, BlockedList, PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
 
 export function loadCanvasImage(url) {
   return new Promise((resolve) => {
@@ -188,7 +188,7 @@ export function CineScoreRing({score,accent}){
 }
 export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loadingData,onDiscover,onWatchTrailer}){
   const{user}=useUser();const{signOut}=useClerk();
-  const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[showBlocked,setShowBlocked]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
+  const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[showBlocked,setShowBlocked]=useState(false);const[showDelete,setShowDelete]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
   const[watchlistPublic,setWatchlistPublic]=useState(true);const[loadingSettings,setLoadingSettings]=useState(true);const[notifyPrefs,setNotifyPrefs]=useState({email:true,web:true,app:true,messages:true,follows:true,activity:true});const[hasWebPush,setHasWebPush]=useState(false);const[pushBusy,setPushBusy]=useState(false);
   const[bio,setBio]=useState('');const[bioInput,setBioInput]=useState('');const[savingBio,setSavingBio]=useState(false);
   const[nickname,setNickname]=useState('');const[nicknameInput,setNicknameInput]=useState('');const[savingNickname,setSavingNickname]=useState(false);
@@ -682,6 +682,10 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                   Movie data provided by TMDB · Disclaimer
                 </span>
               </button>
+              <div style={{display:'flex',justifyContent:'center',gap:14,paddingBottom:16,marginTop:-4}}>
+                <a href="/privacy" target="_blank" rel="noopener" style={{fontSize:11,color:T.text3,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.15)',textUnderlineOffset:3}}>Privacy policy</a>
+                <a href="/terms" target="_blank" rel="noopener" style={{fontSize:11,color:T.text3,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.15)',textUnderlineOffset:3}}>Terms of use</a>
+              </div>
               {showTmdb&&(
                 <div onClick={()=>setShowTmdb(false)} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24,animation:'fadeIn 0.2s ease'}}>
                   <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:340,background:'rgba(18,18,26,0.82)',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',border:`1px solid ${T.hairline}`,borderRadius:18,padding:'22px 20px 20px',position:'relative'}}>
@@ -699,9 +703,11 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                   </div>
                 </div>
               )}
-<button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:'rgba(0,0,0,0.25)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:22,padding:'12px',marginBottom:'calc(10px + env(safe-area-inset-bottom))',cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',transition:'all 0.3s ease'}}>
+<button onClick={handleSignOut} disabled={signingOut||signedOut} style={{width:'100%',background:'rgba(0,0,0,0.25)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:22,padding:'12px',marginBottom:6,cursor:signingOut||signedOut?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontFamily:'inherit',transition:'all 0.3s ease'}}>
                 {signedOut?(<><div style={{width:16,height:16,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={10} color="#000"/></div><span style={{fontSize:13,color:accent,fontWeight:600}}>Signed out</span></>):signingOut?(<><div style={{width:14,height:14,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/><span style={{fontSize:13,color:'rgba(255,255,255,0.5)'}}>Signing out...</span></>):(<><SvgIcon name="logout" size={15} color="rgba(255,255,255,0.4)"/><span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Sign out</span></>)}
               </button>
+              <button type="button" onClick={()=>setShowDelete(true)} style={{display:'block',margin:'0 auto',padding:'10px 12px calc(10px + env(safe-area-inset-bottom))',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:600,color:'rgba(255,120,120,0.75)'}}>Delete account</button>
+              {showDelete&&<DeleteAccountSheet accent={accent} onClose={()=>setShowDelete(false)} onDeleted={async()=>{try{await signOut();}catch{}window.location.href='/?deleted=1';}}/>}
             </div>
           )}
           {tab==='watchlist'&&(
