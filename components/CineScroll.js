@@ -3295,8 +3295,6 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
   // Rotate popular + load the time-of-day picks whenever Discover opens
   useEffect(() => {
     if (!show) return;
-    loadPopular();
-    fetch('/api/lists?tab=trending').then(r => r.json()).then(d => setFolders((d.lists || []).filter(l => (l.movie_count || 0) > 0).slice(0, 8))).catch(() => {});
     setLoadingTonight(true);
     let preferred = '';
     try { preferred = localStorage.getItem('cine_preferred_provider') || ''; } catch {}
@@ -3514,14 +3512,14 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
 
               {/* Genre — plain text, 2-column grid */}
               <H>Genre</H>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 10 }}>
                 {[{ id: '', label: 'Any genre' }, ...GENRE_OPTIONS.filter(g => g.id)].map(g => {
                   const on = (activeGenre || '') === g.id;
                   return (
                     <button key={g.id || 'any'} onClick={() => chooseGenre(g.id)} aria-pressed={on}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'none', border: 'none', padding: '11px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.75)', textAlign: 'left', transition: 'color .2s' }}>
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'none', border: 'none', padding: '11px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.75)', textAlign: 'center', transition: 'color .2s' }}>
                       {g.label}
-                      {on && <SvgIcon name="check" size={14} color={accent} />}
+                      {on && <SvgIcon name="check" size={13} color={accent} />}
                     </button>
                   );
                 })}
@@ -3543,27 +3541,6 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                 })}
               </div>
 
-              {/* Public folders from the community */}
-              {folders.length>0&&(
-                <>
-                  <H right={onOpenFolders?<button onClick={()=>{onClose();onOpenFolders();}} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>See all</button>:null}>Popular folders</H>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '18px 12px', marginTop: 12 }}>
-                    {folders.slice(0, 6).map(f => (
-                      <div key={f.id} role="button" tabIndex={0} onClick={() => { onClose(); onOpenFolder && onOpenFolder(f.id); }} style={{ minWidth: 0, cursor: 'pointer' }}>
-                        <FolderCoverFill posters={f.posters?.length ? f.posters : (f.cover_poster ? [f.cover_poster] : [])} accent={accent} count={f.movie_count || 0} />
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.title}</div>
-                        <div style={{ fontSize: 11, color:T.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.movie_count || 0} titles · {f.display_name || f.username}</div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* Popular */}
-              <H right={<button onClick={loadPopular} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: accent, fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Refresh</button>}>Popular right now</H>
-              {loadingPopular ? <Spinner /> : (
-                <div>{popular.map((m, i) => <Row key={`${m.id}-${m.title}`} m={m} i={i} rank={i + 1} />)}</div>
-              )}
             </>
           ) : (
             <div>
