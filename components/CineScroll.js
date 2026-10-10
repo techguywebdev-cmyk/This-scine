@@ -2181,7 +2181,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 </div>
               </button>
 
-              <div style={{position:'relative',display:'flex',alignItems:'center',gap:14,padding:'0 4px',marginTop:-32,marginBottom:24}}>
+              <div style={{position:'relative',display:'flex',alignItems:'center',gap:14,padding:'0 4px',marginTop:-32,marginBottom:32}}>
                 <AccentGlow accent={accent} size={110} style={{left:-12,top:-30}}/>
                 <button onClick={()=>avatarInputRef.current?.click()} disabled={uploadingAvatar} style={{position:'relative',width:72,height:72,borderRadius:'50%',background:T.surface,border:`3px solid ${T.bg}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:0,cursor:'pointer',flexShrink:0}}>
                   {user?.imageUrl?<img src={user.imageUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:24,fontWeight:700,color:accent,fontFamily:T.serif}}>{(user?.firstName||user?.username||'?')[0].toUpperCase()}</span>}
@@ -2199,7 +2199,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
               </div>
 
               {/* ABOUT YOU — read view; edit icon reveals borderless fields in place */}
-              <div style={{marginBottom:26}}>
+              <div style={{marginBottom:32,paddingBottom:32,borderBottom:`1px solid ${T.hairline}`}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
                   <Eyebrow color={accent}>About you</Eyebrow>
                   {!editingAbout&&<button onClick={()=>{setEditingAbout(true);setTimeout(()=>nameRef.current?.focus(),50);}} aria-label="Edit name and bio" style={{width:32,height:32,borderRadius:'50%',background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}}><SvgIcon name="edit" size={13} color="#fff"/></button>}
@@ -2228,7 +2228,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 )}
               </div>
 
-              <div style={{position:'relative',marginBottom:26}}>
+              <div style={{position:'relative',marginBottom:32}}>
                 <AccentGlow accent={accent} size={160} style={{right:-40,top:-40}}/>
                 <div style={{position:'relative',display:'flex',alignItems:'center',gap:16,marginBottom:18}}>
                   <CineScoreRing score={cineScore} accent={accent}/>
@@ -2255,7 +2255,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                   ))}
                 </div>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,marginBottom:26,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,marginBottom:32,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
                 {[{label:'Avg Rating',value:avgRating,icon:'star'},{label:'Genres Explored',value:Object.keys(topGenres).length,icon:'gem'}].map(s=>(
                   <div key={s.label} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}`,padding:'14px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:7}}><SvgIcon name={s.icon} size={11} color={T.text3}/><Eyebrow style={{fontSize:8.5}}>{s.label}</Eyebrow></div>
@@ -2264,7 +2264,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 ))}
               </div>
               {sortedGenres.length>0&&(
-                <div style={{marginBottom:26}}>
+                <div style={{marginBottom:32}}>
                   <Eyebrow style={{marginBottom:12}}>Top Genres</Eyebrow>
                   {sortedGenres.map(([genre,count])=>(
                     <div key={genre} style={{marginBottom:10}}>
@@ -2275,13 +2275,13 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 </div>
               )}
               {/* Privacy */}
-              <div style={{marginBottom:26}}>
+              <div style={{marginBottom:32}}>
                 <Eyebrow color={accent} style={{marginBottom:4}}>Privacy</Eyebrow>
                 <SetRow title="Public watchlist" sub={watchlistPublic?'Anyone can see your watchlist':'Only you can see your watchlist'} right={<Switch on={watchlistPublic} onClick={togglePrivacy} disabled={loadingSettings} label="Public watchlist"/>}/>
               </div>
 
               {/* Notifications */}
-              <div style={{marginBottom:26}}>
+              <div style={{marginBottom:32}}>
                 <Eyebrow color={accent} style={{marginBottom:4}}>Notifications</Eyebrow>
                 <SetRow title="Email" sub={user?.primaryEmailAddress?.emailAddress?`Send to ${user.primaryEmailAddress.emailAddress}`:'Messages & follows to your inbox'} right={<Switch on={notifyPrefs.email} onClick={()=>toggleNotify('email')} disabled={loadingSettings} label="Email notifications"/>}/>
                 <SetRow title="Web push" sub={hasWebPush?'On for this browser':'Alerts when you’re away'} right={hasWebPush
