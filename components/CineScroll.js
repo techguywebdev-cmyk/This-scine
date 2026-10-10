@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
-import { fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 // AUTH GATE
 function AuthGate({onClose,accent}){
@@ -32,16 +32,16 @@ function AuthGate({onClose,accent}){
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
   const{openSignIn}=useClerk();
-  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);
+  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);
   const[showTonightNudge,setShowTonightNudge]=useState(false);const[feedToast,setFeedToast]=useState(null);
   const containerRef=useRef(null);const pageRef=useRef(1);const loadingMoreRef=useRef(false);const profileLoadedRef=useRef(false);
 
   useEffect(()=>{
     if(!isLoaded)return;
-    if(!isSignedIn){setWatchlist([]);setUserReviews([]);setWatchlistIds(new Set());setReminderIds(new Set());profileLoadedRef.current=false;return;}
+    if(!isSignedIn){setProfileReady(false);setWatchlist([]);setUserReviews([]);setWatchlistIds(new Set());setReminderIds(new Set());profileLoadedRef.current=false;return;}
     if(profileLoadedRef.current)return;
     profileLoadedRef.current=true;
-    const load=async()=>{setLoadingProfileData(true);try{const[wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);const[wData,rData]=await Promise.all([wRes.json(),rRes.json()]);const items=wData.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));setUserReviews(rData.items||[]);}catch(e){console.error(e);}setLoadingProfileData(false);fetch('/api/reminders').then(r=>r.ok?r.json():{items:[]}).then(d=>setReminderIds(new Set((d.items||[]).map(r=>r.movie_id)))).catch(()=>{});};
+    const load=async()=>{setLoadingProfileData(true);try{const[wRes,rRes]=await Promise.all([fetch('/api/watchlist'),fetch('/api/reviews')]);const[wData,rData]=await Promise.all([wRes.json(),rRes.json()]);const items=wData.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));setUserReviews(rData.items||[]);setProfileReady(true);}catch(e){console.error(e);}setLoadingProfileData(false);fetch('/api/reminders').then(r=>r.ok?r.json():{items:[]}).then(d=>setReminderIds(new Set((d.items||[]).map(r=>r.movie_id)))).catch(()=>{});};
     load();
   },[isLoaded,isSignedIn]);
 
@@ -124,6 +124,24 @@ export default function CineScroll(){
   },[]);
   // Letterboxd / IMDb import can be opened from anywhere; reload saves when it finishes
   const[showImport,setShowImport]=useState(false);
+  // First-run onboarding: new (empty) accounts pick titles → import → invite. ?welcome=1 forces it for testing.
+  const[welcome,setWelcome]=useState(null);// null | accent string while open
+  const welcomeCheckedRef=useRef(false);
+  useEffect(()=>{
+    if(!isLoaded||!isSignedIn||!user?.id||!profileReady||welcomeCheckedRef.current)return;
+    welcomeCheckedRef.current=true;
+    let force=false;try{force=new URLSearchParams(window.location.search).get('welcome')==='1';}catch{}
+    let done=false;try{done=localStorage.getItem(`cs_onboarded_${user.id}`)==='1';}catch{}
+    if(force||(!done&&watchlistRef.current.length===0))setWelcome(movies[activeIndex]?.accent||'#F5A623');
+  },[isLoaded,isSignedIn,user?.id,profileReady]);
+  const finishWelcome=async({picks})=>{
+    try{localStorage.setItem(`cs_onboarded_${user?.id}`,'1');}catch{}
+    setWelcome(null);
+    if(!picks)return;
+    try{const r=await fetch('/api/watchlist',{cache:'no-store'});const d=await r.json();const items=d.items||[];watchlistRef.current=items;setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));}catch{}
+    pageRef.current=1;fetchMovies(activeMood,activeGenre,'',1,false,activeProvider);
+    setFeedToast('Your feed is tuned to your taste ✨');setTimeout(()=>setFeedToast(null),2600);
+  };
   useEffect(()=>{
     const open=()=>setShowImport(true);
     const refresh=async()=>{try{const r=await fetch('/api/watchlist',{cache:'no-store'});const d=await r.json();const items=d.items||[];setWatchlist(items);setWatchlistIds(new Set(items.map(m=>m.movie_id)));}catch{}};
@@ -499,6 +517,7 @@ export default function CineScroll(){
       {incoming&&!partyId&&<PartyInvite invite={incoming} accent={accent} onJoin={()=>{const inv=incoming;dismissInvite(inv.id);setIncoming(null);if(inv.scheduled_for&&Date.parse(inv.scheduled_for)-Date.now()>10*60000){fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'join',id:inv.id})}).then(()=>{setFeedToast(`You're in · ${fmtWhen(inv.scheduled_for)} 🍿`);setTimeout(()=>setFeedToast(null),2600);}).catch(()=>{});}else setPartyId(inv.id);}} onLater={()=>{dismissInvite(incoming.id);setIncoming(null);}} onDecline={()=>{const id=incoming.id;dismissInvite(id);setIncoming(null);fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'decline',id})}).catch(()=>{});}}/>}
       {watchWith&&<StartPartySheet movie={watchWith.movie} candidates={watchWith.candidates} label={watchWith.label} preselect={watchWith.preselect} accent={accent} onClose={()=>setWatchWith(null)}/>}
       {partyId&&isSignedIn&&<PartyRoom partyId={partyId} accent={accent} onClose={()=>setPartyId(null)}/>}
+      {welcome&&isSignedIn&&<Welcome user={user} accent={welcome} onDone={finishWelcome}/>}
       {showImport&&<ImportSheet accent={accent} onClose={()=>setShowImport(false)} onImported={({matched})=>{if(matched)track('import',{matched});}}/>}
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}

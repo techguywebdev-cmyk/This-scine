@@ -1297,6 +1297,7 @@ export const CommentPanel = dynamic(() => import('./Comments').then((m) => m.Com
 export const PartyInvite = dynamic(() => import('./PartyInvite').then((m) => m.PartyInvite), { ssr: false, loading: () => null });
 export const StartPartySheet = dynamic(() => import('./StartParty').then((m) => m.StartPartySheet), { ssr: false, loading: () => null });
 export const PartyRoom = dynamic(() => import('./Party').then((m) => m.PartyRoom), { ssr: false, loading: () => null });
+export const Welcome = dynamic(() => import('./Welcome').then((m) => m.Welcome), { ssr: false, loading: () => null });
 export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });
 export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => m.CreateListSheet), { ssr: false, loading: () => null });
 

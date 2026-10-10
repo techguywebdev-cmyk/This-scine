@@ -215,6 +215,39 @@ export async function GET(request) {
       return Response.json({ movies: [formatItem(d, idx, cert)] });
     }
 
+    // ── ONBOARDING PICKS: well-known titles across genres so anyone recognises a few ──
+    if (searchParams.get('onboard') === '1') {
+      const D = (type, q) => `${TMDB_BASE}/discover/${type}?api_key=${TMDB_KEY}&include_adult=false${q}`;
+      const get = (u) => fetch(u, { next: { revalidate: 21600 } }).then((r) => r.json()).catch(() => ({ results: [] }));
+      const lists = await Promise.all([
+        get(`${TMDB_BASE}/trending/movie/week?api_key=${TMDB_KEY}`),
+        get(`${TMDB_BASE}/movie/popular?api_key=${TMDB_KEY}&page=1`),
+        get(`${TMDB_BASE}/movie/top_rated?api_key=${TMDB_KEY}&page=1`),
+        get(`${TMDB_BASE}/movie/top_rated?api_key=${TMDB_KEY}&page=2`),
+        get(`${TMDB_BASE}/trending/tv/week?api_key=${TMDB_KEY}`),
+        get(`${TMDB_BASE}/tv/top_rated?api_key=${TMDB_KEY}&page=1`),
+        get(`${D('movie', '&sort_by=vote_count.desc&with_genres=27&vote_count.gte=3000')}`),
+        get(`${D('movie', '&sort_by=vote_count.desc&with_genres=10749&vote_count.gte=3000')}`),
+        get(`${D('movie', '&sort_by=vote_count.desc&with_genres=16&vote_count.gte=3000')}`),
+        get(`${D('movie', '&sort_by=vote_count.desc&with_genres=35&vote_count.gte=4000')}`),
+      ]);
+      const seen = new Set();
+      const buckets = lists.map((l) => (l.results || []).filter((m) => m.poster_path && (m.vote_count || 0) >= 800 && (m.original_language === 'en' || (m.vote_count || 0) >= 4000)));
+      const out = [];
+      // Round-robin across sources so the grid mixes trending, classics, TV and genres
+      for (let round = 0; out.length < 48 && round < 20; round++) {
+        for (const b of buckets) {
+          const m = b[round];
+          if (!m) continue;
+          const k = keyOf(m);
+          if (seen.has(k)) continue;
+          seen.add(k); out.push(m);
+          if (out.length >= 48) break;
+        }
+      }
+      return Response.json({ movies: out.map((m, i) => formatItem(m, i)) }, { headers: { 'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=86400' } });
+    }
+
     // ── POPULAR SEARCHES (rotating trending picks) ──
     if (popularOnly) {
       const p = Math.floor(Math.random() * 5) + 1;
