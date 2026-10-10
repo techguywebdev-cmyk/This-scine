@@ -215,9 +215,16 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                     </div>
                   </div>
                   <div style={{marginTop:12}}>
-                    <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                      <span style={{fontFamily:T.serif,fontSize:22,fontWeight:700,letterSpacing:'-0.02em',color:'#fff',lineHeight:1.15}}>{name}</span>
-                      {profile.followsYou&&<span style={{fontSize:10.5,fontWeight:700,color:T.text2,background:'rgba(255,255,255,0.08)',borderRadius:6,padding:'3px 7px'}}>Follows you</span>}
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <div style={{flex:1,minWidth:0,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                        <span style={{fontFamily:T.serif,fontSize:22,fontWeight:700,letterSpacing:'-0.02em',color:'#fff',lineHeight:1.15}}>{name}</span>
+                        {profile.followsYou&&<span style={{fontSize:10.5,fontWeight:700,color:T.text2,background:'rgba(255,255,255,0.08)',borderRadius:6,padding:'3px 7px'}}>Follows you</span>}
+                      </div>
+                      {!profile.isSelf&&currentUser&&currentUser.id!==userId&&(
+                        <button onClick={handleMessageRequest} aria-label={`Message ${name}`} style={{flexShrink:0,width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}}>
+                          <SvgIcon name="chat" size={17} color="#fff"/>
+                        </button>
+                      )}
                     </div>
                     <div style={{fontSize:12.5,color:T.text2,marginTop:3}}>@{profile.username}{profile.topGenres?.length?<span style={{color:T.text3}}> · into {profile.topGenres.slice(0,3).join(', ')}</span>:null}</div>
                     {profile.bio&&<div style={{fontSize:13,color:'rgba(255,255,255,0.85)',marginTop:10,lineHeight:1.5}}>{profile.bio}</div>}
@@ -242,16 +249,11 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                         {following?'Following':profile.followsYou?'Follow back':'Follow'}
                       </button>
                       {currentUser&&currentUser.id!==userId&&(
-                        <button onClick={handleMessageRequest} style={{flex:1,height:42,borderRadius:21,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
-                          <SvgIcon name="chat" size={14} color="#fff"/>Message
+                        <button onClick={()=>setShowTogether(true)} style={{flex:1,height:42,borderRadius:21,border:`1px solid ${T.hairlineStrong}`,background:'rgba(255,255,255,0.04)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+                          <span style={{fontSize:14}}>🍿</span>Watch together
                         </button>
                       )}
                     </div>
-                  )}
-                  {!profile.isSelf&&currentUser&&currentUser.id!==userId&&(
-                    <button onClick={()=>setShowTogether(true)} style={{width:'100%',height:42,marginTop:10,borderRadius:21,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',color:'#fff',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-                      <span style={{fontSize:15}}>🍿</span>Watch together
-                    </button>
                   )}
                   {showTogether&&<TogetherSheet peer={{user_id:userId,username:profile.username,display_name:profile.display_name||profile.username,avatar_url:profile.avatar_url||null}} accent={accentColor||accent} onClose={()=>setShowTogether(false)}/>}
 
