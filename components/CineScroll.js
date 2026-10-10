@@ -220,10 +220,10 @@ async function generateShareCard(type, data, accent) {
     ctx.fillStyle='#ffffff';ctx.font='800 60px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.fillText(data.name,W/2,224);
     const cx=W/2,cy=460,r=150;
     ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=20;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
-    const pct=Math.min(data.score/999,1);
+    const lvl=cineLevel(data.score);const pct=Math.max(lvl.progress>0?0.035:0,lvl.progress);
     if(pct>0){const ag=ctx.createLinearGradient(cx-r,cy,cx+r,cy);ag.addColorStop(0,accent+'80');ag.addColorStop(0.5,accent);ag.addColorStop(1,accent+'cc');ctx.shadowColor=accent;ctx.shadowBlur=16;ctx.strokeStyle=ag;ctx.lineWidth=20;ctx.lineCap='round';ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+pct*2*Math.PI);ctx.stroke();ctx.shadowBlur=0;ctx.lineCap='butt';}
     ctx.fillStyle='#ffffff';ctx.font='bold 108px Georgia, serif';ctx.shadowColor=accent;ctx.shadowBlur=20;ctx.fillText(data.score,cx,cy+34);ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='600 13px sans-serif';ctx.letterSpacing='5px';ctx.fillText('CINESCORE',cx,cy+68);ctx.letterSpacing='0px';
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='600 13px sans-serif';ctx.letterSpacing='5px';ctx.fillText(lvl.name.toUpperCase(),cx,cy+68);ctx.letterSpacing='0px';
     const cols=[{label:'WATCHED',value:data.watched},{label:'REVIEWS',value:data.reviews},{label:'SAVED',value:data.saved}];
     const statY=680;const colW=W/3;
     cols.forEach((s,i)=>{const x=colW*i+colW/2;ctx.fillStyle='rgba(255,255,255,0.04)';ctx.beginPath();ctx.roundRect(colW*i+24,statY-46,colW-48,100,18);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 34px Georgia, serif';ctx.fillText(s.value,x,statY+24);ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='600 11px sans-serif';ctx.letterSpacing='2px';ctx.fillText(s.label,x,statY+44);ctx.letterSpacing='0px';});
@@ -261,17 +261,21 @@ async function shareImage(dataUrl,title,text){
 
 function calcCineScore(watched,reviews,saved){return Math.min(999,(watched*3)+(reviews*8)+(saved*2));}
 
+const CINE_LEVELS=[{name:'Newcomer',min:0,max:100},{name:'Casual viewer',min:100,max:300},{name:'Cinephile',min:300,max:600},{name:'Connoisseur',min:600,max:999}];
+function cineLevel(score){const i=Math.max(0,CINE_LEVELS.findIndex(l=>score<l.max));const idx=score>=999?CINE_LEVELS.length-1:i;const l=CINE_LEVELS[idx];return{...l,idx,next:CINE_LEVELS[idx+1]||null,progress:Math.min(1,(score-l.min)/(l.max-l.min)),toNext:Math.max(0,l.max-score)};}
+
 function CineScoreRing({score,accent}){
-  const r=38,circ=2*Math.PI*r,dash=(score/999)*circ;
+  const r=40,circ=2*Math.PI*r,lv=cineLevel(score);
+  const dash=Math.max(lv.progress>0?0.035:0,lv.progress)*circ;
   return(
-    <div style={{position:'relative',width:100,height:100,display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <div style={{position:'relative',width:100,height:100,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
       <svg width="100" height="100" style={{position:'absolute',inset:0,transform:'rotate(-90deg)'}}>
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6"/>
-        <circle cx="50" cy="50" r={r} fill="none" stroke={accent} strokeWidth="6" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{transition:'stroke-dasharray 1s ease'}}/>
+        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5"/>
+        <circle cx="50" cy="50" r={r} fill="none" stroke={accent} strokeWidth="5" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{transition:'stroke-dasharray 1s ease',filter:`drop-shadow(0 0 6px ${accent}66)`}}/>
       </svg>
       <div style={{textAlign:'center',zIndex:1}}>
-        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:22,fontWeight:800,color:'#fff',lineHeight:1}}>{score}</div>
-        <div style={{fontSize:8,letterSpacing:2,color:'rgba(255,255,255,0.35)',fontWeight:700,marginTop:2}}>SCORE</div>
+        <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:26,fontWeight:800,color:'#fff',lineHeight:1}}>{score}</div>
+        <div style={{fontSize:8.5,letterSpacing:1.6,color:'rgba(255,255,255,0.45)',fontWeight:700,marginTop:4,textTransform:'uppercase'}}>Level {lv.idx+1}</div>
       </div>
     </div>
   );
@@ -2087,7 +2091,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                   <Eyebrow color={accent} style={{marginBottom:7}}>Bio</Eyebrow>
                   <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film..." rows={2} style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',padding:0,color:T.text,fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5}}/>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
-                    <span style={{fontSize:10.5,color:T.text3}}>{bioInput.length}/160</span>
+                    <span style={{fontSize:10.5,color:T.text3}}>{bioInput!==bio?`${bioInput.length}/160`:''}</span>
                     {bioInput!==bio&&(
                       <button onClick={saveBio} disabled={savingBio} style={{background:savingBio?'rgba(255,255,255,0.08)':accent,border:'none',borderRadius:14,padding:'5px 16px',cursor:savingBio?'default':'pointer',fontSize:11,fontWeight:700,color:savingBio?T.text2:'#07070F',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6}}>
                         {savingBio&&<div style={{width:10,height:10,border:'1.5px solid rgba(255,255,255,0.3)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>}
@@ -2102,19 +2106,19 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 <AccentGlow accent={accent} size={160} style={{right:-40,top:-40}}/>
                 <div style={{position:'relative',display:'flex',alignItems:'center',gap:16,marginBottom:18}}>
                   <CineScoreRing score={cineScore} accent={accent}/>
-                  <div style={{flex:1}}>
-                    <Eyebrow style={{marginBottom:5}}>CineScore</Eyebrow>
-                    <div style={{fontSize:12,color:T.text2,lineHeight:1.5,marginBottom:9}}>{cineScore<100?'Just getting started — mark a film watched or leave a review.':cineScore<300?'Casual viewer — keep logging watches to climb.':cineScore<600?'Dedicated cinephile — share a list to grow your score.':'Elite connoisseur.'}</div>
-                    {cineScore<300&&(
-                      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>
-                        <button onClick={()=>setTab('watched')} style={{background:`${accent}14`,border:`1px solid ${accent}40`,borderRadius:14,padding:'5px 10px',cursor:'pointer',fontSize:10,fontWeight:700,color:accent,fontFamily:'inherit'}}>View watched</button>
-                        <button onClick={()=>{onClose&&onClose();onDiscover&&onDiscover();}} style={{background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:14,padding:'5px 10px',cursor:'pointer',fontSize:10,fontWeight:600,color:T.text2,fontFamily:'inherit'}}>Find something new</button>
-                      </div>
-                    )}
-                    <button onClick={async()=>{setSharing(true);try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontSize:11,color:accent,fontWeight:600,fontFamily:'inherit',display:'flex',alignItems:'center',gap:5,opacity:sharing?0.6:1}}>
-                      <SvgIcon name="share" size={11} color={accent}/>{sharing?'Preparing…':'Share Score'}
-                    </button>
-                  </div>
+                  {(()=>{const lv=cineLevel(cineScore);const pill={display:'inline-flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:16,height:32,padding:'0 13px',cursor:'pointer',fontSize:11.5,fontWeight:700,color:'#fff',fontFamily:'inherit'};return(
+                  <div style={{flex:1,minWidth:0}}>
+                    <Eyebrow color={accent} style={{marginBottom:4}}>CineScore</Eyebrow>
+                    <div style={{fontFamily:T.serif,fontSize:18,fontWeight:700,letterSpacing:'-0.02em',color:'#fff',lineHeight:1.15}}>{lv.name}</div>
+                    <div style={{fontSize:12,color:T.text2,lineHeight:1.45,marginTop:3}}>{lv.next?<><b style={{color:'#fff',fontWeight:700}}>{lv.toNext}</b> points to {lv.next.name}</>:'Top level reached'}</div>
+                    <div style={{fontSize:10.5,color:T.text3,marginTop:3}}>Watch +3 · Review +8 · Save +2</div>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:11}}>
+                      {cineScore<300&&<button onClick={()=>setTab('watched')} style={pill}>View watched</button>}
+                      <button onClick={async()=>{setSharing(true);try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{...pill,opacity:sharing?0.6:1}}>
+                        <SvgIcon name="share" size={12} color="#fff"/>{sharing?'Preparing…':'Share'}
+                      </button>
+                    </div>
+                  </div>);})()}
                 </div>
                 <div style={{position:'relative',display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden'}}>
                   {[{label:'Titles',value:saved},{label:'Watched',value:watched},{label:'Reviews',value:reviews}].map(s=>(
