@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
@@ -1473,11 +1473,25 @@ export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
   },[pi,si]);// eslint-disable-line react-hooks/exhaustive-deps
   useEffect(()=>{pausedRef.current=paused;const v=videoRef.current;if(v){paused?v.pause():v.play().catch(()=>{});}},[paused]);
 
+  // Reaction burst: emoji float up from the button, a big one pops in the middle, the button bounces
+  const[bursts,setBursts]=useState([]);
+  const[bump,setBump]=useState(null);
+  const react=(e,ev)=>{
+    const r=ev.currentTarget.getBoundingClientRect();
+    const id=Date.now()+Math.random();
+    const parts=Array.from({length:14},()=>({dx:(Math.random()-0.5)*170,rise:240+Math.random()*280,delay:Math.random()*0.35,size:18+Math.random()*22,rot:(Math.random()-0.5)*60,dur:1.1+Math.random()*0.7}));
+    setBursts(b=>[...b.slice(-3),{id,e,x:r.left+r.width/2,y:r.top,parts}]);
+    setTimeout(()=>setBursts(b=>b.filter(x=>x.id!==id)),2300);
+    setBump({e,k:id});
+    try{navigator.vibrate?.(12);}catch{}
+    pausedRef.current=true;setTimeout(()=>{pausedRef.current=paused;},1300);
+    send(e,true);
+  };
   const send=async(textToSend,reaction)=>{
     if(!textToSend.trim()||!person||person.isSelf)return;
     setReply('');setPaused(false);
     await fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({toUserId:person.user_id,msg_type:'status_reply',text:textToSend.trim(),meta:{status_id:item.id,kind:item.kind,text:item.text,media_url:item.media_url,bg:item.bg,reaction:!!reaction}})}).catch(()=>{});
-    setSent(reaction?`${textToSend} sent`:'Reply sent');
+    setSent(reaction?`Sent to ${(person.display_name||person.username||'').split(' ')[0]}`:'Reply sent');
     setTimeout(()=>setSent(null),1600);
   };
   const del=async()=>{
@@ -1529,7 +1543,7 @@ export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
         ):(
           <>
             <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:12}}>
-              {['❤️','😂','😮','🔥','👏','😢'].map(e=>(<button key={e} onClick={()=>send(e,true)} style={{width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'none',cursor:'pointer',fontSize:21,lineHeight:1}}>{e}</button>))}
+              {['❤️','😂','😮','🔥','👏','😢'].map(e=>(<button key={bump?.e===e?`${e}-${bump.k}`:e} onClick={(ev)=>react(e,ev)} aria-label={`React ${e}`} style={{width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'none',cursor:'pointer',fontSize:21,lineHeight:1,animation:bump?.e===e?'rxBump .5s cubic-bezier(.3,1.6,.5,1)':undefined}}>{e}</button>))}
             </div>
             <div style={{display:'flex',gap:8}}>
               <input value={reply} onChange={e=>setReply(e.target.value)} onFocus={()=>setPaused(true)} onBlur={()=>setPaused(false)} onKeyDown={e=>e.key==='Enter'&&send(reply)} placeholder={`Reply to ${(person.display_name||person.username||'').split(' ')[0]}…`} style={{flex:1,minWidth:0,background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:24,padding:'12px 16px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit'}}/>
@@ -1538,6 +1552,26 @@ export function StatusViewer({people,startIndex=0,accent,onClose,onChanged}){
           </>
         )}
       </div>
+      {bursts.length>0&&(
+        <div style={{position:'absolute',inset:0,zIndex:3,pointerEvents:'none',overflow:'hidden'}}>
+          <style>{`
+            @keyframes rxFloat{0%{transform:translate(-50%,0) scale(.3) rotate(0);opacity:0}12%{opacity:1;transform:translate(calc(-50% + var(--dx) * .15),-28px) scale(1.15) rotate(var(--rot))}100%{transform:translate(calc(-50% + var(--dx)),calc(var(--rise) * -1)) scale(.85) rotate(calc(var(--rot) * -1));opacity:0}}
+            @keyframes rxPop{0%{transform:translate(-50%,-50%) scale(0);opacity:0}30%{transform:translate(-50%,-50%) scale(1.4);opacity:1}48%{transform:translate(-50%,-50%) scale(.92)}62%{transform:translate(-50%,-50%) scale(1.08)}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-70%) scale(1);opacity:0}}
+            @keyframes rxRing{0%{transform:translate(-50%,-50%) scale(.2);opacity:.7}100%{transform:translate(-50%,-50%) scale(2.6);opacity:0}}
+            @media (prefers-reduced-motion: reduce){.rx-p{display:none}}
+          `}</style>
+          {bursts.map(b=>(
+            <Fragment key={b.id}>
+              <div style={{position:'absolute',left:'50%',top:'44%',width:120,height:120,borderRadius:'50%',border:'2px solid rgba(255,255,255,0.55)',animation:'rxRing .8s ease-out forwards'}}/>
+              <div style={{position:'absolute',left:'50%',top:'44%',fontSize:96,lineHeight:1,filter:'drop-shadow(0 10px 30px rgba(0,0,0,0.45))',animation:'rxPop 1.35s ease forwards'}}>{b.e}</div>
+              {b.parts.map((pt,i)=>(
+                <span key={i} className="rx-p" style={{position:'absolute',left:b.x,top:b.y,fontSize:pt.size,lineHeight:1,opacity:0,'--dx':`${pt.dx}px`,'--rise':`${pt.rise}px`,'--rot':`${pt.rot}deg`,animation:`rxFloat ${pt.dur}s cubic-bezier(.2,.7,.3,1) ${pt.delay}s forwards`}}>{b.e}</span>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+      )}
+      <style>{`@keyframes rxBump{0%{transform:scale(1)}35%{transform:scale(1.45)}65%{transform:scale(.9)}100%{transform:scale(1)}}`}</style>
       {viewers&&(
         <div onClick={()=>{setViewers(null);setPaused(false);}} style={{position:'absolute',inset:0,zIndex:2,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end'}}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'60vh',overflowY:'auto',background:ambient(accent),borderRadius:'20px 20px 0 0',padding:'16px 20px calc(18px + env(safe-area-inset-bottom))'}}>
@@ -7609,10 +7643,7 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     const toggle = (id) => setOpenPerson(cur => ({ ...cur, [sec.type]: cur[sec.type] === id ? null : id }));
     return (
       <div style={{ padding: '20px 0 18px', borderTop: `1px solid ${T.hairline}` }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: accent }}>{meta.title}</span>
-          <span style={{ fontSize: 11.5, color: T.text2 }}>{sec.people.length} {sec.people.length === 1 ? 'person' : 'people'} · {titles} {sec.type === 'reviewed' ? (titles === 1 ? 'review' : 'reviews') : (titles === 1 ? 'title' : 'titles')}</span>
-        </div>
+        <span style={{ fontSize: 10.5, letterSpacing: 2.2, textTransform: 'uppercase', fontWeight: 700, color: accent }}>{meta.title}</span>
 
         {/* Faces — overlapping stack, tap one to reveal */}
         <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', scrollbarWidth: 'none', margin: '14px -20px 0', padding: '6px 20px 6px 23px' }}>
@@ -7625,13 +7656,11 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
                 <div style={{ borderRadius: '50%', boxShadow: on ? `0 0 0 3px #0B0B12, 0 0 0 5px ${accent}` : '0 0 0 3px #0B0B12' }}>
                   <Avatar u={p.user} size={50} />
                 </div>
-                {on && <span style={{ position: 'absolute', right: -3, bottom: -3, minWidth: 18, height: 18, padding: '0 5px', boxSizing: 'border-box', borderRadius: 9, background: accent, border: '2px solid #0B0B12', color: '#06060B', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>{p.items.length}</span>}
               </button>
             );
           })}
         </div>
 
-        {!open && <div style={{ fontSize: 11.5, color: T.text3, marginTop: 8 }}>{(() => { const n = sec.people.map(p => (p.user.display_name || p.user.username || 'User').split(' ')[0]); return n.length === 1 ? n[0] : n.length === 2 ? `${n[0]} and ${n[1]}` : `${n[0]}, ${n[1]} and ${n.length - 2} more`; })()} · tap a face to see</div>}
 
         {/* Revealed */}
         {open && (() => {
