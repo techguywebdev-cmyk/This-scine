@@ -257,6 +257,7 @@ export async function POST(request) {
       return Response.json({ error: 'Invalid targetId' }, { status: 400 });
     }
     if (await blockState(userId, targetId)) return blockedResponse();
+    if (!(await clerkClient.users.getUser(targetId).catch(() => null))) return Response.json({ error: 'User not found' }, { status: 404 });
 
     await fetch(db('follows'), {
       method: 'POST',

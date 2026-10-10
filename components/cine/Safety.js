@@ -67,7 +67,7 @@ export function SafetySheet({ user, kind = 'user', targetId = null, snapshot = n
 
   const row = { width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '15px 2px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontFamily: 'inherit', fontSize: 15, fontWeight: 600, textAlign: 'left', cursor: 'pointer' };
   const primary = { ...glass, width: '100%', height: 52, borderRadius: 26, color: '#fff', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, cursor: 'pointer' };
-  const danger = { ...primary, background: 'rgba(255,77,77,0.18)', borderColor: 'rgba(255,99,99,0.6)' };
+  const danger = { ...primary, color: '#ff8a8a' };
 
   return (
     <div onClick={() => !busy && onClose()} style={{ position: 'fixed', inset: 0, zIndex: 520, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', animation: 'sfIn .2s ease' }}>
@@ -203,9 +203,9 @@ export function DeleteAccountSheet({ accent = '#F5A623', onClose, onDeleted }) {
         </div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 10, lineHeight: 1.5 }}>Conversations you were part of disappear for the other person too.</div>
         <div style={{ fontSize: 13, fontWeight: 700, marginTop: 18 }}>Type DELETE to confirm</div>
-        <input value={text} onChange={(e) => setText(e.target.value)} autoCapitalize="characters" autoComplete="off" placeholder="DELETE" style={{ width: '100%', boxSizing: 'border-box', marginTop: 8, height: 48, borderRadius: 14, background: 'rgba(0,0,0,0.3)', border: `1px solid ${ok ? 'rgba(255,99,99,0.7)' : 'rgba(255,255,255,0.14)'}`, color: '#fff', padding: '0 14px', fontFamily: 'inherit', fontSize: 15, letterSpacing: 2, outline: 'none' }} />
+        <input value={text} onChange={(e) => setText(e.target.value)} autoCapitalize="characters" autoComplete="off" placeholder="DELETE" style={{ width: '100%', boxSizing: 'border-box', marginTop: 8, height: 48, borderRadius: 14, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', padding: '0 14px', fontFamily: 'inherit', fontSize: 15, letterSpacing: 2, outline: 'none' }} />
         {err && <div style={{ color: '#ff8a8a', fontSize: 13, marginTop: 10 }}>{err}</div>}
-        <button disabled={!ok || busy} onClick={go} style={{ ...btn, marginTop: 16, background: ok ? 'rgba(255,77,77,0.22)' : glass.background, borderColor: ok ? 'rgba(255,99,99,0.7)' : 'rgba(255,255,255,0.14)', opacity: !ok || busy ? 0.6 : 1 }}>{busy ? 'Deleting everything…' : 'Delete my account'}</button>
+        <button disabled={!ok || busy} onClick={go} style={{ ...btn, marginTop: 16, color: '#ff8a8a', opacity: !ok || busy ? 0.45 : 1 }}>{busy ? 'Deleting everything…' : 'Delete my account'}</button>
         <button disabled={busy} onClick={onClose} style={{ ...btn, marginTop: 10 }}>Keep my account</button>
       </div>
     </div>

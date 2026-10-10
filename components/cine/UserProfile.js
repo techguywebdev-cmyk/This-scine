@@ -40,7 +40,7 @@ export function UserProfileSheet({userId,onClose,accent,onWatchTrailer,onAddToWa
     setTab('activity');setActivity([]);setReviews([]);setCoverImg(coverCache.get(userId));
     fetch(`/api/users/${userId}`)
       .then(r=>r.json())
-      .then(d=>{setProfile(d);setFollowing(!!d.isFollowing);setLoading(false);})
+      .then(d=>{setProfile(d&&!d.error?d:null);setFollowing(!!d?.isFollowing);setLoading(false);})
       .catch(()=>setLoading(false));
   },[userId,reloadKey]);
   // Blocked from here (or anywhere) → show the blocked state
@@ -175,7 +175,13 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
             <div style={{width:24,height:24,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accentColor}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
           </div>
         ):!profile?(
-          <div style={{textAlign:'center',padding:'40px 20px',color:T.text3,fontSize:13}}>Couldn't load this profile</div>
+          <div style={{padding:'16px 20px 40px'}}>
+            <button onClick={onClose} aria-label="Close" style={{background:'rgba(0,0,0,0.38)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'none',borderRadius:'50%',width:34,height:34,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="close" size={14} color="#fff"/></button>
+            <div style={{textAlign:'center',marginTop:40}}>
+              <div style={{fontFamily:T.serif,fontSize:20,fontWeight:800,color:'#fff'}}>This account isn’t available</div>
+              <div style={{fontSize:13.5,color:T.text2,marginTop:8,lineHeight:1.55}}>It may have been deleted.</div>
+            </div>
+          </div>
         ):(
           <div className="profile-scroll" style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}>
             {(()=>{

@@ -60,6 +60,8 @@ export async function GET(req, { params }) {
         ])
       : Promise.resolve(null);
     const [clerkUser, followerRes, followingRes, settingsData, watchlistRes, viewerData] = await Promise.all([clerkP, followerP, followingP, settingsP, watchlistP, viewerP]);
+    // Account no longer exists (deleted) → treat as not found rather than showing a blank "user"
+    if (!clerkUser) return Response.json({ error: 'User not found' }, { status: 404 });
 
     // 1. Clerk profile info
     let username = 'user';
