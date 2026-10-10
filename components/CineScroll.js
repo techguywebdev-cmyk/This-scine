@@ -1915,6 +1915,8 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
     }catch(err){showToast(err.message||'Could not save — try again');}
     setSavingNickname(false);
   };
+  const[editingAbout,setEditingAbout]=useState(false);
+  const nameRef=useRef(null);
   const aboutDirty=nicknameInput!==nickname||bioInput!==bio;
   const savingAbout=savingNickname||savingBio;
   const saveAbout=async()=>{
@@ -2151,7 +2153,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
           <span style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text}}>My Profile</span>
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
             <button onClick={()=>setShowOwnPreview(true)} title="Preview public profile" style={profGlass}><SvgIcon name="eye" size={15} color="#fff"/></button>
-            <button onClick={()=>{bioRef.current?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>bioRef.current?.focus(),300);}} title="Edit Profile" style={profGlass}><SvgIcon name="edit" size={15} color="#fff"/></button>
+            <button onClick={()=>{setTab('profile');setEditingAbout(true);setTimeout(()=>{nameRef.current?.scrollIntoView({behavior:'smooth',block:'center'});nameRef.current?.focus();},120);}} title="Edit Profile" style={profGlass}><SvgIcon name="edit" size={15} color="#fff"/></button>
             <button onClick={onClose} aria-label="Close" style={profGlass}><SvgIcon name="close" size={15} color="#fff"/></button>
           </div>
         </div>
@@ -2196,26 +2198,32 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                 </div>
               </div>
 
-              {/* ABOUT YOU — name + bio */}
+              {/* ABOUT YOU — read view; edit icon reveals borderless fields in place */}
               <div style={{marginBottom:26}}>
-                <Eyebrow color={accent} style={{marginBottom:12}}>About you</Eyebrow>
-                <label style={{display:'block'}}>
-                  <span style={{display:'block',fontSize:11.5,fontWeight:600,color:T.text2,marginBottom:6}}>Display name</span>
-                  <input value={nicknameInput} onChange={e=>setNicknameInput(e.target.value)} maxLength={40} placeholder={user?.firstName||user?.username||'Your name'} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'1px solid rgba(255,255,255,0.14)',borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:15,fontWeight:600,outline:'none',fontFamily:'inherit',transition:'border-color .2s, background .2s'}}/>
-                  <span style={{display:'block',fontSize:11,color:T.text3,marginTop:6}}>Shown on your profile · @{user?.username||'handle'} stays the same</span>
-                </label>
-                <label style={{display:'block',marginTop:16}}>
-                  <span style={{display:'flex',justifyContent:'space-between',fontSize:11.5,fontWeight:600,color:T.text2,marginBottom:6}}>Bio<span style={{fontWeight:500,color:T.text3}}>{bioInput!==bio?`${bioInput.length}/160`:''}</span></span>
-                  <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film…" rows={3} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'1px solid rgba(255,255,255,0.14)',borderRadius:12,padding:'12px 14px',color:'#fff',fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5,transition:'border-color .2s, background .2s'}}/>
-                </label>
-                <style>{`.cs-field:focus{border-color:${accent}99 !important}.cs-field::placeholder{color:rgba(255,255,255,0.3)}`}</style>
-                {aboutDirty&&(
-                  <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:12,animation:'fadeIn .2s ease'}}>
-                    <button onClick={cancelAbout} disabled={savingAbout} style={{background:'none',border:'none',height:36,padding:'0 12px',cursor:'pointer',fontSize:12.5,fontWeight:700,color:T.text2,fontFamily:'inherit'}}>Cancel</button>
-                    <button onClick={saveAbout} disabled={savingAbout} style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.16)',borderRadius:18,height:36,padding:'0 16px',cursor:savingAbout?'default':'pointer',fontSize:12.5,fontWeight:700,color:'#fff',fontFamily:'inherit'}}>
-                      {savingAbout?<div style={{width:11,height:11,border:'1.5px solid rgba(255,255,255,0.3)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>:<SvgIcon name="check" size={13} color="#fff"/>}
-                      {savingAbout?'Saving…':'Save changes'}
-                    </button>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                  <Eyebrow color={accent}>About you</Eyebrow>
+                  {!editingAbout&&<button onClick={()=>{setEditingAbout(true);setTimeout(()=>nameRef.current?.focus(),50);}} aria-label="Edit name and bio" style={{width:32,height:32,borderRadius:'50%',background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.14)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',padding:0}}><SvgIcon name="edit" size={13} color="#fff"/></button>}
+                </div>
+                {editingAbout?(
+                  <div style={{animation:'fadeIn .2s ease'}}>
+                    <div style={{fontSize:11,fontWeight:600,color:T.text3,marginBottom:2}}>Display name</div>
+                    <input ref={nameRef} value={nicknameInput} onChange={e=>setNicknameInput(e.target.value)} maxLength={40} placeholder={user?.firstName||user?.username||'Your name'} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',padding:'4px 0',color:'#fff',fontSize:18,fontWeight:700,fontFamily:T.serif,letterSpacing:'-0.02em',outline:'none'}}/>
+                    <div style={{fontSize:11,fontWeight:600,color:T.text3,margin:'12px 0 2px',display:'flex',justifyContent:'space-between'}}>Bio<span style={{fontWeight:500}}>{bioInput.length}/160</span></div>
+                    <textarea ref={bioRef} value={bioInput} onChange={e=>setBioInput(e.target.value)} maxLength={160} placeholder="Tell people about your taste in film…" rows={3} className="cs-field" style={{width:'100%',boxSizing:'border-box',background:'transparent',border:'none',padding:'4px 0',color:'rgba(255,255,255,0.85)',fontSize:14,outline:'none',fontFamily:'inherit',resize:'none',lineHeight:1.5}}/>
+                    <style>{`.cs-field::placeholder{color:rgba(255,255,255,0.3)}.cs-field{caret-color:${accent}}`}</style>
+                    <div style={{fontSize:11,color:T.text3,marginTop:2}}>@{user?.username||'handle'} stays the same</div>
+                    <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:12}}>
+                      <button onClick={()=>{cancelAbout();setEditingAbout(false);}} disabled={savingAbout} style={{background:'none',border:'none',height:36,padding:'0 12px',cursor:'pointer',fontSize:12.5,fontWeight:700,color:T.text2,fontFamily:'inherit'}}>Cancel</button>
+                      <button onClick={async()=>{if(aboutDirty)await saveAbout();setEditingAbout(false);}} disabled={savingAbout} style={{display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.3)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.16)',borderRadius:18,height:36,padding:'0 16px',cursor:savingAbout?'default':'pointer',fontSize:12.5,fontWeight:700,color:'#fff',fontFamily:'inherit'}}>
+                        {savingAbout?<div style={{width:11,height:11,border:'1.5px solid rgba(255,255,255,0.3)',borderTop:'1.5px solid #fff',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>:<SvgIcon name="check" size={13} color="#fff"/>}
+                        {savingAbout?'Saving…':'Done'}
+                      </button>
+                    </div>
+                  </div>
+                ):(
+                  <div onClick={()=>{setEditingAbout(true);setTimeout(()=>nameRef.current?.focus(),50);}} style={{cursor:'text'}}>
+                    <div style={{fontFamily:T.serif,fontSize:18,fontWeight:700,letterSpacing:'-0.02em',color:'#fff'}}>{nickname||user?.firstName||user?.username||'Add a display name'}</div>
+                    <div style={{fontSize:14,lineHeight:1.5,color:bio?'rgba(255,255,255,0.75)':T.text3,marginTop:4,whiteSpace:'pre-wrap'}}>{bio||'Add a bio — tell people about your taste in film'}</div>
                   </div>
                 )}
               </div>
