@@ -204,7 +204,106 @@ function loadCanvasImage(url) {
   });
 }
 
+// ── Profile share card (1080×1920 story): avatar, level, stats, interests, recently watched ──
+async function drawProfileCard(d, accent) {
+  const W=1080,H=1920;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+  const cs=typeof document!=='undefined'?getComputedStyle(document.body):null;
+  const display=(cs&&getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim())||"'Inter Tight', system-ui, sans-serif";
+  const body=(cs&&cs.fontFamily)||'system-ui, sans-serif';
+  const F=(w,s,fam=body)=>`${w} ${s}px ${fam}, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+  const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);};
+  const cover=(img,x,y,w,h,r)=>{ctx.save();rr(x,y,w,h,r);ctx.clip();const s=Math.max(w/img.width,h/img.height);ctx.drawImage(img,x+(w-img.width*s)/2,y+(h-img.height*s)/2,img.width*s,img.height*s);ctx.restore();};
+  const spaced=(txt,x,y,sp)=>{ctx.letterSpacing=`${sp}px`;ctx.fillText(txt,x,y);ctx.letterSpacing='0px';};
+  const fit=(txt,max)=>{let t=txt;while(t.length>1&&ctx.measureText(t).width>max)t=t.slice(0,-1);return t===txt?t:t.trimEnd()+'…';};
+
+  // load images in parallel
+  const wallSrc=[...new Set((d.wall||[]).filter(Boolean))].slice(0,12);
+  const [avatar,wall,shelf]=await Promise.all([
+    d.avatar?loadCanvasImage(d.avatar):null,
+    Promise.all(wallSrc.map(loadCanvasImage)),
+    Promise.all((d.shelf||[]).slice(0,4).map(m=>m.poster?loadCanvasImage(m.poster):null)),
+  ]);
+
+  // backdrop — app ambient
+  ctx.fillStyle='#06060B';ctx.fillRect(0,0,W,H);
+  const glow=(x,y,r,a)=>{const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,accent+a);g.addColorStop(1,accent+'00');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);};
+
+  // poster wall
+  const walls=wall.filter(Boolean);
+  if(walls.length){
+    const cols=5,gap=14,pw=(W+60-gap*(cols-1))/cols,ph=pw*1.5;
+    ctx.save();ctx.globalAlpha=0.55;
+    for(let i=0;i<cols*2;i++){const img=walls[i%walls.length];const col=i%cols,row=Math.floor(i/cols);const x=-30+col*(pw+gap),y=-80+row*(ph+gap)+(col%2?-60:0);cover(img,x,y,pw,ph,10);}
+    ctx.restore();
+  }
+  const fade=ctx.createLinearGradient(0,0,0,700);fade.addColorStop(0,'rgba(6,6,11,0.3)');fade.addColorStop(0.6,'rgba(6,6,11,0.78)');fade.addColorStop(1,'#06060B');
+  ctx.fillStyle=fade;ctx.fillRect(0,0,W,700);
+  glow(0,0,1300,'38');glow(W,H,1200,'2e');glow(W*0.5,520,620,'1c');
+
+  // wordmark
+  ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=F(800,40,display);ctx.fillText('CineScroll',72,118);
+
+  // avatar
+  const ax=W/2,ay=500,ar=150;
+  ctx.save();ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=50;ctx.fillStyle='#0B0B12';ctx.beginPath();ctx.arc(ax,ay,ar+14,0,Math.PI*2);ctx.fill();ctx.restore();
+  const ring=ctx.createLinearGradient(ax-ar,ay-ar,ax+ar,ay+ar);ring.addColorStop(0,accent);ring.addColorStop(1,'#FF6B8A');
+  ctx.strokeStyle=ring;ctx.lineWidth=7;ctx.beginPath();ctx.arc(ax,ay,ar+8,0,Math.PI*2);ctx.stroke();
+  ctx.save();ctx.beginPath();ctx.arc(ax,ay,ar,0,Math.PI*2);ctx.clip();
+  if(avatar){const s=Math.max(ar*2/avatar.width,ar*2/avatar.height);ctx.drawImage(avatar,ax-avatar.width*s/2,ay-avatar.height*s/2,avatar.width*s,avatar.height*s);}
+  else{ctx.fillStyle=accent+'33';ctx.fillRect(ax-ar,ay-ar,ar*2,ar*2);ctx.fillStyle=accent;ctx.font=F(800,130,display);ctx.textAlign='center';ctx.fillText((d.name||'?')[0].toUpperCase(),ax,ay+46);}
+  ctx.restore();
+
+  // name + handle
+  ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font=F(800,84,display);ctx.fillText(fit(d.name||'Cinephile',W-160),W/2,760);
+  if(d.handle){ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font=F(500,34);ctx.fillText('@'+d.handle,W/2,812);}
+
+  // level pill
+  const lv=cineLevel(d.score||0);
+  const pillTxt=`LEVEL ${lv.idx+1} · ${lv.name.toUpperCase()}`;
+  ctx.font=F(800,26);ctx.letterSpacing='4px';const pwid=ctx.measureText(pillTxt).width+64;ctx.letterSpacing='0px';
+  ctx.fillStyle='rgba(255,255,255,0.07)';rr(W/2-pwid/2,852,pwid,62,31);ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.16)';ctx.lineWidth=2;rr(W/2-pwid/2,852,pwid,62,31);ctx.stroke();
+  ctx.fillStyle=accent;ctx.font=F(800,26);spaced(pillTxt,W/2,893,4);
+
+  // stats row: score · watched · reviews · saved
+  const stats=[['CINESCORE',d.score||0],['WATCHED',d.watched||0],['REVIEWS',d.reviews||0],['SAVED',d.saved||0]];
+  const sy=965,sh=150,colW=(W-144)/4;
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(72,sy);ctx.lineTo(W-72,sy);ctx.moveTo(72,sy+sh);ctx.lineTo(W-72,sy+sh);ctx.stroke();
+  stats.forEach(([l,v],i)=>{
+    const cx=72+colW*i+colW/2;
+    if(i){ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.beginPath();ctx.moveTo(72+colW*i,sy+30);ctx.lineTo(72+colW*i,sy+sh-30);ctx.stroke();}
+    ctx.fillStyle=i===0?accent:'#fff';ctx.font=F(800,64,display);ctx.fillText(String(v),cx,sy+88);
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font=F(700,20);spaced(l,cx,sy+124,4);
+  });
+
+  // interests
+  let y=1190;
+  const genres=(d.genres||[]).slice(0,4);
+  if(genres.length){
+    ctx.textAlign='left';ctx.fillStyle=accent;ctx.font=F(800,22);spaced('INTO',72,y,6);
+    y+=28;let x=72;ctx.font=F(700,30);
+    genres.forEach(g=>{const w=ctx.measureText(g).width+52;if(x+w>W-72)return;ctx.fillStyle='rgba(255,255,255,0.07)';rr(x,y,w,64,32);ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.14)';ctx.lineWidth=2;rr(x,y,w,64,32);ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(g,x+26,y+42);x+=w+14;});
+    y+=64+60;
+  }
+
+  // shelf
+  const shelfItems=(d.shelf||[]).slice(0,4).map((m,i)=>({...m,img:shelf[i]})).filter(m=>m.img);
+  if(shelfItems.length){
+    ctx.textAlign='left';ctx.fillStyle=accent;ctx.font=F(800,22);spaced(d.shelfLabel||'RECENTLY WATCHED',72,y,6);
+    y+=30;const gap=22,pw=(W-144-gap*3)/4,ph=pw*1.5;
+    shelfItems.forEach((m,i)=>{const x=72+i*(pw+gap);ctx.save();ctx.shadowColor='rgba(0,0,0,0.55)';ctx.shadowBlur=30;ctx.shadowOffsetY=12;ctx.fillStyle='#000';rr(x,y,pw,ph,10);ctx.fill();ctx.restore();cover(m.img,x,y,pw,ph,10);
+      ctx.fillStyle='rgba(255,255,255,0.85)';ctx.font=F(600,22);ctx.fillText(fit(m.title||'',pw),x,y+ph+36);});
+  }
+
+  // footer
+  ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.55)';ctx.font=F(600,28);ctx.fillText('Find me on CineScroll',W/2,H-104);
+  ctx.fillStyle=accent;ctx.font=F(800,30);ctx.fillText(d.url||'this-scine.vercel.app',W/2,H-60);
+  return c.toDataURL('image/png');
+}
+
 async function generateShareCard(type, data, accent) {
+  if(type==='score')return drawProfileCard(data,accent);
   const W=750,H=1334;
   const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
   const ctx=canvas.getContext('2d');
@@ -2129,7 +2228,7 @@ function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loading
                     <div style={{fontSize:10.5,color:T.text3,marginTop:3}}>Watch +3 · Review +8 · Save +2</div>
                     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:11}}>
                       {cineScore<300&&<button onClick={()=>setTab('watched')} style={pill}>View watched</button>}
-                      <button onClick={async()=>{setSharing(true);try{const d=await generateShareCard('score',{score:cineScore,name:user?.firstName||user?.username||'Cinephile',watched,reviews,saved},accent);await shareImage(d,'My CineScore',`My CineScore is ${cineScore}!`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{...pill,opacity:sharing?0.6:1}}>
+                      <button onClick={async()=>{setSharing(true);try{const watchedItems=watchlist.filter(m=>m.watched);const shelfSrc=(watchedItems.length?watchedItems:watchlist).filter(m=>m.poster);const d=await generateShareCard('score',{score:cineScore,name:nickname||user?.fullName||user?.firstName||user?.username||'Cinephile',handle:user?.username||null,avatar:user?.imageUrl||null,watched,reviews,saved,genres:sortedGenres.map(([g])=>g),shelf:shelfSrc.slice(0,4),shelfLabel:watchedItems.length?'RECENTLY WATCHED':'ON THE WATCHLIST',wall:watchlist.map(m=>m.poster)},accent);await shareImage(d,'My CineScroll profile',`I'm a ${cineLevel(cineScore).name} on CineScroll — come see what I'm watching`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{...pill,opacity:sharing?0.6:1}}>
                         <SvgIcon name="share" size={12} color="#fff"/>{sharing?'Preparing…':'Share'}
                       </button>
                     </div>
