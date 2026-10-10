@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const db = (path) => `${SUPABASE_URL}/rest/v1/${path}`;
@@ -9,7 +9,7 @@ const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KE
 export async function POST(req, { params }) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = params;
+  const id = clean(params.id);
   try {
     const { rating } = await req.json();
     if (!rating || rating < 1 || rating > 5) return Response.json({ error: 'Rating must be 1-5' }, { status: 400 });

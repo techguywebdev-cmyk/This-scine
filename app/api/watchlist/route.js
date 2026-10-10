@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -50,7 +50,7 @@ export async function POST(request) {
 export async function DELETE(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { movieId } = await request.json();
+  const movieId = clean((await request.json()).movieId);
   await fetch(`${db('watchlist')}?user_id=eq.${userId}&movie_id=eq.${movieId}`, {
     method: 'DELETE', headers,
   });
@@ -60,7 +60,7 @@ export async function DELETE(request) {
 export async function PATCH(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { movieId, watched } = await request.json();
+  const { movieId: rawMovieId, watched } = await request.json(); const movieId = clean(rawMovieId);
   await fetch(`${db('watchlist')}?user_id=eq.${userId}&movie_id=eq.${movieId}`, {
     method: 'PATCH',
     headers,

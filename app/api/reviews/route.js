@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -77,9 +77,9 @@ function nestComments(allRows, userMap, viewerId) {
 // GET /api/reviews?userId=abc  -> all reviews by a given user
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const movieId = searchParams.get('movieId');
-  const listId = searchParams.get('listId');
-  const profileUserId = searchParams.get('userId');
+  const movieId = clean(searchParams.get('movieId'));
+  const listId = clean(searchParams.get('listId'));
+  const profileUserId = clean(searchParams.get('userId'));
   const { userId: viewerId } = auth();
 
   // ─── LIST DISCUSSION (with threading) ───
@@ -285,7 +285,7 @@ export async function DELETE(request) {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { id } = await request.json();
+    const id = clean((await request.json()).id);
     if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
 
     const res = await fetch(`${db('reviews')}?id=eq.${id}&user_id=eq.${userId}`, {

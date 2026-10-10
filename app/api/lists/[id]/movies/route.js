@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const db = (path) => `${SUPABASE_URL}/rest/v1/${path}`;
@@ -13,7 +13,7 @@ const headers = {
 export async function POST(req, { params }) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = params;
+  const id = clean(params.id);
   try {
     const listRes = await fetch(
       `${db('community_lists')}?id=eq.${id}&user_id=eq.${userId}&select=id`,
@@ -61,7 +61,7 @@ export async function POST(req, { params }) {
 export async function DELETE(req, { params }) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = params;
+  const id = clean(params.id);
   try {
     const listRes = await fetch(
       `${db('community_lists')}?id=eq.${id}&user_id=eq.${userId}&select=id`,
@@ -72,7 +72,7 @@ export async function DELETE(req, { params }) {
       return Response.json({ error: 'Not yours' }, { status: 403 });
     }
 
-    const { movieId } = await req.json();
+    const movieId = clean((await req.json()).movieId);
     await fetch(`${db('community_list_movies')}?list_id=eq.${id}&movie_id=eq.${movieId}`, {
       method: 'DELETE',
       headers,

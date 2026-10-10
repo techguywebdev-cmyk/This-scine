@@ -26,7 +26,7 @@
  */
 
 import { auth } from '@clerk/nextjs/server';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -40,7 +40,7 @@ const headers = {
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const arcId = searchParams.get('arcId');
+  const arcId = clean(searchParams.get('arcId'));
   if (!arcId) return Response.json({ error: 'arcId required' }, { status: 400 });
 
   try {

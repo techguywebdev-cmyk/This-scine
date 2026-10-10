@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -17,7 +17,7 @@ const countHeaders = { ...headers, 'Prefer': 'count=exact' };
 // targetId may be a real Clerk user ID (always starts with "user_") OR a plain @username
 // (used by the public /u/[username] share page) - usernames are resolved to a Clerk ID first.
 export async function GET(req, { params }) {
-  let { userId: targetId } = params;
+  let targetId = clean(params.userId);
   const { userId: viewerId } = auth();
 
   if (!targetId) {

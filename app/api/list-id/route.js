@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const db = (path) => `${SUPABASE_URL}/rest/v1/${path}`;
@@ -9,7 +9,7 @@ const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KE
 // GET /api/lists/[id] - single list with movies + stats
 export async function GET(req, { params }) {
   const { userId } = auth();
-  const { id } = params;
+  const id = clean(params.id);
   try {
     const [listRes, moviesRes, followsRes, ratingsRes] = await Promise.all([
       fetch(`${db('community_lists')}?id=eq.${id}`, { headers }),
@@ -57,7 +57,7 @@ export async function GET(req, { params }) {
 export async function PATCH(req, { params }) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = params;
+  const id = clean(params.id);
   try {
     const body = await req.json();
     const patch = { updated_at: new Date().toISOString() };
@@ -80,7 +80,7 @@ export async function PATCH(req, { params }) {
 export async function DELETE(req, { params }) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = params;
+  const id = clean(params.id);
   try {
     const res = await fetch(`${db('community_lists')}?id=eq.${id}&user_id=eq.${userId}`, {
       method: 'DELETE', headers,

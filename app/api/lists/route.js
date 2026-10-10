@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const db = (path) => `${SUPABASE_URL}/rest/v1/${path}`;
@@ -92,7 +92,7 @@ export async function GET(req) {
       listsRes=await fetch(`${db('community_lists')}?user_id=eq.${userId}&order=updated_at.desc&limit=50`,{headers});
     } else if (tab==='user') {
       // A profile's folders: everything if it's you, otherwise only public ones
-      const target=searchParams.get('userId');
+      const target=clean(searchParams.get('userId'));
       if (!target) return Response.json({lists:[]});
       const pub = target===userId ? '' : '&or=(is_public.eq.true,is_public.is.null)';
       listsRes=await fetch(`${db('community_lists')}?user_id=eq.${target}${pub}&order=updated_at.desc&limit=50`,{headers});
@@ -117,7 +117,7 @@ export async function GET(req) {
     }
     const enriched=await enrichLists(lists,userId);
     // ?movieId=123 on the "mine" tab marks which of my folders already hold that title
-    const movieId=searchParams.get('movieId');
+    const movieId=clean(searchParams.get('movieId'));
     if (tab==='mine' && movieId && enriched.length) {
       const rows=await fetch(`${db('community_list_movies')}?list_id=in.(${enriched.map(l=>l.id).join(',')})&movie_id=eq.${movieId}&select=list_id`,{headers}).then(r=>r.json()).catch(()=>[]);
       const has=new Set((Array.isArray(rows)?rows:[]).map(r=>r.list_id));

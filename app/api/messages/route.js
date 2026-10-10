@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -87,7 +87,7 @@ export async function GET(req) {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const withId = searchParams.get('with');
+  const withId = clean(searchParams.get('with'));
 
   try {
     if (withId) {
@@ -231,7 +231,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const toUserId = body.toUserId || body.targetId;
+    const toUserId = clean(body.toUserId || body.targetId);
     const text = (body.text || '').trim();
     const msgType = body.msg_type || 'text';
     const mediaUrl = body.media_url || null;

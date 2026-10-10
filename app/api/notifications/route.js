@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -87,7 +87,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const targetId = body.targetId || body.userId;
+    const targetId = clean(body.targetId || body.userId);
     const type = body.type || 'message_request';
 
     if (!targetId || targetId === userId) {
@@ -128,7 +128,7 @@ export async function PATCH(request) {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { id } = await request.json();
+    const id = clean((await request.json()).id);
     if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
 
     await fetch(`${db('notifications')}?id=eq.${id}&user_id=eq.${userId}`, {

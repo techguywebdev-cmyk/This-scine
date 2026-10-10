@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 const db = (p) => `${SUPABASE_URL}/rest/v1/${p}`;
@@ -34,7 +34,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const now = new Date().toISOString();
 
-  const viewersOf = searchParams.get('viewers');
+  const viewersOf = clean(searchParams.get('viewers'));
   if (viewersOf) {
     const own = await fetch(`${db('statuses')}?id=eq.${viewersOf}&user_id=eq.${userId}&select=id`, { headers }).then((r) => r.json());
     if (!Array.isArray(own) || !own.length) return Response.json({ viewers: [] });
@@ -102,6 +102,7 @@ export async function DELETE(req) {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   let id = null;
   try { ({ id } = await req.json()); } catch {}
+  id = clean(id);
   if (!id) return Response.json({ error: 'Missing id' }, { status: 400 });
   await fetch(`${db('statuses')}?id=eq.${id}&user_id=eq.${userId}`, { method: 'DELETE', headers });
   return Response.json({ ok: true });

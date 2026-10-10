@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -100,7 +100,7 @@ export async function GET(req) {
 
     // ─── FOLLOWING (people targetUser follows; defaults to caller) ─
     if (type === 'following') {
-      const targetUserId = searchParams.get('targetUserId') || userId;
+      const targetUserId = clean(searchParams.get('targetUserId')) || userId;
       const res = await fetch(`${db('follows')}?follower_id=eq.${targetUserId}&select=following_id`, { headers });
       const rows = await res.json();
       const ids = (Array.isArray(rows) ? rows : []).map(r => r.following_id);
@@ -127,7 +127,7 @@ export async function GET(req) {
 
     // ─── FOLLOWERS (people who follow targetUser; defaults to caller) ─
     if (type === 'followers') {
-      const targetUserId = searchParams.get('targetUserId') || userId;
+      const targetUserId = clean(searchParams.get('targetUserId')) || userId;
       const res = await fetch(`${db('follows')}?following_id=eq.${targetUserId}&select=follower_id`, { headers });
       const rows = await res.json();
       const ids = (Array.isArray(rows) ? rows : []).map(r => r.follower_id);
@@ -251,7 +251,7 @@ export async function POST(request) {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { targetId } = await request.json();
+    const { targetId: rawTarget } = await request.json(); const targetId = clean(rawTarget);
     if (!targetId || targetId === userId) {
       return Response.json({ error: 'Invalid targetId' }, { status: 400 });
     }
@@ -298,7 +298,7 @@ export async function DELETE(request) {
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { targetId } = await request.json();
+    const { targetId: rawTarget } = await request.json(); const targetId = clean(rawTarget);
     if (!targetId) return Response.json({ error: 'Invalid targetId' }, { status: 400 });
 
     await fetch(`${db('follows')}?follower_id=eq.${userId}&following_id=eq.${targetId}`, {

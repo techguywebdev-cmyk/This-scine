@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { publicHandle } from '@/lib/handle';
-import { SUPABASE_KEY } from '@/lib/db';
+import { SUPABASE_KEY, clean } from '@/lib/db';
 
 const SUPABASE_URL = 'https://gwvfihozxyboirkaixqb.supabase.co';
 
@@ -88,7 +88,7 @@ export async function GET(req) {
 
   try {
     if (type === 'user') {
-      const targetId = searchParams.get('userId');
+      const targetId = clean(searchParams.get('userId'));
       if (!targetId) return Response.json({ error: 'Missing userId' }, { status: 400 });
 
       const res = await fetch(
