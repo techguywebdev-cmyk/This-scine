@@ -57,8 +57,8 @@ const SvgIcon = ({ name, size = 20, color = 'currentColor', filled = false }) =>
     bookmark: 'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z',
     send:     ['M22 2L11 13','M22 2l-7 20-4-9-9-4 20-7z'],
     chevron:  'M6 9l6 6 6-6',
-    flame:    'M12 2s-5 5.5-5 10a5 5 0 0 0 10 0C17 7.5 12 2 12 2z',
-    sparkle:  'M12 2l2.4 7.4H22l-6.2 4.6 2.4 7.4L12 17l-6.2 4.4 2.4-7.4L2 9.4h7.6z',
+    flame:    'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z',
+    sparkle:  ['M11 3l1.9 5.6L18.5 10.5l-5.6 1.9L11 18l-1.9-5.6L3.5 10.5l5.6-1.9z','M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z'],
     gem:      ['M6 3h12l4 6-10 13L2 9z','M2 9h20','M6 3l4 6','M18 3l-4 6'],
     eye:      ['M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z','M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
     similar:  'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z',
@@ -3332,13 +3332,13 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
 
   // One list for "what kind of feed" — moods and quick filters were the same thing in two shapes
   const FEEDS = [
-    { label: 'Trending',       apiMood: 'Trending',      icon: 'flame',    desc: 'What everyone is watching right now' },
-    { label: 'Top rated',      apiMood: 'Top Rated',     icon: 'star',     desc: 'The highest-rated films and series' },
-    { label: 'New this week',  apiMood: 'New',           icon: 'sparkle',  desc: 'Just released and freshly added' },
-    { label: 'Coming soon',    apiMood: 'Upcoming',      icon: 'calendar', desc: 'Trailers for what’s about to land' },
-    { label: 'Hidden gems',    apiMood: 'Hidden Gems',   icon: 'gem',      desc: 'Loved by few, worth your night' },
-    { label: 'International',  apiMood: 'International', icon: 'globe',   desc: 'Great stories beyond Hollywood' },
-    { label: 'Award winners',  apiMood: 'Awards',        icon: 'trophy',   desc: 'Oscar, Cannes and festival picks' },
+    { label: 'Trending',       apiMood: 'Trending',      icon: 'flame',    desc: 'Hot right now' },
+    { label: 'Top rated',      apiMood: 'Top Rated',     icon: 'star',     desc: 'Best of all time' },
+    { label: 'New this week',  apiMood: 'New',           icon: 'sparkle',  desc: 'Just landed' },
+    { label: 'Coming soon',    apiMood: 'Upcoming',      icon: 'calendar', desc: 'First looks' },
+    { label: 'Hidden gems',    apiMood: 'Hidden Gems',   icon: 'gem',      desc: 'Under the radar' },
+    { label: 'International',  apiMood: 'International', icon: 'globe',   desc: 'Beyond Hollywood' },
+    { label: 'Award winners',  apiMood: 'Awards',        icon: 'trophy',   desc: 'Oscar, Cannes & festival picks' },
   ];
 
   const PLATFORMS = [
@@ -3356,6 +3356,24 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
   const hasFilters = (activeMood && activeMood !== 'Trending') || activeGenre || activeProvider;
 
   const chooseFeed = (m) => { onMood(m.apiMood); onClose(); };
+  // one cover image per feed tile — fetched once per session
+  const [feedCovers, setFeedCovers] = useState(() => { try { return JSON.parse(sessionStorage.getItem('cs_feed_covers') || '{}'); } catch { return {}; } });
+  useEffect(() => {
+    if (!show || Object.keys(feedCovers).length >= FEEDS.length) return;
+    let alive = true;
+    Promise.all(FEEDS.map(f => fetch(`/api/movies?mood=${encodeURIComponent(f.apiMood)}&page=1`).then(r => r.json()).then(d => d.movies || []).catch(() => [])))
+      .then(lists => {
+        if (!alive) return;
+        const used = new Set(); const out = {};
+        lists.forEach((list, i) => {
+          const m = list.find(x => (x.backdrop || x.poster) && !used.has(x.id)) || list.find(x => x.backdrop || x.poster);
+          if (m) { used.add(m.id); out[FEEDS[i].apiMood] = m.backdrop || m.poster; }
+        });
+        setFeedCovers(out);
+        try { sessionStorage.setItem('cs_feed_covers', JSON.stringify(out)); } catch {}
+      });
+    return () => { alive = false; };
+  }, [show]); // eslint-disable-line react-hooks/exhaustive-deps
   const chooseGenre = (id) => { onGenre(activeGenre === id ? '' : id); onClose(); };
   const choosePlatform = (p) => {
     const on = activeProvider === p.name;
@@ -3471,20 +3489,24 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
                 </div>
               )}
 
-              {/* Feed type */}
+              {/* Feed type — tile grid with a live cover per category */}
               <H>Browse by</H>
-              <div>
-                {FEEDS.map((m) => {
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingTop: 4 }}>
+                {FEEDS.map((m, i) => {
                   const on = moodIs(m);
+                  const wide = i === FEEDS.length - 1 && FEEDS.length % 2 === 1;
+                  const cover = feedCovers[m.apiMood];
                   return (
-                    <div key={m.label} role="button" tabIndex={0} onClick={() => chooseFeed(m)} onKeyDown={(e) => e.key === 'Enter' && chooseFeed(m)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderTop: `1px solid ${T.hairline}`, cursor: 'pointer' }}>
-                      <SvgIcon name={m.icon} size={19} color={on ? accent : 'rgba(255,255,255,0.55)'} filled={on && (m.icon === 'flame' || m.icon === 'star')} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: on ? 700 : 600, color: on ? accent : '#fff' }}>{m.label}</div>
-                        <div style={{ fontSize: 11, color:T.text2, marginTop: 2 }}>{m.desc}</div>
+                    <div key={m.label} role="button" tabIndex={0} aria-pressed={on} onClick={() => chooseFeed(m)} onKeyDown={(e) => e.key === 'Enter' && chooseFeed(m)}
+                      style={{ gridColumn: wide ? '1 / -1' : 'auto', position: 'relative', height: wide ? 92 : 104, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', background: `linear-gradient(140deg, ${accent}22, rgba(255,255,255,0.03))`, boxShadow: on ? `inset 0 0 0 2px ${accent}` : 'inset 0 0 0 1px rgba(255,255,255,0.08)', transition: 'box-shadow .2s' }}>
+                      {cover && <img src={cover} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: on ? 0.6 : 0.42, transition: 'opacity .3s', animation: 'fadeIn .5s ease' }} />}
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.15) 0%, rgba(6,6,11,0.85) 100%)' }} />
+                      <div style={{ position: 'absolute', left: 12, right: 12, bottom: 11 }}>
+                        <SvgIcon name={m.icon} size={17} color={on ? accent : '#fff'} filled={m.icon === 'star' || m.icon === 'sparkle'} />
+                        <div style={{ fontSize: 13.5, fontWeight: 800, color: '#fff', marginTop: 6, lineHeight: 1.15 }}>{m.label}</div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.desc}</div>
                       </div>
-                      {on && <SvgIcon name="check" size={17} color={accent} />}
+                      {on && <div style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><SvgIcon name="check" size={12} color="#07070F" /></div>}
                     </div>
                   );
                 })}
