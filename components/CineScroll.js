@@ -3512,14 +3512,17 @@ export function FilterSheet({ show, onClose, activeGenre, activeMood, onGenre, o
 
               {/* Genre — plain text, 2-column grid */}
               <H>Genre</H>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 22 }}>
                 {[{ id: '', label: 'Any genre' }, ...GENRE_OPTIONS.filter(g => g.id)].map(g => {
                   const on = (activeGenre || '') === g.id;
                   return (
                     <button key={g.id || 'any'} onClick={() => chooseGenre(g.id)} aria-pressed={on}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'none', border: 'none', padding: '11px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: on ? 700 : 500, color: on ? accent : 'rgba(255,255,255,0.75)', textAlign: 'center', transition: 'color .2s' }}>
-                      {g.label}
-                      {on && <SvgIcon name="check" size={13} color={accent} />}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'none', border: 'none', borderTop: `1px solid ${T.hairline}`, padding: '13px 0', cursor: 'pointer', fontFamily: T.serif, fontSize: 15, letterSpacing: '-0.01em', fontWeight: on ? 700 : 600, color: on ? accent : 'rgba(255,255,255,0.82)', textAlign: 'left', transition: 'color .2s' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: on ? accent : 'rgba(255,255,255,0.18)', flexShrink: 0, boxShadow: on ? `0 0 8px ${accent}` : 'none', transition: 'all .2s' }} />
+                        {g.label}
+                      </span>
+                      {on && <SvgIcon name="check" size={14} color={accent} />}
                     </button>
                   );
                 })}
