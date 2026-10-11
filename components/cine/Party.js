@@ -306,8 +306,6 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
         .pr-in::placeholder{color:rgba(255,255,255,.45)}
       `}</style>
 
-      {/* film backdrop, very soft */}
-      {(movie.backdrop || movie.poster) && <img src={movie.backdrop || movie.poster} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '46%', objectFit: 'cover', opacity: dim ? 0.08 : 0.22, filter: 'blur(28px) saturate(1.2)', transform: 'scale(1.15)', WebkitMaskImage: 'linear-gradient(to bottom,#000,transparent)', maskImage: 'linear-gradient(to bottom,#000,transparent)', transition: 'opacity .4s' }} />}
       {dim && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', pointerEvents: 'none' }} />}
 
       <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', maxWidth: 600, margin: '0 auto', padding: 'max(12px, env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom))', boxSizing: 'border-box', animation: 'pIn .4s ease' }}>
@@ -345,8 +343,8 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
         </div>
 
         {/* ── stage: film + shared clock + state ── */}
-        <div style={{ marginTop: 12, ...glass, background: 'rgba(0,0,0,0.28)', borderRadius: 22, padding: compact ? '10px 12px' : 14, transition: 'padding .25s ease', flexShrink: 0, opacity: dim ? 0.75 : 1 }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ marginTop: 14, padding: compact ? '2px 2px 12px' : '4px 2px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', transition: 'padding .25s ease', flexShrink: 0, opacity: dim ? 0.75 : 1 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: compact ? 'center' : 'flex-start' }}>
             {movie.poster && <div style={{ width: compact ? 34 : 58, aspectRatio: '2/3', borderRadius: 6, overflow: 'hidden', flexShrink: 0, boxShadow: '0 10px 26px rgba(0,0,0,0.5)', transition: 'width .25s ease' }}><img src={movie.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /></div>}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, ...eyebrow(status === 'paused' ? '#ffb86b' : accent) }}>
@@ -354,19 +352,19 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
                 {stateLabel}
               </div>
               <div style={{ fontFamily: T.serif, fontSize: compact ? 15 : 18, fontWeight: 800, letterSpacing: '-0.01em', lineHeight: 1.15, marginTop: 3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: compact ? 1 : 2, WebkitBoxOrient: 'vertical' }}>{movie.title || ' '}</div>
-              {!compact && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{[movie.year, movie.runtime_min ? `${movie.runtime_min} min` : null, providers?.length ? providers.slice(0, 2).map((p) => p.provider_name).join(' · ') : null].filter(Boolean).join(' · ')}</div>}
+              {!compact && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.55)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{[movie.year, movie.is_tv ? 'Series' : null, movie.runtime_min ? `${movie.runtime_min} min` : null, providers?.length ? providers[0].provider_name : null].filter(Boolean).join(' · ')}</div>}
             </div>
             {started && (
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ textAlign: 'right', flexShrink: 0, paddingTop: compact ? 0 : 12 }}>
                 <div style={{ fontFamily: T.serif, fontSize: compact ? 22 : 30, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1, opacity: status === 'paused' ? 0.55 : 1, transition: 'font-size .25s ease' }}>{fmt(clockMs)}</div>
                 {runtimeMs && !compact && <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>of {fmt(runtimeMs)}</div>}
               </div>
             )}
           </div>
           {started && (
-            <div style={{ position: 'relative', height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.14)', marginTop: compact ? 10 : 14, marginRight: 8 }}>
+            <div style={{ position: 'relative', height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.14)', margin: compact ? '12px 14px 4px' : '18px 14px 6px' }}>
               <div style={{ height: '100%', width: `${pct * 100}%`, borderRadius: 2, background: '#fff', transition: 'width .25s linear' }} />
-              {loudest && <span title="Loudest moment" style={{ position: 'absolute', left: `${Math.min(1, loudest.at / (runtimeMs || 1)) * 100}%`, top: -9, fontSize: 11, transform: 'translateX(-50%)' }}>{loudest.emoji}</span>}
+              {loudest && Math.abs(Math.min(1, loudest.at / (runtimeMs || 1)) - pct) > 0.06 && <span title="Loudest moment" style={{ position: 'absolute', left: `${Math.min(1, loudest.at / (runtimeMs || 1)) * 100}%`, top: -17, fontSize: 11, transform: 'translateX(-50%)' }}>{loudest.emoji}</span>}
               <div style={{ position: 'absolute', top: '50%', left: `${pct * 100}%`, transform: 'translate(-50%,-50%)', display: 'flex' }}><Face u={self} size={18} /><div style={{ marginLeft: -6 }}><Face u={peer} size={18} ring={accent} /></div></div>
             </div>
           )}
@@ -440,8 +438,8 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
                 if (e.kind === 'system') {
                   const name = e.meta?.both ? '' : mine ? 'You ' : `${first(who(e.user_id))} `;
                   return (
-                    <div key={e.id} style={{ alignSelf: 'center', display: 'flex', alignItems: 'center', gap: 6, maxWidth: '92%', fontSize: 11.5, color: 'rgba(255,255,255,0.62)', padding: '4px 10px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', margin: '4px 0', animation: 'pPop .2s ease', textAlign: 'center' }}>
-                      <span>{e.meta?.icon || '•'}</span><span><b style={{ color: 'rgba(255,255,255,0.85)' }}>{name}</b>{e.body}</span>{st && <span style={{ color: 'rgba(255,255,255,0.4)', fontVariantNumeric: 'tabular-nums' }}>· {st}</span>}
+                    <div key={e.id} style={{ alignSelf: 'center', maxWidth: '88%', fontSize: 11.5, lineHeight: 1.45, color: 'rgba(255,255,255,0.62)', padding: '5px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', margin: '4px 0', animation: 'pPop .2s ease', textAlign: 'center' }}>
+                      <span style={{ marginRight: 5 }}>{e.meta?.icon || '•'}</span><b style={{ color: 'rgba(255,255,255,0.85)' }}>{name}</b>{e.body}{st && <span style={{ color: 'rgba(255,255,255,0.4)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}> · {st}</span>}
                     </div>
                   );
                 }
@@ -505,7 +503,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
         {status !== 'expired' && status !== 'declined' && (
           <div style={{ flexShrink: 0, paddingTop: 8 }}>
             {live && !counting && (
-              <div className="pr-tray" style={{ display: 'flex', gap: 7, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 8, animation: 'pUp .25s ease' }}>
+              <div className="pr-tray" style={{ display: 'flex', gap: 7, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 8, paddingRight: 24, animation: 'pUp .25s ease', WebkitMaskImage: 'linear-gradient(to right,#000 calc(100% - 28px),transparent)', maskImage: 'linear-gradient(to right,#000 calc(100% - 28px),transparent)' }}>
                 {tray === 'pause' ? (
                   <>
                     <button onClick={() => setTray('main')} aria-label="Back" style={{ ...chip, padding: '0 11px' }}>✕</button>
