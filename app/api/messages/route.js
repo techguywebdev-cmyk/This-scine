@@ -272,6 +272,11 @@ export async function POST(request) {
         text: m.text ? String(m.text).slice(0, 160) : null, media_url: m.media_url || null, bg: m.bg || null, reaction: !!m.reaction,
       };
     }
+    // Voice notes carry their length + a tiny waveform so bubbles render instantly
+    if (msgType === 'voice' && body.meta && typeof body.meta === 'object') {
+      const peaks = Array.isArray(body.meta.peaks) ? body.meta.peaks.slice(0, 48).map((v) => Math.max(0, Math.min(1, Math.round(Number(v) * 100) / 100 || 0))) : null;
+      payload.meta = { secs: Math.max(0, Math.min(600, Math.round(Number(body.meta.secs) || 0))), peaks };
+    }
     // A shared film/show travels as structured data so the chat can render a tappable card
     if (msgType === 'title' && body.meta && typeof body.meta === 'object') {
       const m = body.meta;

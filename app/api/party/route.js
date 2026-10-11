@@ -194,12 +194,19 @@ export async function POST(req) {
   const p = id && (await load(id));
   if (!p || (p.host_id !== userId && p.guest_id !== userId)) return Response.json({ error: 'Party not found' }, { status: 404 });
   // Talking in the room works before, during and after the film
-  if (action === 'say' || action === 'react' || action === 'ask') {
+  if (action === 'say' || action === 'react' || action === 'ask' || action === 'voice') {
     let ev = null;
     if (action === 'say') {
       const text = String(body.text || '').trim().slice(0, 500);
       if (!text) return Response.json({ error: 'Say something' }, { status: 400 });
       ev = await logEvent(p, userId, 'chat', text);
+    } else if (action === 'voice') {
+      // Voice notes are uploaded first (/api/upload-chat-media) — only accept the sender's own media
+      const url = String(body.url || '');
+      const okBase = [process.env.R2_PUBLIC_URL, `${SUPABASE_URL}/storage/v1/object/public`].filter(Boolean).some((b) => url.startsWith(`${b}/chat-media/${clean(userId)}/`));
+      if (!okBase) return Response.json({ error: 'Invalid voice note' }, { status: 400 });
+      const peaks = Array.isArray(body.peaks) ? body.peaks.slice(0, 48).map((v) => Math.max(0, Math.min(1, Math.round(Number(v) * 100) / 100 || 0))) : null;
+      ev = await logEvent(p, userId, 'voice', url, { secs: Math.max(0, Math.min(300, Math.round(Number(body.secs) || 0))), peaks });
     } else if (action === 'react') {
       if (!EMOJI.includes(body.emoji)) return Response.json({ error: 'Unknown reaction' }, { status: 400 });
       ev = await logEvent(p, userId, 'react', body.emoji);

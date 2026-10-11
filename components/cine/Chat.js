@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import { fmtWhen, untilLabel, TogetherSheet, SvgIcon, T, UserProfileSheet, ambient, statusBg } from './shared';
+import { useVoiceRecorder, RecorderBar, VoiceBubble } from './Voice';
 
 export const CHAT_THEMES = {
   classic: {
@@ -126,6 +127,9 @@ export function ChatWidget({ peer, onClose, accent }) {
   const [showStickers, setShowStickers] = useState(false);
   const [callMode, setCallMode] = useState(null); // null | 'audio' | 'video'
   const [callSecs, setCallSecs] = useState(0);
+  const callSecsRef = useRef(0); callSecsRef.current = callSecs;
+  const [callFx, setCallFx] = useState(null);       // 'answer' | 'decline' — soft exit of the incoming screen
+  const [endedCard, setEndedCard] = useState(null); // { secs, mode } — gentle "Call ended" after hanging up
   const [callStatus, setCallStatus] = useState('idle'); // idle | ringing | connecting | connected | incoming
   const [incomingCall, setIncomingCall] = useState(null); // { type, from }
   const [micMuted, setMicMuted] = useState(false);
@@ -156,8 +160,9 @@ export function ChatWidget({ peer, onClose, accent }) {
   const [gifQuery, setGifQuery] = useState('');
   const [gifs, setGifs] = useState([]);
   const [gifsLoading, setGifsLoading] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordSecs, setRecordSecs] = useState(0);
+  const voiceDoneRef = useRef(null);
+  const vrec = useVoiceRecorder({ maxSecs: 120, onDone: (blob, secs, peaks) => voiceDoneRef.current?.(blob, secs, peaks) });
+  const recording = vrec.recording;
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const mediaRecRef = useRef(null);
@@ -354,12 +359,7 @@ export function ChatWidget({ peer, onClose, accent }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peerId]);
 
-  useEffect(() => {
-    return () => {
-      if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-      try { mediaRecRef.current?.stop(); } catch {}
-    };
-  }, []);
+
 
   const postMessage = async (payload, optimistic) => {
     setMessages((p) => [...p, optimistic]);
@@ -427,68 +427,12 @@ export function ChatWidget({ peer, onClose, accent }) {
 
   const startRecording = async () => {
     if (recording || sending || !peerId) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : '';
-      const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-      chunksRef.current = [];
-      rec.ondataavailable = (e) => {
-        if (e.data && e.data.size) chunksRef.current.push(e.data);
-      };
-      rec.onstop = async () => {
-        stream.getTracks().forEach((tr) => tr.stop());
-        if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-        setRecording(false);
-        setRecordSecs(0);
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
-        if (blob.size < 800) return;
-        await uploadAndSendVoice(blob);
-      };
-      mediaRecRef.current = rec;
-      rec.start();
-      setRecording(true);
-      setRecordSecs(0);
-      recordTimerRef.current = setInterval(() => {
-        setRecordSecs((s) => {
-          if (s >= 59) {
-            stopRecording();
-            return 59;
-          }
-          return s + 1;
-        });
-      }, 1000);
-    } catch {
-      setError('Microphone permission needed for voice notes');
-    }
+    const ok = await vrec.start();
+    if (!ok) setError('Microphone permission needed for voice notes');
   };
 
-  const stopRecording = () => {
-    try {
-      if (mediaRecRef.current && mediaRecRef.current.state !== 'inactive') {
-        mediaRecRef.current.stop();
-      }
-    } catch {}
-  };
-
-  const cancelRecording = () => {
-    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-    try {
-      if (mediaRecRef.current) {
-        mediaRecRef.current.ondataavailable = null;
-        mediaRecRef.current.onstop = null;
-        if (mediaRecRef.current.state !== 'inactive') mediaRecRef.current.stop();
-      }
-    } catch {}
-    setRecording(false);
-    setRecordSecs(0);
-    chunksRef.current = [];
-  };
-
-  const uploadAndSendVoice = async (blob) => {
+  const uploadAndSendVoice = async (blob, secs = 0, peaks = null) => {
+    const meta = { secs, peaks };
     setSending(true);
     try {
       const form = new FormData();
@@ -510,11 +454,12 @@ export function ChatWidget({ peer, onClose, accent }) {
           fr.readAsDataURL(blob);
         });
         await postMessage(
-          { text: 'Voice note', msg_type: 'voice', media_url: dataUrl },
+          { text: 'Voice note', msg_type: 'voice', media_url: dataUrl, meta },
           {
             id: `tmp-${Date.now()}`,
             text: 'Voice note',
             msg_type: 'voice',
+            meta,
             media_url: dataUrl,
             created_at: new Date().toISOString(),
             from_me: true,
@@ -526,11 +471,12 @@ export function ChatWidget({ peer, onClose, accent }) {
         return;
       }
       await postMessage(
-        { text: 'Voice note', msg_type: 'voice', media_url: upData.url },
+        { text: 'Voice note', msg_type: 'voice', media_url: upData.url, meta },
         {
           id: `tmp-${Date.now()}`,
           text: 'Voice note',
           msg_type: 'voice',
+          meta,
           media_url: upData.url,
           created_at: new Date().toISOString(),
           from_me: true,
@@ -543,6 +489,8 @@ export function ChatWidget({ peer, onClose, accent }) {
     }
     setSending(false);
   };
+
+  voiceDoneRef.current = uploadAndSendVoice;
 
   const statusLabel = (m) => {
     const clock = formatClock(m.created_at) || timeAgo(m.created_at);
@@ -617,6 +565,7 @@ export function ChatWidget({ peer, onClose, accent }) {
     remoteStreamRef.current = stream;
     try {
       if (remoteVideoRef.current) {
+        remoteVideoRef.current.muted = true; // audio plays through remoteAudioRef only
         remoteVideoRef.current.srcObject = stream;
         remoteVideoRef.current.play?.().catch(() => {});
       }
@@ -684,6 +633,11 @@ export function ChatWidget({ peer, onClose, accent }) {
     } catch {}
     try { dialToneRef.current?.stop?.(); } catch {}
     dialToneRef.current = null;
+    if (callModeRef.current) {
+      const card = { secs: callSecsRef.current, mode: callModeRef.current, id: Date.now() };
+      setEndedCard(card);
+      setTimeout(() => setEndedCard((c) => (c && c.id === card.id ? null : c)), 1700);
+    }
     isCallerRef.current = false;
     callModeRef.current = null;
     callStatusRef.current = 'idle';
@@ -1401,6 +1355,7 @@ export function ChatWidget({ peer, onClose, accent }) {
     const t = setTimeout(() => {
       const rs = remoteStreamRef.current;
       if (rs && remoteVideoRef.current) {
+        remoteVideoRef.current.muted = true;
         if (remoteVideoRef.current.srcObject !== rs) remoteVideoRef.current.srcObject = rs;
         else { remoteVideoRef.current.srcObject = null; remoteVideoRef.current.srcObject = rs; }
         remoteVideoRef.current.play?.().catch(() => {});
@@ -1731,6 +1686,19 @@ export function ChatWidget({ peer, onClose, accent }) {
 
         {showTogether && peerId && <TogetherSheet peer={{ user_id: peerId, username: peerInfo?.username, display_name: peerInfo?.display_name || peerInfo?.username, avatar_url: peerInfo?.avatar_url || null }} accent={accent} onClose={() => setShowTogether(false)} />}
         {/* Incoming call */}
+        {endedCard && !callMode && (
+          <div onClick={() => setEndedCard(null)} style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: ambient(accent), animation: 'callEndFade 1.7s ease forwards' }}>
+            <style>{`@keyframes callEndFade{0%{opacity:1}55%{opacity:1}100%{opacity:0}}@keyframes callEndIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}`}</style>
+            <div style={{ textAlign: 'center', animation: 'callEndIn .35s cubic-bezier(.2,.8,.2,1)' }}>
+              <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', margin: '0 auto', background: `${accent}28`, border: `2px solid ${accent}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'grayscale(0.4)', opacity: 0.85 }}>
+                {peerInfo?.avatar_url ? <img src={peerInfo.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontFamily: T.serif, fontSize: 36, fontWeight: 700, color: accent }}>{(name || 'U')[0].toUpperCase()}</span>}
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 800, color: '#fff', marginTop: 16 }}>Call ended</div>
+              <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.55)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{endedCard.mode === 'video' ? 'Video' : 'Audio'} call{endedCard.secs ? ` · ${formatCallTime(endedCard.secs)}` : ''}</div>
+            </div>
+          </div>
+        )}
+
         {callStatus === 'incoming' && incomingCall && (
           <div
             style={{
@@ -1744,12 +1712,18 @@ export function ChatWidget({ peer, onClose, accent }) {
               justifyContent: 'space-between',
               padding: 'max(48px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom))',
               animation: 'fadeIn 0.35s ease',
+              transition: 'opacity .42s ease, transform .42s cubic-bezier(.2,.8,.2,1), filter .42s ease',
+              opacity: callFx ? 0 : 1,
+              transform: callFx === 'answer' ? 'scale(1.05)' : callFx === 'decline' ? 'scale(0.97)' : 'none',
+              filter: callFx === 'answer' ? 'blur(6px)' : 'none',
+              pointerEvents: callFx ? 'none' : 'auto',
             }}
           >
             <style>{`
               @keyframes callRipple{0%{transform:scale(1);opacity:0.45}100%{transform:scale(1.55);opacity:0}}
               @keyframes callPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
               @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+              @keyframes callBloom{0%{transform:scale(1);opacity:.7}100%{transform:scale(3.2);opacity:0}}
               @media (prefers-reduced-motion: reduce){
                 .cine-call-ripple,.cine-call-pulse{animation:none!important}
               }
@@ -1766,11 +1740,11 @@ export function ChatWidget({ peer, onClose, accent }) {
             />
             <div style={{ textAlign: 'center', zIndex: 1, marginTop: 24 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.4, textTransform: 'uppercase' }}>
-                Incoming {incomingCall.type === 'video' ? 'video' : 'audio'} call
+                {callFx === 'answer' ? 'Connecting…' : callFx === 'decline' ? 'Declined' : `Incoming ${incomingCall.type === 'video' ? 'video' : 'audio'} call`}
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, zIndex: 1, transition: 'transform .42s cubic-bezier(.2,.8,.2,1), opacity .42s ease', transform: callFx === 'answer' ? 'scale(1.1) translateY(-10px)' : callFx === 'decline' ? 'scale(0.86)' : 'none', opacity: callFx === 'decline' ? 0.35 : 1 }}>
               <div style={{ position: 'relative', width: 148, height: 148 }}>
                 <div className="cine-call-ripple" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1.5px solid ${accent}88`, animation: 'callRipple 2.2s ease-out infinite' }} />
                 <div className="cine-call-ripple" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1.5px solid ${accent}55`, animation: 'callRipple 2.2s ease-out 0.7s infinite' }} />
@@ -1803,15 +1777,16 @@ export function ChatWidget({ peer, onClose, accent }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 48, alignItems: 'center', zIndex: 1, marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 48, alignItems: 'center', zIndex: 1, marginBottom: 12, transition: 'transform .38s cubic-bezier(.4,0,.2,1), opacity .3s ease', transform: callFx === 'decline' ? 'translateY(36px)' : 'none', opacity: callFx === 'decline' ? 0 : 1 }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                 <button
                   type="button"
                   aria-label="Decline call"
-                  onClick={async () => {
-                    await sendSignal({ kind: 'end' });
-                    setIncomingCall(null);
-                    setCallStatus('idle');
+                  onClick={() => {
+                    if (callFx) return;
+                    setCallFx('decline');
+                    sendSignal({ kind: 'end' }).catch(() => {});
+                    setTimeout(() => { setIncomingCall(null); setCallStatus('idle'); setCallFx(null); }, 460);
                   }}
                   style={{
                     width: 72,
@@ -1835,8 +1810,14 @@ export function ChatWidget({ peer, onClose, accent }) {
                 <button
                   type="button"
                   aria-label="Answer call"
-                  onClick={() => acceptCall(incomingCall)}
+                  onClick={() => {
+                    if (callFx) return;
+                    setCallFx('answer');
+                    const inc = incomingCall;
+                    setTimeout(() => { acceptCall(inc); setCallFx(null); }, 380);
+                  }}
                   style={{
+                    position: 'relative',
                     width: 72,
                     height: 72,
                     borderRadius: '50%',
@@ -1850,6 +1831,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                     transition: 'transform 0.15s ease',
                   }}
                 >
+                  {callFx === 'answer' && <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(34,197,94,0.55)', animation: 'callBloom .5s ease-out forwards' }} />}
                   <SvgIcon name={incomingCall.type === 'video' ? 'video' : 'phone'} size={26} color="#fff" />
                 </button>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>Answer</span>
@@ -2327,7 +2309,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                         setSpeakerOn((v) => {
                           const next = !v;
                           try {
-                            if (remoteVideoRef.current) remoteVideoRef.current.muted = !next;
+                            if (remoteVideoRef.current) remoteVideoRef.current.muted = true; // never a second audio path (caused a phasing whine)
                             if (remoteAudioRef.current) remoteAudioRef.current.muted = !next;
                           } catch {}
                           return next;
@@ -2453,17 +2435,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', gap: 4 }}>
                       {isVoice && m.media_url ? (
-                        <div
-                          style={{
-                            background: mine ? `${accent}33` : themBubble,
-                            borderRadius: 18,
-                            padding: '10px 12px',
-                            minWidth: 180,
-                            border: mine ? `1px solid ${accent}44` : '1px solid rgba(255,255,255,0.06)',
-                          }}
-                        >
-                          <audio controls src={m.media_url} style={{ width: '100%', height: 32, outline: 'none' }} />
-                        </div>
+                        <VoiceBubble src={m.media_url} peaks={m.meta?.peaks} secs={m.meta?.secs} mine={mine} accent={accent} />
                       ) : isGif && m.media_url ? (
                         <div style={{ borderRadius: 14, overflow: 'hidden', maxWidth: 200, border: '1px solid rgba(255,255,255,0.06)' }}>
                           <img src={m.media_url} alt="GIF" style={{ width: '100%', display: 'block' }} />
@@ -2717,27 +2689,8 @@ export function ChatWidget({ peer, onClose, accent }) {
             {blocked === 'by_me' && <button onClick={unblockPeer} style={{ marginTop: 10, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 18, height: 36, padding: '0 18px', color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Unblock</button>}
           </div>
         ) : recording ? (
-          <div
-            style={{
-              padding: '12px 14px',
-              paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              flexShrink: 0,
-              background: `linear-gradient(180deg, ${accent}0a 0%, ${accent}17 100%)`, borderTop: `1px solid ${accent}22`,
-            }}
-          >
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF4D4D', animation: 'pulseRec 1s ease infinite' }} />
-            <div style={{ flex: 1, fontSize: 13, color: '#fff', fontWeight: 600 }}>
-              Recording… 0:{String(recordSecs).padStart(2, '0')}
-            </div>
-            <button type="button" onClick={cancelRecording} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '8px 12px', color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Cancel
-            </button>
-            <button type="button" onClick={stopRecording} style={{ background: accent, border: 'none', borderRadius: 16, padding: '8px 14px', color: '#0A0A0F', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Send
-            </button>
+          <div style={{ padding: '10px 12px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', flexShrink: 0 }}>
+            <RecorderBar rec={vrec} accent={accent} maxSecs={120} />
           </div>
         ) : (
           <div

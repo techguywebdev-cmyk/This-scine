@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { T, ambient, SvgIcon, track, fmtWhen, untilLabel } from './shared';
 import { RecapPanel } from './Recap';
+import { useVoiceRecorder, RecorderBar, VoiceBubble } from './Voice';
 
 // ── Watch party room ──
 // One screen, one conversation. A compact stage keeps the shared clock; everything that happens —
@@ -127,6 +128,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
     } finally { busyRef.current = false; }
   };
 
+  useEffect(() => { if (!err || !data) return; const t = setTimeout(() => setErr(null), 3000); return () => clearTimeout(t); }, [err, data]);
   // load + auto-join as guest
   useEffect(() => { refresh(); loadEvents(); }, [refresh, loadEvents]);
   const schedAt = party?.scheduled_for ? Date.parse(party.scheduled_for) : null;
@@ -243,6 +245,21 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
     const { ok, d } = await post({ action: 'ask', key });
     if (ok && d.event) { addEvents([d.event]); broadcast('event', { event: d.event }); }
   };
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const vrec = useVoiceRecorder({
+    maxSecs: 90,
+    onDone: async (blob, secs, peaks) => {
+      setVoiceBusy(true); atBottomRef.current = true;
+      try {
+        const form = new FormData(); form.append('file', blob, `voice-${Date.now()}.webm`); form.append('kind', 'voice');
+        const up = await fetch('/api/upload-chat-media', { method: 'POST', body: form }).then((r) => r.json()).catch(() => ({}));
+        if (!up?.url) throw new Error('upload');
+        const { ok, d } = await post({ action: 'voice', url: up.url, secs, peaks });
+        if (ok && d.event) { addEvents([d.event]); broadcast('event', { event: d.event }); track('party_voice'); }
+      } catch { setErr('Couldn’t send that voice note'); setTimeout(() => setErr(null), 2500); }
+      setVoiceBusy(false);
+    },
+  });
   const onType = (v) => {
     setText(v);
     const t = Date.now(); if (v && t - typingSentRef.current > 1800) { typingSentRef.current = t; broadcast('typing'); }
@@ -455,6 +472,17 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
                     </div>
                   );
                 }
+                if (e.kind === 'voice') {
+                  return (
+                    <div key={e.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start', marginTop: 4, animation: 'pPop .2s ease' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7, maxWidth: '92%' }}>
+                        {!mine && <Face u={who(e.user_id)} size={24} />}
+                        <VoiceBubble src={e.body} peaks={e.meta?.peaks} secs={e.meta?.secs} mine={mine} accent={accent} />
+                      </div>
+                      {st && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 3, marginLeft: mine ? 0 : 31, fontVariantNumeric: 'tabular-nums' }}>at {st}</div>}
+                    </div>
+                  );
+                }
                 if (e.kind === 'reacts') {
                   const shown = e.emojis.slice(-10);
                   return (
@@ -479,6 +507,11 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
                   </div>
                 );
               })}
+              {voiceBusy && (
+                <div style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderRadius: 20, background: `${accent}1f`, border: `1px solid ${accent}44`, fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.8)', animation: 'pPop .2s ease' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, animation: 'pPulse 1s ease infinite' }} />Sending voice note…
+                </div>
+              )}
               {peerTyping && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, animation: 'pPop .2s ease' }}>
                   <Face u={peer} size={24} />
@@ -521,6 +554,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
                 )}
               </div>
             )}
+            {vrec.recording ? <RecorderBar rec={vrec} accent={accent} maxSecs={90} /> : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 ref={inputRef}
@@ -535,13 +569,21 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
                 enterKeyHint="send"
                 style={{ flex: 1, minWidth: 0, height: 46, ...glass, borderRadius: 23, padding: '0 18px', color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'inherit' }}
               />
-              <button onClick={() => say()} disabled={!text.trim()} aria-label="Send" style={{ ...round, width: 46, height: 46, background: text.trim() ? `${accent}33` : glass.background, borderColor: text.trim() ? accent : 'rgba(255,255,255,0.14)', opacity: text.trim() ? 1 : 0.6 }}><SvgIcon name="send" size={16} color="#fff" /></button>
+              {text.trim()
+                ? <button onClick={() => say()} aria-label="Send" style={{ ...round, width: 46, height: 46, background: `${accent}33`, borderColor: accent }}><SvgIcon name="send" size={16} color="#fff" /></button>
+                : <button onClick={async () => { if (voiceBusy) return; const ok = await vrec.start(); if (!ok) { setErr('Microphone permission needed for voice notes'); setTimeout(() => setErr(null), 2500); } }} aria-label="Record a voice note" style={{ ...round, width: 46, height: 46 }}><SvgIcon name="mic" size={18} color="#fff" /></button>}
             </div>
+            )}
           </div>
         )}
         {(status === 'expired' || status === 'declined') && <button onClick={onClose} style={{ ...bigBtn, width: '100%', marginTop: 8 }}>Close</button>}
       </div>
 
+      {err && data && (
+        <div style={{ position: 'absolute', top: 'calc(64px + env(safe-area-inset-top))', left: 0, right: 0, zIndex: 8, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+          <div style={{ ...glass, background: 'rgba(10,10,16,0.88)', borderRadius: 16, padding: '9px 14px', fontSize: 13, fontWeight: 700, animation: 'pPop .2s ease' }}>{err}</div>
+        </div>
+      )}
       {/* countdown */}
       {(counting || justStarted) && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(6,6,11,0.6)', backdropFilter: 'blur(6px)', pointerEvents: 'none' }}>
