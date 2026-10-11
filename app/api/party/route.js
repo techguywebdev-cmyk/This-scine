@@ -58,6 +58,14 @@ async function people(ids) {
   return out;
 }
 const firstName = (u, fallback) => { const n = String(u?.display_name || fallback || 'A friend').trim(); const w = n.split(/\s+/)[0]; return w.length <= 3 && n.length > w.length ? n : w; };
+// ── Room feed: chat, reactions, requests and system moments, each stamped with the film time ──
+const ASKS = { what: '🤔 Wait, what happened?', louder: '🔊 Can you turn it up?', subs: '💬 Subtitles on?', snack: '🍿 Snack break soon?' };
+async function logEvent(p, userId, kind, body, meta = null) {
+  const row = { party_id: p.id, user_id: userId, kind, body: body ? String(body).slice(0, 500) : null, meta, film_ms: Math.round(clockNow(p)) };
+  const r = await fetch(db('party_events'), { method: 'POST', headers, body: JSON.stringify(row) }).catch(() => null);
+  const rows = r ? await r.json().catch(() => []) : [];
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
 const view = (p0, me, folks) => { const p = effective(p0); return ({
   party: p, me, peer: folks[p.host_id === me ? p.guest_id : p.host_id] || null, self: folks[me] || null,
   serverNow: Date.now(), clockMs: clockNow(p), channel: channelFor(p.id),
@@ -113,6 +121,17 @@ export async function GET(req) {
     const list = Array.isArray(rows) ? rows : [];
     const folks = await people(list.map((x) => (x.host_id === userId ? x.guest_id : x.host_id)));
     return Response.json({ history: list.map((x) => { const other = x.host_id === userId ? x.guest_id : x.host_id; return { id: x.id, movie: x.movie, ended_at: x.ended_at, peer: folks[other] || null, myRating: x.recap?.ratings?.[userId] || null, theirRating: x.recap?.ratings?.[other] || null }; }) }, { headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  // ?events=<partyId>&after=<eventId> → room feed (oldest first)
+  if (sp.get('events')) {
+    const pid = clean(sp.get('events'));
+    const pp = pid && (await load(pid));
+    if (!pp || (pp.host_id !== userId && pp.guest_id !== userId)) return Response.json({ error: 'Party not found' }, { status: 404 });
+    const after = parseInt(sp.get('after') || '0', 10) || 0;
+    const r = await fetch(`${db('party_events')}?party_id=eq.${pid}&id=gt.${after}&order=id.asc&limit=400&select=id,user_id,kind,body,meta,film_ms,created_at`, { headers, cache: 'no-store' });
+    const rows = await r.json().catch(() => []);
+    return Response.json({ events: Array.isArray(rows) ? rows : [] }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
   const id = clean(sp.get('id'));
@@ -174,6 +193,23 @@ export async function POST(req) {
   const id = clean(body.id);
   const p = id && (await load(id));
   if (!p || (p.host_id !== userId && p.guest_id !== userId)) return Response.json({ error: 'Party not found' }, { status: 404 });
+  // Talking in the room works before, during and after the film
+  if (action === 'say' || action === 'react' || action === 'ask') {
+    let ev = null;
+    if (action === 'say') {
+      const text = String(body.text || '').trim().slice(0, 500);
+      if (!text) return Response.json({ error: 'Say something' }, { status: 400 });
+      ev = await logEvent(p, userId, 'chat', text);
+    } else if (action === 'react') {
+      if (!EMOJI.includes(body.emoji)) return Response.json({ error: 'Unknown reaction' }, { status: 400 });
+      ev = await logEvent(p, userId, 'react', body.emoji);
+    } else {
+      const text = ASKS[body.key];
+      if (!text) return Response.json({ error: 'Unknown request' }, { status: 400 });
+      ev = await logEvent(p, userId, 'request', text, { key: body.key });
+    }
+    return Response.json({ event: ev });
+  }
   if (p.status === 'ended' && action !== 'rate') return Response.json({ error: 'This watch party has ended' }, { status: 409 });
   const now = Date.now();
   const eff = effective(p);
@@ -224,6 +260,20 @@ export async function POST(req) {
 
   const next = patch ? (await save(p.id, patch)) || { ...p, ...patch } : p;
   const folks = await people([p.host_id, p.guest_id]);
+  // Moments in the feed
+  let sys = null;
+  if (patch) {
+    if (action === 'join' && patch.status === 'lobby') sys = ['joined the room', { icon: '👋' }];
+    else if (action === 'join' && patch.status === 'accepted') sys = ['is in for later', { icon: '🗓' }];
+    else if (action === 'ready') sys = patch.status === 'playing' ? ['Both ready — 3, 2, 1…', { icon: '🎬', both: true }] : body.ready !== false ? ['is ready', { icon: '✓' }] : ['isn’t ready yet', { icon: '…' }];
+    else if (action === 'pause') sys = [`paused — ${REASONS[patch.pause_reason] || 'be right back'}`, { icon: '⏸', reason: patch.pause_reason }];
+    else if (action === 'resume') sys = ['resumed — 3, 2, 1…', { icon: '▶' }];
+    else if (action === 'seek') { const d = Math.round((Number(body.deltaMs) || 0) / 1000); sys = [d < 0 ? `went back ${-d}s — rewind your player too` : `jumped ahead ${d}s — skip ahead too`, { icon: d < 0 ? '⏪' : '⏩', delta: d }]; }
+    else if (action === 'end') sys = ['finished the film 🎉', { icon: '🎉' }];
+    else if (action === 'decline') sys = ['can’t make it', { icon: '🙁' }];
+    else if (action === 'cancel') sys = ['cancelled the watch party', { icon: '✕' }];
+  }
+  const event = sys ? await logEvent(next, userId, 'system', sys[0], sys[1]) : null;
   if (notifyHost) {
     const who = firstName(folks[userId], 'Your friend');
     const t = p.movie?.title || 'the film';
@@ -232,5 +282,5 @@ export async function POST(req) {
     else if (notifyHost === 'accepted') await pushTo(p.host_id, `${who} is in 🍿`, `${t}${when}`, `/?party=${p.id}`, `party-${p.id}`);
     else await pushTo(p.host_id, `${who} can’t make it`, `Your ${t} watch party`, `/?chat=${userId}`, `party-${p.id}`);
   }
-  return Response.json(view(next, userId, folks));
+  return Response.json({ ...view(next, userId, folks), event });
 }
