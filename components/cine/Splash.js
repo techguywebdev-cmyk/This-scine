@@ -1,41 +1,61 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-// Thiscene "ts." mark — black & white. Letters rise in, the dot drops and then
-// breathes like the in-app live dot until the first films are ready.
+// Thiscene "ts." mark — white letters; the dot cycles through the same accent
+// colours the movie cards use, and the screen picks up a soft card-style glow
+// in whatever colour the dot is on. Pure CSS so it runs before hydration.
+
+const DOTS = ['#818CF8', '#2DD4BF', '#FF6B8A', '#A3E635', '#B07FEF', '#38BDF8', '#FF7A2F', '#F5A623'];
+const STEP = 0.62; // seconds per colour
+const CYCLE = +(DOTS.length * STEP).toFixed(2);
+
+// Hold each colour, then glide to the next.
+const colorFrames = (prop) => {
+  const n = DOTS.length, seg = 100 / n;
+  let k = '';
+  DOTS.forEach((c, i) => {
+    const a = (i * seg).toFixed(2), b = (i * seg + seg * 0.62).toFixed(2);
+    k += `${a}%,${b}%{${prop}:${c}}`;
+  });
+  return k + `100%{${prop}:${DOTS[0]}}`;
+};
+// Little pop on every colour change.
+const popFrames = () => {
+  const n = DOTS.length, seg = 100 / n;
+  let k = '';
+  for (let i = 0; i < n; i++) {
+    const s = i * seg;
+    k += `${s.toFixed(2)}%{transform:scale(1)}${(s + seg * 0.7).toFixed(2)}%{transform:scale(1)}${(s + seg * 0.84).toFixed(2)}%{transform:scale(1.22)}`;
+  }
+  return k + '100%{transform:scale(1)}';
+};
 
 const CSS = `
-@keyframes tsRise{0%{opacity:0;transform:translateY(32%);filter:blur(6px)}100%{opacity:1;transform:none;filter:blur(0)}}
-@keyframes tsDrop{0%{opacity:0;transform:translateY(-140%) scale(.4)}55%{opacity:1;transform:translateY(8%) scale(1.12,.86)}75%{transform:translateY(-6%) scale(.96,1.04)}100%{opacity:1;transform:none}}
-@keyframes tsBreathe{0%,100%{transform:scale(1)}50%{transform:scale(.82)}}
-@keyframes tsRing{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(3.2)}}
-@keyframes tsSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.ts-mark{display:inline-flex;align-items:baseline;font-family:var(--font-display,'Inter Tight'),'Inter Tight',system-ui,sans-serif;font-weight:800;letter-spacing:-.03em;line-height:1;color:#fff;user-select:none}
-.ts-mark .ts-l{display:inline-block;opacity:0;animation:tsRise .62s cubic-bezier(.2,.8,.2,1) forwards}
-.ts-mark .ts-l2{animation-delay:.09s}
-.ts-mark .ts-d{position:relative;display:inline-block;width:.17em;height:.17em;margin-left:.07em;border-radius:50%;opacity:0;animation:tsDrop .56s cubic-bezier(.3,.7,.3,1) .42s forwards}
-.ts-mark .ts-d i{position:absolute;inset:0;border-radius:50%;background:#fff;animation:tsBreathe 1.6s ease-in-out 1.1s infinite}
-.ts-mark .ts-d b{position:absolute;inset:0;border-radius:50%;border:1.5px solid #fff;opacity:0;animation:tsRing 1.6s ease-out 1.1s infinite}
-.ts-mark.ts-static .ts-l,.ts-mark.ts-static .ts-d{animation:none;opacity:1}
-.ts-bar{position:relative;width:56px;height:2px;border-radius:2px;overflow:hidden;background:rgba(255,255,255,.12);opacity:0;animation:tsRise .5s ease 1s forwards}
-.ts-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,#fff,transparent);animation:tsSweep 1.1s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.ts-mark .ts-l,.ts-mark .ts-d,.ts-bar{animation:none!important;opacity:1}.ts-mark .ts-d i,.ts-mark .ts-d b{animation:none!important}}
+@keyframes tsCol{${colorFrames('background-color')}}
+@keyframes tsPop{${popFrames()}}
+@keyframes tsIn{0%{opacity:0;transform:translateY(10%)}100%{opacity:1;transform:none}}
+@keyframes tsDotIn{0%{opacity:0;transform:scale(0)}100%{opacity:1;transform:scale(1)}}
+.ts-mark{display:inline-flex;align-items:baseline;font-family:var(--font-display,'Inter Tight'),'Inter Tight',system-ui,sans-serif;font-weight:800;letter-spacing:-.03em;line-height:1;color:#fff;user-select:none;animation:tsIn .5s cubic-bezier(.2,.8,.2,1) both}
+.ts-mark .ts-d{position:relative;display:inline-block;width:.17em;height:.17em;margin-left:.07em;animation:tsDotIn .4s cubic-bezier(.3,1.4,.5,1) .25s both}
+.ts-mark .ts-d i{position:absolute;inset:0;border-radius:50%;background:${DOTS[0]};animation:tsCol ${CYCLE}s linear infinite,tsPop ${CYCLE}s ease-in-out infinite}
+.ts-mark .ts-d b{position:absolute;inset:-60%;border-radius:50%;background:${DOTS[0]};filter:blur(.12em);opacity:.45;animation:tsCol ${CYCLE}s linear infinite}
+.ts-glow{position:absolute;width:120vmax;height:120vmax;border-radius:50%;filter:blur(90px);opacity:.16;background:${DOTS[0]};animation:tsCol ${CYCLE}s linear infinite;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.ts-mark,.ts-mark .ts-d{animation:none!important}.ts-mark .ts-d i,.ts-mark .ts-d b,.ts-glow{animation-duration:${CYCLE * 3}s!important}}
 `;
 
-export function TsMark({ size = 84, still = false }) {
+export function TsMark({ size = 84 }) {
   return (
-    <span className={`ts-mark${still ? ' ts-static' : ''}`} style={{ fontSize: size }} role="img" aria-label="Thiscene">
+    <span className="ts-mark" style={{ fontSize: size }} role="img" aria-label="Thiscene">
       <style>{CSS}</style>
-      <span className="ts-l" aria-hidden="true">t</span>
-      <span className="ts-l ts-l2" aria-hidden="true">s</span>
+      <span aria-hidden="true">ts</span>
       <span className="ts-d" aria-hidden="true"><b /><i /></span>
     </span>
   );
 }
 
-// Full-screen boot splash. `ready` = first content is in; it then waits for the
-// intro to finish (min ~1.15s) before fading out and calling onDone.
-export default function Splash({ ready, onDone, minMs = 1150 }) {
+// Full-screen boot splash. `ready` = first content is in; it waits until the dot
+// has shown a couple of colours (min ~1.3s) before fading out and calling onDone.
+export default function Splash({ ready, onDone, minMs = 1300 }) {
   const start = useRef(Date.now());
   const [leaving, setLeaving] = useState(false);
 
@@ -56,16 +76,17 @@ export default function Splash({ ready, onDone, minMs = 1150 }) {
     <div
       aria-busy={!leaving}
       style={{
-        position: 'fixed', inset: 0, zIndex: 9999, background: '#06060B',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+        position: 'fixed', inset: 0, zIndex: 9999, background: '#06060B', overflow: 'hidden',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         opacity: leaving ? 0 : 1, transition: 'opacity .44s ease',
         pointerEvents: leaving ? 'none' : 'auto',
       }}
     >
-      <div style={{ transform: leaving ? 'scale(1.08)' : 'none', filter: leaving ? 'blur(4px)' : 'none', transition: 'transform .46s cubic-bezier(.4,0,.2,1), filter .46s ease' }}>
+      <div className="ts-glow" style={{ left: '-70vmax', top: '-70vmax' }} />
+      <div className="ts-glow" style={{ right: '-75vmax', bottom: '-75vmax', opacity: 0.12 }} />
+      <div style={{ position: 'relative', transform: leaving ? 'scale(1.06)' : 'none', transition: 'transform .46s cubic-bezier(.4,0,.2,1)' }}>
         <TsMark size={88} />
       </div>
-      <div className="ts-bar" />
     </div>
   );
 }
