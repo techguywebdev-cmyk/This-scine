@@ -45,7 +45,14 @@
       ],
       "expo-font",
       "expo-splash-screen",
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Thiscene uses your microphone for voice notes and calls.",
+          "recordAudioAndroid": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

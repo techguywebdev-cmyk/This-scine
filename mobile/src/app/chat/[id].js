@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Ambient from '../../components/Ambient';
 import VoiceBubble from '../../components/VoiceBubble';
+import { RecorderBar, useVoiceRecorder } from '../../components/VoiceRecorder';
 import SafetySheet from '../../components/SafetySheet';
 import { Avatar, GlassButton, Poster } from '../../components/Ui';
 import { TsLoader } from '../../components/Brand';
@@ -75,6 +76,27 @@ export default function Chat() {
     }
     setSending(false);
   };
+
+  const sendVoice = async ({ uri, secs, peaks }) => {
+    setErr(''); setSending(true);
+    const temp = { id: `tmp-${Date.now()}`, text: 'Voice note', from_me: true, created_at: new Date().toISOString(), msg_type: 'voice', media_url: uri, meta: { secs, peaks }, pending: true };
+    setMsgs((p) => [...(p || []), temp]);
+    try {
+      const form = new FormData();
+      form.append('file', { uri, name: `voice-${Date.now()}.m4a`, type: 'audio/mp4' });
+      form.append('kind', 'voice');
+      const up = await api.request('/api/upload-chat-media', { method: 'POST', body: form });
+      if (!up.url) throw new Error('Voice upload failed');
+      await api.post('/api/messages', { toUserId: peerId, text: 'Voice note', msg_type: 'voice', media_url: up.url, meta: { secs, peaks } });
+      setMsgs((p) => (p || []).filter((m) => m.id !== temp.id));
+      await load();
+    } catch (e) {
+      setMsgs((p) => (p || []).filter((m) => m.id !== temp.id));
+      setErr(e.message || 'Couldn’t send your voice note');
+    }
+    setSending(false);
+  };
+  const rec = useVoiceRecorder({ maxSecs: 120, onDone: sendVoice, onError: setErr });
 
   // newest at the bottom: inverted list wants newest first
   const data = (msgs || []).slice().reverse();
@@ -157,12 +179,20 @@ export default function Chat() {
       ) : (
         <View style={[styles.composer, { paddingBottom: insets.bottom + 10 }]}>
           {err ? <Text style={styles.err}>{err}</Text> : null}
-          <View style={styles.inputRow}>
-            <TextInput value={text} onChangeText={setText} placeholder="Message…" placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={2000} style={styles.input} />
-            <Pressable onPress={send} disabled={!text.trim() || sending} accessibilityLabel="Send" style={[styles.send, { opacity: text.trim() ? 1 : 0.35 }]}>
-              <Feather name="arrow-up" size={18} color="#07070F" />
-            </Pressable>
-          </View>
+          {rec.recording ? <RecorderBar rec={rec} maxSecs={120} /> : (
+            <View style={styles.inputRow}>
+              <TextInput value={text} onChangeText={setText} placeholder="Message…" placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={2000} style={styles.input} />
+              {text.trim() ? (
+                <Pressable onPress={send} disabled={sending} accessibilityLabel="Send" style={styles.send}>
+                  <Feather name="arrow-up" size={18} color="#07070F" />
+                </Pressable>
+              ) : (
+                <Pressable onPress={rec.start} disabled={sending} accessibilityLabel="Record a voice note" style={[styles.send, styles.mic]}>
+                  <Feather name="mic" size={18} color="#fff" />
+                </Pressable>
+              )}
+            </View>
+          )}
         </View>
       )}
 
@@ -186,6 +216,7 @@ const styles = StyleSheet.create({
   composer: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.hairline, backgroundColor: 'rgba(6,6,11,0.6)' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   input: { flex: 1, maxHeight: 120, minHeight: 44, color: '#fff', fontFamily: F.body, fontSize: 15, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  mic: { backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   send: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   err: { fontFamily: F.body, fontSize: 12, color: '#ff8a8a', marginBottom: 6, marginLeft: 6 },
   blockedBar: { paddingHorizontal: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.hairline },
