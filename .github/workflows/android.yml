@@ -30,19 +30,28 @@ jobs:
       - name: Load signing key
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        shell: bash
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
             echo "::warning::No signing key yet — building an UNSIGNED test build. Add ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS secrets to get Play-ready files."
             exit 0
           fi
-          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          KEYSTORE_PASSWORD=$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '\r\n' | sed 's/^ *//;s/ *$//')
+          echo "::add-mask::$KEYSTORE_PASSWORD"
+          # Tolerate copy/paste damage (line breaks, spaces, surrounding text): keep the longest base64 run
+          printf '%s' "$KEYSTORE_B64" | python3 -c "import sys,re,base64; s=re.sub(r'\s+','',sys.stdin.read()); runs=re.findall(r'[A-Za-z0-9+/]{200,}={0,2}',s); sys.exit('no-key') if not runs else None; k=max(runs,key=len); k=k[:len(k)-len(k)%4] if len(k)%4==1 else k+'='*(-len(k)%4); b=base64.b64decode(k); b=b[:4+(b[2]<<8|b[3])] if b[:2]==bytes([48,130]) else b; open(sys.argv[1],'wb').write(b)" "$RUNNER_TEMP/upload.jks" \
+            || { echo "::error title=Signing key::ANDROID_KEYSTORE_B64 doesn't contain the key. Paste the whole long line from the key file (it starts with MII…)."; exit 1; }
+          keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storepass "$KEYSTORE_PASSWORD" >/dev/null 2>&1 \
+            || { echo "::error title=Signing key::The key loaded, but ANDROID_KEYSTORE_PASSWORD doesn't open it. Re-paste the password exactly (no spaces or line breaks)."; exit 1; }
+          echo "Signing key OK"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Build signed APK + App Bundle
         working-directory: android
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_ALIAS: upload
         shell: bash
         run: |
           set +e
