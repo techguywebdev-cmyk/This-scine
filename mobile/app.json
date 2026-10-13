@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Thiscene",
-    "slug": "cinescroll",
-    "scheme": "cinescroll",
+    "slug": "thiscene",
+    "scheme": "thiscene",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,14 +15,15 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.cinescroll"
+      "bundleIdentifier": "com.thiscene.app"
     },
     "android": {
-      "package": "app.cinescroll",
+      "package": "com.thiscene.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#06060B",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundImage": "./assets/android-icon-background.png"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -38,11 +39,13 @@
       [
         "expo-notifications",
         {
-          "color": "#F5A623"
+          "icon": "./assets/notification-icon.png",
+          "color": "#FFFFFF"
         }
       ],
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "./plugins/withReleaseSigning"
     ],
     "experiments": {
       "typedRoutes": false
