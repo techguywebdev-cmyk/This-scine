@@ -118,6 +118,25 @@ export default function Chat() {
         </Pressable>
       );
     }
+    if (m.msg_type === 'party') {
+      const pid = m.meta?.party_id;
+      return (
+        <View style={{ width: 230 }}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <Poster uri={m.meta?.poster} width={44} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: F.semibold, fontSize: 10.5, letterSpacing: 1, textTransform: 'uppercase', color: ink, opacity: 0.55 }}>🍿 Watch party{m.meta?.when_label ? ` · ${m.meta.when_label}` : ''}</Text>
+              <Text style={{ fontFamily: F.bold, fontSize: 13.5, color: ink, marginTop: 2 }} numberOfLines={2}>{m.meta?.title || m.text}</Text>
+            </View>
+          </View>
+          {pid ? (
+            <Pressable onPress={() => router.push({ pathname: '/party/[id]', params: { id: pid } })} style={{ marginTop: 10, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: mine ? '#07070F' : '#fff' }}>
+              <Text style={{ fontFamily: F.bold, fontSize: 13, color: mine ? '#fff' : '#07070F' }}>{mine ? 'Open room' : 'Join'}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      );
+    }
     if (m.msg_type === 'status_reply') {
       return (
         <View>

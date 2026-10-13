@@ -10,6 +10,8 @@ import Ambient from '../../../components/Ambient';
 import { GlassButton, Poster, SectionLabel, Spinner } from '../../../components/Ui';
 import { useApi } from '../../../lib/api';
 import { useWatchlist } from '../../../lib/store';
+import StartParty from '../../../components/StartParty';
+import { useAuth } from '@clerk/expo';
 import { openTitle, shareTitle } from '../../../lib/titles';
 import { F, T } from '../../../lib/theme';
 
@@ -23,6 +25,8 @@ export default function TitleScreen() {
   const [trailerKey, setTrailerKey] = useState(undefined);
   const [similar, setSimilar] = useState(null);
   const [playing, setPlaying] = useState(true);
+  const [party, setParty] = useState(false);
+  const { isSignedIn } = useAuth();
   const scrollRef = useRef(null);
   const similarY = useRef(0);
 
@@ -86,6 +90,7 @@ export default function TitleScreen() {
               {[
                 [saved ? 'check' : 'plus', saved ? 'Saved' : 'Save', saved, '#7BFF9E', () => wl.toggleSave(movie)],
                 ['eye', watched ? 'Seen' : 'Seen it', watched, '#7BFFB0', () => wl.toggleWatched(movie)],
+                ['users', 'Watch together', false, accent, () => (isSignedIn ? setParty(true) : router.push('/sign-in'))],
                 ['share-2', 'Share', false, accent, () => shareTitle(movie)],
               ].map(([icon, label, on, color, fn]) => (
                 <Pressable key={label} onPress={fn} style={({ pressed }) => [styles.action, on && { borderColor: `${color}66`, backgroundColor: `${color}1f` }, { opacity: pressed ? 0.8 : 1 }]}>
@@ -117,6 +122,7 @@ export default function TitleScreen() {
           </View>
         </View>
       </ScrollView>
+      {party && movie ? <StartParty movie={movie} onClose={() => setParty(false)} /> : null}
     </View>
   );
 }

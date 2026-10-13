@@ -4,12 +4,15 @@ import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { F, T } from '../../lib/theme';
 import { usePushRouting } from '../../lib/push';
+import InviteBanner from '../../components/InviteBanner';
+import { View } from 'react-native';
 
 const icon = (name) => ({ color, size }) => <Feather name={name} size={size - 2} color={color} />;
 
 export default function TabsLayout() {
   usePushRouting();
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -27,5 +30,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="friends" options={{ title: 'Friends', tabBarIcon: icon('users') }} />
       <Tabs.Screen name="profile" options={{ title: 'You', tabBarIcon: icon('user') }} />
     </Tabs>
+    <InviteBanner />
+    </View>
   );
 }
