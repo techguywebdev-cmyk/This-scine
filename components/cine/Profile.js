@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
+import { fmtRemind } from './Remind';
 import { DeleteAccountSheet, BlockedList, PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
 import { SITE_HOST, SITE_URL } from '../../lib/brand';
 
@@ -344,7 +345,7 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
   };
   const toggleWatched=async(item)=>{
     const next=!item.watched;
-    setWatchlist(p=>p.map(m=>m.movie_id===item.movie_id?{...m,watched:next}:m));
+    setWatchlist(p=>p.map(m=>m.movie_id===item.movie_id?{...m,watched:next,...(next?{remind_at:null}:{})}:m));
     await fetch('/api/watchlist',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({movieId:item.movie_id,watched:next})});
     if(next){
       fetch('/api/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'watched',movieId:item.movie_id,movieTitle:item.title,moviePoster:item.poster,movieYear:item.year,movieRating:item.rating,movieAccent:item.accent,username:user?.username||user?.firstName||'user',avatarUrl:user?.imageUrl||null})}).catch(()=>{});
@@ -782,9 +783,10 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                         </button>
                         <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><span style={{fontSize:11,color:T.text3}}>{m.year}</span><SvgIcon name="star" size={10} color={accent} filled/><span style={{fontSize:11,color:accent,fontWeight:600}}>{m.rating}</span>{m.watched&&<span style={{fontSize:9,color:accent,background:`${accent}14`,borderRadius:10,padding:'1px 6px',fontWeight:700}}>Watched</span>}</div>
                         {m.genre&&m.genre.length>0&&<div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:8}}>{m.genre.slice(0,3).map(g=><span key={g} style={{fontSize:9,color:T.text3,background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:20,padding:'2px 6px'}}>{g}</span>)}</div>}
-                        <div style={{display:'flex',gap:5}}>
+                        <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
                           <button onClick={()=>toggleWatched(m)} style={{display:'flex',alignItems:'center',gap:3,background:m.watched?`${accent}14`:'transparent',border:`1px solid ${m.watched?accent+'40':T.hairlineStrong}`,borderRadius:20,padding:'3px 9px',cursor:'pointer',fontSize:10,color:m.watched?accent:T.text2,fontFamily:'inherit',fontWeight:600}}><SvgIcon name="check" size={9} color={m.watched?accent:T.text2}/>{m.watched?'Watched':'Mark watched'}</button>
                           <button onClick={()=>handleWatchlistItemClick(m)} style={{display:'flex',alignItems:'center',gap:3,background:'transparent',border:`1px solid ${T.hairlineStrong}`,borderRadius:20,padding:'3px 9px',cursor:'pointer',fontSize:10,color:T.text2,fontFamily:'inherit',fontWeight:600}}><SvgIcon name="play" size={9} color={T.text2} filled/>Trailer</button>
+                          {!m.watched&&(()=>{const on=m.remind_at&&Date.parse(m.remind_at)>Date.now();return <button onClick={()=>window.dispatchEvent(new CustomEvent('cine:remind',{detail:{movie:m}}))} aria-label={on?`Reminder set for ${fmtRemind(m.remind_at)}`:'Remind me to watch'} style={{display:'flex',alignItems:'center',gap:3,background:on?`${accent}14`:'transparent',border:`1px solid ${on?accent+'40':T.hairlineStrong}`,borderRadius:20,padding:'3px 9px',cursor:'pointer',fontSize:10,color:on?accent:T.text2,fontFamily:'inherit',fontWeight:600,whiteSpace:'nowrap'}}><SvgIcon name="bell" size={9} color={on?accent:T.text2} filled={!!on}/>{on?fmtRemind(m.remind_at):'Remind'}</button>;})()}
                           <button onClick={()=>removeFromWatchlist(m)} style={{background:'transparent',border:`1px solid ${T.hairline}`,borderRadius:20,padding:'3px 7px',cursor:'pointer',display:'flex',alignItems:'center'}}><SvgIcon name="trash" size={10} color={T.text3}/></button>
                         </div>
                       </div>

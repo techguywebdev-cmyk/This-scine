@@ -79,11 +79,25 @@ export async function DELETE(request) {
 export async function PATCH(request) {
   const { userId } = auth();
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  const { movieId: rawMovieId, watched } = await request.json(); const movieId = clean(rawMovieId);
-  await fetch(`${db('watchlist')}?user_id=eq.${userId}&movie_id=eq.${movieId}`, {
+  const body = await request.json(); const movieId = clean(body.movieId);
+  const patch = {};
+  if (typeof body.watched === 'boolean') { patch.watched = body.watched; if (body.watched) patch.remind_at = null; }
+  // "Remind me to watch": remindAt = ISO time (next 5 min … 1 year) or null to cancel
+  if ('remindAt' in body) {
+    if (body.remindAt === null) patch.remind_at = null;
+    else {
+      const t = Date.parse(body.remindAt);
+      if (!Number.isFinite(t) || t < Date.now() - 60000 || t > Date.now() + 366 * 86400000) return Response.json({ error: 'Pick a time in the future' }, { status: 400 });
+      patch.remind_at = new Date(t).toISOString(); patch.reminded_at = null;
+    }
+  }
+  if (!movieId || !Object.keys(patch).length) return Response.json({ error: 'Nothing to update' }, { status: 400 });
+  const r = await fetch(`${db('watchlist')}?user_id=eq.${userId}&movie_id=eq.${movieId}`, {
     method: 'PATCH',
     headers,
-    body: JSON.stringify({ watched }),
+    body: JSON.stringify(patch),
   });
-  return Response.json({ success: true });
+  const rows = await r.json().catch(() => []);
+  if (!r.ok) return Response.json({ error: 'Could not update' }, { status: 500 });
+  return Response.json({ success: true, item: Array.isArray(rows) ? rows[0] || null : null });
 }

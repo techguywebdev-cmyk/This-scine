@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
 import Splash, { TsMark } from './cine/Splash';
-import { SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 // AUTH GATE
 function AuthGate({onClose,accent}){
@@ -34,7 +34,7 @@ function AuthGate({onClose,accent}){
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
   const{openSignIn}=useClerk();
-  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);const[booting,setBooting]=useState(true);const endBoot=useCallback(()=>setBooting(false),[]);
+  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);const[booting,setBooting]=useState(true);const[remindFor,setRemindFor]=useState(null);const endBoot=useCallback(()=>setBooting(false),[]);
   const[showTonightNudge,setShowTonightNudge]=useState(false);const[feedToast,setFeedToast]=useState(null);
   const containerRef=useRef(null);const pageRef=useRef(1);const loadingMoreRef=useRef(false);const profileLoadedRef=useRef(false);
 
@@ -49,9 +49,11 @@ export default function CineScroll(){
 
   // Shared link (?m=movie-123 / ?m=tv-456): put that title first in the feed
   const sharedRef=useRef(null);const pendingActRef=useRef(null);const[sharedReady,setSharedReady]=useState(0);
+  const openSharedRef=useRef(null);
   useEffect(()=>{
     if(typeof window==='undefined')return;
-    const u=new URL(window.location.href);const m=u.searchParams.get('m');
+    const openShared=(href)=>{
+    const u=new URL(href,window.location.origin);const m=u.searchParams.get('m');
     if(!m)return;
     const [type,id]=m.split('-');if(!id)return;
     const act=u.searchParams.get('act');if(act==='save'||act==='party')pendingActRef.current=act;
@@ -62,6 +64,9 @@ export default function CineScroll(){
       setMovies(p=>[mv,...p.filter(x=>!(x.id===mv.id&&!!x.isTV===!!mv.isTV))]);
       setActiveIndex(0);setTimeout(()=>containerRef.current?.scrollTo({top:0,behavior:'instant'}),30);
     }).catch(()=>{});
+    };
+    openSharedRef.current=openShared;
+    openShared(window.location.href);
   },[]);
 
   // Notifications on by default: silently keep the subscription fresh if allowed, otherwise ask once (softly)
@@ -130,6 +135,7 @@ export default function CineScroll(){
   const[safety,setSafety]=useState(null);
   useEffect(()=>{try{const u=new URL(window.location.href);if(u.searchParams.get('deleted')==='1'){u.searchParams.delete('deleted');window.history.replaceState(null,'',u.pathname+u.search);setFeedToast('Your account and data were deleted');setTimeout(()=>setFeedToast(null),4000);}}catch{}},[]);
   useEffect(()=>{const fn=(e)=>{if(e.detail?.user||e.detail?.targetId)setSafety(e.detail);};window.addEventListener('cine:safety',fn);return()=>window.removeEventListener('cine:safety',fn);},[]);
+  useEffect(()=>{const fn=(e)=>{const mv=e.detail?.movie;if(mv)setRemindFor(mv);};window.addEventListener('cine:remind',fn);return()=>window.removeEventListener('cine:remind',fn);},[]);
   // First-run onboarding: new (empty) accounts pick titles → import → invite. ?welcome=1 forces it for testing.
   const[welcome,setWelcome]=useState(null);// null | accent string while open
   const welcomeCheckedRef=useRef(false);
@@ -189,7 +195,7 @@ export default function CineScroll(){
     // Keep the push subscription registered with the service worker on every visit
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('/sw.js').catch(()=>{});
-      const onMsg=(e)=>{if(e.data&&e.data.type==='open-url')openFromUrl(e.data.url);};
+      const onMsg=(e)=>{if(e.data&&e.data.type==='open-url'){openFromUrl(e.data.url);openSharedRef.current&&openSharedRef.current(e.data.url);}};
       navigator.serviceWorker.addEventListener('message',onMsg);
       return()=>navigator.serviceWorker.removeEventListener('message',onMsg);
     }
@@ -530,6 +536,7 @@ export default function CineScroll(){
       </div>
 
 
+      {remindFor&&(()=>{const id=remindFor.movie_id??remindFor.id;const row=watchlist.find(w=>w.movie_id===id);return <RemindSheet movie={{...remindFor,...(row||{}),movie_id:id,accent:remindFor.accent||row?.accent}} onClose={()=>setRemindFor(null)} onChange={(mid,iso)=>setWatchlist(p=>p.map(w=>w.movie_id===mid?{...w,remind_at:iso,reminded_at:null}:w))}/>;})()}
       {booting&&<Splash ready={!loading} onDone={endBoot}/>}
 
       {incoming&&!partyId&&<PartyInvite invite={incoming} accent={accent} onJoin={()=>{const inv=incoming;dismissInvite(inv.id);setIncoming(null);if(inv.scheduled_for&&Date.parse(inv.scheduled_for)-Date.now()>10*60000){fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'join',id:inv.id})}).then(()=>{setFeedToast(`You're in · ${fmtWhen(inv.scheduled_for)} 🍿`);setTimeout(()=>setFeedToast(null),2600);}).catch(()=>{});}else setPartyId(inv.id);}} onLater={()=>{dismissInvite(incoming.id);setIncoming(null);}} onDecline={()=>{const id=incoming.id;dismissInvite(id);setIncoming(null);fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'decline',id})}).catch(()=>{});}}/>}
@@ -577,8 +584,11 @@ export default function CineScroll(){
               <div style={{fontSize:12,fontWeight:700,color:'#fff'}}>Saved to your watchlist</div>
               <div style={{fontSize:11,color:T.text2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{savePrompt.title}</div>
             </div>
+            <button aria-label="Remind me to watch" onClick={()=>{clearTimeout(savePromptTimer.current);setRemindFor(savePrompt);setSavePrompt(null);}} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:8,height:34,padding:'0 10px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#fff',flexShrink:0}}>
+              <SvgIcon name="bell" size={14} color="#fff"/>Remind
+            </button>
             <button onClick={()=>{clearTimeout(savePromptTimer.current);setFolderMovie(savePrompt);setSavePrompt(null);}} style={{display:'inline-flex',alignItems:'center',gap:6,background:savePrompt.accent||accent,border:'none',borderRadius:8,padding:'9px 12px',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,color:'#06060B',flexShrink:0}}>
-              <SvgIcon name="folder" size={14} color="#06060B"/>Add to folder
+              <SvgIcon name="folder" size={14} color="#06060B"/>Folder
             </button>
           </div>
           <style>{`@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>

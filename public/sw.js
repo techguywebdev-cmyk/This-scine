@@ -18,7 +18,9 @@ self.addEventListener('push', (event) => {
       badge: '/badge-96.png',
       tag: data.tag || undefined,
       renotify: !!data.tag,
-      data: { url: data.url || '/' },
+      data: { url: data.url || '/', actions: Array.isArray(data.actions) ? data.actions : [] },
+      actions: Array.isArray(data.actions) ? data.actions.slice(0, 2).map((a) => ({ action: a.action, title: a.title })) : [],
+      image: data.image || undefined,
       vibrate: [80, 40, 80],
     })
   );
@@ -26,7 +28,9 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin).href;
+  const d = event.notification.data || {};
+  const picked = event.action && Array.isArray(d.actions) ? d.actions.find((a) => a.action === event.action) : null;
+  const url = new URL((picked && picked.url) || d.url || '/', self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {

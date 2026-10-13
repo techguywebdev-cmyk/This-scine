@@ -1302,6 +1302,7 @@ export const DeleteAccountSheet = dynamic(() => import('./Safety').then((m) => m
 export const BlockedList = dynamic(() => import('./Safety').then((m) => m.BlockedList), { ssr: false, loading: () => null });
 export const Welcome = dynamic(() => import('./Welcome').then((m) => m.Welcome), { ssr: false, loading: () => null });
 export const TogetherSheet = dynamic(() => import('./Together').then((m) => m.TogetherSheet), { ssr: false, loading: () => null });
+export const RemindSheet = dynamic(() => import('./Remind').then((m) => m.RemindSheet), { ssr: false, loading: () => null });
 export const CreateListSheet = dynamic(() => import('./CreateList').then((m) => m.CreateListSheet), { ssr: false, loading: () => null });
 
 // Warm the on-demand chunks while the browser is idle so first opens feel instant

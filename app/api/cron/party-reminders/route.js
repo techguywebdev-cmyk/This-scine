@@ -1,7 +1,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 const db = (p) => `${SUPABASE_URL}/rest/v1/${p}`;
@@ -36,5 +36,8 @@ export async function GET(req) {
     await fetch(`${db('watch_parties')}?id=eq.${p.id}`, { method: 'PATCH', headers, body: JSON.stringify({ reminded_start: true, reminded_soon: true }) });
     sent += 2;
   }
-  return Response.json({ ok: true, sent });
+  // Same tick: "remind me to watch" + weekly nudges for saved titles
+  let watch = { sent: 0, nudged: 0 };
+  try { watch = await (await import('@/lib/watchReminders')).runWatchReminders(); } catch (e) { console.error('watch reminders', e); }
+  return Response.json({ ok: true, sent, watch });
 }
