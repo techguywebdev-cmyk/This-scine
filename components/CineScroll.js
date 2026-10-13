@@ -417,7 +417,6 @@ export default function CineScroll(){
       )}
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
-          <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
           <span aria-label="Thiscene" style={{fontFamily:T.serif,fontSize:21,fontWeight:800,letterSpacing:'-0.03em',lineHeight:1,color:'#fff',display:'inline-flex',alignItems:'baseline'}}>thiscene<span aria-hidden="true" style={{display:'inline-block',width:'0.17em',height:'0.17em',marginLeft:'0.07em',borderRadius:'50%',background:accent,boxShadow:`0 0 8px ${accent}99`,transition:'background .4s ease, box-shadow .4s ease'}}/></span>
         </div>
         <div style={{display:'flex',gap:8,pointerEvents:'all',alignItems:'center'}}>

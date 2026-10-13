@@ -54,14 +54,17 @@ export function TsMark({ size = 84 }) {
 }
 
 // Full-screen boot splash. `ready` = first content is in; it waits until the dot
-// has shown a couple of colours (min ~1.3s) before fading out and calling onDone.
-export default function Splash({ ready, onDone, minMs = 1300 }) {
+// has shown a couple of colours (min ~2.6s, about four colours) before fading out and calling onDone.
+export default function Splash({ ready, onDone, minMs = 2600 }) {
   const start = useRef(Date.now());
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     if (!ready || leaving) return;
-    const wait = Math.max(0, minMs - (Date.now() - start.current));
+    // Full intro once per browser session; quicker on later reloads.
+    let min = minMs;
+    try { if (sessionStorage.getItem('ts_intro')) min = Math.min(minMs, 1200); else sessionStorage.setItem('ts_intro', '1'); } catch {}
+    const wait = Math.max(0, min - (Date.now() - start.current));
     const t = setTimeout(() => setLeaving(true), wait);
     return () => clearTimeout(t);
   }, [ready, leaving, minMs]);
