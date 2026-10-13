@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { T, track } from './shared';
+import { SITE_HOST } from '../../lib/brand';
 
 // After a watch party: rate it, then get a story-size recap card to share or post to your status.
 const glass = { background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.14)' };
@@ -89,8 +90,8 @@ export async function drawRecap({ movie, self, peer, ratings, reactions, duratio
     ctx.textAlign = 'center';
   }
   // footer
-  ctx.fillStyle = '#fff'; ctx.font = F(800, 38, display); ctx.fillText('CineScroll', W / 2, H - 110);
-  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = F(600, 26); ctx.fillText('Watch together · this-scine.vercel.app', W / 2, H - 66);
+  ctx.fillStyle = '#fff'; ctx.font = F(800, 38, display); ctx.fillText('Thiscene', W / 2, H - 110);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = F(600, 26); ctx.fillText(`Watch together · ${SITE_HOST}`, W / 2, H - 66);
   return new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
 }
 
@@ -119,7 +120,7 @@ export function RecapPanel({ party, self, peer, movie, accent, myReactions, onRa
     if (!img) return;
     track('share', { via: 'party_recap' });
     const file = new File([img.blob], 'watch-party.png', { type: 'image/png' });
-    try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: `Watched ${movie.title} with ${firstName(peer)} on CineScroll 🍿` }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
+    try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: `Watched ${movie.title} with ${firstName(peer)} on Thiscene 🍿` }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
     const a = document.createElement('a'); a.href = img.url; a.download = 'watch-party.png'; a.click();
   };
   const postStatus = async () => {

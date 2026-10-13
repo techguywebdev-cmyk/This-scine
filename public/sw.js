@@ -1,10 +1,10 @@
-/* public/sw.js — Web Push service worker for CineScroll */
+/* public/sw.js — Web Push service worker for Thiscene */
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'CineScroll', body: 'Something new for you', url: '/' };
+  let data = { title: 'Thiscene', body: 'Something new for you', url: '/' };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch (_) {
@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'CineScroll', {
+    self.registration.showNotification(data.title || 'Thiscene', {
       body: data.body || '',
       icon: data.icon || '/icon-192.png',
       badge: '/badge-96.png',

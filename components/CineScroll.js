@@ -13,7 +13,7 @@ function AuthGate({onClose,accent}){
         <AccentGlow accent={accent} size={200} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
         <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 26px',position:'relative'}}/>
         <div style={{position:'relative',textAlign:'center',marginBottom:26}}>
-          <div style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text,marginBottom:9}}>Join CineScroll</div>
+          <div style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text,marginBottom:9}}>Join Thiscene</div>
           <div style={{fontSize:13,color:T.text2,lineHeight:1.6}}>Sign in to leave reviews, save your watchlist, and discover films with friends.</div>
         </div>
         <button onClick={()=>{openSignIn();onClose();}} style={{position:'relative',width:'100%',background:'#fff',border:'none',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:10,fontFamily:'inherit'}}>
@@ -417,7 +417,7 @@ export default function CineScroll(){
       <div style={{position:'fixed',top:0,left:0,right:0,zIndex:40,padding:'18px 16px 0',background:'linear-gradient(to bottom,rgba(4,4,10,0.9) 0%,transparent 100%)',display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,pointerEvents:'all'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:accent,boxShadow:`0 0 12px ${accent}`,transition:'all 0.5s ease'}}/>
-          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:20,fontWeight:700,letterSpacing:-0.5,color:T.text}}>CineScroll</span>
+          <span style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:20,fontWeight:700,letterSpacing:-0.5,color:T.text}}>Thi<span style={{color:accent,transition:'color .4s ease'}}>scene</span></span>
         </div>
         <div style={{display:'flex',gap:8,pointerEvents:'all',alignItems:'center'}}>
           <button onClick={()=>{if(!isSignedIn){setShowAuth(true);return;}setShowFriends(true);setFriendsNotifCount(0);}} style={{position:'relative',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
@@ -518,7 +518,7 @@ export default function CineScroll(){
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}::-webkit-scrollbar{display:none}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         {loading?(
           <div style={{height:'100dvh',display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'start',flexDirection:'column',gap:12}}>
-            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:38,fontWeight:700,color:T.text}}>CineScroll</div>
+            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:38,fontWeight:700,color:T.text}}>Thi<span style={{color:accent}}>scene</span></div>
             <div style={{fontSize:11,color:T.text3,letterSpacing:3}}>LOADING FILMS...</div>
           </div>
         ):(

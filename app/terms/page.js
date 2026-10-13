@@ -19,7 +19,7 @@ export default function Terms({ searchParams }) {
           `You own what you post — reviews, comments, folders, messages, photos, voice notes and statuses. You give us a licence to store, display and share it inside ${APP_NAME} as needed to run the service (for example, showing your review to other users or delivering your message). This licence ends when you delete the content or your account, except for copies other people already received, such as messages.`,
           'Only post things you have the right to share.',
         ] },
-        { h: 'Be decent', p: ['Don’t use CineScroll to:'], list: [
+        { h: 'Be decent', p: ['Don’t use Thiscene to:'], list: [
           'Harass, threaten, bully or stalk anyone, or keep contacting someone who blocked you.',
           'Post nudity or sexual content, graphic violence, hate speech, or anything involving minors in a sexual way.',
           'Spam, scam, phish or advertise without permission.',

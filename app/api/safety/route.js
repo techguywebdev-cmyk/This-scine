@@ -74,7 +74,7 @@ export async function POST(req) {
     if (to) {
       const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
       sendEmail({
-        to, subject: `CineScroll report #${saved?.id || ''}: ${reason} (${kind})`,
+        to, subject: `Thiscene report #${saved?.id || ''}: ${reason} (${kind})`,
         text: `Reporter: ${me}\nReported user: ${target || '-'}\nKind: ${kind} ${row.target_id || ''}\nReason: ${reason}\nNote: ${row.note || '-'}\nSnapshot: ${snapshot ? JSON.stringify(snapshot) : '-'}`,
         html: `<p><b>Reason:</b> ${esc(reason)} · <b>Kind:</b> ${esc(kind)} ${esc(row.target_id || '')}</p><p><b>Reporter:</b> ${esc(me)}<br/><b>Reported user:</b> ${esc(target || '-')}</p><p><b>Note:</b> ${esc(row.note || '-')}</p><pre>${esc(snapshot ? JSON.stringify(snapshot, null, 2) : '')}</pre>`,
       }).catch(() => {});

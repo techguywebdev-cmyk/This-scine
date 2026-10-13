@@ -1773,7 +1773,7 @@ export function ChatWidget({ peer, onClose, accent }) {
               </div>
               <div style={{ fontFamily: T.serif, letterSpacing: '-0.02em', fontSize: 26, fontWeight: 700, color: '#fff', textAlign: 'center' }}>{name}</div>
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
-                {incomingCall.type === 'video' ? 'Video' : 'Audio'} · CineScroll
+                {incomingCall.type === 'video' ? 'Video' : 'Audio'} · Thiscene
               </div>
             </div>
 

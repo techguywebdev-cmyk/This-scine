@@ -121,7 +121,7 @@ export default function ImportSheet({ accent = '#F5A623', onClose, onImported })
               ))}
             </div>
             <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', marginTop: 12, lineHeight: 1.5 }}>
-              Found in your {parsed.source === 'imdb' ? 'IMDb' : 'Letterboxd'} export{parsed.truncated ? ` — importing the first ${MAX_ITEMS}` : ''}. Anything already in CineScroll is kept, and watched films stay watched.
+              Found in your {parsed.source === 'imdb' ? 'IMDb' : 'Letterboxd'} export{parsed.truncated ? ` — importing the first ${MAX_ITEMS}` : ''}. Anything already in Thiscene is kept, and watched films stay watched.
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
               <button onClick={() => { setPhase('pick'); setParsed(null); }} style={{ ...btn, flex: 1, color: 'rgba(255,255,255,0.75)' }}>Back</button>

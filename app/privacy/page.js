@@ -36,7 +36,7 @@ export default function Privacy({ searchParams }) {
           'Messages are visible only to you and the person you’re talking to.',
           'If you block someone, they can’t see your profile, message, call, follow or invite you.',
         ] },
-        { h: 'Services that help us run CineScroll', p: ['We share data only with providers that process it on our behalf to run the service:'], list: [
+        { h: 'Services that help us run Thiscene', p: ['We share data only with providers that process it on our behalf to run the service:'], list: [
           'Clerk — sign-in and account management.',
           'Supabase — database and real-time messaging.',
           'Cloudflare — storage for photos, voice notes and covers, and call relay servers.',
@@ -55,7 +55,7 @@ export default function Privacy({ searchParams }) {
           'Delete your account and data from Settings → Delete account. It’s immediate and permanent.',
           <>Ask us for a copy of your data, or to correct it, by emailing {mail}. Depending on where you live, you may also have the right to object to or restrict processing and to complain to your local data protection authority.</>,
         ] },
-        { h: 'Children', p: ['CineScroll is not for children under 13. If you’re under the age required to use online services without parental consent in your country, don’t use CineScroll. If we learn a child under 13 has an account, we’ll delete it — you can tell us using the Report option or by email.'] },
+        { h: 'Children', p: ['Thiscene is not for children under 13. If you’re under the age required to use online services without parental consent in your country, don’t use Thiscene. If we learn a child under 13 has an account, we’ll delete it — you can tell us using the Report option or by email.'] },
         { h: 'Security', p: ['Data is encrypted in transit, our database is locked so only our servers can access it, and secret keys are never sent to your browser. No service is perfectly secure, so please use a strong password and tell us if you notice anything wrong.'] },
         { h: 'Changes and contact', p: [<>If we change this policy in a meaningful way we’ll let you know in the app. Questions or requests: {mail}.</>] },
       ]}

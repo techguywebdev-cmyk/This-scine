@@ -46,7 +46,7 @@ export function ShareSheet({movie,accent,onClose}){
     setTimeout(onClose,1100);
   };
   const external=async()=>{track('share',{via:'external'});
-    const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on CineScroll`;
+    const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on Thiscene`;
     try{if(navigator.share){await navigator.share({title:movie.title,text,url:link});return;}await navigator.clipboard.writeText(`${text} ${link}`);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}
   };
   const copy=async()=>{track('share',{via:'link'});try{await navigator.clipboard.writeText(link);setDone('Link copied');setTimeout(()=>setDone(null),1600);}catch{}};

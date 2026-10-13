@@ -62,9 +62,9 @@ export function Welcome({ user, accent = '#F5A623', onDone }) {
     const handle = user?.username || user?.id;
     if (!handle) return;
     const url = `${window.location.origin}/u/${encodeURIComponent(handle)}`;
-    const text = `Join me on CineScroll — let's see what we both want to watch 🍿`;
+    const text = `Join me on Thiscene — let's see what we both want to watch 🍿`;
     track('share', { via: 'onboard_invite' });
-    try { if (navigator.share) { await navigator.share({ title: 'CineScroll', text, url }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
+    try { if (navigator.share) { await navigator.share({ title: 'Thiscene', text, url }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
     try { await navigator.clipboard.writeText(`${text} ${url}`); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   };
 
@@ -91,7 +91,7 @@ export function Welcome({ user, accent = '#F5A623', onDone }) {
         <>
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 20px 130px', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ animation: 'wlUp .45s ease' }}>
-              <div style={eyebrow(accent)}>{name ? `Welcome, ${name}` : 'Welcome to CineScroll'}</div>
+              <div style={eyebrow(accent)}>{name ? `Welcome, ${name}` : 'Welcome to Thiscene'}</div>
               <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.12, marginTop: 10 }}>Pick {NEED} you love</div>
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8, lineHeight: 1.5 }}>Films or shows you’ve seen and loved. Your feed tunes itself to them straight away.</div>
             </div>

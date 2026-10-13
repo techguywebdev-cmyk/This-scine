@@ -1,6 +1,7 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { getSettings, sendEmail } from '@/lib/notify';
 import { SUPABASE_KEY } from '@/lib/db';
+import { SITE_URL } from '@/lib/brand';
 
 // Runs daily via Vercel Cron (see vercel.json). Finds reminders for titles releasing
 // today or tomorrow, drops an in-app notification and (if the user allows email) sends
@@ -31,10 +32,10 @@ function emailHtml({ title, poster, when, link }) {
       <div style="font-size:10px;letter-spacing:3px;color:#FFD166;font-weight:700;text-transform:uppercase">${headline}</div>
       <h1 style="margin:8px 0 10px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-weight:800;letter-spacing:-0.02em;font-size:28px;color:#fff;line-height:1.1">${esc(title)}</h1>
       <p style="margin:0 0 22px;color:rgba(255,255,255,0.6);font-size:14px;line-height:1.6">You asked us to remind you. ${when === 'tomorrow' ? 'It lands tomorrow — plan your night.' : 'It’s out now — time to watch.'}</p>
-      <a href="${link}" style="display:inline-block;background:#FFD166;color:#06060B;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:800;font-size:14px">Open CineScroll</a>
+      <a href="${link}" style="display:inline-block;background:#FFD166;color:#06060B;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:800;font-size:14px">Open Thiscene</a>
     </div>
   </div>
-  <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin-top:16px">You can turn off email notifications in CineScroll settings.</p>
+  <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin-top:16px">You can turn off email notifications in Thiscene settings.</p>
 </div>`;
 }
 
@@ -75,7 +76,7 @@ export async function GET(request) {
 
     const userIds = [...new Set(due.map((r) => r.user_id))];
     const emails = await getEmails(userIds);
-    const site = process.env.NEXT_PUBLIC_APP_URL || 'https://this-scine.vercel.app';
+    const site = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
     let inApp = 0;
     let emailed = 0;

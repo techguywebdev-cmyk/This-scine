@@ -3,7 +3,7 @@
  * Cine Arcs UI — progressive intensity watchlists
  * Copy to: components/CineArcs.js
  *
- * Usage from CineScroll:
+ * Usage from Thiscene:
  *   import CineArcs from './CineArcs';
  *   {showArcs && <CineArcs accent={accent} onClose={() => setShowArcs(false)} onWatchTrailer={...} watchlist={watchlist} />}
  */

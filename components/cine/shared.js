@@ -1110,7 +1110,7 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
   const[showShareSheet,setShowShareSheet]=useState(false);
   const shareMovie=async()=>{
     const url=`${typeof window!=='undefined'?window.location.origin:'https://this-scine.vercel.app'}/?m=${movie.isTV?'tv':'movie'}-${movie.id}`;
-    const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on CineScroll`;
+    const text=`${movie.title}${movie.year?` (${movie.year})`:''} — found it on Thiscene`;
     try{
       if(navigator.share){await navigator.share({title:movie.title,text,url});return;}
       await navigator.clipboard.writeText(`${text} ${url}`);

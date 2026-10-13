@@ -11,6 +11,6 @@ export const shareTitle = async (movie) => {
   const type = movie.isTV || movie.mediaType === 'tv' ? 'tv' : 'movie';
   const url = `${API_URL}/?m=${type}-${movie.id}`;
   try {
-    await Share.share({ message: `${movie.title}${movie.year ? ` (${movie.year})` : ''} — found it on CineScroll ${url}`, url, title: movie.title });
+    await Share.share({ message: `${movie.title}${movie.year ? ` (${movie.year})` : ''} — found it on Thiscene ${url}`, url, title: movie.title });
   } catch {}
 };

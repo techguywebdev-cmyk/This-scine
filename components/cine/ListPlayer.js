@@ -123,11 +123,11 @@ export function ListPlaylistPlayer({ listId, movies, startIndex = 0, onClose, ac
   };
 
   const handleShare = async () => {
-    const title = current?.movie_title || 'CineScroll';
+    const title = current?.movie_title || 'Thiscene';
     const url = typeof window !== 'undefined' ? window.location.href : 'https://this-scine.vercel.app';
     const text = listId
-      ? `Watching "${title}" on a CineScroll list`
-      : `Check out "${title}" on CineScroll`;
+      ? `Watching "${title}" on a Thiscene list`
+      : `Check out "${title}" on Thiscene`;
     try {
       if (navigator.share) {
         await navigator.share({ title, text, url });

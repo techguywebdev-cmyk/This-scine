@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import { DeleteAccountSheet, BlockedList, PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
+import { SITE_HOST, SITE_URL } from '../../lib/brand';
 
 export function loadCanvasImage(url) {
   return new Promise((resolve) => {
@@ -54,7 +55,7 @@ export async function drawProfileCard(d, accent) {
   glow(0,0,1300,'38');glow(W,H,1200,'2e');glow(W*0.5,520,620,'1c');
 
   // wordmark
-  ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=F(800,40,display);ctx.fillText('CineScroll',72,118);
+  ctx.textAlign='left';ctx.fillStyle='#fff';ctx.font=F(800,40,display);ctx.fillText('Thiscene',72,118);
 
   // avatar
   const ax=W/2,ay=500,ar=150;
@@ -109,8 +110,8 @@ export async function drawProfileCard(d, accent) {
   }
 
   // footer
-  ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.55)';ctx.font=F(600,28);ctx.fillText('Find me on CineScroll',W/2,H-104);
-  ctx.fillStyle=accent;ctx.font=F(800,30);ctx.fillText(d.url||'this-scine.vercel.app',W/2,H-60);
+  ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.55)';ctx.font=F(600,28);ctx.fillText('Find me on Thiscene',W/2,H-104);
+  ctx.fillStyle=accent;ctx.font=F(800,30);ctx.fillText(d.url||SITE_HOST,W/2,H-60);
   return c.toDataURL('image/png');
 }
 export async function generateShareCard(type, data, accent) {
@@ -124,7 +125,7 @@ export async function generateShareCard(type, data, accent) {
   ctx.fillStyle=g1;ctx.fillRect(0,0,W,H);
   ctx.shadowColor=accent;ctx.shadowBlur=20;ctx.strokeStyle=accent+'60';ctx.lineWidth=1.5;
   ctx.beginPath();ctx.roundRect(10,10,W-20,H-20,32);ctx.stroke();ctx.shadowBlur=0;
-  ctx.fillStyle='#ffffff';ctx.font='800 32px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.textAlign='left';ctx.fillText('CineScroll',66,76);
+  ctx.fillStyle='#ffffff';ctx.font='800 32px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.textAlign='left';ctx.fillText('Thiscene',66,76);
   if(type==='score'){
     ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font='600 13px sans-serif';ctx.textAlign='center';ctx.letterSpacing='4px';ctx.fillText('CINEPHILE PROFILE',W/2,152);ctx.letterSpacing='0px';
     ctx.fillStyle='#ffffff';ctx.font='800 60px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.fillText(data.name,W/2,224);
@@ -137,7 +138,7 @@ export async function generateShareCard(type, data, accent) {
     const cols=[{label:'WATCHED',value:data.watched},{label:'REVIEWS',value:data.reviews},{label:'SAVED',value:data.saved}];
     const statY=680;const colW=W/3;
     cols.forEach((s,i)=>{const x=colW*i+colW/2;ctx.fillStyle='rgba(255,255,255,0.04)';ctx.beginPath();ctx.roundRect(colW*i+24,statY-46,colW-48,100,18);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 34px Georgia, serif';ctx.fillText(s.value,x,statY+24);ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='600 11px sans-serif';ctx.letterSpacing='2px';ctx.fillText(s.label,x,statY+44);ctx.letterSpacing='0px';});
-    ctx.fillStyle=accent+'15';ctx.beginPath();ctx.roundRect(W/2-155,830,310,50,25);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 16px sans-serif';ctx.fillText('this-scine.vercel.app',W/2,860);
+    ctx.fillStyle=accent+'15';ctx.beginPath();ctx.roundRect(W/2-155,830,310,50,25);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 16px sans-serif';ctx.fillText(SITE_HOST,W/2,860);
   } else if(type==='watchlist'){
     ctx.fillStyle='rgba(255,255,255,0.32)';ctx.font='600 13px sans-serif';ctx.textAlign='center';ctx.letterSpacing='4px';ctx.fillText('WATCHLIST',W/2,148);ctx.letterSpacing='0px';
     ctx.fillStyle='#ffffff';ctx.font='800 54px system-ui, -apple-system, Helvetica, Arial, sans-serif';ctx.fillText(data.name,W/2,210);
@@ -157,15 +158,15 @@ export async function generateShareCard(type, data, accent) {
       ctx.strokeStyle=accent+'44';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(ratingX,ratingY,68,32,16);ctx.stroke();
       ctx.fillStyle=accent;ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText('* '+m.rating,ratingX+34,ratingY+20);
     }
-    const urlY=H-90;ctx.fillStyle=accent+'15';ctx.beginPath();ctx.roundRect(W/2-155,urlY,310,50,25);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText('this-scine.vercel.app',W/2,urlY+30);
+    const urlY=H-90;ctx.fillStyle=accent+'15';ctx.beginPath();ctx.roundRect(W/2-155,urlY,310,50,25);ctx.fill();ctx.fillStyle=accent;ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText(SITE_HOST,W/2,urlY+30);
   }
   const botBar=ctx.createLinearGradient(0,0,W,0);botBar.addColorStop(0,'transparent');botBar.addColorStop(0.5,accent+'cc');botBar.addColorStop(1,'transparent');
   ctx.fillStyle=botBar;ctx.beginPath();ctx.roundRect(40,H-13,W-80,3,2);ctx.fill();
   return canvas.toDataURL('image/png');
 }
 export async function shareImage(dataUrl,title,text){
-  try{const blob=await(await fetch(dataUrl)).blob();const file=new File([blob],'cinescroll.png',{type:'image/png'});if(navigator.share&&navigator.canShare({files:[file]})){await navigator.share({title,text,files:[file],url:'https://this-scine.vercel.app'});return;}}catch{}
-  const a=document.createElement('a');a.href=dataUrl;a.download='cinescroll.png';a.click();
+  try{const blob=await(await fetch(dataUrl)).blob();const file=new File([blob],'thiscene.png',{type:'image/png'});if(navigator.share&&navigator.canShare({files:[file]})){await navigator.share({title,text,files:[file],url:SITE_URL});return;}}catch{}
+  const a=document.createElement('a');a.href=dataUrl;a.download='thiscene.png';a.click();
 }
 export function calcCineScore(watched,reviews,saved){return Math.min(999,(watched*3)+(reviews*8)+(saved*2));}
 export const CINE_LEVELS=[{name:'Newcomer',min:0,max:100},{name:'Casual viewer',min:100,max:300},{name:'Cinephile',min:300,max:600},{name:'Connoisseur',min:600,max:999}];
@@ -613,7 +614,7 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                     <div style={{fontSize:10.5,color:T.text3,marginTop:3}}>Watch +3 · Review +8 · Save +2</div>
                     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:11}}>
                       {cineScore<300&&<button onClick={()=>setTab('watched')} style={pill}>View watched</button>}
-                      <button onClick={async()=>{setSharing(true);try{const watchedItems=watchlist.filter(m=>m.watched);const shelfSrc=(watchedItems.length?watchedItems:watchlist).filter(m=>m.poster);const d=await generateShareCard('score',{score:cineScore,name:nickname||user?.fullName||user?.firstName||user?.username||'Cinephile',handle:user?.username||null,avatar:user?.imageUrl||null,watched,reviews,saved,genres:sortedGenres.map(([g])=>g),shelf:shelfSrc.slice(0,4),shelfLabel:watchedItems.length?'RECENTLY WATCHED':'ON THE WATCHLIST',wall:watchlist.map(m=>m.poster)},accent);await shareImage(d,'My CineScroll profile',`I'm a ${cineLevel(cineScore).name} on CineScroll — come see what I'm watching`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{...pill,opacity:sharing?0.6:1}}>
+                      <button onClick={async()=>{setSharing(true);try{const watchedItems=watchlist.filter(m=>m.watched);const shelfSrc=(watchedItems.length?watchedItems:watchlist).filter(m=>m.poster);const d=await generateShareCard('score',{score:cineScore,name:nickname||user?.fullName||user?.firstName||user?.username||'Cinephile',handle:user?.username||null,avatar:user?.imageUrl||null,watched,reviews,saved,genres:sortedGenres.map(([g])=>g),shelf:shelfSrc.slice(0,4),shelfLabel:watchedItems.length?'RECENTLY WATCHED':'ON THE WATCHLIST',wall:watchlist.map(m=>m.poster)},accent);await shareImage(d,'My Thiscene profile',`I'm a ${cineLevel(cineScore).name} on Thiscene — come see what I'm watching`);showToast('Share card ready!');}catch(e){console.error(e);}setSharing(false);}} disabled={sharing} style={{...pill,opacity:sharing?0.6:1}}>
                         <SvgIcon name="share" size={12} color="#fff"/>{sharing?'Preparing…':'Share'}
                       </button>
                     </div>
@@ -695,7 +696,7 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                       This product uses the TMDB API but is not endorsed or certified by TMDB.
                     </div>
                     <div style={{fontSize:12,color:T.text3,lineHeight:1.5,marginBottom:16}}>
-                      Titles, posters, ratings, and related metadata come from The Movie Database (TMDB). CineScroll is an independent discovery app and is not affiliated with TMDB.
+                      Titles, posters, ratings, and related metadata come from The Movie Database (TMDB). Thiscene is an independent discovery app and is not affiliated with TMDB.
                     </div>
                     <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:12,fontWeight:600,color:accent,textDecoration:'none'}}>
                       Visit themoviedb.org →

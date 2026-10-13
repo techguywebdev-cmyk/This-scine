@@ -49,7 +49,7 @@ export default function PublicProfilePage({ params }) {
       {!isSignedIn && (
         <div style={{ position: 'fixed', left: 12, right: 12, bottom: 'calc(12px + env(safe-area-inset-bottom))', zIndex: 500, maxWidth: 520, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 12px 12px 16px', borderRadius: 18, background: 'rgba(10,10,16,0.72)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: '#fff' }}>{ownerName} invited you to CineScroll</div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: '#fff' }}>{ownerName} invited you to Thiscene</div>
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Join to see what you both want to watch</div>
           </div>
           <button onClick={() => openSignUp ? openSignUp({ redirectUrl: typeof window !== 'undefined' ? window.location.href : '/' }) : openSignIn()} style={{ flexShrink: 0, height: 40, padding: '0 16px', borderRadius: 20, border: 'none', background: '#fff', color: '#07070F', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Join free</button>

@@ -46,9 +46,9 @@ export function FriendsScreen({ onClose, accent, onWatchTrailer, onAddToWatchlis
     const handle = user?.username || user?.id;
     if (!handle) return;
     const url = `${window.location.origin}/u/${encodeURIComponent(handle)}`;
-    const text = `Join me on CineScroll — let's see what we both want to watch 🍿`;
+    const text = `Join me on Thiscene — let's see what we both want to watch 🍿`;
     track('share', { via: 'invite' });
-    try { if (navigator.share) { await navigator.share({ title: 'CineScroll', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { if (navigator.share) { await navigator.share({ title: 'Thiscene', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
     try { await navigator.clipboard.writeText(`${text} ${url}`); setInviteCopied(true); setTimeout(() => setInviteCopied(false), 1800); } catch {}
   };
   const [fabHidden, setFabHidden] = useState(false);

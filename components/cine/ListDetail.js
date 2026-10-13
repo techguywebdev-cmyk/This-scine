@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import { Eyebrow, FolderArt, ListPlaylistPlayer, SerifStat, SvgIcon, T, Toast, ambient } from './shared';
+import { SITE_URL } from '../../lib/brand';
 
 export function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,watchlistIds,watchedIds,watchlist=[],onFillFromFeed}){
   const{isSignedIn,user}=useUser();
@@ -164,11 +165,11 @@ export function ListDetailSheet({listId,onClose,accent,onWatchTrailer,onSave,wat
   };
 
   const handleShareList=async()=>{
-    const title=list?.title||'CineScroll list';
-    const text=list?.description?`${title} — ${list.description}`:`Check out "${title}" on CineScroll`;
+    const title=list?.title||'Thiscene list';
+    const text=list?.description?`${title} — ${list.description}`:`Check out "${title}" on Thiscene`;
     const url=typeof window!=='undefined'
       ? `${window.location.origin}${window.location.pathname}?list=${listId}`
-      : `https://this-scine.vercel.app?list=${listId}`;
+      : `${SITE_URL}?list=${listId}`;
     try{
       if(navigator.share){
         await navigator.share({title,text,url});

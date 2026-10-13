@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import { PartyHistoryRow, TogetherSheet, ChatWidget, CoverImg, FolderCoverFill, FollowListModal, GRADS, ListDetailSheet, SvgIcon, T, Toast, ambient, coverCache } from './shared';
+import { SITE_URL } from '../../lib/brand';
 
 // Full TMDB genre name -> id map (movie genre list), used for profile cover photo lookups
 export const TMDB_GENRE_IDS = {
@@ -189,9 +190,9 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
               const toMovie=m=>({id:m.movie_id,title:m.title,poster:m.poster,year:m.year,rating:m.rating,genre:m.genre,overview:m.overview,accent:m.accent||accentColor,gradient:m.gradient,mediaType:m.is_tv?'tv':'movie'});
               const saveIt=m=>{onAddToWatchlist&&onAddToWatchlist({id:m.movie_id,title:m.title,year:m.year,rating:m.rating,poster:m.poster,backdrop:m.backdrop,genre:m.genre,overview:m.overview,accent:m.accent||accentColor,gradient:m.gradient,isTV:m.is_tv,certification:m.certification||''});showToast(`Saved ${m.title}`);};
               const shareProfile=async()=>{
-                const shareUrl=`https://this-scine.vercel.app/u/${profile.has_username?profile.username:(profile.user_id||userId)}`;
+                const shareUrl=`${SITE_URL}/u/${profile.has_username?profile.username:(profile.user_id||userId)}`;
                 try{
-                  if(navigator.share){await navigator.share({title:`${name} on CineScroll`,text:`See what ${name} is watching on CineScroll`,url:shareUrl});}
+                  if(navigator.share){await navigator.share({title:`${name} on Thiscene`,text:`See what ${name} is watching on Thiscene`,url:shareUrl});}
                   else{await navigator.clipboard.writeText(shareUrl);setShareCopied(true);showToast('Profile link copied');setTimeout(()=>setShareCopied(false),2000);}
                 }catch{}
               };

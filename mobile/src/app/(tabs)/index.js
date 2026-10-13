@@ -120,7 +120,7 @@ export default function Feed() {
 
       {/* Top bar: brand + moods */}
       <View pointerEvents="box-none" style={[styles.top, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.brand}>CineScroll</Text>
+        <Text style={styles.brand}>Thiscene</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 18, paddingHorizontal: 18, paddingTop: 10 }}>
           {MOODS.map((m) => (
             <Pressable key={m} onPress={() => setMood(m)}>

@@ -68,7 +68,7 @@ export function PartyRoom({ partyId, accent: accentIn = '#F5A623', onClose }) {
   const inputRef = useRef(null);
   const dataRef = useRef(null); dataRef.current = data;
 
-  const accent = accentIn; // the app's own accent, so the room matches the rest of CineScroll
+  const accent = accentIn; // the app's own accent, so the room matches the rest of Thiscene
   const party = data?.party;
   const me = data?.me;
   const peer = data?.peer;

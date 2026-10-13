@@ -9,11 +9,11 @@ const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-san
 const interTight = Inter_Tight({ subsets: ['latin'], weight: ['500', '600', '700', '800', '900'], display: 'swap', variable: '--font-display' });
 export const metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'CineScroll — Discover Movies',
-  description: 'A cinematic movie discovery experience.',
+  title: 'Thiscene — Discover films. Watch together.',
+  description: 'Scroll trailers, see what your friends are saving, and press play together with a watch party.',
   manifest: '/manifest.webmanifest',
   icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
-  appleWebApp: { capable: true, title: 'CineScroll', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Thiscene', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport = { themeColor: '#06060B' };

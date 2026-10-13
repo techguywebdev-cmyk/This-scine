@@ -20,7 +20,7 @@ export function usePushRegistration() {
   const register = useCallback(async (ask) => {
     if (!isSignedIn || !Device.isDevice) return false;
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', { name: 'CineScroll', importance: Notifications.AndroidImportance.HIGH, lightColor: '#F5A623' }).catch(() => {});
+      await Notifications.setNotificationChannelAsync('default', { name: 'Thiscene', importance: Notifications.AndroidImportance.HIGH, lightColor: '#F5A623' }).catch(() => {});
     }
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted' && ask) ({ status } = await Notifications.requestPermissionsAsync());
