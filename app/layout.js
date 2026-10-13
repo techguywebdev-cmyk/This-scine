@@ -12,7 +12,7 @@ export const metadata = {
   title: 'Thiscene — Discover films. Watch together.',
   description: 'Scroll trailers, see what your friends are saving, and press play together with a watch party.',
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
+  icons: { icon: '/icon-192.png', apple: '/apple-icon.png' },
   appleWebApp: { capable: true, title: 'Thiscene', statusBarStyle: 'black-translucent' },
 };
 

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
+import Splash, { TsMark } from './cine/Splash';
 import { SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 // AUTH GATE
@@ -33,7 +34,7 @@ function AuthGate({onClose,accent}){
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
   const{openSignIn}=useClerk();
-  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);
+  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);const[booting,setBooting]=useState(true);const endBoot=useCallback(()=>setBooting(false),[]);
   const[showTonightNudge,setShowTonightNudge]=useState(false);const[feedToast,setFeedToast]=useState(null);
   const containerRef=useRef(null);const pageRef=useRef(1);const loadingMoreRef=useRef(false);const profileLoadedRef=useRef(false);
 
@@ -518,8 +519,7 @@ export default function CineScroll(){
         <style>{`div::-webkit-scrollbar{display:none}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}::-webkit-scrollbar{display:none}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         {loading?(
           <div style={{height:'100dvh',display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'start',flexDirection:'column',gap:12}}>
-            <div style={{fontFamily:T.serif,letterSpacing:'-0.02em',fontSize:38,fontWeight:700,color:T.text}}>Thi<span style={{color:accent}}>scene</span></div>
-            <div style={{fontSize:11,color:T.text3,letterSpacing:3}}>LOADING FILMS...</div>
+            <TsMark size={52}/>
           </div>
         ):(
           movies.map((m,i)=>(
@@ -530,6 +530,8 @@ export default function CineScroll(){
         )}
       </div>
 
+
+      {booting&&<Splash ready={!loading} onDone={endBoot}/>}
 
       {incoming&&!partyId&&<PartyInvite invite={incoming} accent={accent} onJoin={()=>{const inv=incoming;dismissInvite(inv.id);setIncoming(null);if(inv.scheduled_for&&Date.parse(inv.scheduled_for)-Date.now()>10*60000){fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'join',id:inv.id})}).then(()=>{setFeedToast(`You're in · ${fmtWhen(inv.scheduled_for)} 🍿`);setTimeout(()=>setFeedToast(null),2600);}).catch(()=>{});}else setPartyId(inv.id);}} onLater={()=>{dismissInvite(incoming.id);setIncoming(null);}} onDecline={()=>{const id=incoming.id;dismissInvite(id);setIncoming(null);fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'decline',id})}).catch(()=>{});}}/>}
       {watchWith&&<StartPartySheet movie={watchWith.movie} candidates={watchWith.candidates} label={watchWith.label} preselect={watchWith.preselect} accent={accent} onClose={()=>setWatchWith(null)}/>}
