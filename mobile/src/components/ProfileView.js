@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import Ambient from './Ambient';
 import Folder from './Folder';
+import SafetySheet from './SafetySheet';
 import { Empty, GlassButton, Poster, SectionLabel, Spinner, Tabs } from './Ui';
 import { useApi } from '../lib/api';
 import { rowToMovie, useWatchlist } from '../lib/store';
@@ -27,10 +28,11 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
   const [activity, setActivity] = useState(null);
   const [reviews, setReviews] = useState(null);
   const [lists, setLists] = useState(null);
+  const [safety, setSafety] = useState(false);
 
   useEffect(() => {
     setP(null);
-    api.get(`/api/users/${userId}`).then(setP).catch(() => setP({ error: true }));
+    api.get(`/api/users/${userId}`).then(setP).catch((e) => setP(e.status === 404 ? { missing: true } : { error: true }));
     api.get(`/api/activity?type=user&userId=${userId}`).then((d) => setActivity(d.items || [])).catch(() => setActivity([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
@@ -47,7 +49,29 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
   };
 
   if (!p) return <View style={{ flex: 1 }}><Ambient /><Spinner /></View>;
-  if (p.error) return <View style={{ flex: 1, padding: 20, paddingTop: insets.top + 20 }}><Ambient /><Empty title="Couldn't load this profile" /></View>;
+  if (p.error || p.missing) return (
+    <View style={{ flex: 1, padding: 20, paddingTop: insets.top + 8 }}>
+      <Ambient />
+      {onBack ? <GlassButton icon="chevron-left" label="Back" onPress={onBack} /> : null}
+      <View style={{ marginTop: 30 }}><Empty title={p.missing ? 'This account isn’t available' : 'Couldn’t load this profile'} sub={p.missing ? 'It may have been deleted, or you can’t see it.' : 'Check your connection and try again.'} /></View>
+    </View>
+  );
+  const blockedByMe = p.blocked === 'by_me';
+  const safetyBtn = !p.isSelf ? <GlassButton icon="more-horizontal" label="Report or block" onPress={() => setSafety(true)} /> : null;
+  const safetySheet = safety ? <SafetySheet user={{ user_id: userId, username: p.username, display_name: p.display_name }} blocked={blockedByMe} onClose={() => setSafety(false)} onBlocked={(b) => setP((x) => ({ ...x, blocked: b ? 'by_me' : null, ...(b ? { isFollowing: false } : {}) }))} /> : null;
+  if (blockedByMe) return (
+    <View style={{ flex: 1, padding: 20, paddingTop: insets.top + 8 }}>
+      <Ambient />
+      <View style={styles.topRowStatic}>{onBack ? <GlassButton icon="chevron-left" label="Back" onPress={onBack} /> : <View />}{safetyBtn}</View>
+      <View style={{ alignItems: 'center', marginTop: 60, gap: 10 }}>
+        <View style={[styles.avatarRing, { backgroundColor: 'rgba(255,255,255,0.14)' }]}><View style={styles.avatar}>{p.avatar_url ? <Image source={{ uri: p.avatar_url }} style={[StyleSheet.absoluteFill, { opacity: 0.5 }]} contentFit="cover" /> : <Text style={styles.initial}>{(p.display_name || 'U')[0].toUpperCase()}</Text>}</View></View>
+        <Text style={styles.name}>{p.display_name || p.username}</Text>
+        <Text style={[styles.handle, { textAlign: 'center' }]}>You blocked this account. They can’t message you, see your profile or invite you to watch.</Text>
+        <Pressable onPress={() => setSafety(true)} style={[styles.btn, styles.btnGhost, { flex: 0, paddingHorizontal: 28, marginTop: 10 }]}><Text style={styles.btnText}>Unblock</Text></Pressable>
+      </View>
+      {safetySheet}
+    </View>
+  );
 
   const name = p.display_name || p.username;
   const watchlist = p.watchlist || [];
@@ -62,7 +86,7 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
           <LinearGradient colors={['rgba(6,6,11,0.4)', 'transparent', '#06060B']} locations={[0, 0.35, 1]} style={StyleSheet.absoluteFill} />
           <View style={[styles.topBtns, { top: insets.top + 8 }]}>
             {onBack ? <GlassButton icon="chevron-left" label="Back" onPress={onBack} /> : <View />}
-            {headerRight}
+            {headerRight || safetyBtn}
           </View>
         </View>
 
@@ -151,11 +175,13 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
           {footer}
         </View>
       </ScrollView>
+      {safetySheet}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  topRowStatic: { flexDirection: 'row', justifyContent: 'space-between' },
   topBtns: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
   avatarRing: { width: 88, height: 88, borderRadius: 44, padding: 3, backgroundColor: T.accent },
   avatar: { flex: 1, borderRadius: 44, overflow: 'hidden', backgroundColor: '#14141B', borderWidth: 3, borderColor: '#0B0B12', alignItems: 'center', justifyContent: 'center' },

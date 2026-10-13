@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +21,6 @@ function RailButton({ icon, label, active, color, onPress }) {
 }
 
 function FeedCard({ movie, height, bottomInset, saved, watched, reminded, onOpen, onSave, onWatched, onRemind, onSimilar, onShare }) {
-  const [liked, setLiked] = useState(false);
   const accent = movie.accent || T.accent;
   const img = movie.backdrop || movie.poster;
   const upcoming = movie.isUpcoming && movie.releaseDate;
@@ -61,7 +60,6 @@ function FeedCard({ movie, height, bottomInset, saved, watched, reminded, onOpen
       {/* Action rail — same order as the web: Save first */}
       <View style={[styles.rail, { bottom: bottomInset + 18 }]}>
         <RailButton icon={saved ? 'check' : 'plus'} label={saved ? 'Saved' : 'Save'} active={saved} color="#7BFF9E" onPress={onSave} />
-        <RailButton icon="heart" label="Like" active={liked} color="#FF6B8A" onPress={() => setLiked((v) => !v)} />
         {upcoming
           ? <RailButton icon="bell" label={reminded ? 'Reminded' : 'Remind'} active={reminded} color={T.star} onPress={onRemind} />
           : <RailButton icon="eye" label={watched ? 'Seen' : 'Seen it'} active={watched} color="#7BFFB0" onPress={onWatched} />}

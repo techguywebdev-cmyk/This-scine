@@ -34,6 +34,7 @@ export default function RootLayout() {
                 <Stack.Screen name="title/[type]/[id]" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="folder/[id]" />
                 <Stack.Screen name="person/[id]" />
+                <Stack.Screen name="blocked" />
                 <Stack.Screen name="sign-in" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               </Stack>
             </WatchlistProvider>

@@ -9,6 +9,7 @@ import PosterWall from '../../components/PosterWall';
 import Folder from '../../components/Folder';
 import ActionSheet from '../../components/ActionSheet';
 import FolderPicker from '../../components/FolderPicker';
+import RemindSheet, { fmtRemind, reminderOn } from '../../components/RemindSheet';
 import { Empty, GlassButton, Poster, SectionLabel, Spinner, Tabs } from '../../components/Ui';
 import { useApi } from '../../lib/api';
 import { rowToMovie, useWatchlist } from '../../lib/store';
@@ -26,6 +27,7 @@ export default function Watchlist() {
   const [filter, setFilter] = useState('towatch');
   const [menu, setMenu] = useState(null);
   const [filing, setFiling] = useState(null);
+  const [remindRow, setRemindRow] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchLists = useCallback(async (t = tab) => {
@@ -91,6 +93,12 @@ export default function Watchlist() {
                     <View key={m.movie_id} style={{ width: (width - 40 - 20) / 3 }}>
                       <Pressable onPress={() => openTitle(rowToMovie(m))}><Poster uri={m.poster} width="100%" dim={m.watched} /></Pressable>
                       <Pressable onPress={() => setMenu(m)} hitSlop={8} style={styles.more}><Feather name="more-horizontal" size={14} color="#fff" /></Pressable>
+                      {reminderOn(m) ? (
+                        <Pressable onPress={() => setRemindRow(m)} hitSlop={6} style={styles.bell} accessibilityLabel={`Reminder ${fmtRemind(m.remind_at)}`}>
+                          <Feather name="bell" size={10} color="#07070F" />
+                          <Text style={styles.bellText} numberOfLines={1}>{fmtRemind(m.remind_at).split(' · ')[0]}</Text>
+                        </Pressable>
+                      ) : null}
                       <Text style={[styles.itemTitle, m.watched && { color: 'rgba(255,255,255,0.55)' }]} numberOfLines={1}>{m.title}</Text>
                     </View>
                   ))}
@@ -116,11 +124,13 @@ export default function Watchlist() {
       <ActionSheet visible={!!menu} onClose={() => setMenu(null)} poster={menu?.poster} title={menu?.title} sub={[menu?.year, menu?.is_tv ? 'Series' : null].filter(Boolean).join(' · ')}
         actions={menu ? [
           ['play', 'Watch trailer', () => openTitle(rowToMovie(menu))],
+          ...(!menu.watched ? [['bell', reminderOn(menu) ? `Reminder · ${fmtRemind(menu.remind_at)}` : 'Remind me to watch', () => setRemindRow(menu)]] : []),
           ['folder', 'Add to folder', () => setFiling(rowToMovie(menu))],
           ['check', menu.watched ? 'Mark as not watched' : 'Mark as watched', () => wl.toggleWatched(rowToMovie(menu))],
           ['trash-2', 'Remove from watchlist', () => wl.toggleSave(rowToMovie(menu))],
         ] : []} />
       {filing && !filing.newOnly ? <FolderPicker movie={filing} onClose={() => { setFiling(null); fetchLists('mine'); }} /> : null}
+      {remindRow ? <RemindSheet row={wl.items.find((x) => x.movie_id === remindRow.movie_id) || remindRow} onClose={() => setRemindRow(null)} onChange={wl.setRemind} /> : null}
       {filing?.newOnly ? <NewFolder onClose={() => { setFiling(null); fetchLists('mine'); }} /> : null}
     </View>
   );
@@ -148,6 +158,8 @@ const styles = StyleSheet.create({
   owner: { fontFamily: F.body, fontSize: 10.5, color: T.text3, marginTop: 2 },
   toggle: { fontFamily: F.bold, fontSize: 12, color: 'rgba(255,255,255,0.4)' },
   itemTitle: { fontFamily: F.semibold, fontSize: 11.5, color: '#fff', marginTop: 6 },
+  bell: { position: 'absolute', left: 5, bottom: 26, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 6, height: 18, maxWidth: '85%' },
+  bellText: { fontFamily: F.bold, fontSize: 9.5, color: '#07070F' },
   more: { position: 'absolute', top: 5, right: 5, width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
   cta: { alignSelf: 'flex-start', backgroundColor: T.accent, borderRadius: 21, paddingHorizontal: 20, height: 42, justifyContent: 'center' },
   ctaText: { fontFamily: F.bold, fontSize: 13, color: '#07070F' },

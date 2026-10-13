@@ -54,13 +54,15 @@ export function WatchlistProvider({ children }) {
       setItems((p) => [{ movie_id: movie.id, title: movie.title, year: movie.year, rating: movie.rating, poster: movie.poster, backdrop: movie.backdrop, genre: movie.genre, accent: movie.accent, is_tv: !!movie.isTV, watched: true, saved_at: Date.now() }, ...p]);
       await api.post('/api/watchlist', movie).catch(() => {});
     } else {
-      setItems((p) => p.map((m) => (m.movie_id === movie.id ? { ...m, watched: next } : m)));
+      setItems((p) => p.map((m) => (m.movie_id === movie.id ? { ...m, watched: next, ...(next ? { remind_at: null } : {}) } : m)));
     }
     api.patch('/api/watchlist', { movieId: movie.id, watched: next }).catch(() => {});
     if (next) logActivity('watched', movie);
   };
 
-  const value = { items, ids, loading, refresh, toggleSave, toggleWatched, isWatched: (id) => !!items.find((m) => m.movie_id === id && m.watched) };
+  const setRemind = (movieId, iso) => setItems((p) => p.map((m) => (m.movie_id === movieId ? { ...m, remind_at: iso, reminded_at: null } : m)));
+
+  const value = { items, ids, loading, refresh, toggleSave, toggleWatched, setRemind, isWatched: (id) => !!items.find((m) => m.movie_id === id && m.watched) };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
