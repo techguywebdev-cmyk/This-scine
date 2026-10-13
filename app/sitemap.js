@@ -11,6 +11,7 @@ export default async function sitemap() {
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: 'daily', priority: 1 },
     ...titles.map((t) => ({ url: `${SITE_URL}${titlePath(t.type, t.id, t.title)}`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 })),
     { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${SITE_URL}/delete-account`, changeFrequency: 'yearly', priority: 0.1 },
     { url: `${SITE_URL}/terms`, changeFrequency: 'yearly', priority: 0.2 },
   ];
 }
