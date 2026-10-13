@@ -110,8 +110,12 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
 
           {!p.isSelf ? (
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-              <Pressable onPress={follow} style={[styles.btn, p.isFollowing ? styles.btnGhost : { backgroundColor: T.accent }]}>
+              <Pressable onPress={follow} style={[styles.btn, p.isFollowing ? styles.btnGhost : { backgroundColor: '#fff' }]}>
                 <Text style={[styles.btnText, !p.isFollowing && { color: '#07070F' }]}>{p.isFollowing ? 'Following' : p.followsYou ? 'Follow back' : 'Follow'}</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push({ pathname: '/chat/[id]', params: { id: userId, name: p.display_name || p.username, avatar: p.avatar_url || '' } })} style={[styles.btn, styles.btnGhost, { flexDirection: 'row', gap: 7 }]}>
+                <Feather name="message-circle" size={15} color="#fff" />
+                <Text style={styles.btnText}>Message</Text>
               </Pressable>
             </View>
           ) : null}

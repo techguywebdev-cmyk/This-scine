@@ -47,7 +47,9 @@ export function usePushRouting() {
     const sub = Notifications.addNotificationResponseReceivedListener((r) => {
       const url = r.notification.request.content.data?.url || '';
       const chat = /chat=([^&]+)/.exec(url)?.[1];
-      if (chat) router.push({ pathname: '/person/[id]', params: { id: decodeURIComponent(chat) } });
+      const title = /[?&]m=(movie|tv)-(\d+)/.exec(url);
+      if (chat) router.push({ pathname: '/chat/[id]', params: { id: decodeURIComponent(chat) } });
+      else if (title) router.push({ pathname: '/title/[type]/[id]', params: { type: title[1], id: title[2] } });
       else router.navigate('/');
     });
     return () => sub.remove();

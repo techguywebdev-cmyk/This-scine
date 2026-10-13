@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/expo';
 import Ambient from '../../components/Ambient';
 import PosterWall from '../../components/PosterWall';
-import { Avatar, Empty, Poster, SectionLabel, Spinner, Tabs } from '../../components/Ui';
+import { Avatar, Empty, GlassButton, Poster, SectionLabel, Spinner, Tabs } from '../../components/Ui';
 import { useApi } from '../../lib/api';
 import { useWatchlist } from '../../lib/store';
 import { openTitle } from '../../lib/titles';
@@ -29,6 +30,12 @@ export default function Friends() {
   const [open, setOpen] = useState({});
   const [personFilter, setPersonFilter] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [unread, setUnread] = useState(0);
+  useFocusEffect(useCallback(() => {
+    if (!isSignedIn) return;
+    api.get('/api/messages').then((d) => setUnread((d.conversations || []).filter((c) => c.unread).length)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]));
 
   const load = useCallback(async () => {
     api.get('/api/movies?popular=1').then((d) => setWall((d.movies || []).map((m) => m.poster).filter(Boolean).sort(() => Math.random() - 0.5).slice(0, 5))).catch(() => {});
@@ -70,6 +77,12 @@ export default function Friends() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" />}>
         <PosterWall posters={wall} />
         <View style={{ paddingTop: insets.top + 48, paddingHorizontal: 20 }}>
+          {isSignedIn ? (
+            <View style={{ position: 'absolute', right: 20, top: insets.top + 8 }}>
+              <GlassButton icon="message-circle" label={unread ? `Messages, ${unread} unread` : 'Messages'} onPress={() => router.push('/messages')} />
+              {unread ? <View style={styles.badge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View> : null}
+            </View>
+          ) : null}
           <Text style={styles.h1}>Friends</Text>
           <Text style={styles.counts}><Text style={styles.b}>{stats.followers || 0}</Text> followers  ·  <Text style={styles.b}>{stats.following || 0}</Text> following</Text>
           <Tabs style={{ marginTop: 16 }} tabs={[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']]} value={tab} onChange={setTab} />
@@ -185,6 +198,8 @@ function PersonRow({ u, right, first }) {
 
 const styles = StyleSheet.create({
   h1: { fontFamily: F.displayHeavy, fontSize: 28, color: '#fff', marginTop: 78, letterSpacing: -0.5 },
+  badge: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  badgeText: { fontFamily: F.bold, fontSize: 10, color: '#07070F' },
   counts: { fontFamily: F.body, fontSize: 12.5, color: T.text2, marginTop: 2 },
   b: { fontFamily: F.bold, color: '#fff' },
   circleName: { fontFamily: F.medium, fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 6, textAlign: 'center' },
