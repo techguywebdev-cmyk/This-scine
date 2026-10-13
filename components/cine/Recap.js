@@ -90,7 +90,10 @@ export async function drawRecap({ movie, self, peer, ratings, reactions, duratio
     ctx.textAlign = 'center';
   }
   // footer
-  ctx.fillStyle = '#fff'; ctx.font = F(800, 38, display); ctx.fillText('Thiscene', W / 2, H - 110);
+  ctx.fillStyle = '#fff'; ctx.font = F(800, 38, display);
+  { const wm = 'thiscene', ww = ctx.measureText(wm).width, d = 38 * 0.17, gap = 38 * 0.07, x0 = W / 2 - (ww + gap + d) / 2;
+    ctx.textAlign = 'left'; ctx.fillText(wm, x0, H - 110); ctx.textAlign = 'center';
+    ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(x0 + ww + gap + d / 2, H - 110 - d / 2, d / 2, 0, Math.PI * 2); ctx.fill(); }
   ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = F(600, 26); ctx.fillText(`Watch together · ${SITE_HOST}`, W / 2, H - 66);
   return new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
 }
