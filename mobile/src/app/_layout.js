@@ -35,6 +35,7 @@ export default function RootLayout() {
                 <Stack.Screen name="folder/[id]" />
                 <Stack.Screen name="person/[id]" />
                 <Stack.Screen name="blocked" />
+                <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
                 <Stack.Screen name="messages" />
                 <Stack.Screen name="chat/[id]" />
                 <Stack.Screen name="status/[userId]" options={{ animation: 'fade' }} />

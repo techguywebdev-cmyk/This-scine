@@ -5,12 +5,31 @@ import { Feather } from '@expo/vector-icons';
 import { F, T } from '../../lib/theme';
 import { usePushRouting } from '../../lib/push';
 import InviteBanner from '../../components/InviteBanner';
+import { useEffect, useRef } from 'react';
+import { router } from 'expo-router';
+import { useAuth } from '@clerk/expo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useWatchlist } from '../../lib/store';
+import { WELCOME_KEY } from '../../lib/keys';
 import { View } from 'react-native';
 
 const icon = (name) => ({ color, size }) => <Feather name={name} size={size - 2} color={color} />;
 
 export default function TabsLayout() {
   usePushRouting();
+  const { isSignedIn } = useAuth();
+  const wl = useWatchlist();
+  const checked = useRef(false);
+  useEffect(() => {
+    if (!isSignedIn || checked.current || wl.loading) return;
+    const t = setTimeout(async () => {
+      if (checked.current) return;
+      checked.current = true;
+      const seen = await AsyncStorage.getItem(WELCOME_KEY).catch(() => '1');
+      if (!seen && wl.items.length === 0) router.push('/welcome');
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [isSignedIn, wl.loading, wl.items.length]);
   return (
     <View style={{ flex: 1 }}>
     <Tabs
