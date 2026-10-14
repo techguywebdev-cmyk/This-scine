@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
+import DragPip from './DragPip';
 import { fmtWhen, untilLabel, TogetherSheet, SvgIcon, T, UserProfileSheet, ambient, statusBg } from './shared';
 import { useVoiceRecorder, RecorderBar, VoiceBubble } from './Voice';
 
@@ -1965,11 +1966,8 @@ export function ChatWidget({ peer, onClose, accent }) {
                     }}
                   />
                   {/* local PiP */}
-                  <div
+                  <DragPip
                     style={{
-                      position: 'absolute',
-                      top: 'max(78px, calc(env(safe-area-inset-top) + 66px))',
-                      right: 14,
                       width: 108,
                       height: 152,
                       borderRadius: 16,
@@ -1977,9 +1975,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                       border: '1.5px solid rgba(255,255,255,0.2)',
                       boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
                       background: '#111',
-                      zIndex: 4,
                       opacity: camOff ? 0.4 : 1,
-                      transition: 'opacity 0.2s ease',
                     }}
                   >
                     {camOff ? (
@@ -2005,7 +2001,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                         <span style={{ fontSize: 11, color: '#fff', fontWeight: 600 }}>Switching…</span>
                       </div>
                     )}
-                  </div>
+                  </DragPip>
                 </>
               ) : (
                 <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>

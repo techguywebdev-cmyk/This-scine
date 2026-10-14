@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Ambient from './Ambient';
+import DragPip from './DragPip';
 import { Avatar } from './Ui';
 import { rtc, useCalls } from '../lib/calls';
 import { F } from '../lib/theme';
@@ -55,7 +56,7 @@ export default function CallScreen() {
     <Animated.View style={[StyleSheet.absoluteFill, styles.root, { opacity: fade }]}>
       {showRemoteVideo && RTCView ? <RTCView streamURL={c.remote.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" /> : <Ambient accent="#818CF8" />}
       {video && RTCView && c.local && !c.camOff && call.status !== 'incoming' ? (
-        <View style={[styles.pip, { top: insets.top + 70 }]}><RTCView streamURL={c.local.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" mirror zOrder={1} /></View>
+        <DragPip><RTCView streamURL={c.local.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" mirror zOrder={1} /></DragPip>
       ) : null}
 
       <View style={{ flex: 1, paddingTop: insets.top + 40, paddingBottom: insets.bottom + 30, alignItems: 'center' }}>
