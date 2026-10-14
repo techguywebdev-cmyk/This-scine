@@ -17,6 +17,7 @@ import { F, FEEDS, GENRES, T } from '../../lib/theme';
 import FilterSheet from '../../components/FilterSheet';
 import { GlassButton } from '../../components/Ui';
 import { markBootReady } from '../../lib/boot';
+import { setAccent } from '../../lib/accent';
 
 const newSeed = () => String(Math.floor(Math.random() * 1e9));
 
@@ -84,8 +85,8 @@ export default function Feed() {
   }, [isSignedIn]);
 
   const filterOn = mood !== 'Trending' || !!filter.genre || !!filter.provider;
-  const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.item) { setActiveAccent(v.item.accent || T.accent); setActiveKey(feedKey(v.item)); setTimeout(() => markSeen(v.item), 1200); } }).current;
-  useEffect(() => { if (movies[0] && activeAccent === '#fff') setActiveAccent(movies[0].accent || T.accent); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [movies.length]);
+  const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.item) { setActiveAccent(v.item.accent || T.accent); setAccent(v.item.accent); setActiveKey(feedKey(v.item)); setTimeout(() => markSeen(v.item), 1200); } }).current;
+  useEffect(() => { if (movies[0] && activeAccent === '#fff') { setActiveAccent(movies[0].accent || T.accent); setAccent(movies[0].accent); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [movies.length]);
 
   const showSaved = (m) => {
     clearTimeout(toastTimer.current);

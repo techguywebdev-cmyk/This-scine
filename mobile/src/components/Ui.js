@@ -3,17 +3,22 @@ import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { F, T, label } from '../lib/theme';
+import { useAccent } from '../lib/accent';
 
 export const Spinner = ({ accent = T.accent }) => (
   <View style={{ paddingVertical: 32, alignItems: 'center' }}><ActivityIndicator color={accent} /></View>
 );
 
-export const SectionLabel = ({ children, right, accent, style }) => (
+export const SectionLabel = ({ children, right, accent: given, style }) => {
+  const live = useAccent();
+  const accent = given || live;
+  return (
   <View style={[{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 26, marginBottom: 12 }, style]}>
     <Text style={label(accent)}>{children}</Text>
     {right}
   </View>
-);
+  );
+};
 
 export const GlassButton = ({ icon, onPress, size = 38, label: a11y }) => (
   <Pressable onPress={onPress} accessibilityLabel={a11y} hitSlop={8} style={({ pressed }) => [{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', opacity: pressed ? 0.7 : 1 }]}>
@@ -37,7 +42,10 @@ export const Poster = ({ uri, width, style, dim }) => (
   </View>
 );
 
-export const Tabs = ({ tabs, value, onChange, accent = T.accent, style }) => (
+export const Tabs = ({ tabs, value, onChange, accent: given, style }) => {
+  const live = useAccent();
+  const accent = given || live;
+  return (
   <View style={[{ flexDirection: 'row', gap: 24, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: T.hairlineStrong }, style]}>
     {tabs.map(([id, text]) => {
       const on = value === id;
@@ -48,7 +56,8 @@ export const Tabs = ({ tabs, value, onChange, accent = T.accent, style }) => (
       );
     })}
   </View>
-);
+  );
+};
 
 export const Empty = ({ title, sub }) => (
   <View style={{ paddingVertical: 26 }}>

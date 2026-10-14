@@ -1,9 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from '../lib/theme';
+import { useAccent } from '../lib/accent';
 
 // Native take on the web `ambient(accent)` wash: soft accent glow top-left and bottom-right over near-black.
-export default function Ambient({ accent = T.accent, style }) {
+export default function Ambient({ accent: given, style }) {
+  const live = useAccent();
+  const accent = given || live;
   const noir = accent === '#E6E6EA' || String(accent).toUpperCase() === '#FFFFFF';
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: noir ? '#000' : T.bg }, style]}>

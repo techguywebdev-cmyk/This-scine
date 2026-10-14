@@ -7,6 +7,9 @@ import { useAuth } from '@clerk/expo';
 import Ambient from '../../components/Ambient';
 import PosterWall from '../../components/PosterWall';
 import StatusRow from '../../components/StatusRow';
+import UpcomingParties from '../../components/UpcomingParties';
+import { Feather } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from 'expo-router/build/react-navigation/bottom-tabs';
 import { Avatar, Empty, GlassButton, Poster, SectionLabel, Spinner, Tabs } from '../../components/Ui';
 import { useApi } from '../../lib/api';
 import { useWatchlist } from '../../lib/store';
@@ -32,6 +35,7 @@ export default function Friends() {
   const [personFilter, setPersonFilter] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [unread, setUnread] = useState(0);
+  const tabBar = useBottomTabBarHeight();
   useFocusEffect(useCallback(() => {
     if (!isSignedIn) return;
     api.get('/api/messages').then((d) => setUnread((d.conversations || []).filter((c) => c.unread).length)).catch(() => {});
@@ -78,15 +82,8 @@ export default function Friends() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" />}>
         <PosterWall posters={wall} />
         <View style={{ paddingTop: insets.top + 48, paddingHorizontal: 20 }}>
-          {isSignedIn ? (
-            <View style={{ position: 'absolute', right: 20, top: insets.top + 8 }}>
-              <GlassButton icon="message-circle" label={unread ? `Messages, ${unread} unread` : 'Messages'} onPress={() => router.push('/messages')} />
-              {unread ? <View style={styles.badge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View> : null}
-            </View>
-          ) : null}
           <Text style={styles.h1}>Friends</Text>
           <Text style={styles.counts}><Text style={styles.b}>{stats.followers || 0}</Text> followers  ·  <Text style={styles.b}>{stats.following || 0}</Text> following</Text>
-          <StatusRow />
           <Tabs style={{ marginTop: 16 }} tabs={[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']]} value={tab} onChange={setTab} />
 
           {!isSignedIn ? (
@@ -97,19 +94,9 @@ export default function Friends() {
           ) : tab === 'feed' ? (
             feed === null ? <Spinner /> : (
               <>
-                {friends.length ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, marginTop: 18 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}>
-                    {friends.map((f) => {
-                      const on = personFilter === f.user_id;
-                      return (
-                        <Pressable key={f.user_id} onPress={() => setPersonFilter(on ? null : f.user_id)} style={{ width: 62, alignItems: 'center', opacity: personFilter && !on ? 0.4 : 1 }}>
-                          <Avatar uri={f.avatar_url} name={f.display_name || f.username} size={58} ring={on} />
-                          <Text style={[styles.circleName, on && { color: T.accent, fontFamily: F.bold }]} numberOfLines={1}>{f.display_name || f.username}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-                ) : null}
+                <UpcomingParties />
+                <StatusRow onFind={() => setTab('find')} />
+                <View style={styles.rule} />
 
                 {sections.length === 0 ? (
                   <Empty title={friends.length ? 'Quiet for now' : 'Your feed fills up when you follow people'} sub={friends.length ? 'When the people you follow save or review something, it shows up here.' : 'Find a few film lovers in Find people.'} />
@@ -181,6 +168,12 @@ export default function Friends() {
           )}
         </View>
       </ScrollView>
+      {isSignedIn ? (
+        <Pressable onPress={() => router.push('/messages')} accessibilityLabel={unread ? `Messages, ${unread} unread` : 'Messages'} style={[styles.fab, { bottom: tabBar + 16 }]}>
+          <Feather name="message-square" size={24} color="#fff" />
+          {unread ? <View style={styles.fabBadge}><Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text></View> : null}
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -200,6 +193,9 @@ function PersonRow({ u, right, first }) {
 
 const styles = StyleSheet.create({
   h1: { fontFamily: F.displayHeavy, fontSize: 28, color: '#fff', marginTop: 78, letterSpacing: -0.5 },
+  rule: { height: StyleSheet.hairlineWidth, backgroundColor: T.hairlineStrong, marginTop: 20 },
+  fab: { position: 'absolute', right: 18, width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', elevation: 6 },
+  fabBadge: { position: 'absolute', top: -2, right: -2, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   badge: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   badgeText: { fontFamily: F.bold, fontSize: 10, color: '#07070F' },
   counts: { fontFamily: F.body, fontSize: 12.5, color: T.text2, marginTop: 2 },
