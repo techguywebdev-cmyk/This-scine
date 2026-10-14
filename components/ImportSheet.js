@@ -14,24 +14,84 @@ const eyebrow = (accent) => ({ fontSize: 10.5, letterSpacing: 2.2, textTransform
 const SOURCES = {
   letterboxd: {
     name: 'Letterboxd',
-    steps: ['On letterboxd.com, open Settings → Data', 'Tap “Export your data” and download the ZIP', 'Upload that ZIP here — no need to unzip it'],
+    label: 'Your Letterboxd username',
+    placeholder: 'username',
+    open: (h) => `https://letterboxd.com/${(h || '').replace(/^@/, '').trim()}`,
+    openLabel: 'Open Letterboxd',
+    hint: 'Not sure? Open Letterboxd — your username is in your profile link.',
+    exportUrl: 'https://letterboxd.com/settings/data/',
+    steps: ['Tap “Open export page” and sign in to Letterboxd', 'Tap “Export your data” and download the ZIP', 'Come back and upload that ZIP — no need to unzip it'],
     accept: '.zip,.csv',
   },
   imdb: {
     name: 'IMDb',
-    steps: ['On imdb.com, open Your Ratings → ⋯ → Export', 'Do the same for your Watchlist (optional)', 'Upload the CSV files here — you can pick both at once'],
+    label: 'Your IMDb profile link',
+    placeholder: 'imdb.com/user/ur…',
+    open: () => 'https://www.imdb.com/profile',
+    openLabel: 'Open IMDb',
+    hint: 'Open IMDb, go to your profile and copy the link from the address bar. Your ratings need to be public.',
+    exportUrl: 'https://www.imdb.com/exports/',
+    steps: ['Tap “Open export page” and sign in to IMDb', 'Export Your Ratings (and your Watchlist if you like)', 'Come back and upload the CSV files — you can pick both at once'],
     accept: '.csv',
   },
 };
 
+const DOTS = ['#818CF8', '#2DD4BF', '#FF6B8A', '#A3E635', '#B07FEF', '#38BDF8', '#FF7A2F', '#F5A623'];
+const PULSE_CSS = `
+@keyframes impSpin{to{transform:rotate(360deg)}}
+@keyframes impBreath{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.08);opacity:.9}}
+@keyframes impMarq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes impPop{0%{transform:translateY(8px) scale(.9);opacity:0}100%{transform:none;opacity:1}}
+`;
+
+// The "import in progress" piece: orbiting coloured dots around a live count, posters drifting underneath
+function ImportPulse({ accent, count, label, sub, posters = [], done }) {
+  const strip = posters.length ? [...posters, ...posters] : [];
+  return (
+    <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <style>{PULSE_CSS}</style>
+      <div style={{ position: 'relative', width: 168, height: 168 }}>
+        <div style={{ position: 'absolute', inset: 10, borderRadius: '50%', background: `radial-gradient(circle, ${accent}55, transparent 70%)`, animation: done ? 'none' : 'impBreath 2.4s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', inset: 0, animation: done ? 'none' : 'impSpin 5s linear infinite' }}>
+          {DOTS.map((c, i) => {
+            const a = (i / DOTS.length) * Math.PI * 2;
+            return <span key={c} style={{ position: 'absolute', left: 84 + Math.cos(a) * 74 - 5, top: 84 + Math.sin(a) * 74 - 5, width: 10, height: 10, borderRadius: '50%', background: c, boxShadow: `0 0 12px ${c}`, opacity: done ? 0.5 : 1 }} />;
+          })}
+        </div>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div key={count} style={{ fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: 40, fontWeight: 800, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', animation: 'impPop .25s ease' }}>{count}</div>
+          <div style={{ ...eyebrow('rgba(255,255,255,0.55)'), fontSize: 9.5 }}>{label}</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 14, textAlign: 'center', minHeight: 18 }}>{sub}</div>
+      <div style={{ width: '100%', height: 84, overflow: 'hidden', marginTop: 16, maskImage: 'linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent)' }}>
+        {strip.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, width: 'max-content', animation: `impMarq ${Math.max(12, strip.length * 1.6)}s linear infinite` }}>
+            {strip.map((p, i) => <img key={i} src={p} alt="" style={{ width: 56, height: 84, objectFit: 'cover', borderRadius: 8, opacity: 0.85 }} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ImportSheet({ accent = '#F5A623', onClose, onImported }) {
   const [src, setSrc] = useState('letterboxd');
-  const [phase, setPhase] = useState('pick'); // pick | ready | importing | done
+  const [phase, setPhase] = useState('pick'); // pick | file | scanning | ready | importing | done
+  const [handle, setHandle] = useState(() => { try { return localStorage.getItem('ts_import_lb') || ''; } catch { return ''; } });
+  const [found, setFound] = useState(0);
+  const [posters, setPosters] = useState([]);
+  const [note, setNote] = useState(null);
   const [parsed, setParsed] = useState(null);
   const [prog, setProg] = useState({ done: 0, total: 0, matched: 0, missed: [] });
   const [err, setErr] = useState(null);
   const fileRef = useRef(null);
   const cancelled = useRef(false);
+
+  const pickSource = (k) => {
+    setSrc(k); setErr(null); setNote(null);
+    try { setHandle(localStorage.getItem(k === 'imdb' ? 'ts_import_imdb' : 'ts_import_lb') || ''); } catch { setHandle(''); }
+  };
 
   const onFiles = async (files) => {
     setErr(null);
@@ -43,8 +103,45 @@ export default function ImportSheet({ accent = '#F5A623', onClose, onImported })
     } catch (e) { setErr(e.message || 'Could not read that file'); }
   };
 
-  const run = async () => {
-    const items = parsed.items;
+  // Pull everything straight from their public profile, then import without another tap
+  const auto = async () => {
+    const h = handle.trim();
+    if (!h) { setErr(src === 'imdb' ? 'Paste your IMDb profile link first' : 'Type your Letterboxd username first'); return; }
+    try { localStorage.setItem(src === 'imdb' ? 'ts_import_imdb' : 'ts_import_lb', h); } catch {}
+    setErr(null); setNote(null); setFound(0); setPosters([]);
+    cancelled.current = false;
+    setPhase('scanning');
+    const all = [];
+    let partial = false;
+    for (const list of ['watched', 'watchlist']) {
+      for (let page = 1; page <= 60; page++) {
+        if (cancelled.current) { setPhase('pick'); return; }
+        let d = {};
+        try {
+          const r = await fetch('/api/import/fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: src, handle: h, list, page }) });
+          d = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            if (list === 'watchlist' && all.length) break; // got their watched films; watchlist just isn't readable
+            const fallback = d.code === 'blocked' || d.code === 'private';
+            setErr(d.error || 'Could not read that profile');
+            if (fallback) { setNote(`${d.error}. No problem — grab your export file instead, it takes a minute.`); setPhase('file'); } else setPhase('pick');
+            return;
+          }
+        } catch { setErr('Network trouble — try again'); setPhase('pick'); return; }
+        if (d.partial) partial = true;
+        all.push(...(d.items || []));
+        setFound(all.length);
+        if (!d.more || all.length >= MAX_ITEMS) break;
+      }
+      if (all.length >= MAX_ITEMS) break;
+    }
+    if (!all.length) { setErr('We didn’t find any films on that profile'); setPhase('pick'); return; }
+    if (partial) setNote('Letterboxd only shared your recent diary — upload your export any time to bring the rest.');
+    run(all.slice(0, MAX_ITEMS));
+  };
+
+  const run = async (list) => {
+    const items = Array.isArray(list) ? list : parsed.items;
     cancelled.current = false;
     setPhase('importing');
     let matched = 0; const missed = [];
@@ -57,6 +154,7 @@ export default function ImportSheet({ accent = '#F5A623', onClose, onImported })
         const d = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(d.error || 'Import failed');
         matched += d.matched || 0; missed.push(...(d.missed || []));
+        if (d.posters?.length) setPosters((p) => [...p, ...d.posters].slice(-24));
       } catch (e) {
         setErr(e.message || 'Import failed'); break;
       }
@@ -90,23 +188,60 @@ export default function ImportSheet({ accent = '#F5A623', onClose, onImported })
           <>
             <div style={{ display: 'flex', gap: 22, marginTop: 22 }}>
               {Object.entries(SOURCES).map(([k, v]) => (
-                <button key={k} onClick={() => { setSrc(k); setErr(null); }} style={{ background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: src === k ? 800 : 600, color: src === k ? '#fff' : 'rgba(255,255,255,0.45)' }}>{v.name}</button>
+                <button key={k} onClick={() => pickSource(k)} style={{ background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: src === k ? 800 : 600, color: src === k ? '#fff' : 'rgba(255,255,255,0.45)' }}>{v.name}</button>
               ))}
             </div>
+            <div style={{ ...eyebrow('rgba(255,255,255,0.5)'), fontSize: 9.5, marginTop: 18 }}>{S.label}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, ...glass, borderRadius: 14, padding: '0 14px', height: 50 }}>
+              {src === 'letterboxd' && <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 700 }}>@</span>}
+              <input value={handle} onChange={(e) => setHandle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auto()} placeholder={S.placeholder} autoCapitalize="none" autoCorrect="off" spellCheck={false} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: 15, fontFamily: 'inherit' }} />
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 8, lineHeight: 1.45 }}>{S.hint}</div>
+            {err && <div style={{ fontSize: 12.5, color: '#FF8FA3', marginTop: 10 }}>{err}</div>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <a href={S.open(handle)} target="_blank" rel="noopener noreferrer" style={{ ...btn, flex: 1, textDecoration: 'none', color: 'rgba(255,255,255,0.85)' }}>
+                {S.openLabel}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+              </a>
+              <button onClick={auto} style={{ ...btn, flex: 1.4, background: '#fff', color: '#06060B', border: 'none' }}>Import automatically</button>
+            </div>
+            <button onClick={() => { setErr(null); setPhase('file'); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', marginTop: 16, padding: 0, width: '100%' }}>Or upload an export file instead</button>
+          </>
+        )}
+
+        {phase === 'file' && (
+          <>
+            <div style={{ display: 'flex', gap: 22, marginTop: 22 }}>
+              {Object.entries(SOURCES).map(([k, v]) => (
+                <button key={k} onClick={() => pickSource(k)} style={{ background: 'none', border: 'none', padding: '4px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: src === k ? 800 : 600, color: src === k ? '#fff' : 'rgba(255,255,255,0.45)' }}>{v.name}</button>
+              ))}
+            </div>
+            {note && <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.75)', marginTop: 12, lineHeight: 1.45, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.06)' }}>{note}</div>}
             <div style={{ marginTop: 10 }}>
-              {S.steps.map((s, i) => (
+              {S.steps.map((st, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, padding: '11px 0', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 13.5, color: 'rgba(255,255,255,0.85)', lineHeight: 1.4 }}>
-                  <span style={{ width: 20, color: accent, fontWeight: 800, flexShrink: 0 }}>{i + 1}</span>{s}
+                  <span style={{ width: 20, color: accent, fontWeight: 800, flexShrink: 0 }}>{i + 1}</span>{st}
                 </div>
               ))}
             </div>
             <input ref={fileRef} type="file" accept={S.accept} multiple style={{ display: 'none' }} onChange={(e) => { onFiles(e.target.files); e.target.value = ''; }} />
-            {err && <div style={{ fontSize: 12.5, color: '#FF8FA3', marginTop: 12 }}>{err}</div>}
-            <button onClick={() => fileRef.current?.click()} style={{ ...btn, width: '100%', marginTop: 18 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4" /><path d="m7 9 5-5 5 5" /><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></svg>
-              Upload {src === 'letterboxd' ? 'ZIP' : 'CSV'}
-            </button>
+            {err && !note && <div style={{ fontSize: 12.5, color: '#FF8FA3', marginTop: 12 }}>{err}</div>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <a href={S.exportUrl} target="_blank" rel="noopener noreferrer" style={{ ...btn, flex: 1, textDecoration: 'none' }}>
+                Open export page
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+              </a>
+              <button onClick={() => fileRef.current?.click()} style={{ ...btn, flex: 1, background: '#fff', color: '#06060B', border: 'none' }}>Upload {src === 'letterboxd' ? 'ZIP' : 'CSV'}</button>
+            </div>
+            <button onClick={() => { setErr(null); setNote(null); setPhase('pick'); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', marginTop: 16, padding: 0, width: '100%' }}>Back to automatic import</button>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 10 }}>Your file is read on this device. Only film titles are sent to match them.</div>
+          </>
+        )}
+
+        {phase === 'scanning' && (
+          <>
+            <ImportPulse accent={accent} count={found} label="films found" sub={`Reading ${src === 'imdb' ? 'your IMDb' : `@${handle.replace(/^@/, '').trim()} on Letterboxd`}…`} />
+            <button onClick={() => { cancelled.current = true; }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', marginTop: 8, padding: 0, width: '100%' }}>Cancel</button>
           </>
         )}
 
@@ -124,25 +259,22 @@ export default function ImportSheet({ accent = '#F5A623', onClose, onImported })
               Found in your {parsed.source === 'imdb' ? 'IMDb' : 'Letterboxd'} export{parsed.truncated ? ` — importing the first ${MAX_ITEMS}` : ''}. Anything already in Thiscene is kept, and watched films stay watched.
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-              <button onClick={() => { setPhase('pick'); setParsed(null); }} style={{ ...btn, flex: 1, color: 'rgba(255,255,255,0.75)' }}>Back</button>
-              <button onClick={run} style={{ ...btn, flex: 2 }}>Import {parsed.items.length} titles</button>
+              <button onClick={() => { setPhase('file'); setParsed(null); }} style={{ ...btn, flex: 1, color: 'rgba(255,255,255,0.75)' }}>Back</button>
+              <button onClick={() => run()} style={{ ...btn, flex: 2 }}>Import {parsed.items.length} titles</button>
             </div>
           </>
         )}
 
         {(phase === 'importing' || phase === 'done') && (
-          <div style={{ marginTop: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 700 }}>
-              <span>{phase === 'done' ? (err ? 'Stopped' : 'All done') : 'Matching your films…'}</span>
-              <span style={{ fontVariantNumeric: 'tabular-nums', opacity: 0.75 }}>{prog.done} / {prog.total}</span>
+          <div style={{ marginTop: 4 }}>
+            <ImportPulse accent={accent} count={prog.matched} label={phase === 'done' ? 'titles added' : 'added so far'} done={phase === 'done'} posters={posters} sub={phase === 'done' ? (err ? 'Stopped early' : 'All done — your feed just got smarter') : `Matching ${prog.done} of ${prog.total}…`} />
+            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.12)', overflow: 'hidden', marginTop: 6 }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: accent, borderRadius: 2, transition: 'width .3s ease' }} />
             </div>
-            <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden', marginTop: 8 }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: '#fff', borderRadius: 2, transition: 'width .3s ease' }} />
-            </div>
+            {note && phase === 'done' && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 12, lineHeight: 1.45 }}>{note}</div>}
             {err && <div style={{ fontSize: 12.5, color: '#FF8FA3', marginTop: 12 }}>{err}</div>}
             {phase === 'done' && (
               <>
-                <div style={{ fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: 20, fontWeight: 800, marginTop: 20 }}>{prog.matched} titles added</div>
                 {prog.missed.length > 0 && (
                   <details style={{ marginTop: 8 }}>
                     <summary style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>{prog.missed.length} couldn’t be matched</summary>

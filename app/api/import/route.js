@@ -18,6 +18,11 @@ const tmdb = (path) => fetch(`${TMDB}${path}${path.includes('?') ? '&' : '?'}api
 
 // Find the TMDB title for one imported row
 async function resolve(it) {
+  if (Number.isInteger(it.tmdbId) && it.tmdbId > 0) {
+    const kind = it.tmdbType === 'tv' ? 'tv' : 'movie';
+    const d = await tmdb(`/${kind}/${it.tmdbId}`);
+    if (d?.id) return { ...d, genre_ids: (d.genres || []).map((g) => g.id) };
+  }
   const imdb = /^tt\d{5,10}$/.test(it.imdbId || '') ? it.imdbId : null;
   if (imdb) {
     const d = await tmdb(`/find/${imdb}?external_source=imdb_id`);
@@ -99,5 +104,6 @@ export async function POST(req) {
   const res = await Promise.all(writes);
   const bad = res.find((r) => !r.ok);
   if (bad) return Response.json({ error: `Could not save (${bad.status})` }, { status: 500 });
-  return Response.json({ matched: rows.watched.length + rows.watchlist.length, missed });
+  const posters = [...rows.watched, ...rows.watchlist].map((r) => r.poster).filter(Boolean).slice(0, 12);
+  return Response.json({ matched: rows.watched.length + rows.watchlist.length, missed, posters });
 }
