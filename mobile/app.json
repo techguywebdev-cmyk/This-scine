@@ -65,8 +65,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Thiscene uses your photos so you can post them to your status.",
-          "cameraPermission": false,
-          "microphonePermission": false
+          "cameraPermission": "Thiscene uses your camera for video calls and status photos.",
+          "microphonePermission": "Thiscene uses your microphone for voice notes and calls."
         }
       ],
       "expo-video"
