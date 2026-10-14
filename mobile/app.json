@@ -82,7 +82,11 @@
       "typedRoutes": false
     },
     "extra": {
-      "apiUrl": "https://this-scine.vercel.app"
-    }
+      "apiUrl": "https://this-scine.vercel.app",
+      "eas": {
+        "projectId": "7a4680a6-b763-46c5-be33-da36f36e3062"
+      }
+    },
+    "owner": "techguywebdev"
   }
 }

@@ -15,6 +15,9 @@ concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -94,3 +97,11 @@ jobs:
           name: thiscene-android-${{ github.run_number }}
           path: out/
           retention-days: 30
+
+      - name: Publish test APK (latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view android-latest >/dev/null 2>&1 || gh release create android-latest --title "Android test build (latest)" --notes "Newest test APK from the Android app workflow." --prerelease
+          gh release upload android-latest out/thiscene.apk --clobber
+          gh release edit android-latest --notes "Build #${{ github.run_number }} · $(date -u +%Y-%m-%dT%H:%MZ)"
