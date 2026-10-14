@@ -9,7 +9,7 @@ import Ambient from '../../components/Ambient';
 import { TsLoader } from '../../components/Brand';
 import { useApi } from '../../lib/api';
 import { STATUS_BGS } from '../../lib/statusCache';
-import { F } from '../../lib/theme';
+import { F, inkOn } from '../../lib/theme';
 
 // New status: text on a colour, or a photo / short video from the gallery (gone after 24 hours)
 export default function NewStatus() {
@@ -22,6 +22,8 @@ export default function NewStatus() {
   const [err, setErr] = useState('');
   const accent = '#818CF8';
   const colour = bg === 'ambient' ? accent : bg;
+  const ink = !media && bg !== 'ambient' && bg !== '#E6E6EA' ? inkOn(bg) : '#fff';
+  const dark = ink !== '#fff' && ink !== '#FFFFFF';
 
   const pick = async () => {
     setErr('');
@@ -61,8 +63,8 @@ export default function NewStatus() {
         : bg === 'ambient' || bg === '#E6E6EA' ? <Ambient accent={bg === 'ambient' ? accent : '#E6E6EA'} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: bg }]} />}
 
       <View style={[styles.top, { paddingTop: insets.top + 10 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Close"><Feather name="x" size={26} color="#fff" /></Pressable>
-        <Text style={styles.head}>New status</Text>
+        <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Close"><Feather name="x" size={26} color={ink} /></Pressable>
+        <Text style={[styles.head, { color: ink }]}>New status</Text>
         <Pressable onPress={media ? () => setMedia(null) : pick} hitSlop={10} accessibilityLabel={media ? 'Remove photo' : 'Add a photo or video'} style={styles.round}>
           <Feather name={media ? 'type' : 'image'} size={18} color="#fff" />
         </Pressable>
@@ -72,7 +74,7 @@ export default function NewStatus() {
         {media ? (
           media.kind === 'video' ? <View style={styles.videoTag}><Feather name="video" size={14} color="#fff" /><Text style={styles.videoText}>Video ready</Text></View> : null
         ) : (
-          <TextInput value={text} onChangeText={setText} autoFocus multiline maxLength={700} placeholder="What are you watching?" placeholderTextColor="rgba(255,255,255,0.55)" style={[styles.big, { fontSize: text.length > 140 ? 22 : text.length > 60 ? 28 : 34 }]} textAlign="center" />
+          <TextInput value={text} onChangeText={setText} autoFocus multiline maxLength={700} placeholder="What are you watching?" placeholderTextColor={dark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.55)'} style={[styles.big, dark && { color: ink }, { fontSize: text.length > 140 ? 22 : text.length > 60 ? 28 : 34 }]} textAlign="center" />
         )}
       </View>
 
@@ -90,7 +92,7 @@ export default function NewStatus() {
         <Pressable onPress={post} disabled={busy} style={styles.post}>
           {busy ? <TsLoader size={20} /> : <><Text style={styles.postText}>Share to status</Text><Feather name="arrow-right" size={16} color="#07070F" /></>}
         </Pressable>
-        <Text style={styles.hint}>Visible to people who follow you · gone after 24 hours</Text>
+        <Text style={[styles.hint, dark && { color: 'rgba(0,0,0,0.55)' }]}>Visible to people who follow you · gone after 24 hours</Text>
       </View>
     </KeyboardAvoidingView>
   );

@@ -14,6 +14,7 @@ import { InterTight_700Bold, InterTight_800ExtraBold } from '@expo-google-fonts/
 import { WatchlistProvider } from '../lib/store';
 import { CallProvider } from '../lib/calls';
 import CallScreen from '../components/CallScreen';
+import LaunchSplash from '../components/LaunchSplash';
 import { CLERK_PUBLISHABLE_KEY } from '../lib/config';
 import { T } from '../lib/theme';
 
@@ -58,6 +59,7 @@ export default function RootLayout() {
                 <Stack.Screen name="sign-in" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               </Stack>
               <CallScreen />
+              <LaunchSplash />
             </CallProvider>
             </WatchlistProvider>
           </ClerkLoaded>

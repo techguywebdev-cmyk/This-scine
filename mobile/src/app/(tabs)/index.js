@@ -12,7 +12,10 @@ import { useWatchlist } from '../../lib/store';
 import { openTitle, shareTitle } from '../../lib/titles';
 import { feedKey, isSeen, loadSeen, markSeen, recentSeen } from '../../lib/feedMemory';
 import { Feather } from '@expo/vector-icons';
-import { F, MOODS, T } from '../../lib/theme';
+import { F, FEEDS, GENRES, T } from '../../lib/theme';
+import FilterSheet from '../../components/FilterSheet';
+import { GlassButton } from '../../components/Ui';
+import { markBootReady } from '../../lib/boot';
 
 const newSeed = () => String(Math.floor(Math.random() * 1e9));
 
@@ -23,7 +26,9 @@ export default function Feed() {
   const api = useApi();
   const { isSignedIn } = useAuth();
   const wl = useWatchlist();
-  const [mood, setMood] = useState('Trending');
+  const [filter, setFilter] = useState({ mood: 'Trending', genre: '', provider: '' });
+  const [showFilter, setShowFilter] = useState(false);
+  const mood = filter.mood;
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reminded, setReminded] = useState(new Set());
@@ -49,6 +54,8 @@ export default function Feed() {
     if (!append) { setLoading(true); seed.current = newSeed(); page.current = 1; }
     try {
       const q = new URLSearchParams({ mood: mood.toLowerCase(), page: String(page.current), seed: seed.current });
+      if (filter.genre) q.set('genre', filter.genre);
+      if (filter.provider) q.set('provider', filter.provider.toLowerCase());
       const ex = recentSeen(); if (ex.length) q.set('exclude', ex.join(','));
       const t = taste(); if (t.length) q.set('taste', t.join(','));
       const d = await api.get(`/api/movies?${q}`);
@@ -61,17 +68,19 @@ export default function Feed() {
       } else setMovies(pick);
     } catch {}
     setLoading(false);
+    markBootReady();
     busy.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mood, wl.items.length]);
+  }, [mood, filter.genre, filter.provider, wl.items.length]);
 
-  useEffect(() => { load(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mood]);
+  useEffect(() => { load(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mood, filter.genre, filter.provider]);
   useEffect(() => {
     if (!isSignedIn) return;
     api.get('/api/reminders').then((d) => setReminded(new Set((d.items || []).map((r) => r.movie_id)))).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
 
+  const filterOn = mood !== 'Trending' || !!filter.genre || !!filter.provider;
   const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.item) { setActiveAccent(v.item.accent || T.accent); setTimeout(() => markSeen(v.item), 1200); } }).current;
   useEffect(() => { if (movies[0] && activeAccent === '#fff') setActiveAccent(movies[0].accent || T.accent); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [movies.length]);
 
@@ -114,7 +123,7 @@ export default function Feed() {
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
       {loading && movies.length === 0 ? (
-        <View style={styles.center}><TsLoader size={58} /></View>
+        <View style={styles.center}><TsLoader size={52} /></View>
       ) : (
         <FlatList
           data={movies}
@@ -136,17 +145,28 @@ export default function Feed() {
         />
       )}
 
-      {/* Top bar: brand + moods */}
+      {/* Top bar: brand + filter */}
       <View pointerEvents="box-none" style={[styles.top, { paddingTop: insets.top + 8 }]}>
-        <View style={{ paddingHorizontal: 18 }}><Wordmark accent={activeAccent} /></View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 18, paddingHorizontal: 18, paddingTop: 10 }}>
-          {MOODS.map((m) => (
-            <Pressable key={m} onPress={() => setMood(m)}>
-              <Text style={[styles.mood, mood === m && styles.moodOn]}>{m}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View pointerEvents="box-none" style={styles.topRow}>
+          <Wordmark accent={activeAccent} />
+          <View>
+            <GlassButton icon="sliders" label="Filter the feed" onPress={() => setShowFilter(true)} />
+            {filterOn ? <View style={styles.filterDot} /> : null}
+          </View>
+        </View>
+        {filterOn ? (
+          <View pointerEvents="box-none" style={styles.chips}>
+            {[
+              mood !== 'Trending' ? [FEEDS.find((f) => f.api === mood)?.label || mood, () => setFilter((f) => ({ ...f, mood: 'Trending' }))] : null,
+              filter.genre ? [(GENRES.find((g) => g[1] === filter.genre) || [])[0], () => setFilter((f) => ({ ...f, genre: '' }))] : null,
+              filter.provider ? [filter.provider, () => setFilter((f) => ({ ...f, provider: '' }))] : null,
+            ].filter(Boolean).map(([l, fn]) => (
+              <Pressable key={l} onPress={fn} style={styles.chip}><Text style={styles.chipText}>{l}</Text><Feather name="x" size={12} color="#fff" /></Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
+      {showFilter ? <FilterSheet value={filter} onChange={setFilter} onClose={() => setShowFilter(false)} accent={activeAccent} /> : null}
 
       {savedToast ? (
         <Animated.View style={[styles.toast, { bottom: tabBar + 14, opacity: toastAnim, transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }]}>
@@ -165,6 +185,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontFamily: F.bold, fontSize: 10.5, letterSpacing: 2.2, color: T.text3 },
   top: { position: 'absolute', left: 0, right: 0, top: 0 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 },
+  filterDot: { position: 'absolute', top: 2, right: 2, width: 9, height: 9, borderRadius: 5, backgroundColor: '#fff', borderWidth: 2, borderColor: T.bg },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 18, marginTop: 10 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  chipText: { fontFamily: F.bold, fontSize: 11.5, color: '#fff' },
   toast: { position: 'absolute', left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(12,12,18,0.92)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingLeft: 14, paddingRight: 8, height: 50 },
   toastText: { flex: 1, fontFamily: F.bold, fontSize: 13, color: '#fff' },
   toastBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },

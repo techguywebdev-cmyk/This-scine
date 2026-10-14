@@ -11,7 +11,7 @@ import ActionSheet from '../../components/ActionSheet';
 import { Avatar } from '../../components/Ui';
 import { useApi } from '../../lib/api';
 import { statusCache } from '../../lib/statusCache';
-import { F, T } from '../../lib/theme';
+import { F, T, inkOn } from '../../lib/theme';
 
 const DURATION = 5500;
 const REACTS = ['😂', '😍', '🔥', '👏', '😮'];
@@ -105,6 +105,9 @@ export default function StatusViewer() {
 
   const bg = item.bg || T.accent;
   const noir = bg === '#E6E6EA';
+  const solid = item.kind === 'text' && !(item.meta?.bgStyle === 'ambient' || noir);
+  const ink = solid ? inkOn(bg) : '#fff';
+  const dark = ink !== '#fff' && ink !== '#FFFFFF';
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#000' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -116,7 +119,7 @@ export default function StatusViewer() {
       {item.kind === 'video' ? <VideoItem key={item.id} uri={item.media_url} paused={paused} onProgress={setProg} onEnd={next} /> : null}
       {item.kind === 'text' ? (
         <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: 30 }]} pointerEvents="none">
-          <Text style={[styles.statusText, { fontSize: item.text?.length > 140 ? 22 : item.text?.length > 60 ? 28 : 36 }]}>{item.text}</Text>
+          <Text style={[styles.statusText, dark && { color: ink, textShadowRadius: 0 }, { fontSize: item.text?.length > 140 ? 22 : item.text?.length > 60 ? 28 : 36 }]}>{item.text}</Text>
         </View>
       ) : null}
       {item.kind !== 'text' && item.text ? <View style={[styles.caption, { bottom: insets.bottom + 90 }]} pointerEvents="none"><Text style={styles.captionText}>{item.text}</Text></View> : null}
@@ -131,16 +134,16 @@ export default function StatusViewer() {
       <View style={[styles.top, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
         <View style={styles.bars}>
           {person.items.map((it, i) => (
-            <View key={it.id} style={styles.barBg}><View style={[styles.barFill, { width: `${i < ii ? 100 : i === ii ? prog * 100 : 0}%` }]} /></View>
+            <View key={it.id} style={[styles.barBg, dark && { backgroundColor: 'rgba(0,0,0,0.18)' }]}><View style={[styles.barFill, dark && { backgroundColor: ink }, { width: `${i < ii ? 100 : i === ii ? prog * 100 : 0}%` }]} /></View>
           ))}
         </View>
         <View style={styles.headRow}>
           <Pressable onPress={() => !person.isSelf && router.push({ pathname: '/person/[id]', params: { id: person.user_id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
             <Avatar uri={person.avatar_url} name={person.display_name} size={34} />
-            <Text style={styles.who} numberOfLines={1}>{person.isSelf ? 'Your status' : person.display_name || person.username}</Text>
-            <Text style={styles.when}>{ago(item.created_at)}</Text>
+            <Text style={[styles.who, dark && { color: ink, textShadowRadius: 0 }]} numberOfLines={1}>{person.isSelf ? 'Your status' : person.display_name || person.username}</Text>
+            <Text style={[styles.when, dark && { color: ink, opacity: 0.6 }]}>{ago(item.created_at)}</Text>
           </Pressable>
-          <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Close"><Feather name="x" size={24} color="#fff" /></Pressable>
+          <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Close"><Feather name="x" size={24} color={dark ? ink : '#fff'} /></Pressable>
         </View>
       </View>
 

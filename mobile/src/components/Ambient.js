@@ -4,7 +4,7 @@ import { T } from '../lib/theme';
 
 // Native take on the web `ambient(accent)` wash: soft accent glow top-left and bottom-right over near-black.
 export default function Ambient({ accent = T.accent, style }) {
-  const noir = accent === '#E6E6EA';
+  const noir = accent === '#E6E6EA' || String(accent).toUpperCase() === '#FFFFFF';
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: noir ? '#000' : T.bg }, style]}>
       <LinearGradient colors={[`${accent}${noir ? '10' : '33'}`, 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 0.85, y: 0.6 }} style={StyleSheet.absoluteFill} />
