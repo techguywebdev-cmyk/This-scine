@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { F, T } from '../../lib/theme';
-import { usePushRouting } from '../../lib/push';
+import { usePushRegistration, usePushRouting } from '../../lib/push';
 import InviteBanner from '../../components/InviteBanner';
 import { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
@@ -20,6 +20,19 @@ export default function TabsLayout() {
   const { isSignedIn } = useAuth();
   const wl = useWatchlist();
   const checked = useRef(false);
+  const push = usePushRegistration();
+  // Ask for notification permission once (after sign-in), so calls and messages can ring
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const t = setTimeout(async () => {
+      const asked = await AsyncStorage.getItem('thiscene.pushAsked.v1').catch(() => '1');
+      if (asked) return;
+      await AsyncStorage.setItem('thiscene.pushAsked.v1', '1').catch(() => {});
+      push.enable();
+    }, 6000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
   useEffect(() => {
     if (!isSignedIn || checked.current || wl.loading) return;
     const t = setTimeout(async () => {
