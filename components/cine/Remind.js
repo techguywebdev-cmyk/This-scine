@@ -38,8 +38,17 @@ function quickPicks() {
   return out;
 }
 
-const pad = (n) => String(n).padStart(2, '0');
-const localInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// Day + time chips for "Pick a day & time" (same on web and app)
+export function dayChoices(n = 14) {
+  const now = new Date();
+  return Array.from({ length: n }, (_, i) => {
+    const d = at(now, i, 0);
+    return { i, d, label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString([], { weekday: 'short' }), sub: d.toLocaleDateString([], { day: 'numeric', month: 'short' }) };
+  });
+}
+export const TIME_CHOICES = [[12, 0], [15, 0], [18, 0], [19, 0], [19, 30], [20, 0], [20, 30], [21, 0], [22, 0]];
+const releaseLabel = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString([], { day: 'numeric', month: 'short', year: new Date(`${iso}T12:00:00`).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+
 
 function Switch({ on, onClick, disabled, label, accent }) {
   return (
@@ -57,13 +66,21 @@ export function RemindSheet({ movie, onClose, onChange }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [custom, setCustom] = useState(false);
-  const [customVal, setCustomVal] = useState(() => localInput(at(new Date(), 1, 20)));
+  const days = useMemo(() => dayChoices(14), []);
+  const [dayI, setDayI] = useState(1);
+  const [tm, setTm] = useState([20, 0]);
+  const [people, setPeople] = useState(null);
+  const [withId, setWithId] = useState(movie?.remind_with || null);
+  const [note, setNote] = useState(movie?.remind_note || '');
+  const [released, setReleased] = useState(false);
+  const upcoming = movie?.releaseDate && movie.releaseDate > new Date().toISOString().slice(0, 10) ? movie.releaseDate : null;
   const [done, setDone] = useState(null); // { text }
   const [prefs, setPrefs] = useState(null);
   const [perm, setPerm] = useState('unknown'); // granted | default | denied | unsupported
 
   useEffect(() => {
     fetch('/api/settings').then((r) => (r.ok ? r.json() : null)).then((d) => d && setPrefs(d.notify_prefs || {})).catch(() => {});
+    fetch('/api/follows?type=following').then((r) => (r.ok ? r.json() : null)).then((d) => setPeople((d && d.users) || [])).catch(() => setPeople([]));
     if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) setPerm('unsupported');
     else setPerm(Notification.permission);
     const k = (e) => { if (e.key === 'Escape') onClose(); };
@@ -74,14 +91,31 @@ export function RemindSheet({ movie, onClose, onChange }) {
     if (busy) return;
     setBusy(true); setErr('');
     try {
-      const r = await fetch('/api/watchlist', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ movieId, remindAt: when ? when.toISOString() : null }) });
+      const whenLabel = when ? fmtRemind(when.toISOString()).replace(' · ', ' at ') : '';
+      const mv = { title: movie?.title, year: movie?.year, rating: movie?.rating, poster: movie?.poster, backdrop: movie?.backdrop, genre: movie?.genre, overview: movie?.overview, accent: movie?.accent, isTV: movie?.isTV ?? movie?.is_tv };
+      const r = await fetch('/api/watchlist', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ movieId, remindAt: when ? when.toISOString() : null, ...(when ? { remindWith: withId, note: note.trim() || null, whenLabel } : {}), movie: mv }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'Could not set the reminder');
-      onChange && onChange(movieId, when ? when.toISOString() : null);
+      onChange && onChange(movieId, when ? when.toISOString() : null, { remind_with: when ? withId : null, remind_note: when ? note.trim() || null : null });
+      try { window.dispatchEvent(new CustomEvent('cine:watchlist-refresh')); } catch {}
       track(when ? 'watch_remind' : 'watch_remind_off', { movie_id: movieId });
       if (navigator.vibrate) navigator.vibrate(12);
-      setDone({ text: when ? `We'll remind you ${(() => { const f = fmtRemind(when.toISOString()).replace(' · ', ' at '); return /^(Tonight|Today|Tomorrow)/.test(f) ? f[0].toLowerCase() + f.slice(1) : `on ${f}`; })()}` : 'Reminder removed', on: !!when });
+      const friend = withId && people ? people.find((u) => u.user_id === withId) : null;
+      setDone({ friend: friend ? (friend.display_name || friend.username || '').split(' ')[0] : null, text: when ? `We'll remind you${friend ? ` and ${(friend.display_name || friend.username || '').split(' ')[0]}` : ''} ${(() => { const f = fmtRemind(when.toISOString()).replace(' · ', ' at '); return /^(Tonight|Today|Tomorrow)/.test(f) ? f[0].toLowerCase() + f.slice(1) : `on ${f}`; })()}` : 'Reminder removed', on: !!when });
       setTimeout(onClose, 1300);
+    } catch (e) { setErr(e.message || 'Something went wrong'); } finally { setBusy(false); }
+  };
+
+  const remindRelease = async () => {
+    if (busy || !upcoming) return;
+    setBusy(true); setErr('');
+    try {
+      const r = await fetch('/api/reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ movieId, mediaType: movie?.isTV || movie?.is_tv ? 'tv' : 'movie', title: movie?.title, poster: movie?.poster, releaseDate: upcoming }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Could not set that');
+      setReleased(true);
+      setDone({ text: `We'll tell you when it's out · ${releaseLabel(upcoming)}`, on: true });
+      setTimeout(onClose, 1500);
     } catch (e) { setErr(e.message || 'Something went wrong'); } finally { setBusy(false); }
   };
 
@@ -129,6 +163,34 @@ export function RemindSheet({ movie, onClose, onChange }) {
               </div>
             </div>
 
+            {people && people.length > 0 && (
+              <div style={{ paddingBottom: 14 }}>
+                <div style={{ ...eyebrow('rgba(255,255,255,0.5)'), fontSize: 9.5, marginBottom: 10 }}>Watch it with</div>
+                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+                  {[{ user_id: null, display_name: 'Just me' }, ...people].map((u) => {
+                    const on = withId === u.user_id;
+                    const nm = (u.display_name || u.username || '').split(' ')[0];
+                    return (
+                      <button key={u.user_id || 'me'} type="button" onClick={() => setWithId(u.user_id)} aria-pressed={on} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 58, flexShrink: 0, fontFamily: 'inherit' }}>
+                        <span style={{ width: 48, height: 48, borderRadius: '50%', padding: 2, border: `2px solid ${on ? accent : 'transparent'}`, boxSizing: 'border-box', display: 'flex' }}>
+                          <span style={{ flex: 1, borderRadius: '50%', overflow: 'hidden', background: u.user_id ? '#1A1A22' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 15 }}>
+                            {u.user_id ? (u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (nm[0] || 'U').toUpperCase()) : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>}
+                          </span>
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: on ? 800 : 600, color: on ? '#fff' : 'rgba(255,255,255,0.55)', maxWidth: 58, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nm}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {withId && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 8 }}>They’ll get a heads-up now, and you’ll both be reminded.</div>}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderTop: `1px solid ${T.hairline}` }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+              <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 80))} placeholder="Add a note — “order pizza”, “bring tissues”…" aria-label="Reminder note" style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: 14, fontFamily: 'inherit' }} />
+            </div>
+
             {picks.map((p) => (
               <button key={p.k} type="button" disabled={busy} onClick={() => save(p.when)} style={row}>
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>{p.label}</span>
@@ -137,19 +199,45 @@ export function RemindSheet({ movie, onClose, onChange }) {
             ))}
 
             <button type="button" onClick={() => setCustom((c) => !c)} style={row} aria-expanded={custom}>
-              <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>Pick a date & time</span>
+              <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>Pick a day & time</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ transform: custom ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }}><path d="M9 6l6 6-6 6" /></svg>
             </button>
-            {custom && (
-              <div style={{ display: 'flex', gap: 8, paddingBottom: 14 }}>
-                <label style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Reminder date and time</span>
-                  <input type="datetime-local" value={customVal} min={localInput(new Date())} onChange={(e) => setCustomVal(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', height: 44, borderRadius: 12, ...glass, color: '#fff', padding: '0 12px', fontFamily: 'inherit', fontSize: 14, colorScheme: 'dark' }} />
-                </label>
-                <button type="button" disabled={busy || !customVal} onClick={() => { const d = new Date(customVal); if (Number.isFinite(d.getTime())) save(d); }}
-                  style={{ height: 44, padding: '0 18px', borderRadius: 12, border: 'none', background: '#fff', color: '#06060B', fontWeight: 800, fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', flexShrink: 0 }}>Set</button>
-              </div>
+            {custom && (() => {
+              const when = at(days[dayI].d, 0, tm[0], tm[1]);
+              const past = when.getTime() < Date.now() + 5 * 60000;
+              const chipS = (on) => ({ ...glass, flexShrink: 0, borderRadius: 12, padding: '8px 12px', cursor: 'pointer', fontFamily: 'inherit', color: '#fff', background: on ? '#fff' : glass.background, ...(on ? { color: '#06060B', border: '1px solid #fff' } : {}) });
+              return (
+                <div style={{ paddingBottom: 14 }}>
+                  <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                    {days.map((d) => (
+                      <button key={d.i} type="button" onClick={() => setDayI(d.i)} style={{ ...chipS(dayI === d.i), display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 62 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800 }}>{d.label}</span>
+                        <span style={{ fontSize: 10.5, opacity: 0.7, marginTop: 2 }}>{d.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '8px 0 4px', scrollbarWidth: 'none' }}>
+                    {TIME_CHOICES.map(([h, m]) => {
+                      const t = at(days[dayI].d, 0, h, m);
+                      const gone = t.getTime() < Date.now() + 5 * 60000;
+                      return <button key={`${h}:${m}`} type="button" disabled={gone} onClick={() => setTm([h, m])} style={{ ...chipS(tm[0] === h && tm[1] === m), fontSize: 13, fontWeight: 700, opacity: gone ? 0.3 : 1, cursor: gone ? 'default' : 'pointer' }}>{timeOf(t)}</button>;
+                    })}
+                  </div>
+                  <button type="button" disabled={busy || past} onClick={() => save(when)} style={{ width: '100%', height: 46, marginTop: 10, borderRadius: 23, border: 'none', background: past ? 'rgba(255,255,255,0.2)' : '#fff', color: '#06060B', fontWeight: 800, fontSize: 14, fontFamily: 'inherit', cursor: past ? 'default' : 'pointer' }}>
+                    {past ? 'Pick a later time' : `Remind me ${fmtRemind(when.toISOString()).replace(' · ', ' at ')}`}
+                  </button>
+                </div>
+              );
+            })()}
+
+            {upcoming && !released && (
+              <button type="button" disabled={busy} onClick={remindRelease} style={row}>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>When it comes out</span>
+                  <span style={{ display: 'block', fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>We’ll ping you on release day</span>
+                </span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{releaseLabel(upcoming)}</span>
+              </button>
             )}
 
             {perm !== 'granted' && (

@@ -18,7 +18,7 @@ self.addEventListener('push', (event) => {
       badge: '/badge-96.png',
       tag: data.tag || undefined,
       renotify: !!data.tag,
-      data: { url: data.url || '/', actions: Array.isArray(data.actions) ? data.actions : [] },
+      data: { url: data.url || '/', movieId: data.movieId || null, actions: Array.isArray(data.actions) ? data.actions : [] },
       actions: Array.isArray(data.actions) ? data.actions.slice(0, 2).map((a) => ({ action: a.action, title: a.title })) : [],
       image: data.image || undefined,
       vibrate: [80, 40, 80],
@@ -29,6 +29,16 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const d = event.notification.data || {};
+  // "Tomorrow night": push the reminder to tomorrow 8pm (this device's time) without opening anything
+  if (event.action === 'snooze' && d.movieId) {
+    const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(20, 0, 0, 0);
+    event.waitUntil(
+      fetch('/api/watchlist', { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ movieId: d.movieId, remindAt: t.toISOString() }) })
+        .then((r) => self.registration.showNotification(r.ok ? 'Snoozed till tomorrow night' : 'Couldn’t snooze — open Thiscene to set it', { body: r.ok ? 'We’ll remind you at 8pm 🍿' : '', icon: '/icon-192.png', badge: '/badge-96.png', tag: 'snoozed', silent: true }))
+        .catch(() => {})
+    );
+    return;
+  }
   const picked = event.action && Array.isArray(d.actions) ? d.actions.find((a) => a.action === event.action) : null;
   const url = new URL((picked && picked.url) || d.url || '/', self.location.origin).href;
   event.waitUntil(

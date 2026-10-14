@@ -537,7 +537,7 @@ export default function CineScroll(){
       </div>
 
 
-      {remindFor&&(()=>{const id=remindFor.movie_id??remindFor.id;const row=watchlist.find(w=>w.movie_id===id);return <RemindSheet movie={{...remindFor,...(row||{}),movie_id:id,accent:remindFor.accent||row?.accent}} onClose={()=>setRemindFor(null)} onChange={(mid,iso)=>setWatchlist(p=>p.map(w=>w.movie_id===mid?{...w,remind_at:iso,reminded_at:null}:w))}/>;})()}
+      {remindFor&&(()=>{const id=remindFor.movie_id??remindFor.id;const row=watchlist.find(w=>w.movie_id===id);return <RemindSheet movie={{...remindFor,...(row||{}),movie_id:id,accent:remindFor.accent||row?.accent}} onClose={()=>setRemindFor(null)} onChange={(mid,iso,extra)=>setWatchlist(p=>p.some(w=>w.movie_id===mid)?p.map(w=>w.movie_id===mid?{...w,remind_at:iso,reminded_at:null,...(extra||{})}:w):p)}/>;})()}
       {booting&&<Splash ready={!loading} onDone={endBoot}/>}
 
       {incoming&&!partyId&&<PartyInvite invite={incoming} accent={accent} onJoin={()=>{const inv=incoming;dismissInvite(inv.id);setIncoming(null);if(inv.scheduled_for&&Date.parse(inv.scheduled_for)-Date.now()>10*60000){fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'join',id:inv.id})}).then(()=>{setFeedToast(`You're in · ${fmtWhen(inv.scheduled_for)} 🍿`);setTimeout(()=>setFeedToast(null),2600);}).catch(()=>{});}else setPartyId(inv.id);}} onLater={()=>{dismissInvite(incoming.id);setIncoming(null);}} onDecline={()=>{const id=incoming.id;dismissInvite(id);setIncoming(null);fetch('/api/party',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'decline',id})}).catch(()=>{});}}/>}

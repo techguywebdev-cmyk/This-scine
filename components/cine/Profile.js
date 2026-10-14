@@ -765,6 +765,23 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                   </div>
                 )}
               </div>
+              {(()=>{const up=watchlist.filter(m=>!m.watched&&m.remind_at&&Date.parse(m.remind_at)>Date.now()).sort((a,b)=>Date.parse(a.remind_at)-Date.parse(b.remind_at));if(!up.length||watchlistSearch||watchlistPlatform)return null;return(
+                <div style={{padding:'0 18px 14px'}}>
+                  <div style={{fontSize:10.5,letterSpacing:2.2,textTransform:'uppercase',fontWeight:700,color:accent,marginBottom:10}}>Up next · {up.length} reminder{up.length>1?'s':''}</div>
+                  <div style={{display:'flex',gap:10,overflowX:'auto',scrollbarWidth:'none',paddingBottom:2}}>
+                    {up.map(m=>(
+                      <button key={m.movie_id} onClick={()=>window.dispatchEvent(new CustomEvent('cine:remind',{detail:{movie:m}}))} aria-label={`${m.title}, reminder ${fmtRemind(m.remind_at)}`} style={{flexShrink:0,width:112,background:'none',border:'none',padding:0,cursor:'pointer',textAlign:'left',fontFamily:'inherit',color:'#fff'}}>
+                        <div style={{position:'relative',width:112,aspectRatio:'2/3',borderRadius:12,overflow:'hidden',background:T.surface,border:`1px solid ${(m.accent||accent)}55`}}>
+                          {m.poster&&<img src={m.poster} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+                          <div style={{position:'absolute',left:0,right:0,bottom:0,padding:'18px 7px 7px',background:'linear-gradient(180deg,transparent,rgba(0,0,0,0.85))',display:'flex',alignItems:'center',gap:4,fontSize:10.5,fontWeight:700}}><SvgIcon name="bell" size={10} color={m.accent||accent} filled/>{fmtRemind(m.remind_at)}</div>
+                          {m.remind_with&&<div style={{position:'absolute',top:6,right:6,fontSize:9.5,fontWeight:800,background:'rgba(0,0,0,0.6)',borderRadius:10,padding:'2px 6px'}}>+1</div>}
+                        </div>
+                        <div style={{fontSize:12,fontWeight:700,marginTop:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.title}</div>
+                        {m.remind_note&&<div style={{fontSize:10.5,color:T.text3,marginTop:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>“{m.remind_note}”</div>}
+                      </button>
+                    ))}
+                  </div>
+                </div>);})()}
               {loadingData||(loadingProviders&&watchlistPlatform)?(<div style={{textAlign:'center',padding:24,color:T.text3,fontSize:13,display:'flex',flexDirection:'column',alignItems:'center',gap:8}}><div style={{width:20,height:20,border:`2px solid rgba(255,255,255,0.1)`,borderTop:`2px solid ${accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>{loadingProviders?'Checking platforms...':'Loading...'}</div>)
               :filteredWatchlist.length===0?(<div style={{textAlign:'center',padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}><SvgIcon name="bookmark" size={26} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text3}}>{watchlistSearch?'No matches':watchlistPlatform?`Nothing on ${watchlistPlatform} in your watchlist`:'Your watchlist is empty'}</div>{!watchlistSearch&&!watchlistPlatform&&<button onClick={()=>window.dispatchEvent(new CustomEvent('cine:open-import'))} style={{background:'none',border:'none',padding:0,cursor:'pointer',fontSize:12.5,fontWeight:700,color:'#fff',fontFamily:'inherit'}}>Import from Letterboxd or IMDb</button>}{!watchlistSearch&&!watchlistPlatform&&<button onClick={()=>{if(onDiscover){onDiscover();}else if(onClose){onClose();}}} style={{marginTop:4,background:accent,border:'none',borderRadius:20,padding:'10px 18px',cursor:'pointer',fontSize:12,fontWeight:700,color:'#07070F',fontFamily:'inherit'}}>Discover movies</button>}{watchlistPlatform&&<button onClick={()=>setWatchlistPlatform('')} style={{marginTop:4,background:'transparent',border:`1px solid ${T.hairlineStrong}`,borderRadius:20,padding:'10px 18px',cursor:'pointer',fontSize:12,fontWeight:600,color:T.text2,fontFamily:'inherit'}}>Show all titles</button>}</div>)
               :(
