@@ -1,8 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useAuth } from '@clerk/expo';
-import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, mediaDevices } from 'react-native-webrtc';
-import InCallManager from 'react-native-incall-manager';
+// Native call modules load lazily so a problem there can never stop the app from opening.
+let RTC; let ICM;
+export function rtc() {
+  if (RTC === undefined) { try { RTC = require('react-native-webrtc'); } catch (e) { RTC = null; console.warn('[call] webrtc unavailable', e?.message); } }
+  return RTC;
+}
+const InCallManager = new Proxy({}, {
+  get: (_, k) => (...args) => {
+    if (ICM === undefined) { try { ICM = require('react-native-incall-manager').default; } catch { ICM = null; } }
+    try { return ICM && typeof ICM[k] === 'function' ? ICM[k](...args) : undefined; } catch { return undefined; }
+  },
+});
 import * as Haptics from 'expo-haptics';
 import { useApi } from './api';
 
@@ -52,6 +62,7 @@ export function CallProvider({ children }) {
   }, []);
 
   const makePc = (peerId) => {
+    const { RTCPeerConnection } = rtc();
     const conn = new RTCPeerConnection({ iceServers: ice.current, iceCandidatePoolSize: 4, bundlePolicy: 'max-bundle' });
     conn.addEventListener('icecandidate', (e) => { if (e.candidate) send(peerId, { kind: 'ice', candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }); });
     conn.addEventListener('track', (e) => { if (e.streams?.[0]) setRemote(e.streams[0]); });
@@ -65,18 +76,19 @@ export function CallProvider({ children }) {
   };
 
   const getMedia = async (mode) => {
-    const stream = await mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: mode === 'video' ? { facingMode: 'user', width: 640, height: 480, frameRate: 24 } : false });
+    const stream = await rtc().mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: mode === 'video' ? { facingMode: 'user', width: 640, height: 480, frameRate: 24 } : false });
     setLocal(stream);
     return stream;
   };
 
   const flushIce = async () => {
     const list = pendingIce.current.splice(0);
-    for (const c of list) { try { await pc.current?.addIceCandidate(new RTCIceCandidate(c)); } catch {} }
+    for (const c of list) { try { await pc.current?.addIceCandidate(new (rtc().RTCIceCandidate)(c)); } catch {} }
   };
 
   const start = useCallback(async (peer, mode = 'audio') => {
     if (callRef.current) return;
+    if (!rtc()) { setError('Calls aren’t available in this version of the app'); setTimeout(() => setError(''), 3000); return; }
     setError('');
     since.current = Date.now() - 2000;
     setCall({ peer, mode, status: 'outgoing' });
@@ -103,6 +115,7 @@ export function CallProvider({ children }) {
   const accept = useCallback(async () => {
     const c = callRef.current;
     if (!c || c.status !== 'incoming' || !offer.current) return;
+    if (!rtc()) { setError('Calls aren’t available in this version of the app'); send(c.peer.user_id, { kind: 'end' }); cleanup(); return; }
     setCall({ ...c, status: 'connecting' });
     try {
       try { InCallManager.stopRingtone(); } catch {}
@@ -112,7 +125,7 @@ export function CallProvider({ children }) {
       const stream = await getMedia(c.mode);
       const conn = makePc(c.peer.user_id);
       stream.getTracks().forEach((t) => conn.addTrack(t, stream));
-      await conn.setRemoteDescription(new RTCSessionDescription(offer.current));
+      await conn.setRemoteDescription(new (rtc().RTCSessionDescription)(offer.current));
       await flushIce();
       const a = await conn.createAnswer();
       await conn.setLocalDescription(a);
@@ -137,15 +150,15 @@ export function CallProvider({ children }) {
     const conn = pc.current;
     if (sig.kind === 'end' || sig.kind === 'decline') { try { InCallManager.stopRingtone(); } catch {} cleanup(); return; }
     if (sig.kind === 'answer' && conn && conn.signalingState === 'have-local-offer') {
-      try { await conn.setRemoteDescription(new RTCSessionDescription(sig.sdp)); await flushIce(); setCall((c) => (c ? { ...c, status: 'connecting' } : c)); } catch {}
+      try { await conn.setRemoteDescription(new (rtc().RTCSessionDescription)(sig.sdp)); await flushIce(); setCall((c) => (c ? { ...c, status: 'connecting' } : c)); } catch {}
       return;
     }
     if (sig.kind === 'restart_offer' && conn) {
-      try { await conn.setRemoteDescription(new RTCSessionDescription(sig.sdp)); await flushIce(); const a = await conn.createAnswer(); await conn.setLocalDescription(a); send(callRef.current.peer.user_id, { kind: 'answer', sdp: conn.localDescription || a }); } catch {}
+      try { await conn.setRemoteDescription(new (rtc().RTCSessionDescription)(sig.sdp)); await flushIce(); const a = await conn.createAnswer(); await conn.setLocalDescription(a); send(callRef.current.peer.user_id, { kind: 'answer', sdp: conn.localDescription || a }); } catch {}
       return;
     }
     if (sig.kind === 'ice' && sig.candidate) {
-      if (conn && conn.remoteDescription) { try { await conn.addIceCandidate(new RTCIceCandidate(sig.candidate)); } catch {} }
+      if (conn && conn.remoteDescription) { try { await conn.addIceCandidate(new (rtc().RTCIceCandidate)(sig.candidate)); } catch {} }
       else pendingIce.current.push(sig.candidate);
     }
   };

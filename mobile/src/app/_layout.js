@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,12 +18,22 @@ import { CLERK_PUBLISHABLE_KEY } from '../lib/config';
 import { T } from '../lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+try {
+  const prev = global.ErrorUtils?.getGlobalHandler?.();
+  global.ErrorUtils?.setGlobalHandler?.((e, fatal) => {
+    if (fatal) { try { SplashScreen.hideAsync().catch(() => {}); require('react-native').Alert.alert('Thiscene hit a problem', String(e?.message || e).slice(0, 400)); } catch {} }
+    prev && prev(e, fatal);
+  });
+} catch {}
 SystemUI.setBackgroundColorAsync(T.bg).catch(() => {});
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, InterTight_700Bold, InterTight_800ExtraBold });
-  useEffect(() => { if (fontsLoaded) SplashScreen.hideAsync().catch(() => {}); }, [fontsLoaded]);
-  if (!fontsLoaded) return null;
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, InterTight_700Bold, InterTight_800ExtraBold });
+  const [giveUp, setGiveUp] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setGiveUp(true), 4000); return () => clearTimeout(t); }, []);
+  const ready = fontsLoaded || !!fontError || giveUp;
+  useEffect(() => { if (ready) SplashScreen.hideAsync().catch(() => {}); }, [ready]);
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: T.bg }}>
@@ -53,5 +64,18 @@ export default function RootLayout() {
         </ClerkProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+// If anything crashes while drawing a screen, show what happened instead of a black screen
+export function ErrorBoundary({ error, retry }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#06060B', padding: 28, justifyContent: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 10 }}>Something went wrong</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 19 }} selectable>{String(error?.message || error).slice(0, 600)}</Text>
+      <Pressable onPress={retry} style={{ marginTop: 22, alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 22, paddingHorizontal: 20, height: 44, justifyContent: 'center' }}>
+        <Text style={{ color: '#07070F', fontWeight: '700' }}>Try again</Text>
+      </Pressable>
+    </View>
   );
 }

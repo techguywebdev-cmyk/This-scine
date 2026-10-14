@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RTCView } from 'react-native-webrtc';
 import { Feather } from '@expo/vector-icons';
 import Ambient from './Ambient';
 import { Avatar } from './Ui';
-import { useCalls } from '../lib/calls';
+import { rtc, useCalls } from '../lib/calls';
 import { F } from '../lib/theme';
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -35,6 +34,7 @@ export default function CallScreen() {
   const [secs, setSecs] = useState(0);
   const fade = useRef(new Animated.Value(0)).current;
   const call = c?.call;
+  const RTCView = call ? rtc()?.RTCView : null;
 
   useEffect(() => { Animated.timing(fade, { toValue: call ? 1 : 0, duration: 260, useNativeDriver: true }).start(); }, [!!call]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -53,8 +53,8 @@ export default function CallScreen() {
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.root, { opacity: fade }]}>
-      {showRemoteVideo ? <RTCView streamURL={c.remote.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" /> : <Ambient accent="#818CF8" />}
-      {video && c.local && !c.camOff && call.status !== 'incoming' ? (
+      {showRemoteVideo && RTCView ? <RTCView streamURL={c.remote.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" /> : <Ambient accent="#818CF8" />}
+      {video && RTCView && c.local && !c.camOff && call.status !== 'incoming' ? (
         <View style={[styles.pip, { top: insets.top + 70 }]}><RTCView streamURL={c.local.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" mirror zOrder={1} /></View>
       ) : null}
 
