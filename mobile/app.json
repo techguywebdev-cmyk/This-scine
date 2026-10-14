@@ -29,6 +29,13 @@
       "permissions": [
         "POST_NOTIFICATIONS",
         "VIBRATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "plugins": [
@@ -50,9 +57,19 @@
         "expo-audio",
         {
           "microphonePermission": "Thiscene uses your microphone for voice notes and calls.",
-          "recordAudioAndroid": true
+          "recordAudioAndroid": true,
+          "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Thiscene uses your photos so you can post them to your status.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": false

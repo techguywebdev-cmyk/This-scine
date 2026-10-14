@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/expo';
 import Ambient from '../../components/Ambient';
 import PosterWall from '../../components/PosterWall';
+import StatusRow from '../../components/StatusRow';
 import { Avatar, Empty, GlassButton, Poster, SectionLabel, Spinner, Tabs } from '../../components/Ui';
 import { useApi } from '../../lib/api';
 import { useWatchlist } from '../../lib/store';
@@ -85,6 +86,7 @@ export default function Friends() {
           ) : null}
           <Text style={styles.h1}>Friends</Text>
           <Text style={styles.counts}><Text style={styles.b}>{stats.followers || 0}</Text> followers  ·  <Text style={styles.b}>{stats.following || 0}</Text> following</Text>
+          <StatusRow />
           <Tabs style={{ marginTop: 16 }} tabs={[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']]} value={tab} onChange={setTab} />
 
           {!isSignedIn ? (

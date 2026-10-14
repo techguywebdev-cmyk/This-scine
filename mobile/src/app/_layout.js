@@ -37,6 +37,8 @@ export default function RootLayout() {
                 <Stack.Screen name="blocked" />
                 <Stack.Screen name="messages" />
                 <Stack.Screen name="chat/[id]" />
+                <Stack.Screen name="status/[userId]" options={{ animation: 'fade' }} />
+                <Stack.Screen name="status/new" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="party/[id]" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="sign-in" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               </Stack>
