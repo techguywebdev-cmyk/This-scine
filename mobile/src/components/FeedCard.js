@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { F } from '../lib/theme';
 
@@ -25,7 +25,7 @@ function FeedCard({ movie, index = 0, active = true, height, bottomInset, topIns
   const accent = movie.accent || '#F5A623';
   const img = movie.backdrop || movie.poster;
   const upcoming = movie.isUpcoming && movie.releaseDate;
-  const titleSize = Math.min(46, Math.max(28, 52 - (movie.title?.length || 0) * 0.9));
+  const titleSize = Math.min(50, Math.max(28, 54 - (movie.title?.length || 0) * 0.9));
 
   return (
     <View style={{ height, backgroundColor: '#04040A', overflow: 'hidden' }}>
@@ -45,11 +45,11 @@ function FeedCard({ movie, index = 0, active = true, height, bottomInset, topIns
           {movie.isTV && !upcoming ? <Text style={[styles.tv, { color: accent }]}>TV</Text> : null}
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
-          {movie.certification ? <View style={styles.cert}><Text style={styles.certText}>{movie.certification}</Text></View> : null}
+          {movie.certification ? (() => { const c = movie.certification; const col = ['R', 'NC-17', '18', 'TV-MA'].includes(c) ? '#FF4444' : ['PG-13', 'TV-14', '15'].includes(c) ? '#F5A623' : 'rgba(255,255,255,0.5)'; return <View style={[styles.cert, { borderColor: col.startsWith('#') ? `${col}55` : 'rgba(255,255,255,0.25)' }]}><Text style={[styles.certText, { color: col }]}>{c}</Text></View>; })() : null}
           {upcoming ? (
             <View style={[styles.pill, { borderColor: `${accent}4d` }]}><Feather name="calendar" size={12} color={accent} /><Text style={styles.rating}>In {daysUntil(movie.releaseDate)}d</Text></View>
           ) : movie.rating && movie.rating !== 'N/A' ? (
-            <View style={[styles.pill, { borderColor: `${accent}4d` }]}><Feather name="star" size={11} color={accent} /><Text style={styles.rating}>{movie.rating}</Text><Text style={styles.of}>/10</Text></View>
+            <View style={[styles.pill, { borderColor: `${accent}4d` }]}><Ionicons name="star" size={12} color={accent} /><Text style={styles.rating}>{movie.rating}</Text><Text style={styles.of}>/10</Text></View>
           ) : null}
         </View>
       </View>
@@ -57,7 +57,7 @@ function FeedCard({ movie, index = 0, active = true, height, bottomInset, topIns
       {/* Centre play — opens the trailer */}
       {active ? (
         <Pressable onPress={onOpen} accessibilityLabel="Play trailer" style={[styles.play, { top: height * 0.4 - 34, borderColor: `${accent}66`, shadowColor: accent }]}>
-          <Feather name="play" size={26} color={accent} style={{ marginLeft: 3 }} />
+          <Ionicons name="play" size={28} color={accent} style={{ marginLeft: 4 }} />
         </Pressable>
       ) : null}
 
@@ -81,18 +81,18 @@ function FeedCard({ movie, index = 0, active = true, height, bottomInset, topIns
             <><Feather name="eye" size={11} color="rgba(255,255,255,0.28)" /><Text style={styles.votes}> {movie.votes || '—'} ratings</Text></>
           )}
         </View>
-        <Text style={styles.overview} numberOfLines={3}>{movie.overview}</Text>
+        <Text style={styles.overview} numberOfLines={4}>{movie.overview}</Text>
       </View>
 
       {/* Action rail */}
       <View style={[styles.rail, { bottom: bottomInset + 16, opacity: active ? 1 : 0 }]}>
         <RailButton icon={saved ? 'check' : 'plus'} label={saved ? 'Saved' : 'Save'} active={saved} color="#7BFF9E" onPress={onSave} />
-        <RailButton icon="message-circle" label={reviewCount ? String(reviewCount) : 'Review'} color="#7BC8FF" onPress={onReviews} />
+        <RailButton icon="message-square" label={reviewCount ? String(reviewCount) : 'Review'} color="#7BC8FF" onPress={onReviews} />
         {upcoming
           ? <RailButton icon="bell" label={reminded ? 'Reminded' : 'Remind'} active={reminded} color="#FFD166" onPress={onRemind} />
           : <RailButton icon="eye" label={watched ? 'Seen' : 'Seen it'} active={watched} color="#7BFFB0" onPress={onWatched} />}
-        <RailButton icon="layers" label="Similar" color={accent} onPress={onSimilar} />
-        <RailButton icon="share-2" label="Share" color={accent} onPress={onShare} />
+        <RailButton icon="hexagon" label="Similar" color={accent} onPress={onSimilar} />
+        <RailButton icon="share" label="Share" color={accent} onPress={onShare} />
       </View>
     </View>
   );
@@ -107,20 +107,20 @@ const styles = StyleSheet.create({
   badges: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pill: pillBase,
   dot: { width: 5, height: 5, borderRadius: 3 },
-  num: { fontFamily: F.bold, fontSize: 11, color: 'rgba(255,255,255,0.55)', letterSpacing: 1 },
+  num: { fontFamily: F.displayHeavy, fontSize: 12, color: 'rgba(255,255,255,0.55)', letterSpacing: 1 },
   soon: { fontFamily: F.bold, fontSize: 10.5, color: 'rgba(255,255,255,0.8)', letterSpacing: 1.6 },
   tv: { fontFamily: F.bold, fontSize: 9, marginLeft: 2 },
-  rating: { fontFamily: F.displayHeavy, fontSize: 13, color: '#fff' },
+  rating: { fontFamily: F.displayHeavy, fontSize: 14, color: '#fff' },
   of: { fontFamily: F.body, fontSize: 10, color: 'rgba(255,255,255,0.25)' },
-  cert: { ...pillBase, paddingHorizontal: 9 },
-  certText: { fontFamily: F.bold, fontSize: 11, color: 'rgba(255,255,255,0.8)' },
+  cert: { borderWidth: 1, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2, alignSelf: 'center' },
+  certText: { fontFamily: F.displayHeavy, fontSize: 10, letterSpacing: 0.5 },
   play: { position: 'absolute', alignSelf: 'center', width: 68, height: 68, borderRadius: 34, borderWidth: 2, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.4, shadowRadius: 16, elevation: 8, zIndex: 16 },
-  info: { position: 'absolute', left: 20, right: 82 },
+  info: { position: 'absolute', left: 20, right: 74 },
   genres: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 9 },
   genre: { fontFamily: F.bold, fontSize: 9, letterSpacing: 2.2, textTransform: 'uppercase', paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderRadius: 4, overflow: 'hidden' },
   title: { fontFamily: F.displayHeavy, color: '#fff', letterSpacing: -0.6, textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 22, marginBottom: 7 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  year: { fontFamily: F.display, fontSize: 13, opacity: 0.75 },
+  year: { fontFamily: F.display, fontSize: 13.5, opacity: 0.8 },
   sep: { width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)' },
   votes: { fontFamily: F.body, fontSize: 12, color: 'rgba(255,255,255,0.35)' },
   overview: { fontFamily: F.body, fontSize: 13.5, lineHeight: 21.5, color: 'rgba(255,255,255,0.55)' },
