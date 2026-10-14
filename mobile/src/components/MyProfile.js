@@ -12,6 +12,7 @@ import Ambient from './Ambient';
 import { Poster, Tabs } from './Ui';
 import { useApi } from '../lib/api';
 import { useAccent } from '../lib/accent';
+import ImportSheet from './ImportSheet';
 import { rowToMovie, useWatchlist } from '../lib/store';
 import { openTitle } from '../lib/titles';
 import { API_URL } from '../lib/config';
@@ -45,6 +46,7 @@ export default function MyProfile({ settingsFooter }) {
   const wl = useWatchlist();
   const accent = useAccent();
   const [tab, setTab] = useState('profile');
+  const [importing, setImporting] = useState(false);
   const [s, setS] = useState(null); // settings
   const [reviews, setReviews] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -176,7 +178,7 @@ export default function MyProfile({ settingsFooter }) {
             )}
 
             <View style={styles.rule} />
-            <Pressable onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/?import=1`).catch(() => {})} style={styles.importRow}>
+            <Pressable onPress={() => setImporting(true)} style={styles.importRow}>
               <View style={styles.roundLg}><Feather name="download" size={20} color="#fff" /></View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.importTitle}>Import from Letterboxd or IMDb</Text>
@@ -246,6 +248,7 @@ export default function MyProfile({ settingsFooter }) {
       </ScrollView>
       {toast ? <View style={styles.toast}><Text style={styles.toastText}>{toast}</Text></View> : null}
       {remindRow ? <RemindSheet row={wl.items.find((x) => x.movie_id === remindRow.movie_id) || remindRow} onClose={() => setRemindRow(null)} onChange={wl.setRemind} /> : null}
+      <ImportSheet visible={importing} onClose={() => setImporting(false)} accent={accent} />
     </View>
   );
 }
