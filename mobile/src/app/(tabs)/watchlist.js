@@ -15,6 +15,7 @@ import { useApi } from '../../lib/api';
 import { rowToMovie, useWatchlist } from '../../lib/store';
 import { openTitle } from '../../lib/titles';
 import { F, T } from '../../lib/theme';
+import { useAccent } from '../../lib/accent';
 
 export default function Watchlist() {
   const insets = useSafeAreaInsets();
@@ -22,6 +23,7 @@ export default function Watchlist() {
   const { isSignedIn } = useAuth();
   const api = useApi();
   const wl = useWatchlist();
+  const accent = useAccent();
   const [tab, setTab] = useState('mine');
   const [lists, setLists] = useState(null);
   const [filter, setFilter] = useState('towatch');
@@ -73,10 +75,14 @@ export default function Watchlist() {
                 <View style={styles.grid}>
                   {lists.map((l) => (
                     <Pressable key={l.id} style={{ width: col3 }} onPress={() => router.push({ pathname: '/folder/[id]', params: { id: l.id } })}>
-                      <Folder poster={l.cover_url || (l.posters || [])[0]} accent={T.accent} count={l.movie_count || 0} locked={l.is_public === false} />
+                      <Folder poster={l.cover_url || (l.posters || [])[0]} accent={accent} count={l.movie_count || 0} locked={l.is_public === false} />
                       <Text style={styles.folderName} numberOfLines={1}>{l.title}</Text>
                     </Pressable>
                   ))}
+                  <Pressable style={{ width: col3 }} onPress={() => setFiling({ newOnly: true })} accessibilityLabel="New folder">
+                    <View style={[styles.newFolder, { borderColor: `${accent}88` }]}><Feather name="plus" size={22} color={accent} /></View>
+                    <Text style={[styles.folderName, { color: accent }]}>New folder</Text>
+                  </Pressable>
                 </View>
               )}
 
@@ -111,7 +117,7 @@ export default function Watchlist() {
             <View style={[styles.grid, { paddingTop: 20 }]}>
               {lists.map((l) => (
                 <Pressable key={l.id} style={{ width: col3 }} onPress={() => router.push({ pathname: '/folder/[id]', params: { id: l.id } })}>
-                  <Folder poster={l.cover_url || (l.posters || [])[0] || l.cover_poster} accent={T.accent} count={l.movie_count || 0} />
+                  <Folder poster={l.cover_url || (l.posters || [])[0] || l.cover_poster} accent={accent} count={l.movie_count || 0} />
                   <Text style={styles.folderName} numberOfLines={1}>{l.title}</Text>
                   <Text style={styles.owner} numberOfLines={1}>{l.display_name || l.username}</Text>
                 </Pressable>
@@ -154,6 +160,7 @@ const styles = StyleSheet.create({
   counts: { fontFamily: F.body, fontSize: 12.5, color: T.text2, marginTop: 2 },
   b: { fontFamily: F.bold, color: '#fff' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 18 },
+  newFolder: { width: '100%', aspectRatio: 5 / 6, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   folderName: { fontFamily: F.semibold, fontSize: 12, color: '#fff', marginTop: 7 },
   owner: { fontFamily: F.body, fontSize: 10.5, color: T.text3, marginTop: 2 },
   toggle: { fontFamily: F.bold, fontSize: 12, color: 'rgba(255,255,255,0.4)' },

@@ -14,7 +14,7 @@ import { openTitle, shareTitle } from '../../lib/titles';
 import { feedKey, isSeen, loadSeen, markSeen, recentSeen } from '../../lib/feedMemory';
 import { Feather } from '@expo/vector-icons';
 import { F, FEEDS, GENRES, T } from '../../lib/theme';
-import FilterSheet from '../../components/FilterSheet';
+import { setFeedFilter, useFeedFilter } from '../../lib/feedFilter';
 import { GlassButton } from '../../components/Ui';
 import { markBootReady } from '../../lib/boot';
 import { setAccent } from '../../lib/accent';
@@ -28,8 +28,8 @@ export default function Feed() {
   const api = useApi();
   const { isSignedIn } = useAuth();
   const wl = useWatchlist();
-  const [filter, setFilter] = useState({ mood: 'Trending', genre: '', provider: '' });
-  const [showFilter, setShowFilter] = useState(false);
+  const filter = useFeedFilter();
+  const setFilter = setFeedFilter;
   const mood = filter.mood;
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +159,7 @@ export default function Feed() {
         <View pointerEvents="box-none" style={styles.topRow}>
           <Wordmark accent={activeAccent} />
           <View>
-            <GlassButton icon="sliders" label="Filter the feed" onPress={() => setShowFilter(true)} />
+            <GlassButton icon="sliders" label="Filter the feed" onPress={() => router.navigate('/discover')} />
             {filterOn ? <View style={styles.filterDot} /> : null}
           </View>
         </View>
@@ -175,7 +175,6 @@ export default function Feed() {
           </View>
         ) : null}
       </View>
-      {showFilter ? <FilterSheet value={filter} onChange={setFilter} onClose={() => setShowFilter(false)} accent={activeAccent} /> : null}
 
       {savedToast ? (
         <Animated.View style={[styles.toast, { bottom: tabBar + 14, opacity: toastAnim, transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }]}>

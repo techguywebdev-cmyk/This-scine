@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import Ambient from '../../components/Ambient';
 import ActionSheet from '../../components/ActionSheet';
-import ProfileView from '../../components/ProfileView';
+import MyProfile from '../../components/MyProfile';
 import { TsLoader } from '../../components/Brand';
 import { Empty, SectionLabel } from '../../components/Ui';
 import { useApi } from '../../lib/api';
@@ -68,7 +68,7 @@ export default function Me() {
 
   const footer = (
     <View style={{ marginTop: 10 }}>
-      <SectionLabel>Settings</SectionLabel>
+      <SectionLabel style={{ marginTop: 30 }}>Settings</SectionLabel>
       <Row icon="bell" text={push.enabled ? 'Notifications are on' : 'Turn on notifications'} sub={push.enabled ? null : 'Messages, watch invites and your reminders'} onPress={push.enabled ? null : push.enable} right={push.enabled ? null : undefined} />
       <Row icon="clock" text="Nudge me about older saves" sub="Once a week at most, around 7pm" right={<Switch value={!!nudge} disabled={nudge === null} onValueChange={toggleNudge} trackColor={{ true: '#fff', false: 'rgba(255,255,255,0.16)' }} thumbColor={nudge ? T.bg : '#fff'} />} />
       <Row icon="slash" text="Blocked accounts" onPress={() => router.push('/blocked')} />
@@ -81,7 +81,7 @@ export default function Me() {
     </View>
   );
 
-  return <ProfileView userId={user.id} footer={footer} />;
+  return <MyProfile settingsFooter={footer} />;
 }
 
 function DeleteSheet({ onClose, onDeleted }) {

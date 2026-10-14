@@ -127,6 +127,7 @@ export default function CineScroll(){
   useEffect(()=>{
     const open=(e)=>{if(e.detail&&e.detail.id)setPartyId(e.detail.id);};
     window.addEventListener('cine:open-party',open);
+    try{const u0=new URL(window.location.href);if(u0.searchParams.get('import')==='1'){u0.searchParams.delete('import');window.history.replaceState({},'',u0.pathname+(u0.search||''));setTimeout(()=>window.dispatchEvent(new Event('cine:open-import')),800);}}catch{}
     try{const q=new URLSearchParams(window.location.search).get('party');if(q){setPartyId(q);const u=new URL(window.location.href);u.searchParams.delete('party');window.history.replaceState({},'',u.toString());}}catch{}
     return()=>window.removeEventListener('cine:open-party',open);
   },[]);
