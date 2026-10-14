@@ -6,6 +6,7 @@ import { useAuth } from '@clerk/expo';
 import { router } from 'expo-router';
 import FeedCard from '../../components/FeedCard';
 import RemindSheet from '../../components/RemindSheet';
+import ReviewsSheet from '../../components/ReviewsSheet';
 import { TsLoader, Wordmark } from '../../components/Brand';
 import { useApi } from '../../lib/api';
 import { useWatchlist } from '../../lib/store';
@@ -35,6 +36,8 @@ export default function Feed() {
   const [activeAccent, setActiveAccent] = useState('#fff');
   const [savedToast, setSavedToast] = useState(null);
   const [remindRow, setRemindRow] = useState(null);
+  const [reviewsFor, setReviewsFor] = useState(null);
+  const [activeKey, setActiveKey] = useState(null);
   const toastTimer = useRef(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const page = useRef(1);
@@ -81,7 +84,7 @@ export default function Feed() {
   }, [isSignedIn]);
 
   const filterOn = mood !== 'Trending' || !!filter.genre || !!filter.provider;
-  const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.item) { setActiveAccent(v.item.accent || T.accent); setTimeout(() => markSeen(v.item), 1200); } }).current;
+  const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.item) { setActiveAccent(v.item.accent || T.accent); setActiveKey(feedKey(v.item)); setTimeout(() => markSeen(v.item), 1200); } }).current;
   useEffect(() => { if (movies[0] && activeAccent === '#fff') setActiveAccent(movies[0].accent || T.accent); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [movies.length]);
 
   const showSaved = (m) => {
@@ -103,9 +106,13 @@ export default function Feed() {
     } catch {}
   };
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item, index }) => (
     <FeedCard
       movie={item}
+      index={index}
+      topInset={insets.top - 20 + (filterOn ? 38 : 0)}
+      active={activeKey ? activeKey === feedKey(item) : index === 0}
+      onReviews={() => setReviewsFor(item)}
       height={height}
       bottomInset={tabBar}
       saved={wl.ids.has(item.id)}
@@ -129,6 +136,7 @@ export default function Feed() {
           data={movies}
           keyExtractor={(m) => feedKey(m)}
           renderItem={renderItem}
+          extraData={activeKey}
           pagingEnabled
           snapToInterval={height}
           decelerationRate="fast"
@@ -176,6 +184,7 @@ export default function Feed() {
           </Pressable>
         </Animated.View>
       ) : null}
+      {reviewsFor ? <ReviewsSheet movie={reviewsFor} onClose={() => setReviewsFor(null)} /> : null}
       {remindRow ? <RemindSheet row={wl.items.find((x) => x.movie_id === remindRow.movie_id) || remindRow} onClose={() => setRemindRow(null)} onChange={wl.setRemind} /> : null}
     </View>
   );
