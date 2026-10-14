@@ -12,6 +12,7 @@ import SafetySheet from '../../components/SafetySheet';
 import { Avatar, GlassButton, Poster } from '../../components/Ui';
 import { TsLoader } from '../../components/Brand';
 import { useApi } from '../../lib/api';
+import { useCalls } from '../../lib/calls';
 import { openTitle } from '../../lib/titles';
 import { F, T } from '../../lib/theme';
 
@@ -36,6 +37,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
   const [safety, setSafety] = useState(false);
+  const calls = useCalls();
   const timer = useRef(null);
   const listRef = useRef(null);
 
@@ -160,6 +162,8 @@ export default function Chat() {
             {peer.username ? <Text style={styles.peerHandle} numberOfLines={1}>@{peer.username}</Text> : null}
           </View>
         </Pressable>
+        {!blocked ? <GlassButton icon="phone" label="Voice call" onPress={() => calls.start({ user_id: peerId, display_name: peer.display_name, username: peer.username, avatar_url: peer.avatar_url }, 'audio')} /> : null}
+        {!blocked ? <GlassButton icon="video" label="Video call" onPress={() => calls.start({ user_id: peerId, display_name: peer.display_name, username: peer.username, avatar_url: peer.avatar_url }, 'video')} /> : null}
         <GlassButton icon="more-horizontal" label="Report or block" onPress={() => setSafety(true)} />
       </View>
 

@@ -11,6 +11,8 @@ import { tokenCache } from '@clerk/expo/token-cache';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { InterTight_700Bold, InterTight_800ExtraBold } from '@expo-google-fonts/inter-tight';
 import { WatchlistProvider } from '../lib/store';
+import { CallProvider } from '../lib/calls';
+import CallScreen from '../components/CallScreen';
 import { CLERK_PUBLISHABLE_KEY } from '../lib/config';
 import { T } from '../lib/theme';
 
@@ -28,6 +30,7 @@ export default function RootLayout() {
         <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
           <ClerkLoaded>
             <WatchlistProvider>
+            <CallProvider>
               <StatusBar style="light" />
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg }, animation: 'slide_from_right' }}>
                 <Stack.Screen name="(tabs)" />
@@ -43,6 +46,8 @@ export default function RootLayout() {
                 <Stack.Screen name="party/[id]" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="sign-in" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
               </Stack>
+              <CallScreen />
+            </CallProvider>
             </WatchlistProvider>
           </ClerkLoaded>
         </ClerkProvider>

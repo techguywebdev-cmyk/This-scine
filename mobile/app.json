@@ -69,7 +69,14 @@
           "microphonePermission": "Thiscene uses your microphone for voice notes and calls."
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Thiscene uses your camera for video calls.",
+          "microphonePermission": "Thiscene uses your microphone for calls and voice notes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

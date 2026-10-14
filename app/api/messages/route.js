@@ -90,6 +90,28 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const withId = clean(searchParams.get('with'));
 
+  // ?ringing=1 → calls ringing for me right now (an offer in the last 45s with no answer/end after it).
+  // The phone app checks this so it can ring even when the chat isn't open.
+  if (searchParams.get('ringing')) {
+    try {
+      const since = new Date(Date.now() - 45 * 1000).toISOString();
+      const r = await fetch(`${db('messages')}?or=(from_user_id.eq.${userId},to_user_id.eq.${userId})&msg_type=eq.call_signal&created_at=gte.${since}&order=created_at.asc&limit=200&select=from_user_id,to_user_id,text,created_at`, { headers, cache: 'no-store' });
+      const rows = r.ok ? await r.json() : [];
+      const byPeer = new Map();
+      for (const m of Array.isArray(rows) ? rows : []) {
+        let sig = null; try { sig = JSON.parse(m.text || '{}'); } catch {}
+        if (!sig?.kind) continue;
+        const peer = m.from_user_id === userId ? m.to_user_id : m.from_user_id;
+        if (sig.kind === 'offer' && m.to_user_id === userId) byPeer.set(peer, { peer_id: peer, callType: sig.callType === 'video' ? 'video' : 'audio', sdp: sig.sdp, sid: sig.sid || null, created_at: m.created_at });
+        else if (['answer', 'end', 'decline'].includes(sig.kind)) byPeer.delete(peer);
+      }
+      const hidden = await blockedIds(userId);
+      const list = [...byPeer.values()].filter((c) => !hidden.has(c.peer_id));
+      const map = list.length ? await getUserMap(list.map((c) => c.peer_id)) : {};
+      return Response.json({ calls: list.map((c) => ({ ...c, display_name: map[c.peer_id]?.display_name || 'Someone', username: map[c.peer_id]?.username || null, avatar_url: map[c.peer_id]?.avatar_url || null })) }, { headers: { 'Cache-Control': 'no-store' } });
+    } catch { return Response.json({ calls: [] }); }
+  }
+
   try {
     if (withId) {
       // Newest first, then flipped: chat messages (latest 150) + only recent call signals (last 3 min).
