@@ -7,6 +7,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Ambient from '../../components/Ambient';
+import StatusBackdrop from '../../components/StatusBackdrop';
 import ActionSheet from '../../components/ActionSheet';
 import { Avatar } from '../../components/Ui';
 import { useApi } from '../../lib/api';
@@ -105,15 +106,14 @@ export default function StatusViewer() {
 
   const bg = item.bg || T.accent;
   const noir = bg === '#E6E6EA';
-  const solid = item.kind === 'text' && !(item.meta?.bgStyle === 'ambient' || noir);
-  const ink = solid ? inkOn(bg) : '#fff';
+  const ink = item.kind === 'text' && item.meta?.text?.color === '#07070F' ? '#07070F' : '#fff';
   const dark = ink !== '#fff' && ink !== '#FFFFFF';
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#000' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* content */}
       {item.kind === 'text' ? (
-        item.meta?.bgStyle === 'ambient' || noir ? <Ambient accent={noir ? '#E6E6EA' : bg} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: bg }]} />
+        item.meta?.bgStyle === 'ambient' ? <Ambient accent={bg} /> : <StatusBackdrop bg={bg} />
       ) : null}
       {item.kind === 'image' ? <Image source={{ uri: item.media_url }} style={StyleSheet.absoluteFill} contentFit="contain" transition={150} /> : null}
       {item.kind === 'video' ? <VideoItem key={item.id} uri={item.media_url} paused={paused} onProgress={setProg} onEnd={next} /> : null}

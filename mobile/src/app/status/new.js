@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import Ambient from '../../components/Ambient';
+import StatusBackdrop, { StatusSwatch } from '../../components/StatusBackdrop';
 import { TsLoader } from '../../components/Brand';
 import { useApi } from '../../lib/api';
 import { STATUS_BGS } from '../../lib/statusCache';
@@ -22,7 +23,7 @@ export default function NewStatus() {
   const [err, setErr] = useState('');
   const accent = '#818CF8';
   const colour = bg === 'ambient' ? accent : bg;
-  const ink = !media && bg !== 'ambient' && bg !== '#E6E6EA' ? inkOn(bg) : '#fff';
+  const ink = '#fff';
   const dark = ink !== '#fff' && ink !== '#FFFFFF';
 
   const pick = async () => {
@@ -60,7 +61,7 @@ export default function NewStatus() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#000' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {media ? <Image source={{ uri: media.uri }} style={StyleSheet.absoluteFill} contentFit="contain" />
-        : bg === 'ambient' || bg === '#E6E6EA' ? <Ambient accent={bg === 'ambient' ? accent : '#E6E6EA'} /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: bg }]} />}
+        : bg === 'ambient' ? <Ambient accent={accent} /> : <StatusBackdrop bg={bg} />}
 
       <View style={[styles.top, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => router.back()} hitSlop={10} accessibilityLabel="Close"><Feather name="x" size={26} color={ink} /></Pressable>
@@ -84,7 +85,9 @@ export default function NewStatus() {
         ) : (
           <View style={styles.swatches}>
             {['ambient', ...STATUS_BGS].map((c) => (
-              <Pressable key={c} onPress={() => setBg(c)} accessibilityLabel={c === 'ambient' ? 'Default background' : 'Background colour'} style={[styles.swatch, { backgroundColor: c === 'ambient' ? '#232338' : c === '#E6E6EA' ? '#000' : c, borderColor: bg === c ? '#fff' : 'rgba(255,255,255,0.3)', borderWidth: bg === c ? 2.5 : 1.5 }]} />
+              <Pressable key={c} onPress={() => setBg(c)} accessibilityLabel={c === 'ambient' ? 'Default background' : 'Background colour'} style={[styles.swatchRing, { borderColor: bg === c ? '#fff' : 'rgba(255,255,255,0.3)', borderWidth: bg === c ? 2.5 : 1.5 }]}>
+                <StatusSwatch bg={c === 'ambient' ? accent : c} size={26} />
+              </Pressable>
             ))}
           </View>
         )}
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
   videoText: { fontFamily: F.bold, fontSize: 12.5, color: '#fff' },
   bottom: { paddingHorizontal: 18, gap: 12 },
   swatches: { flexDirection: 'row', justifyContent: 'center', gap: 10, flexWrap: 'wrap' },
-  swatch: { width: 30, height: 30, borderRadius: 15 },
+  swatchRing: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   caption: { height: 46, borderRadius: 23, paddingHorizontal: 18, color: '#fff', fontFamily: F.body, fontSize: 15, ...glass },
   err: { fontFamily: F.semibold, fontSize: 12.5, color: '#ff8a8a', textAlign: 'center' },
   post: { height: 52, borderRadius: 26, backgroundColor: '#fff', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
