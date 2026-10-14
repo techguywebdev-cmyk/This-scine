@@ -14,9 +14,12 @@ import StartParty from '../../../components/StartParty';
 import { useAuth } from '@clerk/expo';
 import { openTitle, shareTitle } from '../../../lib/titles';
 import { F, T } from '../../../lib/theme';
+import { useAccent } from '../../../lib/accent';
+import StreamOn from '../../../components/StreamOn';
 
 export default function TitleScreen() {
-  const { type, id, title: initialTitle, focus } = useLocalSearchParams();
+  const { type, id, title: initialTitle, focus, accent: passedAccent } = useLocalSearchParams();
+  const liveAccent = useAccent();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const api = useApi();
@@ -50,7 +53,8 @@ export default function TitleScreen() {
     }
   }, [focus, similar]);
 
-  const accent = movie?.accent || T.accent;
+  // Keep the colour of the card you came from (the API can assign a different one)
+  const accent = passedAccent || liveAccent || movie?.accent || T.accent;
   const videoH = Math.round((width * 9) / 16);
   const saved = movie && wl.ids.has(movie.id);
   const watched = movie && wl.isWatched(movie.id);
@@ -90,17 +94,18 @@ export default function TitleScreen() {
               {[
                 [saved ? 'check' : 'plus', saved ? 'Saved' : 'Save', saved, '#7BFF9E', () => wl.toggleSave(movie)],
                 ['eye', watched ? 'Seen' : 'Seen it', watched, '#7BFFB0', () => wl.toggleWatched(movie)],
-                ['users', 'Watch together', false, accent, () => (isSignedIn ? setParty(true) : router.push('/sign-in'))],
+                ['users', 'Watch party', false, accent, () => (isSignedIn ? setParty(true) : router.push('/sign-in'))],
                 ['share-2', 'Share', false, accent, () => shareTitle(movie)],
               ].map(([icon, label, on, color, fn]) => (
                 <Pressable key={label} onPress={fn} style={({ pressed }) => [styles.action, on && { borderColor: `${color}66`, backgroundColor: `${color}1f` }, { opacity: pressed ? 0.8 : 1 }]}>
-                  <Feather name={icon} size={15} color={on ? color : '#fff'} />
-                  <Text style={[styles.actionText, on && { color }]}>{label}</Text>
+                  <Feather name={icon} size={19} color={on ? color : '#fff'} />
+                  <Text style={[styles.actionText, on && { color }]} numberOfLines={1}>{label}</Text>
                 </Pressable>
               ))}
             </View>
           ) : null}
 
+          {movie ? <StreamOn movie={movie} style={{ marginTop: 18, marginBottom: 0 }} /> : null}
           {movie?.overview ? <Text style={styles.overview}>{movie.overview}</Text> : null}
 
           {/* Similar — flat list with reasons, as on the web */}
@@ -136,9 +141,9 @@ const styles = StyleSheet.create({
   meta: { fontFamily: F.medium, fontSize: 12.5, color: 'rgba(255,255,255,0.7)' },
   dot: { color: 'rgba(255,255,255,0.4)', marginHorizontal: 6 },
   genres: { fontFamily: F.bold, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 8 },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 18 },
-  action: { flex: 1, height: 42, borderRadius: 21, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: T.hairlineStrong, backgroundColor: 'rgba(255,255,255,0.04)' },
-  actionText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  action: { flex: 1, height: 62, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(0,0,0,0.3)' },
+  actionText: { fontFamily: F.bold, fontSize: 11, color: 'rgba(255,255,255,0.85)' },
   overview: { fontFamily: F.body, fontSize: 14, lineHeight: 21, color: 'rgba(255,255,255,0.82)', marginTop: 18 },
   muted: { fontFamily: F.body, fontSize: 12.5, color: T.text2 },
   simRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12 },

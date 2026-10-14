@@ -6,6 +6,7 @@ import { BlurView } from 'expo-blur';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { F } from '../lib/theme';
+import StreamOn from './StreamOn';
 
 const daysUntil = (d) => Math.max(0, Math.ceil((new Date(d) - Date.now()) / 86400000));
 const NOIR = '#E6E6EA';
@@ -69,6 +70,7 @@ function FeedCard({ movie, index = 0, active = true, height, bottomInset, topIns
             {movie.isTV ? <Text style={[styles.genre, { color: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.1)' }]}>SERIES</Text> : null}
           </View>
         ) : null}
+        {active ? <StreamOn movie={movie} /> : null}
         <Pressable onPress={onOpen}>
           <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleSize * 1.04, textShadowColor: 'rgba(0,0,0,0.8)' }]} numberOfLines={3}>{movie.title}</Text>
         </Pressable>

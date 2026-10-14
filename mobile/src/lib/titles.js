@@ -4,7 +4,7 @@ import { API_URL } from './config';
 
 export const openTitle = (movie) => {
   const type = movie.isTV || movie.mediaType === 'tv' || movie.is_tv ? 'tv' : 'movie';
-  router.push({ pathname: '/title/[type]/[id]', params: { type, id: String(movie.id || movie.movie_id), title: movie.title || '' } });
+  router.push({ pathname: '/title/[type]/[id]', params: { type, id: String(movie.id || movie.movie_id), title: movie.title || '', accent: movie.accent || '' } });
 };
 
 export const shareTitle = async (movie) => {
