@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useClerk, useUser } from '@clerk/expo';
 import { Feather } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 import Ambient from '../../components/Ambient';
 import ActionSheet from '../../components/ActionSheet';
 import ProfileView from '../../components/ProfileView';
@@ -75,6 +76,7 @@ export default function Me() {
       <Row icon="file-text" text="Terms of use" onPress={() => open('/terms')} />
       <Row icon="log-out" text="Sign out" onPress={() => signOut()} right={null} />
       <Row icon="trash-2" text="Delete account" danger onPress={() => setDeleting(true)} />
+      <Text style={styles.version}>Thiscene {Constants.expoConfig?.version || ''} · build {Constants.expoConfig?.android?.versionCode || '—'}</Text>
       {deleting ? <DeleteSheet onClose={() => setDeleting(false)} onDeleted={() => signOut().catch(() => {})} /> : null}
     </View>
   );
@@ -118,6 +120,7 @@ const styles = StyleSheet.create({
   h1: { fontFamily: F.displayHeavy, fontSize: 28, color: '#fff', letterSpacing: -0.5 },
   cta: { alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 21, paddingHorizontal: 20, height: 42, justifyContent: 'center', marginTop: 4 },
   ctaText: { fontFamily: F.bold, fontSize: 13, color: '#07070F' },
+  version: { fontFamily: F.body, fontSize: 11.5, color: T.text3, textAlign: 'center', marginTop: 22 },
   link: { fontFamily: F.semibold, fontSize: 13, color: T.text2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: T.hairline, minHeight: 52 },
   rowText: { fontFamily: F.semibold, fontSize: 14.5, color: '#fff' },
