@@ -4,6 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/expo';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Ambient from '../../components/Ambient';
 import PosterWall from '../../components/PosterWall';
 import Folder from '../../components/Folder';
@@ -42,6 +43,7 @@ export default function Watchlist() {
   useFocusEffect(useCallback(() => { fetchLists(tab); }, [fetchLists, tab]));
 
   const toWatch = wl.items.filter((m) => !m.watched);
+  const upNext = toWatch.filter(reminderOn).sort((a, b) => Date.parse(a.remind_at) - Date.parse(b.remind_at));
   const watched = wl.items.filter((m) => m.watched);
   const shown = (filter === 'towatch' ? toWatch : watched).slice().sort((a, b) => (b.saved_at || 0) - (a.saved_at || 0));
   const wall = useMemo(() => wl.items.map((m) => m.poster).filter(Boolean).sort(() => Math.random() - 0.5).slice(0, 5), [wl.items.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -70,6 +72,29 @@ export default function Watchlist() {
             </View>
           ) : tab === 'mine' ? (
             <>
+              {upNext.length ? (
+                <>
+                  <SectionLabel>{`Up next · ${upNext.length} reminder${upNext.length > 1 ? 's' : ''}`}</SectionLabel>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }} style={{ marginHorizontal: -20 }} contentInset={{ left: 20 }}>
+                    <View style={{ width: 10 }} />
+                    {upNext.map((m) => (
+                      <Pressable key={m.movie_id} onPress={() => setRemindRow(m)} style={{ width: 112 }} accessibilityLabel={`${m.title}, reminder ${fmtRemind(m.remind_at)}`}>
+                        <View style={[styles.upCard, { borderColor: `${m.accent || accent}66` }]}>
+                          <Poster uri={m.poster} width={112} />
+                          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.upFade}>
+                            <Feather name="bell" size={10} color={m.accent || accent} />
+                            <Text style={styles.upWhen} numberOfLines={1}>{fmtRemind(m.remind_at)}</Text>
+                          </LinearGradient>
+                          {m.remind_with ? <View style={styles.upWith}><Text style={styles.upWithText}>+1</Text></View> : null}
+                        </View>
+                        <Text style={styles.itemTitle} numberOfLines={1}>{m.title}</Text>
+                        {m.remind_note ? <Text style={styles.upNote} numberOfLines={1}>“{m.remind_note}”</Text> : null}
+                      </Pressable>
+                    ))}
+                    <View style={{ width: 10 }} />
+                  </ScrollView>
+                </>
+              ) : null}
               <SectionLabel>Folders</SectionLabel>
               {lists === null ? <Spinner /> : (
                 <View style={styles.grid}>
@@ -155,6 +180,12 @@ function NewFolder({ onClose }) {
 }
 
 const styles = StyleSheet.create({
+  upCard: { width: 112, borderRadius: 12, overflow: 'hidden', borderWidth: 1 },
+  upFade: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 18, paddingBottom: 7, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  upWhen: { flex: 1, color: '#fff', fontFamily: F.bold, fontSize: 10.5 },
+  upWith: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
+  upWithText: { color: '#fff', fontFamily: F.bold, fontSize: 9.5 },
+  upNote: { color: T.text3, fontFamily: F.body, fontSize: 10.5, marginTop: 1 },
   topRow: { flexDirection: 'row', alignItems: 'center', height: 40 },
   h1: { fontFamily: F.displayHeavy, fontSize: 28, color: '#fff', marginTop: 78, letterSpacing: -0.5 },
   counts: { fontFamily: F.body, fontSize: 12.5, color: T.text2, marginTop: 2 },

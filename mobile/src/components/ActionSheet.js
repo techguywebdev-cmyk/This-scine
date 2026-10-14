@@ -24,7 +24,7 @@ export default function ActionSheet({ visible, onClose, poster, title, sub, acti
           </View>
         ) : null}
         {actions.map(([icon, text, fn]) => (
-          <Pressable key={text} onPress={() => { onClose(); setTimeout(fn, 120); }} style={({ pressed }) => [styles.action, { opacity: pressed ? 0.7 : 1 }]}>
+          <Pressable key={text} onPress={() => { onClose(); setTimeout(fn, 380); /* let this sheet close before another opens (Android) */ }} style={({ pressed }) => [styles.action, { opacity: pressed ? 0.7 : 1 }]}>
             <Feather name={icon} size={18} color={accent} />
             <Text style={styles.actionText}>{text}</Text>
           </Pressable>

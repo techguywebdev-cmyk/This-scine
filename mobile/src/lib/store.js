@@ -60,7 +60,11 @@ export function WatchlistProvider({ children }) {
     if (next) logActivity('watched', movie);
   };
 
-  const setRemind = (movieId, iso) => setItems((p) => p.map((m) => (m.movie_id === movieId ? { ...m, remind_at: iso, reminded_at: null } : m)));
+  const setRemind = (movieId, iso, extra) => {
+    let found = false;
+    setItems((p) => p.map((m) => { if (m.movie_id !== movieId) return m; found = true; return { ...m, remind_at: iso, reminded_at: null, ...(extra || {}) }; }));
+    setTimeout(() => { if (!found) refresh(); }, 0); // reminding an unsaved title saves it on the server
+  };
 
   const value = { items, ids, loading, refresh, toggleSave, toggleWatched, setRemind, isWatched: (id) => !!items.find((m) => m.movie_id === id && m.watched) };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

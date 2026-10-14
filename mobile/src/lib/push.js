@@ -41,20 +41,37 @@ export function usePushRegistration() {
   return { enabled, enable: () => register(true) };
 }
 
+// Buttons on watch reminders: "Tomorrow night" (snooze) and "Watch together"
+Notifications.setNotificationCategoryAsync('watch_reminder', [
+  { identifier: 'snooze', buttonTitle: 'Tomorrow night', options: { opensAppToForeground: false } },
+  { identifier: 'party', buttonTitle: 'Watch together', options: { opensAppToForeground: true } },
+]).catch(() => {});
+
 // Open the right screen when a notification is tapped (mounted once, in the tabs layout)
 export function usePushRouting() {
+  const api = useApi();
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((r) => {
-      const url = r.notification.request.content.data?.url || '';
+      const data = r.notification.request.content.data || {};
+      if (r.actionIdentifier === 'snooze' && data.movieId) {
+        const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(20, 0, 0, 0);
+        api.patch('/api/watchlist', { movieId: data.movieId, remindAt: t.toISOString() })
+          .then(() => Notifications.scheduleNotificationAsync({ content: { title: 'Snoozed till tomorrow night', body: 'We’ll remind you at 8pm 🍿' }, trigger: null }))
+          .catch(() => {});
+        Notifications.dismissNotificationAsync(r.notification.request.identifier).catch(() => {});
+        return;
+      }
+      const url = (r.actionIdentifier === 'party' && data.url ? `${data.url}${data.url.includes('?') ? '&' : '?'}act=party` : data.url) || '';
       const chat = /chat=([^&]+)/.exec(url)?.[1];
       const title = /[?&]m=(movie|tv)-(\d+)/.exec(url);
       const party = /party=([^&]+)/.exec(url)?.[1];
       if (party) router.push({ pathname: '/party/[id]', params: { id: decodeURIComponent(party) } });
       else if (chat) router.push({ pathname: '/chat/[id]', params: { id: decodeURIComponent(chat) } });
-      else if (title) router.push({ pathname: '/title/[type]/[id]', params: { type: title[1], id: title[2] } });
+      else if (title) router.push({ pathname: '/title/[type]/[id]', params: { type: title[1], id: title[2], ...(/act=party/.test(url) ? { act: 'party' } : {}) } });
       else router.navigate('/');
     });
     return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 }

@@ -18,7 +18,7 @@ import { useAccent } from '../../../lib/accent';
 import StreamOn from '../../../components/StreamOn';
 
 export default function TitleScreen() {
-  const { type, id, title: initialTitle, focus, accent: passedAccent } = useLocalSearchParams();
+  const { type, id, title: initialTitle, focus, accent: passedAccent, act } = useLocalSearchParams();
   const liveAccent = useAccent();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -28,7 +28,7 @@ export default function TitleScreen() {
   const [trailerKey, setTrailerKey] = useState(undefined);
   const [similar, setSimilar] = useState(null);
   const [playing, setPlaying] = useState(true);
-  const [party, setParty] = useState(false);
+  const [party, setParty] = useState(act === 'party'); // from a reminder's "Watch together" button
   const { isSignedIn } = useAuth();
   const scrollRef = useRef(null);
   const similarY = useRef(0);

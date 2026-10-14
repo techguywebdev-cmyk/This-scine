@@ -179,13 +179,13 @@ export default function Feed() {
       {savedToast ? (
         <Animated.View style={[styles.toast, { bottom: tabBar + 14, opacity: toastAnim, transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }]}>
           <Text style={styles.toastText} numberOfLines={1}>Saved <Text style={{ color: T.text2, fontFamily: F.body }}>· {savedToast.title}</Text></Text>
-          <Pressable onPress={() => { hideSaved(); const row = wl.items.find((x) => x.movie_id === savedToast.id) || { movie_id: savedToast.id, title: savedToast.title, poster: savedToast.poster, accent: savedToast.accent }; setRemindRow(row); }} style={styles.toastBtn} accessibilityLabel="Remind me to watch">
+          <Pressable onPress={() => { hideSaved(); setRemindRow({ ...savedToast, movie_id: savedToast.id }); }} style={styles.toastBtn} accessibilityLabel="Remind me to watch">
             <Feather name="bell" size={13} color="#fff" /><Text style={styles.toastBtnText}>Remind me</Text>
           </Pressable>
         </Animated.View>
       ) : null}
       {reviewsFor ? <ReviewsSheet movie={reviewsFor} onClose={() => setReviewsFor(null)} /> : null}
-      {remindRow ? <RemindSheet row={wl.items.find((x) => x.movie_id === remindRow.movie_id) || remindRow} onClose={() => setRemindRow(null)} onChange={wl.setRemind} /> : null}
+      {remindRow ? <RemindSheet row={{ ...remindRow, ...(wl.items.find((x) => x.movie_id === remindRow.movie_id) || {}) }} onClose={() => setRemindRow(null)} onChange={wl.setRemind} /> : null}
     </View>
   );
 }
