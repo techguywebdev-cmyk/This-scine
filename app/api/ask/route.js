@@ -1,0 +1,158 @@
+import { auth } from '@clerk/nextjs/server';
+import { SUPABASE_URL, SUPABASE_KEY } from '@/lib/db';
+import { parseAsk } from '@/lib/askParse';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 20;
+
+// GET /api/ask?q=funny 90s movie on Netflix  → { understood, chips, movies:[…feed movies with `why`] }
+// Free: plain-language parsing + TMDB. No paid AI.
+
+const TMDB_KEY = process.env.TMDB_API_KEY;
+const TMDB = 'https://api.themoviedb.org/3';
+const GENRE_MAP = { 28: 'Action', 18: 'Drama', 35: 'Comedy', 27: 'Horror', 878: 'Sci-Fi', 10749: 'Romance', 53: 'Thriller', 16: 'Animation', 99: 'Documentary', 80: 'Crime', 14: 'Fantasy', 9648: 'Mystery', 10752: 'War', 37: 'Western', 12: 'Adventure', 10751: 'Family', 36: 'History', 10759: 'Action', 10765: 'Sci-Fi', 10768: 'War', 10762: 'Kids', 10764: 'Reality' };
+const IDS = { Action: { movie: 28, tv: 10759 }, Adventure: { movie: 12, tv: 10759 }, Drama: { movie: 18, tv: 18 }, Comedy: { movie: 35, tv: 35 }, Horror: { movie: 27, tv: 9648 }, 'Sci-Fi': { movie: 878, tv: 10765 }, Romance: { movie: 10749, tv: 18 }, Thriller: { movie: 53, tv: 80 }, Animation: { movie: 16, tv: 16 }, Documentary: { movie: 99, tv: 99 }, Crime: { movie: 80, tv: 80 }, Fantasy: { movie: 14, tv: 10765 }, Mystery: { movie: 9648, tv: 9648 }, War: { movie: 10752, tv: 10768 }, Western: { movie: 37, tv: 37 }, Family: { movie: 10751, tv: 10751 }, History: { movie: 36, tv: 18 } };
+const ACCENTS = ['#F5A623', '#818CF8', '#2DD4BF', '#FF6B8A', '#A3E635', '#B07FEF', '#38BDF8', '#FDBA74', '#E87AAA', '#50C8D4', '#E8C84A', '#7C9CFF', '#86EFAC', '#F0ABFC', '#FF7A2F', '#7BC8FF', '#5EEAD4'];
+const PROVIDER_NAMES = { 8: 'Netflix', 9: 'Prime Video', 337: 'Disney+', 350: 'Apple TV+', 1899: 'Max', 15: 'Hulu', 531: 'Paramount+', 386: 'Peacock', 283: 'Crunchyroll' };
+
+const tmdb = (path, params = {}) => {
+  const q = new URLSearchParams({ api_key: TMDB_KEY, ...params });
+  return fetch(`${TMDB}${path}?${q}`, { next: { revalidate: 3600 } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+};
+const today = () => new Date().toISOString().slice(0, 10);
+const trim = (t, n = 28) => { const w = String(t || '').trim().split(/\s+/); return w.length <= n ? w.join(' ') : `${w.slice(0, n).join(' ')}…`; };
+const fmtRt = (m) => (m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`);
+
+function format(m, i, type) {
+  const isTV = type ? type === 'tv' : !m.title;
+  const rd = m.release_date || m.first_air_date || '';
+  const genreIds = m.genre_ids || (m.genres || []).map((g) => g.id);
+  return {
+    id: m.id, title: m.title || m.name || 'Untitled', year: rd.split('-')[0],
+    rating: m.vote_average ? m.vote_average.toFixed(1) : 'N/A',
+    votes: m.vote_count >= 1000 ? `${(m.vote_count / 1000).toFixed(0)}K` : String(m.vote_count || 0),
+    genre: genreIds.map((g) => GENRE_MAP[g]).filter(Boolean).slice(0, 2), genreIds,
+    overview: trim(m.overview), backdrop: m.backdrop_path ? `https://image.tmdb.org/t/p/original${m.backdrop_path}` : null,
+    poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+    accent: ACCENTS[(m.id + i) % ACCENTS.length], gradient: '', isTV, mediaType: isTV ? 'tv' : 'movie', certification: '',
+    releaseDate: rd || null, isUpcoming: !!rd && rd > today(),
+  };
+}
+
+async function watchedIds(userId) {
+  if (!userId) return new Set();
+  const rows = await fetch(`${SUPABASE_URL}/rest/v1/watchlist?user_id=eq.${encodeURIComponent(userId)}&watched=eq.true&select=movie_id&limit=2000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' }).then((r) => r.json()).catch(() => []);
+  return new Set((Array.isArray(rows) ? rows : []).map((r) => r.movie_id));
+}
+
+export async function GET(req) {
+  if (!TMDB_KEY) return Response.json({ error: 'Search is not configured' }, { status: 500 });
+  const { searchParams } = new URL(req.url);
+  const q = (searchParams.get('q') || '').trim();
+  if (!q) return Response.json({ understood: false, chips: [], movies: [] });
+  let userId = null; try { userId = auth().userId; } catch {}
+  const p = parseAsk(q);
+  const seen = await watchedIds(userId);
+
+  // 1) "like X": find X first
+  let base = null, baseType = p.type;
+  if (p.likeTitle) {
+    const r = await tmdb('/search/multi', { query: p.likeTitle, include_adult: 'false' });
+    base = (r?.results || []).filter((x) => x.media_type === 'movie' || x.media_type === 'tv').sort((a, b) => (b.popularity || 0) - (a.popularity || 0))[0] || null;
+    if (base) {
+      baseType = base.media_type;
+      if (!/\b(series|show|tv|movie|film)\b/i.test(q)) p.type = baseType;
+      const d = await tmdb(`/${baseType}/${base.id}`);
+      const rt = d?.runtime || d?.episode_run_time?.[0];
+      if (p.shorter && rt) p.maxRuntime = Math.max(80, rt - 20);
+      base.title = base.title || base.name;
+    }
+  }
+
+  // Nothing recognised and not a "like": treat it as a title search
+  if (!p.understood && !base) {
+    const r = await tmdb('/search/multi', { query: q, include_adult: 'false' });
+    const hits = (r?.results || []).filter((x) => (x.media_type === 'movie' || x.media_type === 'tv') && x.poster_path).slice(0, 20);
+    if (hits.length) {
+      return Response.json({ understood: false, mode: 'title', chips: [`“${q.slice(0, 40)}”`], movies: hits.map((m, i) => ({ ...format(m, i, m.media_type), why: 'Matches your search' })) });
+    }
+  }
+
+  const type = p.type === 'tv' ? 'tv' : 'movie';
+  const gid = (names) => [...new Set(names.map((n) => IDS[n]?.[type]).filter(Boolean))];
+  const dateKey = type === 'tv' ? 'first_air_date' : 'primary_release_date';
+  const params = { include_adult: 'false', language: 'en-US', page: '1' };
+  const g = gid(p.genres);
+  if (g.length) params.with_genres = g.join(p.anyGenre ? '|' : ',');
+  const ng = gid(p.without);
+  if (ng.length) params.without_genres = ng.join(',');
+  if (p.safe) { params.without_genres = [...new Set([...(params.without_genres ? params.without_genres.split(',') : []), type === 'tv' ? '' : '27'])].filter(Boolean).join(','); if (type === 'movie') { params.certification_country = 'US'; params['certification.lte'] = 'PG-13'; } }
+  if (p.keywords.length) params.with_keywords = p.keywords.join('|');
+  if (p.yearFrom) params[`${dateKey}.gte`] = `${p.yearFrom}-01-01`;
+  if (p.yearTo) params[`${dateKey}.lte`] = `${p.yearTo}-12-31`;
+  else params[`${dateKey}.lte`] = today();
+  if (p.maxRuntime) params['with_runtime.lte'] = String(p.maxRuntime);
+  if (p.minRuntime) params['with_runtime.gte'] = String(p.minRuntime);
+  if (p.language) params.with_original_language = p.language;
+  if (p.region) params.with_origin_country = p.region;
+  if (p.providers.length) { params.with_watch_providers = p.providers.join('|'); params.watch_region = 'US'; }
+  if (p.sort === 'top') { params.sort_by = 'vote_average.desc'; params['vote_count.gte'] = '800'; }
+  else if (p.sort === 'hidden') { params.sort_by = 'vote_average.desc'; params['vote_count.gte'] = '60'; params['vote_count.lte'] = '1500'; params['vote_average.gte'] = '7'; }
+  else if (p.sort === 'new') { params.sort_by = 'popularity.desc'; params['vote_count.gte'] = '20'; }
+  else { params.sort_by = 'popularity.desc'; params['vote_count.gte'] = '120'; }
+
+  let pool = [];
+  if (base) {
+    // Titles like X: TMDB recommendations, then keep the ones that also fit the rest of the request
+    const [r1, r2] = await Promise.all([tmdb(`/${baseType}/${base.id}/recommendations`, { page: '1' }), tmdb(`/${baseType}/${base.id}/recommendations`, { page: '2' })]);
+    const recs = [...(r1?.results || []), ...(r2?.results || [])];
+    const hasFilters = g.length || ng.length || p.keywords.length || p.yearFrom || p.yearTo || p.maxRuntime || p.minRuntime || p.language || p.providers.length || p.safe;
+    if (!hasFilters) pool = recs.map((m) => ({ m, why: `Like ${base.title}` }));
+    else {
+      // Use X's genres as the backbone, plus the extra filters; favour titles TMDB also recommends
+      const bd = await tmdb(`/${baseType}/${base.id}`);
+      const baseG = (bd?.genres || []).map((x) => x.id).slice(0, 2);
+      const dp = { ...params };
+      if (!dp.with_genres && baseG.length && baseType === type) dp.with_genres = baseG.join(',');
+      const [d1, d2] = await Promise.all([tmdb(`/discover/${type}`, dp), tmdb(`/discover/${type}`, { ...dp, page: '2' })]);
+      const recIds = new Set(recs.map((m) => m.id));
+      const found = [...(d1?.results || []), ...(d2?.results || [])];
+      pool = found.sort((a, b) => (recIds.has(b.id) ? 1 : 0) - (recIds.has(a.id) ? 1 : 0)).map((m) => ({ m, why: recIds.has(m.id) ? `Like ${base.title}` : `Same feel as ${base.title}` }));
+    }
+    pool = pool.filter(({ m }) => m.id !== base.id);
+  } else {
+    const [d1, d2] = await Promise.all([tmdb(`/discover/${type}`, params), tmdb(`/discover/${type}`, { ...params, page: '2' })]);
+    pool = [...(d1?.results || []), ...(d2?.results || [])].map((m) => ({ m, why: '' }));
+    // Too strict? relax the softest filters once
+    if (pool.length < 6 && (params.with_keywords || params['with_runtime.lte'])) {
+      const loose = { ...params }; delete loose.with_keywords; if (p.keywords.length && !g.length) delete loose.with_genres; loose['vote_count.gte'] = '30';
+      const d3 = await tmdb(`/discover/${type}`, loose);
+      pool = [...pool, ...(d3?.results || []).map((m) => ({ m, why: '' }))];
+    }
+  }
+
+  // Build a short "why it fits" line from what they asked for
+  const facets = p.chips.filter((c) => !/^Like /.test(c));
+  const out = [];
+  const ids = new Set();
+  for (const { m, why } of pool) {
+    if (!m.poster_path || ids.has(m.id) || seen.has(m.id)) continue;
+    ids.add(m.id);
+    const item = format(m, out.length, type === 'tv' || m.media_type === 'tv' || (!m.title && m.name) ? 'tv' : 'movie');
+    const bits = [why, ...facets.filter((f) => !/^(Series|Recent|Classic|Highly rated|Popular)$/.test(f)).slice(0, 3)].filter(Boolean);
+    if (p.providers.length === 1) bits.push(`On ${PROVIDER_NAMES[p.providers[0]] || 'your service'}`);
+    item.why = [...new Set(bits)].slice(0, 3).join(' · ') || `${item.genre.join(' · ')}${item.year ? ` · ${item.year}` : ''}`;
+    out.push(item);
+    if (out.length >= 24) break;
+  }
+  // Fill in the runtime for the top few when length mattered
+  if ((p.maxRuntime || p.minRuntime) && out.length) {
+    await Promise.all(out.slice(0, 10).map(async (it) => {
+      const d = await tmdb(`/${it.mediaType}/${it.id}`);
+      const rt = d?.runtime || d?.episode_run_time?.[0];
+      if (rt) it.why = `${it.why}${it.why ? ' · ' : ''}${fmtRt(rt)}`;
+    }));
+  }
+
+  return Response.json({ understood: p.understood || !!base, chips: p.chips, base: base ? { id: base.id, title: base.title, type: baseType } : null, movies: out });
+}

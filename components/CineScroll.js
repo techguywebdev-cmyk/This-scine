@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
+import AskSheet, { AskButton } from './cine/Ask';
 import Splash, { TsMark } from './cine/Splash';
 import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
@@ -34,7 +35,7 @@ function AuthGate({onClose,accent}){
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
   const{openSignIn}=useClerk();
-  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);const[booting,setBooting]=useState(true);const[remindFor,setRemindFor]=useState(null);const endBoot=useCallback(()=>setBooting(false),[]);
+  const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);const[booting,setBooting]=useState(true);const[remindFor,setRemindFor]=useState(null);const[showAsk,setShowAsk]=useState(false);const endBoot=useCallback(()=>setBooting(false),[]);
   const[showTonightNudge,setShowTonightNudge]=useState(false);const[feedToast,setFeedToast]=useState(null);
   const containerRef=useRef(null);const pageRef=useRef(1);const loadingMoreRef=useRef(false);const profileLoadedRef=useRef(false);
 
@@ -427,6 +428,7 @@ export default function CineScroll(){
           <span aria-label="Thiscene" style={{fontFamily:T.serif,fontSize:21,fontWeight:800,letterSpacing:'-0.03em',lineHeight:1,color:'#fff',display:'inline-flex',alignItems:'baseline'}}>thi<span style={{color:accent,transition:'color .4s ease'}}>scene</span><span aria-hidden="true" style={{display:'inline-block',width:'0.17em',height:'0.17em',marginLeft:'0.07em',borderRadius:'50%',background:accent,boxShadow:`0 0 8px ${accent}99`,transition:'background .4s ease, box-shadow .4s ease'}}/></span>
         </div>
         <div style={{display:'flex',gap:8,pointerEvents:'all',alignItems:'center'}}>
+          <AskButton onClick={()=>setShowAsk(true)}/>
           <button onClick={()=>{if(!isSignedIn){setShowAuth(true);return;}setShowFriends(true);setFriendsNotifCount(0);}} style={{position:'relative',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
             <SvgIcon name="friends" size={18} color="rgba(255,255,255,0.75)"/>
             {friendsNotifCount>0&&(
@@ -596,6 +598,7 @@ export default function CineScroll(){
         </div>
       )}
       {showFriends&&<FriendsScreen onClose={()=>setShowFriends(false)} accent={accent} onWatchTrailer={setTrailerMovie} onAddToWatchlist={handleSave}/>}
+      {showAsk&&<AskSheet accent={accent} hidden={!!trailerMovie} onClose={()=>setShowAsk(false)} onOpen={(m)=>setTrailerMovie(m)} onSave={(m)=>{if(!isSignedIn){setShowAuth(true);return;}handleSave(m);}} savedIds={watchlistIds}/>}
       {trailerMovie&&<InlinePlayer movie={trailerMovie} onClose={()=>setTrailerMovie(null)} accent={trailerMovie.accent||accent} onSave={handleSave} isSaved={watchlistIds.has(trailerMovie.id)} initialTab={trailerMovie.initialTab} highlightCommentId={trailerMovie.highlightCommentId}/>}
 
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
