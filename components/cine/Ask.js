@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { GLASS, T, ambient, track } from './shared';
+import { T, ambient, track } from './shared';
 
 // "Ask Thiscene": describe what you feel like watching (type or speak) → a short list that fits.
 // Free: the browser's own speech recognition + our sentence parser on the server.
@@ -22,8 +22,8 @@ const Spark = ({ size = 18, color = '#fff' }) => (
 
 export function AskButton({ onClick }) {
   return (
-    <button onClick={onClick} aria-label="Ask Thiscene — describe what you want to watch" style={{ ...GLASS, borderRadius: 12, width: 38, height: 38, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Spark size={17} color="rgba(255,255,255,0.95)" />
+    <button onClick={onClick} aria-label="Ask Thiscene — describe what you want to watch" style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, width: 38, height: 38, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}>
+      <Spark size={17} color="rgba(255,255,255,0.85)" />
     </button>
   );
 }

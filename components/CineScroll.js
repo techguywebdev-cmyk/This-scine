@@ -5,7 +5,7 @@ import ImportSheet from './ImportSheet';
 import AskSheet, { AskButton } from './cine/Ask';
 import Splash, { TsMark } from './cine/Splash';
 import AuthScreen from './cine/AuthScreen';
-import { GLASS, glassOn, RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
@@ -404,8 +404,8 @@ export default function CineScroll(){
         </div>
         <div style={{display:'flex',gap:8,pointerEvents:'all',alignItems:'center'}}>
           <AskButton onClick={()=>setShowAsk(true)}/>
-          <button onClick={()=>{if(!isSignedIn){setShowAuth(true);return;}setShowFriends(true);setFriendsNotifCount(0);}} style={{position:'relative',...GLASS,borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <SvgIcon name="friends" size={18} color="rgba(255,255,255,0.9)"/>
+          <button onClick={()=>{if(!isSignedIn){setShowAuth(true);return;}setShowFriends(true);setFriendsNotifCount(0);}} style={{position:'relative',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
+            <SvgIcon name="friends" size={18} color="rgba(255,255,255,0.75)"/>
             {friendsNotifCount>0&&(
               <span style={{
                 position:'absolute',top:-4,right:-4,minWidth:16,height:16,borderRadius:8,
@@ -417,11 +417,11 @@ export default function CineScroll(){
               </span>
             )}
           </button>
-          <button onClick={()=>setShowLists(true)} aria-label="Watchlist" style={{...GLASS,borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <SvgIcon name="folder" size={17} color="rgba(255,255,255,0.9)"/>
+          <button onClick={()=>setShowLists(true)} aria-label="Watchlist" style={{background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}}>
+            <SvgIcon name="folder" size={17} color="rgba(255,255,255,0.75)"/>
           </button>
-          <button onClick={()=>setShowFilter(p=>!p)} style={{...(showFilter?glassOn(accent):GLASS),borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.2s ease'}}>
-            <SvgIcon name="sliders" size={17} color="rgba(255,255,255,0.9)"/>
+          <button onClick={()=>setShowFilter(p=>!p)} style={{background:showFilter?`${accent}18`:'rgba(0,0,0,0.55)',border:`1px solid ${showFilter?accent+'44':'rgba(255,255,255,0.1)'}`,borderRadius:12,width:38,height:38,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)',transition:'all 0.2s ease'}}>
+            <SvgIcon name="sliders" size={17} color={showFilter?accent:'rgba(255,255,255,0.7)'}/>
           </button>
           {isSignedIn?(
             <button onClick={()=>setShowProfile(true)} aria-label="Profile" style={{width:36,height:36,padding:0,background:'none',border:'none',cursor:'pointer',flexShrink:0,position:'relative'}}>
@@ -487,13 +487,13 @@ export default function CineScroll(){
       {(activeGenre||activeProvider||(activeMood&&activeMood!=='Trending'))&&!showFilter&&(
         <div style={{position:'fixed',top:58,left:16,zIndex:38,display:'flex',gap:6,flexWrap:'wrap',maxWidth:'70%'}}>
           {activeMood&&activeMood!=='Trending'&&(
-            <div onClick={()=>setActiveMood('Trending')} style={{...glassOn(accent),borderRadius:20,padding:'4px 11px',fontSize:10.5,color:'#fff',fontWeight:700,cursor:'pointer'}}>{activeMood} ×</div>
+            <div onClick={()=>setActiveMood('Trending')} style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700,cursor:'pointer'}}>{activeMood} ×</div>
           )}
           {activeGenre&&(
-            <div onClick={()=>setActiveGenre('')} style={{...glassOn(accent),borderRadius:20,padding:'4px 11px',fontSize:10.5,color:'#fff',fontWeight:700,cursor:'pointer'}}>{activeGenreLabel} ×</div>
+            <div onClick={()=>setActiveGenre('')} style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700,cursor:'pointer'}}>{activeGenreLabel} ×</div>
           )}
           {activeProvider&&(
-            <div onClick={()=>setActiveProvider('')} style={{...glassOn(accent),borderRadius:20,padding:'4px 11px',fontSize:10.5,color:'#fff',fontWeight:700,cursor:'pointer'}}>{activeProvider} ×</div>
+            <div onClick={()=>setActiveProvider('')} style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1px solid ${accent}33`,borderRadius:20,padding:'3px 10px',fontSize:10,color:accent,fontWeight:700,cursor:'pointer'}}>{activeProvider} ×</div>
           )}
         </div>
       )}

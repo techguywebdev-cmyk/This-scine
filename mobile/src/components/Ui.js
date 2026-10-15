@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { F, T, label } from '../lib/theme';
 import { useAccent } from '../lib/accent';
@@ -23,9 +22,8 @@ export const SectionLabel = ({ children, right, accent: given, style }) => {
 };
 
 export const GlassButton = ({ icon, ionicon, onPress, size = 38, label: a11y }) => (
-  <Pressable onPress={onPress} accessibilityLabel={a11y} hitSlop={8} style={({ pressed }) => [{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', opacity: pressed ? 0.7 : 1 }]}>
-    <BlurView intensity={30} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(14,14,22,0.22)' }]}>
-      <LinearGradient pointerEvents="none" colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 0.7, y: 1 }} style={StyleSheet.absoluteFill} />
+  <Pressable onPress={onPress} accessibilityLabel={a11y} hitSlop={8} style={({ pressed }) => [{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', opacity: pressed ? 0.7 : 1 }]}>
+    <BlurView intensity={30} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' }]}>
       {ionicon ? <Ionicons name={ionicon} size={size * 0.5} color="#fff" /> : <Feather name={icon} size={size * 0.48} color="#fff" />}
     </BlurView>
   </Pressable>
