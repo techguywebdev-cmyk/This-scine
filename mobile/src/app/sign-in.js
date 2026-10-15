@@ -11,7 +11,7 @@ import { useAuth, useSSO } from '@clerk/expo';
 import { useSignIn, useSignUp } from '@clerk/expo/legacy';
 import { AuthView } from '@clerk/expo/native';
 import Marquee from '../components/PosterMarquee';
-import { CyclingGlow, usePosters } from '../components/StatusScreen';
+import { CyclingGlow, GlassCard, usePosters } from '../components/StatusScreen';
 import { TsLoader, DOTS } from '../components/Brand';
 import { API_URL } from '../lib/config';
 import { F, T } from '../lib/theme';
@@ -274,10 +274,8 @@ export default function SignIn() {
     <View style={{ flex: 1, backgroundColor: '#06060B' }}>
       <CyclingGlow size={big} cx={0} cy={0} />
       <CyclingGlow size={big} cx={width} cy={height} strength={0.7} />
-      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * (step === 'start' ? 0.62 : 0.4) }}>
-        <Marquee posters={posters} rows={4} size={88} />
-      </View>
-      <LinearGradient pointerEvents="none" colors={['transparent', 'rgba(6,6,11,0.85)', '#06060B']} locations={[0.2, step === 'start' ? 0.5 : 0.36, step === 'start' ? 0.62 : 0.46]} style={StyleSheet.absoluteFill} />
+      <Marquee posters={posters} rows={8} size={88} fade={false} />
+      <LinearGradient pointerEvents="none" colors={['rgba(6,6,11,0.1)', 'rgba(6,6,11,0.35)', 'rgba(6,6,11,0.75)']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
@@ -285,10 +283,11 @@ export default function SignIn() {
             <Feather name={step === 'start' ? 'x' : 'arrow-left'} size={19} color="#fff" />
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingBottom: insets.bottom + 24 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Animated.View style={slide}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: insets.top + 64, paddingBottom: insets.bottom + 14 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <GlassCard accent={accent}>
+          <Animated.View style={[slide, { paddingHorizontal: 22, paddingTop: 28, paddingBottom: 22 }]}>
             {step === 'start' ? <View style={{ alignItems: 'flex-start', marginBottom: 18 }}><TsLoader size={46} /></View> : null}
-            <Text style={[styles.title, step === 'start' && { fontSize: 38, lineHeight: 41 }]}>{title}</Text>
+            <Text style={[styles.title, step === 'start' && { fontSize: 34, lineHeight: 37 }]}>{title}</Text>
             {subtitle ? <Text style={styles.sub}>{subtitle}</Text> : null}
 
             <View style={{ gap: 12, marginTop: 26 }}>
@@ -352,6 +351,7 @@ export default function SignIn() {
               </Text>
             ) : null}
           </Animated.View>
+          </GlassCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -360,21 +360,21 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
   top: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 5, paddingHorizontal: 18, flexDirection: 'row' },
-  topBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  topBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
   title: { fontFamily: F.displayHeavy, fontSize: 30, lineHeight: 34, letterSpacing: -0.8, color: '#fff' },
   sub: { fontFamily: F.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.65)', marginTop: 10 },
-  field: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 56, borderRadius: 18, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  field: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 56, borderRadius: 18, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
   input: { flex: 1, color: '#fff', fontFamily: F.body, fontSize: 16, paddingVertical: 0 },
   btn: { height: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   btnPrimary: { backgroundColor: '#fff' },
-  btnGlass: { backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  btnGlass: { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   btnText: { fontFamily: F.bold, fontSize: 16 },
   link: { fontFamily: F.semibold, fontSize: 14, color: 'rgba(255,255,255,0.75)', textDecorationLine: 'underline' },
   err: { fontFamily: F.body, fontSize: 13.5, color: '#FF8FA3', marginTop: 14, textAlign: 'center', lineHeight: 19 },
   small: { fontFamily: F.body, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
   terms: { fontFamily: F.body, fontSize: 12, lineHeight: 18, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 22 },
   termsLink: { color: 'rgba(255,255,255,0.8)', textDecorationLine: 'underline' },
-  cell: { width: 48, height: 58, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.16)' },
+  cell: { width: 44, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.16)' },
   cellText: { fontFamily: F.displayHeavy, fontSize: 24, color: '#fff' },
   meter: { flexDirection: 'row', gap: 6, paddingHorizontal: 4 },
   meterBar: { flex: 1, height: 4, borderRadius: 2 },

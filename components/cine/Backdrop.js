@@ -66,13 +66,15 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#06060B', color: '#fff', fontFamily: "var(--font-sans), system-ui, sans-serif", display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
       <style>{BACKDROP_CSS}</style>
-      <Backdrop height="48%" rows={3} />
-      <div style={{ position: 'relative', width: '100%', maxWidth: 440, padding: '0 28px calc(40px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <Backdrop height="100%" rows={7} />
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.1) 0%, rgba(6,6,11,0.35) 55%, rgba(6,6,11,0.75) 100%)' }} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 460, padding: '0 14px calc(14px + env(safe-area-inset-bottom))' }}>
+      <div style={{ position: 'relative', borderRadius: 30, padding: '34px 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', background: 'linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(10,10,18,0.35))', backdropFilter: 'blur(26px) saturate(150%)', WebkitBackdropFilter: 'blur(26px) saturate(150%)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)', animation: 'bdUp .45s ease both' }}>
         <div style={{ position: 'relative', width: 80, height: 80, marginBottom: 22, animation: 'bdUp .5s ease both' }}>
           {[0, 1.1].map((d) => <span key={d} className="bd-anim" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: `bdRing 2.2s ease-out ${d}s infinite` }} />)}
-          <div className="bd-anim" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'bdFloat 3.2s ease-in-out infinite' }}>{icon}</div>
+          <div className="bd-anim" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'bdFloat 3.2s ease-in-out infinite' }}>{icon}</div>
         </div>
-        <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: 32, lineHeight: 1.08, fontWeight: 800, letterSpacing: '-0.03em', animation: 'bdUp .55s ease .05s both' }}>{title}</h1>
+        <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: 30, lineHeight: 1.08, fontWeight: 800, letterSpacing: '-0.03em', animation: 'bdUp .55s ease .05s both' }}>{title}</h1>
         {body && <p style={{ margin: '12px 0 0', fontSize: 15.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.65)', maxWidth: 360, animation: 'bdUp .55s ease .1s both' }}>{body}</p>}
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, marginTop: 28, animation: 'bdUp .55s ease .15s both' }}>
           {primary && (primary.href
@@ -83,13 +85,14 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
             : <button onClick={secondary.onClick} style={btn(false)}>{secondary.label}</button>)}
         </div>
       </div>
+      </div>
     </div>
   );
 }
 
 const btn = (primary) => ({
   display: 'flex', alignItems: 'center', justifyContent: 'center', height: 54, borderRadius: 27, fontSize: 16, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'none',
-  ...(primary ? { background: '#fff', color: '#06060B', border: 'none' } : { background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid rgba(255,255,255,0.16)' }),
+  ...(primary ? { background: '#fff', color: '#06060B', border: 'none' } : { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)' }),
 });
 
 export const Icon = ({ d, size = 28 }) => (

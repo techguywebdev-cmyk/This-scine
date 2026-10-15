@@ -38,7 +38,7 @@ const G = () => (
 function Field({ icon, right, ...p }) {
   const [f, setF] = useState(false);
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 10, height: 56, borderRadius: 18, padding: '0 16px', background: f ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)', border: `1px solid ${f ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.16)'}`, transition: 'all .2s ease', color: 'rgba(255,255,255,0.55)' }}>
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, height: 56, borderRadius: 18, padding: '0 16px', background: f ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: `1px solid ${f ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.16)'}`, transition: 'all .2s ease', color: 'rgba(255,255,255,0.55)' }}>
       {icon}
       <input {...p} onFocus={() => setF(true)} onBlur={() => setF(false)} style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: 16, fontFamily: 'inherit' }} />
       {right}
@@ -49,7 +49,7 @@ function Field({ icon, right, ...p }) {
 function Btn({ children, onClick, busy, glass, disabled, type = 'button' }) {
   return (
     <button type={type} onClick={onClick} disabled={busy || disabled} className="auth-btn"
-      style={{ height: 56, borderRadius: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 16, fontWeight: 700, fontFamily: 'inherit', cursor: busy || disabled ? 'default' : 'pointer', width: '100%', opacity: disabled && !busy ? 0.45 : 1, ...(glass ? { background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)' } : { background: '#fff', color: '#06060B', border: 'none' }) }}>
+      style={{ height: 56, borderRadius: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 16, fontWeight: 700, fontFamily: 'inherit', cursor: busy || disabled ? 'default' : 'pointer', width: '100%', opacity: disabled && !busy ? 0.45 : 1, ...(glass ? { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)' } : { background: '#fff', color: '#06060B', border: 'none' }) }}>
       {busy ? <span style={{ width: 20, height: 20, borderRadius: '50%', border: `2.5px solid ${glass ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)'}`, borderTopColor: glass ? '#fff' : '#06060B', animation: 'bdSpin .8s linear infinite' }} /> : children}
     </button>
   );
@@ -207,16 +207,18 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
   return (
     <div role="dialog" aria-label="Sign in to Thiscene" style={{ position: 'fixed', inset: 0, zIndex: 900, background: '#06060B', color: '#fff', fontFamily: "var(--font-sans), system-ui, sans-serif", display: 'flex', justifyContent: 'center', overflow: 'hidden', animation: page ? 'none' : 'authIn .3s ease' }}>
       <style>{BACKDROP_CSS + '@keyframes authIn{from{opacity:0}to{opacity:1}}@keyframes authBlink{50%{opacity:0}}.auth-btn{transition:transform .12s ease}.auth-btn:active{transform:scale(.97)}'}</style>
-      <Backdrop height={step === 'start' ? '64%' : '42%'} rows={4} />
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 20%, rgba(6,6,11,0.85) ${step === 'start' ? 48 : 34}%, #06060B ${step === 'start' ? 62 : 46}%)`, transition: 'background .4s ease', pointerEvents: 'none' }} />
-      <button onClick={back} aria-label={step === 'start' ? 'Close' : 'Back'} style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16, zIndex: 2, width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.16)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Backdrop height="100%" rows={7} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.1) 0%, rgba(6,6,11,0.35) 55%, rgba(6,6,11,0.75) 100%)', pointerEvents: 'none' }} />
+      <button onClick={back} aria-label={step === 'start' ? 'Close' : 'Back'} style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16, zIndex: 2, width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.16)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {ic(step === 'start' ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M19 12H5M12 19l-7-7 7-7" />, 19)}
       </button>
 
-      <div style={{ position: 'relative', width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 24px calc(28px + env(safe-area-inset-bottom))', overflowY: 'auto' }}>
-        <div key={k} style={{ animation: 'bdUp .4s cubic-bezier(.2,.8,.2,1) both' }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '72px 14px calc(14px + env(safe-area-inset-bottom))', overflowY: 'auto' }}>
+        <div className="auth-glass" style={{ position: 'relative', borderRadius: 30, padding: '28px 22px 22px', background: 'linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(10,10,18,0.35))', backdropFilter: 'blur(26px) saturate(150%)', WebkitBackdropFilter: 'blur(26px) saturate(150%)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: `0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px ${accent}14`, transition: 'box-shadow 1s ease', animation: 'bdUp .45s cubic-bezier(.2,.8,.2,1) both' }}>
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 30, background: `radial-gradient(120% 70% at 0% 0%, ${accent}26, transparent 60%)`, transition: 'background 1.2s ease', pointerEvents: 'none' }} />
+        <div key={k} style={{ position: 'relative', animation: 'bdUp .4s cubic-bezier(.2,.8,.2,1) both' }}>
           {step === 'start' && <div style={{ marginBottom: 18 }}><TsMark size={52} /></div>}
-          <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: step === 'start' ? 40 : 31, lineHeight: 1.06, fontWeight: 800, letterSpacing: '-0.035em' }}>{title}</h1>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: step === 'start' ? 36 : 29, lineHeight: 1.06, fontWeight: 800, letterSpacing: '-0.035em' }}>{title}</h1>
           {subtitle && <p style={{ margin: '10px 0 0', fontSize: 15.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.65)' }}>{subtitle}</p>}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 26 }}>
@@ -275,6 +277,7 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
           {step === 'start' && clerk?.openSignIn && (
             <button type="button" onClick={() => { clerk.openSignIn(); onClose?.(); }} style={{ ...link, display: 'block', margin: '10px auto 0', fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Having trouble? Use the standard sign-in</button>
           )}
+        </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Marquee from './PosterMarquee';
@@ -32,6 +33,19 @@ export function CyclingGlow({ size, cx, cy, strength = 1 }) {
   ));
 }
 
+// Frosted-glass card used by the full-screen moments (sign-in, errors, not found)
+export function GlassCard({ children, accent, style }) {
+  return (
+    <View style={[{ borderRadius: 30, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }, style]}>
+      <BlurView intensity={45} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.03)', 'rgba(10,10,18,0.35)']} locations={[0, 0.45, 1]} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} style={StyleSheet.absoluteFill} />
+      {accent ? <LinearGradient colors={[`${accent}2e`, 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 0.7, y: 0.6 }} style={StyleSheet.absoluteFill} /> : null}
+      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.14)' }} />
+      {children}
+    </View>
+  );
+}
+
 // Full-screen state (can't connect, something broke, offline…) in the app's own style:
 // drifting posters, colour glow, a pulsing icon, and clear actions.
 export default function StatusScreen({ icon = 'wifi-off', title, body, primary, secondary, busy, children }) {
@@ -58,12 +72,12 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
     <View style={styles.root}>
       <CyclingGlow size={big} cx={0} cy={0} />
       <CyclingGlow size={big} cx={width} cy={height} strength={0.7} />
-      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * 0.42 }}>
-        <Marquee posters={posters} rows={3} size={84} />
-      </View>
-      <LinearGradient pointerEvents="none" colors={['transparent', '#06060B']} locations={[0.25, 0.48]} style={StyleSheet.absoluteFill} />
+      <Marquee posters={posters} rows={8} size={84} fade={false} />
+      <LinearGradient pointerEvents="none" colors={['rgba(6,6,11,0.1)', 'rgba(6,6,11,0.35)', 'rgba(6,6,11,0.75)']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
 
-      <View style={[styles.body, { paddingBottom: insets.bottom + 34 }]}>
+      <View style={[styles.body, { paddingBottom: insets.bottom + 14 }]}>
+      <GlassCard style={{ width: '100%' }}>
+      <View style={{ alignItems: 'center', paddingHorizontal: 22, paddingTop: 32, paddingBottom: 22 }}>
         <Animated.View style={[styles.iconWrap, up(10)]}>
           {[0, 0.5].map((off) => {
             const p = Animated.modulo(Animated.add(ring, off), 1);
@@ -89,20 +103,22 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
           ) : null}
         </Animated.View>
       </View>
+      </GlassCard>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#06060B', overflow: 'hidden' },
-  body: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 28 },
+  body: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 14 },
   iconWrap: { width: 76, height: 76, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
   ring: { position: 'absolute', width: 76, height: 76, borderRadius: 38, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   icon: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
-  title: { fontFamily: F.displayHeavy, fontSize: 28, lineHeight: 32, letterSpacing: -0.6, color: '#fff', textAlign: 'center' },
+  title: { fontFamily: F.displayHeavy, fontSize: 27, lineHeight: 32, letterSpacing: -0.6, color: '#fff', textAlign: 'center' },
   text: { fontFamily: F.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginTop: 10, maxWidth: 340 },
   primary: { height: 54, borderRadius: 27, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   primaryText: { fontFamily: F.bold, fontSize: 16, color: '#06060B' },
-  secondary: { height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  secondary: { height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
   secondaryText: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
 });
