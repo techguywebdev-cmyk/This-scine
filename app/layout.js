@@ -20,7 +20,7 @@ export const viewport = { themeColor: '#06060B' };
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-in">
       <html lang="en" className={`${inter.variable} ${interTight.variable}`}>
         <body>{children}</body>
       </html>

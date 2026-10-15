@@ -29,7 +29,7 @@ export default function PublicProfilePage({ params }) {
   // Mirrors the main app's handleSave so "Add to Watchlist" works identically
   // from a shared profile page, for any signed-in visitor (not just the profile owner).
   const handleSave = useCallback(async (movie) => {
-    if (!isSignedIn) { openSignIn(); return; }
+    if (!isSignedIn) { window.location.assign(`/sign-in?redirect=${encodeURIComponent(window.location.pathname)}`); return; }
     const already = watchlistIds.has(movie.id);
     if (already) {
       setWatchlistIds(p => { const n = new Set(p); n.delete(movie.id); return n; });
@@ -52,7 +52,7 @@ export default function PublicProfilePage({ params }) {
             <div style={{ fontSize: 13.5, fontWeight: 800, color: '#fff' }}>{ownerName} invited you to Thiscene</div>
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Join to see what you both want to watch</div>
           </div>
-          <button onClick={() => openSignUp ? openSignUp({ redirectUrl: typeof window !== 'undefined' ? window.location.href : '/' }) : openSignIn()} style={{ flexShrink: 0, height: 40, padding: '0 16px', borderRadius: 20, border: 'none', background: '#fff', color: '#07070F', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Join free</button>
+          <button onClick={() => window.location.assign(`/sign-in?redirect=${encodeURIComponent(window.location.pathname)}`)} style={{ flexShrink: 0, height: 40, padding: '0 16px', borderRadius: 20, border: 'none', background: '#fff', color: '#07070F', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Join free</button>
         </div>
       )}
       <UserProfileSheet

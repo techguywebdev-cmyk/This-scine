@@ -4,34 +4,9 @@ import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from './ImportSheet';
 import AskSheet, { AskButton } from './cine/Ask';
 import Splash, { TsMark } from './cine/Splash';
+import AuthScreen from './cine/AuthScreen';
 import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
-// AUTH GATE
-function AuthGate({onClose,accent}){
-  const{openSignIn}=useClerk();
-  return(
-    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.82)',backdropFilter:'blur(20px)',display:'flex',alignItems:'flex-end',justifyContent:'center',animation:'fadeIn 0.2s ease'}}>
-      <div onClick={e=>e.stopPropagation()} style={{position:'relative',width:'100%',background:ambient(accent),borderRadius:'24px 24px 0 0',border:`1px solid ${T.hairline}`,borderBottom:'none',padding:'0 24px 48px',animation:'sheetUp 0.32s cubic-bezier(0.22,1,0.36,1)',overflow:'hidden'}}>
-        <AccentGlow accent={accent} size={200} style={{left:'50%',top:0,transform:'translateX(-50%)'}}/>
-        <div style={{width:32,height:3,borderRadius:2,background:'rgba(255,255,255,0.14)',margin:'14px auto 26px',position:'relative'}}/>
-        <div style={{position:'relative',textAlign:'center',marginBottom:26}}>
-          <div style={{fontFamily:T.serif,fontSize:21,letterSpacing:'-0.02em',fontWeight:700,color:T.text,marginBottom:9}}>Join Thiscene</div>
-          <div style={{fontSize:13,color:T.text2,lineHeight:1.6}}>Sign in to leave reviews, save your watchlist, and discover films with friends.</div>
-        </div>
-        <button onClick={()=>{openSignIn();onClose();}} style={{position:'relative',width:'100%',background:'#fff',border:'none',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:10,fontFamily:'inherit'}}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          <span style={{fontSize:14,fontWeight:700,color:'#1a1a1a'}}>Continue with Google</span>
-        </button>
-        <button onClick={()=>{openSignIn();onClose();}} style={{position:'relative',width:'100%',background:T.surface2,border:`1px solid ${T.hairline}`,borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:12,fontFamily:'inherit'}}>
-          <SvgIcon name="user" size={16} color={T.text2}/>
-          <span style={{fontSize:14,fontWeight:600,color:T.text2}}>Sign in with Email</span>
-        </button>
-        <div style={{position:'relative',textAlign:'center',fontSize:11.5,color:T.text3,lineHeight:1.5,marginTop:14}}>By continuing you agree to our <a href={`/terms?a=${String(accent||'').replace('#','')}`} target="_blank" rel="noopener" style={{color:T.text2}}>Terms</a> and <a href={`/privacy?a=${String(accent||'').replace('#','')}`} target="_blank" rel="noopener" style={{color:T.text2}}>Privacy policy</a>.</div>
-      </div>
-      <style>{`@keyframes sheetUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
-    </div>
-  );
-}
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();
   const{openSignIn}=useClerk();
@@ -103,7 +78,7 @@ export default function CineScroll(){
   const isSignedInRef=useRef(false);isSignedInRef.current=!!isSignedIn;
   const openSignInRef=useRef(null);openSignInRef.current=openSignIn;
   const[watchWith,setWatchWith]=useState(null);
-  useEffect(()=>{const fn=(e)=>{if(!e.detail)return;if(!isSignedInRef.current){openSignInRef.current&&openSignInRef.current();return;}setWatchWith(e.detail);};window.addEventListener('cine:watch-with',fn);return()=>window.removeEventListener('cine:watch-with',fn);},[]);
+  useEffect(()=>{const fn=(e)=>{if(!e.detail)return;if(!isSignedInRef.current){setShowAuth(true);return;}setWatchWith(e.detail);};window.addEventListener('cine:watch-with',fn);return()=>window.removeEventListener('cine:watch-with',fn);},[]);
   // Incoming watch-party invites: checked on load, every 25s while visible, and when you come back to the tab
   const[incoming,setIncoming]=useState(null);
   const dismissInvite=(id)=>{try{const d=JSON.parse(sessionStorage.getItem('cs_party_dismissed')||'[]');sessionStorage.setItem('cs_party_dismissed',JSON.stringify([...d,id].slice(-30)));}catch{}};
@@ -550,7 +525,7 @@ export default function CineScroll(){
       {showImport&&<ImportSheet accent={accent} onClose={()=>setShowImport(false)} onImported={({matched})=>{if(matched)track('import',{matched});}}/>}
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}
-      {showAuth&&<AuthGate onClose={()=>setShowAuth(false)} accent={accent}/>}
+      {showAuth&&<AuthScreen onClose={()=>setShowAuth(false)}/>}
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData} onWatchTrailer={(m)=>{setShowProfile(false);setTrailerMovie(m);}} onDiscover={()=>{setShowProfile(false);setTimeout(()=>setShowFilter(true),50);}}/>}
       {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList}/>}
       {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onFillFromFeed={(l)=>{setTargetFolder({id:l.id,title:l.title});setShowLists(false);setTopLevelList(null);}} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}
