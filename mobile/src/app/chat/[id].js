@@ -9,6 +9,9 @@ import Ambient from '../../components/Ambient';
 import VoiceBubble from '../../components/VoiceBubble';
 import { RecorderBar, useVoiceRecorder } from '../../components/VoiceRecorder';
 import SafetySheet from '../../components/SafetySheet';
+import { AttachTray, GifPicker, MediaBubble } from '../../components/ChatMedia';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Avatar, GlassButton, Poster } from '../../components/Ui';
 import { TsLoader } from '../../components/Brand';
 import { useApi } from '../../lib/api';
@@ -100,6 +103,62 @@ export default function Chat() {
   };
   const rec = useVoiceRecorder({ maxSecs: 120, onDone: sendVoice, onError: setErr });
 
+  // Photos, camera, video, files, GIFs — same message types as the website
+  const [tray, setTray] = useState(null); // null | 'menu' | 'gif'
+  const sendMedia = async ({ uri, name, mime, kind, size }) => {
+    const limit = kind === 'image' ? 8 : 4.4;
+    if (size && size > limit * 1024 * 1024) { setErr(kind === 'video' ? 'Video too large — keep it under about 30 seconds' : `File too large (max ${limit}MB)`); return; }
+    setErr(''); setSending(true); setTray(null);
+    const label = kind === 'video' ? 'Video' : kind === 'image' ? 'Photo' : name || 'File';
+    const temp = { id: `tmp-${Date.now()}`, text: label, from_me: true, created_at: new Date().toISOString(), msg_type: kind, media_url: uri, pending: true };
+    setMsgs((p) => [...(p || []), temp]);
+    try {
+      const form = new FormData();
+      form.append('file', { uri, name: name || `upload-${Date.now()}`, type: mime || 'application/octet-stream' });
+      form.append('kind', kind);
+      const up = await api.request('/api/upload-chat-media', { method: 'POST', body: form });
+      if (!up.url) throw new Error('Upload failed');
+      await api.post('/api/messages', { toUserId: peerId, text: label, msg_type: kind, media_url: up.url });
+      setMsgs((p) => (p || []).filter((m) => m.id !== temp.id));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await load();
+    } catch (e) {
+      setMsgs((p) => (p || []).filter((m) => m.id !== temp.id));
+      setErr(e.message || 'Couldn’t send that');
+    }
+    setSending(false);
+  };
+  const pick = async (what) => {
+    try {
+      if (what === 'gif') { setTray('gif'); return; }
+      if (what === 'file') {
+        const r = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
+        const a = r?.assets?.[0]; if (r.canceled || !a) return;
+        const mime = a.mimeType || '';
+        await sendMedia({ uri: a.uri, name: a.name, mime, size: a.size, kind: mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : 'file' });
+        return;
+      }
+      const video = what === 'video';
+      if (what === 'camera') {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) { setErr('Allow the camera to take a photo'); return; }
+      }
+      const opts = { mediaTypes: video ? ['videos'] : ['images'], quality: 0.7, videoMaxDuration: 30, videoQuality: ImagePicker.UIImagePickerControllerQualityType?.Medium ?? 1, allowsEditing: false };
+      const r = what === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
+      const a = r?.assets?.[0]; if (r.canceled || !a) return;
+      const isVid = a.type === 'video' || video;
+      await sendMedia({ uri: a.uri, name: a.fileName || (isVid ? 'video.mp4' : 'photo.jpg'), mime: a.mimeType || (isVid ? 'video/mp4' : 'image/jpeg'), size: a.fileSize, kind: isVid ? 'video' : 'image' });
+    } catch (e) { setErr(e.message || 'Couldn’t open that'); }
+  };
+  const sendGif = async (g) => {
+    setTray(null); setErr('');
+    const temp = { id: `tmp-${Date.now()}`, text: 'GIF', from_me: true, created_at: new Date().toISOString(), msg_type: 'gif', media_url: g.url, pending: true };
+    setMsgs((p) => [...(p || []), temp]);
+    try { await api.post('/api/messages', { toUserId: peerId, text: 'GIF', msg_type: 'gif', media_url: g.url }); await load(); }
+    catch (e) { setErr(e.message || 'Couldn’t send that GIF'); }
+    setMsgs((p) => (p || []).filter((m) => m.id !== temp.id));
+  };
+
   // newest at the bottom: inverted list wants newest first
   const data = (msgs || []).slice().reverse();
   const accent = '#fff';
@@ -108,6 +167,7 @@ export default function Chat() {
     const mine = m.from_me;
     const ink = mine ? '#07070F' : '#fff';
     if (m.msg_type === 'voice' && m.media_url) return <VoiceBubble src={m.media_url} secs={m.meta?.secs} peaks={m.meta?.peaks} mine={mine} accent="#fff" />;
+    if (['image', 'photo', 'video', 'file'].includes(m.msg_type) && m.media_url) return <MediaBubble m={m} />;
     if ((m.msg_type === 'sticker' || m.msg_type === 'gif') && m.media_url) return <Image source={{ uri: m.media_url }} style={{ width: 150, height: 150 }} contentFit="contain" />;
     if (m.msg_type === 'title' && m.meta) {
       return (
@@ -179,7 +239,7 @@ export default function Chat() {
             const older = data[index + 1];
             const showDay = !older || new Date(older.created_at).toDateString() !== new Date(m.created_at).toDateString();
             const mine = m.from_me;
-            const media = (m.msg_type === 'sticker' || m.msg_type === 'gif') && m.media_url;
+            const media = ['sticker', 'gif', 'image', 'photo', 'video', 'file'].includes(m.msg_type) && m.media_url;
             return (
               <View>
                 {showDay ? <Text style={styles.day}>{dayLabel(m.created_at)}</Text> : null}
@@ -202,9 +262,14 @@ export default function Chat() {
       ) : (
         <View style={[styles.composer, { paddingBottom: insets.bottom + 10 }]}>
           {err ? <Text style={styles.err}>{err}</Text> : null}
+          {tray === 'menu' && !rec.recording ? <AttachTray onPick={pick} /> : null}
+          {tray === 'gif' && !rec.recording ? <GifPicker onSend={sendGif} onClose={() => setTray(null)} /> : null}
           {rec.recording ? <RecorderBar rec={rec} maxSecs={120} /> : (
             <View style={styles.inputRow}>
-              <TextInput value={text} onChangeText={setText} placeholder="Message…" placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={2000} style={styles.input} />
+              <Pressable onPress={() => setTray((t) => (t ? null : 'menu'))} disabled={sending} accessibilityLabel={tray ? 'Close attachments' : 'Add photo, video, file or GIF'} style={[styles.send, styles.mic, tray && { backgroundColor: '#fff' }]}>
+                <Feather name={tray ? 'x' : 'plus'} size={20} color={tray ? '#07070F' : '#fff'} />
+              </Pressable>
+              <TextInput value={text} onFocus={() => tray === 'menu' && setTray(null)} onChangeText={setText} placeholder="Message…" placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={2000} style={styles.input} />
               {text.trim() ? (
                 <Pressable onPress={send} disabled={sending} accessibilityLabel="Send" style={styles.send}>
                   <Feather name="arrow-up" size={18} color="#07070F" />
