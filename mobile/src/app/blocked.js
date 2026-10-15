@@ -23,7 +23,7 @@ export default function Blocked() {
         <GlassButton icon="chevron-left" label="Back" onPress={() => router.back()} />
         <Text style={styles.h1}>Blocked accounts</Text>
         <Text style={styles.sub}>They can’t message you, see your profile, follow you or invite you to watch.</Text>
-        {list === null ? <Spinner /> : list.length === 0 ? <Empty title="You haven’t blocked anyone" /> : list.map((u, i) => (
+        {list === null ? <Spinner /> : list.length === 0 ? <Empty icon="shield" title="You haven’t blocked anyone" /> : list.map((u, i) => (
           <View key={u.user_id} style={[styles.row, i && styles.border]}>
             <Avatar uri={u.avatar_url} name={u.display_name} size={40} />
             <View style={{ flex: 1 }}>

@@ -88,7 +88,7 @@ export default function Friends() {
 
           {!isSignedIn ? (
             <View style={{ paddingTop: 20 }}>
-              <Empty title="See what your friends are watching" sub="Sign in to follow people, see their saves and reviews, and message them about a film." />
+              <Empty icon="users" title="See what your friends are watching" sub="Sign in to follow people, see their saves and reviews, and message them about a film." />
               <Pressable onPress={() => router.push('/sign-in')} style={styles.cta}><Text style={styles.ctaText}>Sign in</Text></Pressable>
             </View>
           ) : tab === 'feed' ? (
@@ -99,7 +99,7 @@ export default function Friends() {
                 <View style={styles.rule} />
 
                 {sections.length === 0 ? (
-                  <Empty title={friends.length ? 'Quiet for now' : 'Your feed fills up when you follow people'} sub={friends.length ? 'When the people you follow save or review something, it shows up here.' : 'Find a few film lovers in Find people.'} />
+                  <Empty icon="coffee" title={friends.length ? 'Quiet for now' : 'Your feed fills up when you follow people'} sub={friends.length ? 'When the people you follow save or review something, it shows up here.' : 'Find a few film lovers in Find people.'} />
                 ) : sections.map((sec) => {
                   const [title, verb] = SECTION[sec.type];
                   const openId = open[sec.type];
@@ -155,11 +155,11 @@ export default function Friends() {
             )
           ) : tab === 'following' ? (
             <View style={{ paddingTop: 8 }}>
-              {friends.length === 0 ? <Empty title="You're not following anyone yet" /> : friends.map((f, i) => <PersonRow key={f.user_id} u={f} first={i === 0} />)}
+              {friends.length === 0 ? <Empty icon="user-plus" title="You're not following anyone yet" /> : friends.map((f, i) => <PersonRow key={f.user_id} u={f} first={i === 0} />)}
             </View>
           ) : (
             <View style={{ paddingTop: 8 }}>
-              {suggested.length === 0 ? <Empty title="No suggestions right now" /> : suggested.map((u, i) => (
+              {suggested.length === 0 ? <Empty icon="users" title="No suggestions right now" /> : suggested.map((u, i) => (
                 <PersonRow key={u.user_id} u={u} first={i === 0} right={
                   <Pressable onPress={() => follow(u)} style={[styles.followBtn, u.isFollowing && styles.followingBtn]}><Text style={[styles.followText, u.isFollowing && { color: '#fff' }]}>{u.isFollowing ? 'Following' : 'Follow'}</Text></Pressable>
                 } />

@@ -45,7 +45,7 @@ export default function Inbox() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor="#fff" />}
           ListHeaderComponent={<Text style={styles.h1}>Messages</Text>}
-          ListEmptyComponent={<Empty title="No messages yet" sub="Open a friend’s profile and tap Message to start a conversation." />}
+          ListEmptyComponent={<Empty icon="message-circle" title="No messages yet" sub="Open a friend’s profile and tap Message to start a conversation." />}
           renderItem={({ item: c, index }) => (
             <Pressable onPress={() => router.push({ pathname: '/chat/[id]', params: { id: c.peer_id, name: c.display_name, avatar: c.avatar_url || '' } })} style={({ pressed }) => [styles.row, index > 0 && styles.border, { opacity: pressed ? 0.6 : 1 }]}>
               <Avatar uri={c.avatar_url} name={c.display_name} size={48} />

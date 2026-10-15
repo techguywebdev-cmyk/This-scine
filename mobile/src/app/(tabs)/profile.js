@@ -39,7 +39,7 @@ export default function Me() {
       <View style={{ flex: 1, padding: 20, paddingTop: insets.top + 40 }}>
         <Ambient />
         <Text style={styles.h1}>Your Thiscene</Text>
-        <Empty title="Sign in to save films, build folders and follow friends" sub="Same account as the website." />
+        <Empty icon="user" title="Sign in to save films, build folders and follow friends" sub="Same account as the website." />
         <Pressable onPress={() => router.push('/sign-in')} style={styles.cta}><Text style={styles.ctaText}>Sign in or create account</Text></Pressable>
         <View style={{ flexDirection: 'row', gap: 18, marginTop: 30 }}>
           <Pressable onPress={() => open('/privacy')}><Text style={styles.link}>Privacy</Text></Pressable>

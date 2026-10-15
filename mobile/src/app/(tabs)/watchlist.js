@@ -67,7 +67,7 @@ export default function Watchlist() {
 
           {!isSignedIn && tab !== 'trending' ? (
             <View style={{ paddingTop: 24 }}>
-              <Empty title="Your watchlist lives here" sub="Sign in to save films and sort them into folders." />
+              <Empty icon="bookmark" title="Your watchlist lives here" sub="Sign in to save films and sort them into folders." />
               <Pressable onPress={() => router.push('/sign-in')} style={styles.cta}><Text style={styles.ctaText}>Sign in</Text></Pressable>
             </View>
           ) : tab === 'mine' ? (
@@ -118,7 +118,7 @@ export default function Watchlist() {
                   ))}
                 </View>
               }>Saved</SectionLabel>
-              {shown.length === 0 ? <Empty title={filter === 'towatch' ? 'Nothing saved yet' : 'Nothing watched yet'} sub={filter === 'towatch' ? 'Tap Save on any film in your feed and it lands here.' : 'Films you mark as watched show up here.'} /> : (
+              {shown.length === 0 ? <Empty icon="bookmark" title={filter === 'towatch' ? 'Nothing saved yet' : 'Nothing watched yet'} sub={filter === 'towatch' ? 'Tap Save on any film in your feed and it lands here.' : 'Films you mark as watched show up here.'} /> : (
                 <View style={[styles.grid, { rowGap: 16, columnGap: 10 }]}>
                   {shown.map((m) => (
                     <View key={m.movie_id} style={{ width: (width - 40 - 20) / 3 }}>
@@ -137,7 +137,7 @@ export default function Watchlist() {
               )}
             </>
           ) : lists === null ? <Spinner /> : lists.length === 0 ? (
-            <Empty title={tab === 'following' ? 'No folders followed yet' : 'No public folders yet'} sub={tab === 'following' ? 'Follow a public folder and it shows up here.' : 'Make one of yours public to be the first.'} />
+            <Empty icon="folder" title={tab === 'following' ? 'No folders followed yet' : 'No public folders yet'} sub={tab === 'following' ? 'Follow a public folder and it shows up here.' : 'Make one of yours public to be the first.'} />
           ) : (
             <View style={[styles.grid, { paddingTop: 20 }]}>
               {lists.map((l) => (

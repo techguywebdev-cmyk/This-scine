@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Ambient from '../components/Ambient';
+import Marquee from '../components/PosterMarquee';
 import { Poster } from '../components/Ui';
 import { DOTS } from '../components/Brand';
 import { useApi } from '../lib/api';
@@ -30,36 +31,6 @@ function Dots() {
         const p = Animated.modulo(Animated.add(a, i * 0.14), 1);
         return <Animated.View key={c} style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c, opacity: p.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.4, 1, 0.4] }), transform: [{ translateY: p.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -6, 0] }) }] }} />;
       })}
-    </View>
-  );
-}
-
-// Drifting poster wall for the header — two rows sliding in opposite directions
-function Marquee({ posters, tone, height }) {
-  const a = useRef(new Animated.Value(0)).current;
-  useEffect(() => { const l = Animated.loop(Animated.timing(a, { toValue: 1, duration: 60000, easing: Easing.linear, useNativeDriver: true })); l.start(); return () => l.stop(); }, [a]);
-  const list = posters.length ? posters : Array(10).fill(null);
-  const rows = [list.filter((_, i) => i % 2 === 0), list.filter((_, i) => i % 2 === 1)];
-  const W = 92 + 8;
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
-      <View style={{ position: 'absolute', left: -40, right: -40, top: -30, transform: [{ rotate: '-6deg' }], opacity: 0.6 }}>
-        {rows.map((items, r) => {
-          const span = Math.max(1, items.length) * W;
-          const x = a.interpolate({ inputRange: [0, 1], outputRange: r ? [-span, 0] : [0, -span] });
-          return (
-            <Animated.View key={r} style={{ flexDirection: 'row', gap: 8, marginBottom: 8, transform: [{ translateX: x }] }}>
-              {[...items, ...items, ...items].map((src, i) => (
-                <View key={i} style={{ width: 92, aspectRatio: 2 / 3, borderRadius: 10, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                  {src ? <Image source={{ uri: src }} style={StyleSheet.absoluteFill} contentFit="cover" transition={500} /> : null}
-                </View>
-              ))}
-            </Animated.View>
-          );
-        })}
-      </View>
-      <LinearGradient colors={[`${tone}55`, 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 0.7 }} style={StyleSheet.absoluteFill} />
-      <LinearGradient colors={['rgba(6,6,11,0.35)', 'rgba(6,6,11,0.2)', 'rgba(6,6,11,0.88)', '#06060B']} locations={[0, 0.35, 0.8, 1]} style={StyleSheet.absoluteFill} />
     </View>
   );
 }

@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -59,9 +60,24 @@ export const Tabs = ({ tabs, value, onChange, accent: given, style }) => {
   );
 };
 
-export const Empty = ({ title, sub }) => (
-  <View style={{ paddingVertical: 26 }}>
-    <Text style={{ fontFamily: F.bold, fontSize: 13.5, color: '#fff' }}>{title}</Text>
-    {sub ? <Text style={{ fontFamily: F.body, fontSize: 12.5, color: T.text2, marginTop: 4, lineHeight: 18 }}>{sub}</Text> : null}
-  </View>
-);
+// Empty state: floating icon tile in the current film colour, a title and a hint
+export function Empty({ title, sub, icon = 'film', action, onAction }) {
+  const accent = useAccent();
+  const f = useRef(new Animated.Value(0)).current;
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(enter, { toValue: 1, duration: 450, useNativeDriver: true }).start();
+    const l = Animated.loop(Animated.sequence([Animated.timing(f, { toValue: 1, duration: 1600, useNativeDriver: true }), Animated.timing(f, { toValue: 0, duration: 1600, useNativeDriver: true })]));
+    l.start(); return () => l.stop();
+  }, [f, enter]);
+  return (
+    <Animated.View style={{ alignItems: 'center', paddingVertical: 30, paddingHorizontal: 20, opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
+      <Animated.View style={{ width: 62, height: 62, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: `${accent}1f`, borderWidth: 1, borderColor: `${accent}55`, marginBottom: 14, transform: [{ translateY: f.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }, { rotate: f.interpolate({ inputRange: [0, 1], outputRange: ['-4deg', '4deg'] }) }] }}>
+        <Feather name={icon} size={26} color={accent} />
+      </Animated.View>
+      <Text style={{ fontFamily: F.bold, fontSize: 15, color: '#fff', textAlign: 'center' }}>{title}</Text>
+      {sub ? <Text style={{ fontFamily: F.body, fontSize: 13, color: T.text2, marginTop: 6, lineHeight: 19, textAlign: 'center', maxWidth: 300 }}>{sub}</Text> : null}
+      {action ? <Pressable onPress={onAction} style={({ pressed }) => ({ marginTop: 16, height: 42, borderRadius: 21, paddingHorizontal: 20, justifyContent: 'center', backgroundColor: '#fff', opacity: pressed ? 0.8 : 1 })}><Text style={{ fontFamily: F.bold, fontSize: 14, color: '#06060B' }}>{action}</Text></Pressable> : null}
+    </Animated.View>
+  );
+}

@@ -38,7 +38,7 @@ export default function FolderScreen() {
       <Ambient accent={list?.cover_accent || T.accent} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 10, paddingHorizontal: 20, paddingBottom: insets.bottom + 40 }}>
         <GlassButton icon="chevron-left" label="Back" onPress={() => router.back()} />
-        {error ? <Empty title="Couldn't open this folder" sub={error} /> : !list ? <Spinner /> : (
+        {error ? <Empty icon="alert-circle" title="Couldn't open this folder" sub={error} /> : !list ? <Spinner /> : (
           <>
             <View style={styles.head}>
               <View style={{ width: 110 }}><Folder poster={list.cover_poster} accent={T.accent} count={movies.length} locked={list.is_public === false} /></View>
@@ -62,7 +62,7 @@ export default function FolderScreen() {
             <SectionLabel>{`${movies.length} title${movies.length === 1 ? '' : 's'}`}</SectionLabel>
             {movies.length === 0 ? (
               <>
-                <Empty title="This folder is empty" sub="Save films from your feed, then add them here." />
+                <Empty icon="folder" title="This folder is empty" sub="Save films from your feed, then add them here." />
                 <Pressable onPress={() => router.navigate('/')} style={styles.fill}><Feather name="play-circle" size={15} color="#07070F" /><Text style={styles.fillText}>Find films in the feed</Text></Pressable>
               </>
             ) : movies.map((m, i) => <MovieRow key={m.id} movie={m} first={i === 0} />)}

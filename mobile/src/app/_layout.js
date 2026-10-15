@@ -1,6 +1,9 @@
 import 'react-native-gesture-handler';
-import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import StatusScreen from '../components/StatusScreen';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -34,25 +37,44 @@ onBootReady(() => { bootStage.feed = true; });
 // If the app still isn't showing the feed after 15s, tell us where it got stuck
 setTimeout(() => { if (!bootStage.feed) report('boot_stuck', { stage: JSON.stringify({ ...bootStage, secs: Math.round((Date.now() - bootStage.startedAt) / 1000) }) }); }, 15000);
 
-// Waits for sign-in to load, but never forever: after 9s it shows a retry screen instead of a dark one
+// Never block the app on sign-in: browse straight away, show a small live banner while the
+// account connects, and offer a retry if it takes too long.
+function ConnectBanner({ slow, onRetry }) {
+  const insets = useSafeAreaInsets();
+  const a = useRef(new Animated.Value(0)).current;
+  const spin = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(a, { toValue: 1, useNativeDriver: true, friction: 8 }).start();
+    const l = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true })); l.start();
+    return () => l.stop();
+  }, [a, spin]);
+  return (
+    <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: insets.top + 6, alignItems: 'center', zIndex: 300, elevation: 30, opacity: a, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) }] }}>
+      <Pressable onPress={slow ? onRetry : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: 'rgba(12,12,20,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+        {slow ? <Feather name="wifi-off" size={14} color="#FF8FA3" /> : <Animated.View style={{ transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}><Feather name="loader" size={14} color="#fff" /></Animated.View>}
+        <Text style={{ color: '#fff', fontSize: 12.5, fontFamily: 'Inter_600SemiBold' }}>{slow ? 'Can’t reach your account · Tap to retry' : 'Connecting your account…'}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 function BootGate({ children, onRetry }) {
   const { isLoaded, isSignedIn } = useAuth();
   const [slow, setSlow] = useState(false);
+  const [show, setShow] = useState(false);
   useEffect(() => { if (isLoaded) { bootStage.clerk = true; bootStage.signedIn = !!isSignedIn; } }, [isLoaded, isSignedIn]);
   useEffect(() => {
-    if (isLoaded) return;
-    const t = setTimeout(() => { setSlow(true); report('clerk_not_loaded', { stage: JSON.stringify(bootStage) }); }, 9000);
-    return () => clearTimeout(t);
+    if (isLoaded) return undefined;
+    const t1 = setTimeout(() => setShow(true), 2500);
+    const t2 = setTimeout(() => { setSlow(true); report('clerk_not_loaded', { stage: JSON.stringify(bootStage) }); }, 12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [isLoaded]);
   if (isLoaded) return children;
-  if (!slow) return null;
+  if (!show) return null;
   return (
-    <View style={{ flex: 1, backgroundColor: '#06060B', padding: 28, justifyContent: 'center' }}>
-      <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 10 }}>Can’t connect right now</Text>
-      <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 20 }}>Thiscene couldn’t reach the sign-in service. Check your internet connection and try again.</Text>
-      <Pressable onPress={() => { setSlow(false); onRetry(); }} style={{ marginTop: 22, alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 22, paddingHorizontal: 20, height: 44, justifyContent: 'center' }}>
-        <Text style={{ color: '#07070F', fontWeight: '700' }}>Try again</Text>
-      </Pressable>
+    <View style={{ flex: 1 }}>
+      {children}
+      <ConnectBanner slow={slow} onRetry={() => { setSlow(false); onRetry(); }} />
     </View>
   );
 }
@@ -87,7 +109,8 @@ export default function RootLayout() {
                 <Stack.Screen name="status/new" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="party/[id]" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="ask" options={{ animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="sign-in" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="sign-in" options={{ animation: 'fade_from_bottom' }} />
+                <Stack.Screen name="sso-callback" options={{ animation: 'none' }} />
               </Stack>
               <CallScreen />
             </CallProvider>
@@ -104,12 +127,8 @@ export default function RootLayout() {
 export function ErrorBoundary({ error, retry }) {
   useEffect(() => { report(error?.message || error, { boundary: true, stack: String(error?.stack || '').slice(0, 450), stage: JSON.stringify(bootStage) }); }, [error]);
   return (
-    <View style={{ flex: 1, backgroundColor: '#06060B', padding: 28, justifyContent: 'center' }}>
-      <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 10 }}>Something went wrong</Text>
-      <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 19 }} selectable>{String(error?.message || error).slice(0, 600)}</Text>
-      <Pressable onPress={retry} style={{ marginTop: 22, alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 22, paddingHorizontal: 20, height: 44, justifyContent: 'center' }}>
-        <Text style={{ color: '#07070F', fontWeight: '700' }}>Try again</Text>
-      </Pressable>
-    </View>
+    <SafeAreaProvider>
+      <StatusScreen icon="alert-triangle" title="That scene didn’t load" body="Something went wrong on this screen. We’ve been told about it — try again, and if it keeps happening, restart the app." primary={{ label: 'Try again', onPress: retry }} />
+    </SafeAreaProvider>
   );
 }
