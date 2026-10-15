@@ -159,8 +159,8 @@ export default function ImportSheet({ visible, onClose, accent = '#F5A623' }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={busy ? undefined : close} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.wrap}>
+        <Pressable style={styles.backdrop} onPress={busy ? undefined : close} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
           <Ambient accent={accent} style={{ borderTopLeftRadius: 22, borderTopRightRadius: 22 }} />
           <View style={styles.grab} />
@@ -249,8 +249,9 @@ export default function ImportSheet({ visible, onClose, accent = '#F5A623' }) {
 }
 
 const styles = StyleSheet.create({
+  wrap: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.72)' },
-  sheet: { position: 'relative', borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 10, overflow: 'hidden', backgroundColor: '#06060B' },
+  sheet: { maxHeight: '92%', borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 10, overflow: 'hidden', backgroundColor: '#06060B' },
   grab: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', alignSelf: 'center', marginBottom: 16 },
   eyebrow: { fontSize: 10.5, letterSpacing: 2.2, fontFamily: F.bold },
   title: { color: "#fff", fontSize: 24, fontFamily: F.displayHeavy, letterSpacing: -0.5, marginTop: 6 },
