@@ -77,6 +77,17 @@
           "cameraPermission": "Thiscene uses your camera for video calls.",
           "microphonePermission": "Thiscene uses your microphone for calls and voice notes."
         }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Thiscene uses the microphone when you speak to Ask Thiscene, record voice notes, or make calls.",
+          "speechRecognitionPermission": "Thiscene turns what you say into text so it can find something to watch.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.as"
+          ]
+        }
       ]
     ],
     "experiments": {

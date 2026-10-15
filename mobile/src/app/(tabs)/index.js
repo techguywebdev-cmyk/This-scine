@@ -158,9 +158,12 @@ export default function Feed() {
       <View pointerEvents="box-none" style={[styles.top, { paddingTop: insets.top + 8 }]}>
         <View pointerEvents="box-none" style={styles.topRow}>
           <Wordmark accent={activeAccent} />
-          <View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <GlassButton ionicon="sparkles-outline" label="Ask Thiscene — describe what you want to watch" onPress={() => router.push('/ask')} />
+            <View>
             <GlassButton icon="sliders" label="Filter the feed" onPress={() => router.navigate('/discover')} />
             {filterOn ? <View style={styles.filterDot} /> : null}
+            </View>
           </View>
         </View>
         {filterOn ? (

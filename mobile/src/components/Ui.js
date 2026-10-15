@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { F, T, label } from '../lib/theme';
 import { useAccent } from '../lib/accent';
 
@@ -20,10 +20,10 @@ export const SectionLabel = ({ children, right, accent: given, style }) => {
   );
 };
 
-export const GlassButton = ({ icon, onPress, size = 38, label: a11y }) => (
+export const GlassButton = ({ icon, ionicon, onPress, size = 38, label: a11y }) => (
   <Pressable onPress={onPress} accessibilityLabel={a11y} hitSlop={8} style={({ pressed }) => [{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', opacity: pressed ? 0.7 : 1 }]}>
     <BlurView intensity={30} tint="dark" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' }]}>
-      <Feather name={icon} size={size * 0.48} color="#fff" />
+      {ionicon ? <Ionicons name={ionicon} size={size * 0.5} color="#fff" /> : <Feather name={icon} size={size * 0.48} color="#fff" />}
     </BlurView>
   </Pressable>
 );
