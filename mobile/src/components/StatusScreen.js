@@ -104,7 +104,7 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
         <Animated.Text style={[styles.title, up(16)]}>{title}</Animated.Text>
         {body ? <Animated.Text style={[styles.text, up(20)]}>{body}</Animated.Text> : null}
         {children}
-        <Animated.View style={[{ width: '100%', gap: 10, marginTop: 28 }, up(24)]}>
+        <Animated.View style={[{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 26 }, up(24)]}>
           {primary ? (
             <Pressable onPress={primary.onPress} disabled={busy} style={({ pressed }) => [styles.primary, { opacity: pressed || busy ? 0.7 : 1 }]}>
               <Text style={styles.primaryText}>{busy ? 'Trying…' : primary.label}</Text>
@@ -129,8 +129,8 @@ const styles = StyleSheet.create({
   icon: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
   title: { fontFamily: F.displayHeavy, fontSize: 27, lineHeight: 32, letterSpacing: -0.6, color: '#fff', textAlign: 'center' },
   text: { fontFamily: F.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginTop: 10, maxWidth: 340 },
-  primary: { height: 54, borderRadius: 27, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  primaryText: { fontFamily: F.bold, fontSize: 16, color: '#06060B' },
-  secondary: { height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  primary: { height: 50, borderRadius: 25, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
+  primaryText: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
+  secondary: { height: 50, borderRadius: 25, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
   secondaryText: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
 });

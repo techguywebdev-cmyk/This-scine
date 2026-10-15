@@ -46,14 +46,23 @@ function Field({ icon, right, ...p }) {
   );
 }
 
-function Btn({ children, onClick, busy, glass, disabled, type = 'button' }) {
+// Glass pill buttons — primary is tinted with the current colour, never a solid slab
+function Btn({ children, onClick, busy, primary, disabled, type = 'button', accent = '#fff', grow }) {
   return (
     <button type={type} onClick={onClick} disabled={busy || disabled} className="auth-btn"
-      style={{ height: 56, borderRadius: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 16, fontWeight: 700, fontFamily: 'inherit', cursor: busy || disabled ? 'default' : 'pointer', width: '100%', opacity: disabled && !busy ? 0.45 : 1, ...(glass ? { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)' } : { background: '#fff', color: '#06060B', border: 'none' }) }}>
-      {busy ? <span style={{ width: 20, height: 20, borderRadius: '50%', border: `2.5px solid ${glass ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)'}`, borderTopColor: glass ? '#fff' : '#06060B', animation: 'bdSpin .8s linear infinite' }} /> : children}
+      style={{ flex: grow ? 1 : 'none', minWidth: 0, height: 52, padding: '0 22px', borderRadius: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 700, fontFamily: 'inherit', color: '#fff', cursor: busy || disabled ? 'default' : 'pointer', opacity: disabled && !busy ? 0.45 : 1, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', transition: 'background 1s ease, border-color 1s ease, transform .12s ease',
+        background: primary ? `${accent}33` : 'rgba(255,255,255,0.08)', border: `1px solid ${primary ? `${accent}99` : 'rgba(255,255,255,0.18)'}`, boxShadow: primary ? `0 8px 30px ${accent}33` : 'none' }}>
+      {busy ? <span style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'bdSpin .8s linear infinite' }} /> : children}
     </button>
   );
 }
+
+// Round arrow that sits inside a field to submit it
+const Go = ({ busy, disabled, accent }) => (
+  <button type="submit" disabled={busy || disabled} aria-label="Continue" style={{ width: 40, height: 40, marginRight: -8, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.35 : 1, background: `${accent}40`, border: `1px solid ${accent}aa`, color: '#fff', transition: 'background 1s ease, border-color 1s ease, opacity .2s ease' }}>
+    {busy ? <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'bdSpin .8s linear infinite' }} /> : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
+  </button>
+);
 
 function CodeBoxes({ value, onChange, onDone, accent }) {
   const ref = useRef(null);
@@ -220,45 +229,46 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 26 }}>
             {step === 'start' && (
-              <>
-                <Btn onClick={google} busy={busy === 'google'}><G />Continue with Google</Btn>
-                <Btn glass onClick={() => go('email')}>{ic(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>)}Continue with email</Btn>
-              </>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Btn grow primary accent={accent} onClick={google} busy={busy === 'google'}><G />Google</Btn>
+                <Btn grow onClick={() => go('email')}>{ic(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>)}Email</Btn>
+              </div>
             )}
             {step === 'email' && (
-              <form onSubmit={checkEmail} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Field icon={ic(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>, 17)} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" autoFocus />
-                <Btn type="submit" busy={busy === 'email'} disabled={!isEmail(email)}>Continue</Btn>
+              <form onSubmit={checkEmail}>
+                <Field icon={ic(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>, 17)} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" autoFocus right={<Go accent={accent} busy={busy === 'email'} disabled={!isEmail(email)} />} />
               </form>
             )}
             {step === 'password' && (
-              <form onSubmit={withPassword} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Field icon={ic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 17)} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" autoComplete="current-password" autoFocus right={eye} />
-                <Btn type="submit" busy={busy === 'password'} disabled={!password}>Sign in</Btn>
-                <Btn glass onClick={sendSignInCode} busy={busy === 'code'}>Email me a code instead</Btn>
-                <button type="button" onClick={forgot} style={link}>{busy === 'forgot' ? 'Sending…' : 'Forgot password?'}</button>
+              <form onSubmit={withPassword}>
+                <Field icon={ic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 17)} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" autoComplete="current-password" autoFocus right={<>{eye}<span style={{ width: 6 }} /><Go accent={accent} busy={busy === 'password'} disabled={!password} /></>} />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={sendSignInCode} style={link}>{busy === 'code' ? 'Sending…' : 'Email me a code'}</button>
+                  <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+                  <button type="button" onClick={forgot} style={link}>{busy === 'forgot' ? 'Sending…' : 'Forgot password?'}</button>
+                </div>
               </form>
             )}
             {step === 'signup' && (
               <form onSubmit={createAccount} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <Field icon={ic(<><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>, 17)} value={name} onChange={(e) => setName(e.target.value)} placeholder="First name (optional)" autoComplete="given-name" />
-                <Field icon={ic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 17)} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password (8+ characters)" autoComplete="new-password" right={eye} />
+                <Field icon={ic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 17)} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password (8+ characters)" autoComplete="new-password" right={<>{eye}<span style={{ width: 6 }} /><Go accent={accent} busy={busy === 'signup'} disabled={password.length < 8} /></>} />
                 <div style={{ display: 'flex', gap: 6, padding: '0 4px' }}>{[0, 1, 2, 3].map((i) => <span key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < strength ? ['#FF6B8A', '#F5A623', '#A3E635', '#2DD4BF'][strength - 1] : 'rgba(255,255,255,0.12)', transition: 'background .25s ease' }} />)}</div>
-                <Btn type="submit" busy={busy === 'signup'} disabled={password.length < 8}>Create account</Btn>
                 <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>Signing up as <b style={{ color: '#fff', fontWeight: 600 }}>{email.trim()}</b></div>
               </form>
             )}
             {step === 'code' && (
               <>
                 <CodeBoxes value={code} onChange={setCode} onDone={verify} accent={accent} />
-                <Btn onClick={() => verify()} busy={busy === 'verify'} disabled={code.length < 6}>{codeFor === 'reset' ? 'Continue' : 'Verify'}</Btn>
-                <button type="button" onClick={resend} style={link}>Send a new code</button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 4 }}>
+                  <button type="button" onClick={resend} style={{ ...link, alignSelf: 'auto', marginTop: 0 }}>Send a new code</button>
+                  <Btn primary accent={accent} onClick={() => verify()} busy={busy === 'verify'} disabled={code.length < 6}>{codeFor === 'reset' ? 'Continue' : 'Verify'}</Btn>
+                </div>
               </>
             )}
             {step === 'reset' && (
-              <form onSubmit={resetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Field icon={ic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 17)} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password (8+ characters)" autoComplete="new-password" autoFocus right={eye} />
-                <Btn type="submit" busy={busy === 'reset'} disabled={password.length < 8}>Save and sign in</Btn>
+              <form onSubmit={resetPassword}>
+                <Field icon={ic(<><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 17)} type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password (8+ characters)" autoComplete="new-password" autoFocus right={<>{eye}<span style={{ width: 6 }} /><Go accent={accent} busy={busy === 'reset'} disabled={password.length < 8} /></>} />
               </form>
             )}
           </div>

@@ -76,7 +76,7 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
         </div>
         <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: 30, lineHeight: 1.08, fontWeight: 800, letterSpacing: '-0.03em', animation: 'bdUp .55s ease .05s both' }}>{title}</h1>
         {body && <p style={{ margin: '12px 0 0', fontSize: 15.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.65)', maxWidth: 360, animation: 'bdUp .55s ease .1s both' }}>{body}</p>}
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, marginTop: 28, animation: 'bdUp .55s ease .15s both' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap', justifyContent: 'center', animation: 'bdUp .55s ease .15s both' }}>
           {primary && (primary.href
             ? <a href={primary.href} style={btn(true)}>{primary.label}</a>
             : <button onClick={primary.onClick} style={btn(true)}>{primary.label}</button>)}
@@ -90,8 +90,9 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
 }
 
 const btn = (primary) => ({
-  display: 'flex', alignItems: 'center', justifyContent: 'center', height: 54, borderRadius: 27, fontSize: 16, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'none',
-  ...(primary ? { background: '#fff', color: '#06060B', border: 'none' } : { background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)' }),
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 50, padding: '0 22px', borderRadius: 25, fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'none', color: '#fff',
+  backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+  ...(primary ? { background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.35)' } : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }),
 });
 
 export const Icon = ({ d, size = 28 }) => (

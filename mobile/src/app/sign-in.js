@@ -65,21 +65,26 @@ function Field({ icon, right, ...props }) {
   );
 }
 
-function Btn({ label, onPress, busy, kind = 'primary', icon, disabled }) {
-  const s = useRef(new Animated.Value(1)).current;
-  const press = (v) => Animated.spring(s, { toValue: v, useNativeDriver: true, speed: 40 }).start();
-  const primary = kind === 'primary';
+// Glass pill buttons — primary is tinted with the current colour, never a solid slab
+function Btn({ label, onPress, busy, primary, icon, disabled, accent = '#fff', grow }) {
+  const sc = useRef(new Animated.Value(1)).current;
+  const press = (v) => Animated.spring(sc, { toValue: v, useNativeDriver: true, speed: 40 }).start();
   return (
-    <Animated.View style={{ transform: [{ scale: s }] }}>
-      <Pressable onPressIn={() => press(0.97)} onPressOut={() => press(1)} onPress={onPress} disabled={busy || disabled} style={[styles.btn, primary ? styles.btnPrimary : styles.btnGlass, (disabled && !busy) && { opacity: 0.45 }]}>
-        {busy ? <ActivityIndicator color={primary ? '#06060B' : '#fff'} /> : (
-          <>
-            {icon}
-            <Text style={[styles.btnText, { color: primary ? '#06060B' : '#fff' }]}>{label}</Text>
-          </>
-        )}
+    <Animated.View style={{ flex: grow ? 1 : undefined, transform: [{ scale: sc }] }}>
+      <Pressable onPressIn={() => press(0.97)} onPressOut={() => press(1)} onPress={onPress} disabled={busy || disabled}
+        style={[styles.btn, primary ? { backgroundColor: `${accent}33`, borderColor: `${accent}99` } : styles.btnGlass, (disabled && !busy) && { opacity: 0.45 }]}>
+        {busy ? <ActivityIndicator color="#fff" /> : (<>{icon}<Text style={styles.btnText}>{label}</Text></>)}
       </Pressable>
     </Animated.View>
+  );
+}
+
+// Round arrow inside a field to submit it
+function Go({ onPress, busy, disabled, accent }) {
+  return (
+    <Pressable onPress={onPress} disabled={busy || disabled} hitSlop={6} accessibilityLabel="Continue" style={[styles.go, { backgroundColor: `${accent}40`, borderColor: `${accent}aa`, opacity: disabled ? 0.35 : 1 }]}>
+      {busy ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="arrow-right" size={18} color="#fff" />}
+    </Pressable>
   );
 }
 
@@ -290,26 +295,26 @@ export default function SignIn() {
 
             <View style={{ gap: 12, marginTop: 26 }}>
               {step === 'start' ? (
-                <>
-                  <Btn label="Continue with Google" onPress={google} busy={busy === 'google'} icon={<GoogleG />} />
-                  <Btn kind="glass" label="Continue with email" onPress={() => go('email')} icon={<Feather name="mail" size={18} color="#fff" />} />
-                </>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Btn grow primary accent={accent} label="Google" onPress={google} busy={busy === 'google'} icon={<GoogleG />} />
+                  <Btn grow label="Email" onPress={() => go('email')} icon={<Feather name="mail" size={17} color="#fff" />} />
+                </View>
               ) : null}
 
               {step === 'email' ? (
-                <>
-                  <Field icon="mail" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoComplete="email" autoFocus returnKeyType="next" onSubmitEditing={checkEmail} />
-                  <Btn label="Continue" onPress={checkEmail} busy={busy === 'email'} disabled={!isEmail(email)} />
-                </>
+                <Field icon="mail" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoComplete="email" autoFocus returnKeyType="next" onSubmitEditing={checkEmail}
+                  right={<Go accent={accent} onPress={checkEmail} busy={busy === 'email'} disabled={!isEmail(email)} />} />
               ) : null}
 
               {step === 'password' ? (
                 <>
                   <Field icon="lock" value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry={!show} autoComplete="password" autoFocus returnKeyType="go" onSubmitEditing={withPassword}
-                    right={<Pressable onPress={() => setShow((v) => !v)} hitSlop={8}><Feather name={show ? 'eye-off' : 'eye'} size={17} color="rgba(255,255,255,0.6)" /></Pressable>} />
-                  <Btn label="Sign in" onPress={withPassword} busy={busy === 'password'} disabled={!password} />
-                  <Btn kind="glass" label="Email me a code instead" onPress={sendSignInCode} busy={busy === 'code'} />
-                  <Pressable onPress={forgot} hitSlop={8} style={{ alignSelf: 'center', marginTop: 4 }}>{busy === 'forgot' ? <ActivityIndicator color="#fff" /> : <Text style={styles.link}>Forgot password?</Text>}</Pressable>
+                    right={<><Pressable onPress={() => setShow((v) => !v)} hitSlop={8} style={{ marginRight: 8 }}><Feather name={show ? 'eye-off' : 'eye'} size={17} color="rgba(255,255,255,0.6)" /></Pressable><Go accent={accent} onPress={withPassword} busy={busy === 'password'} disabled={!password} /></>} />
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                    <Pressable onPress={sendSignInCode} hitSlop={8}>{busy === 'code' ? <ActivityIndicator color="#fff" /> : <Text style={styles.link}>Email me a code</Text>}</Pressable>
+                    <Text style={{ color: 'rgba(255,255,255,0.3)' }}>·</Text>
+                    <Pressable onPress={forgot} hitSlop={8}>{busy === 'forgot' ? <ActivityIndicator color="#fff" /> : <Text style={styles.link}>Forgot password?</Text>}</Pressable>
+                  </View>
                 </>
               ) : null}
 
@@ -317,9 +322,8 @@ export default function SignIn() {
                 <>
                   <Field icon="user" value={name} onChangeText={setName} placeholder="First name (optional)" autoComplete="given-name" autoCapitalize="words" returnKeyType="next" />
                   <Field icon="lock" value={password} onChangeText={setPassword} placeholder="Create a password (8+ characters)" secureTextEntry={!show} autoComplete="new-password" returnKeyType="go" onSubmitEditing={createAccount}
-                    right={<Pressable onPress={() => setShow((v) => !v)} hitSlop={8}><Feather name={show ? 'eye-off' : 'eye'} size={17} color="rgba(255,255,255,0.6)" /></Pressable>} />
+                    right={<><Pressable onPress={() => setShow((v) => !v)} hitSlop={8} style={{ marginRight: 8 }}><Feather name={show ? 'eye-off' : 'eye'} size={17} color="rgba(255,255,255,0.6)" /></Pressable><Go accent={accent} onPress={createAccount} busy={busy === 'signup'} disabled={password.length < 8} /></>} />
                   <View style={styles.meter}>{[0, 1, 2, 3].map((i) => <View key={i} style={[styles.meterBar, { backgroundColor: password.length >= [1, 6, 8, 12][i] ? ['#FF6B8A', '#F5A623', '#A3E635', '#2DD4BF'][Math.min(3, [1, 6, 8, 12].filter((n) => password.length >= n).length - 1)] : 'rgba(255,255,255,0.12)' }]} />)}</View>
-                  <Btn label="Create account" onPress={createAccount} busy={busy === 'signup'} disabled={password.length < 8} />
                   <Text style={styles.small}>Signing up as <Text style={{ color: '#fff', fontFamily: F.semibold }}>{email.trim()}</Text></Text>
                 </>
               ) : null}
@@ -327,17 +331,16 @@ export default function SignIn() {
               {step === 'code' ? (
                 <>
                   <CodeBoxes value={code} onChange={setCode} accent={accent} onDone={(c) => (codeFor === 'reset' ? go('reset') : verify(c))} />
-                  <Btn label={codeFor === 'reset' ? 'Continue' : 'Verify'} onPress={() => (codeFor === 'reset' ? go('reset') : verify())} busy={busy === 'verify'} disabled={code.length < 6} />
-                  <Pressable onPress={resend} hitSlop={8} style={{ alignSelf: 'center', marginTop: 4 }}><Text style={styles.link}>Send a new code</Text></Pressable>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                    <Pressable onPress={resend} hitSlop={8}><Text style={styles.link}>Send a new code</Text></Pressable>
+                    <Btn primary accent={accent} label={codeFor === 'reset' ? 'Continue' : 'Verify'} onPress={() => (codeFor === 'reset' ? go('reset') : verify())} busy={busy === 'verify'} disabled={code.length < 6} />
+                  </View>
                 </>
               ) : null}
 
               {step === 'reset' ? (
-                <>
-                  <Field icon="lock" value={password} onChangeText={setPassword} placeholder="New password (8+ characters)" secureTextEntry={!show} autoComplete="new-password" autoFocus returnKeyType="go" onSubmitEditing={resetPassword}
-                    right={<Pressable onPress={() => setShow((v) => !v)} hitSlop={8}><Feather name={show ? 'eye-off' : 'eye'} size={17} color="rgba(255,255,255,0.6)" /></Pressable>} />
-                  <Btn label="Save and sign in" onPress={resetPassword} busy={busy === 'reset'} disabled={password.length < 8} />
-                </>
+                <Field icon="lock" value={password} onChangeText={setPassword} placeholder="New password (8+ characters)" secureTextEntry={!show} autoComplete="new-password" autoFocus returnKeyType="go" onSubmitEditing={resetPassword}
+                  right={<><Pressable onPress={() => setShow((v) => !v)} hitSlop={8} style={{ marginRight: 8 }}><Feather name={show ? 'eye-off' : 'eye'} size={17} color="rgba(255,255,255,0.6)" /></Pressable><Go accent={accent} onPress={resetPassword} busy={busy === 'reset'} disabled={password.length < 8} /></>} />
               ) : null}
             </View>
 
@@ -362,11 +365,12 @@ const styles = StyleSheet.create({
   sub: { fontFamily: F.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.65)', marginTop: 10 },
   field: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 56, borderRadius: 18, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
   input: { flex: 1, color: '#fff', fontFamily: F.body, fontSize: 16, paddingVertical: 0 },
-  btn: { height: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  btn: { height: 52, borderRadius: 26, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, borderWidth: 1 },
+  go: { width: 40, height: 40, borderRadius: 20, marginRight: -8, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   btnPrimary: { backgroundColor: '#fff' },
-  btnGlass: { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  btnText: { fontFamily: F.bold, fontSize: 16 },
-  link: { fontFamily: F.semibold, fontSize: 14, color: 'rgba(255,255,255,0.75)', textDecorationLine: 'underline' },
+  btnGlass: { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' },
+  btnText: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
+  link: { fontFamily: F.semibold, fontSize: 14, color: 'rgba(255,255,255,0.8)', textDecorationLine: 'underline' },
   err: { fontFamily: F.body, fontSize: 13.5, color: '#FF8FA3', marginTop: 14, textAlign: 'center', lineHeight: 19 },
   small: { fontFamily: F.body, fontSize: 12.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
   terms: { fontFamily: F.body, fontSize: 12, lineHeight: 18, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 22 },
