@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -11,6 +11,7 @@ import { GlassButton, Poster, SectionLabel, Spinner } from '../../../components/
 import { useApi } from '../../../lib/api';
 import { useWatchlist } from '../../../lib/store';
 import StartParty from '../../../components/StartParty';
+import { CommentList, Composer, useComments } from '../../../components/Comments';
 import { useAuth } from '@clerk/expo';
 import { openTitle, shareTitle } from '../../../lib/titles';
 import { F, T } from '../../../lib/theme';
@@ -18,7 +19,7 @@ import { useAccent } from '../../../lib/accent';
 import StreamOn from '../../../components/StreamOn';
 
 export default function TitleScreen() {
-  const { type, id, title: initialTitle, focus, accent: passedAccent, act } = useLocalSearchParams();
+  const { type, id, title: initialTitle, focus, accent: passedAccent, act, tab: startTab } = useLocalSearchParams();
   const liveAccent = useAccent();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -28,7 +29,9 @@ export default function TitleScreen() {
   const [trailerKey, setTrailerKey] = useState(undefined);
   const [similar, setSimilar] = useState(null);
   const [playing, setPlaying] = useState(true);
-  const [party, setParty] = useState(act === 'party'); // from a reminder's "Watch together" button
+  const [party, setParty] = useState(act === 'party');
+  const [tab, setTab] = useState(startTab === 'comments' ? 'comments' : 'about');
+  const [replyTo, setReplyTo] = useState(null); // from a reminder's "Watch together" button
   const { isSignedIn } = useAuth();
   const scrollRef = useRef(null);
   const similarY = useRef(0);
@@ -58,6 +61,7 @@ export default function TitleScreen() {
   const videoH = Math.round((width * 9) / 16);
   const saved = movie && wl.ids.has(movie.id);
   const watched = movie && wl.isWatched(movie.id);
+  const comments = useComments(movie || { id: Number(id), title: initialTitle, isTV: type === 'tv' });
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
@@ -105,11 +109,25 @@ export default function TitleScreen() {
             </View>
           ) : null}
 
-          {movie ? <StreamOn movie={movie} style={{ marginTop: 18, marginBottom: 0 }} /> : null}
-          {movie?.overview ? <Text style={styles.overview}>{movie.overview}</Text> : null}
+          <View style={styles.tabs}>
+            {[['about', 'About'], ['comments', `Comments${comments.list ? ` (${comments.list.reduce((n, c) => n + 1 + (c.replies || []).length, 0)})` : ''}`]].map(([k, l]) => (
+              <Pressable key={k} onPress={() => setTab(k)} style={[styles.tab, tab === k && { borderBottomColor: accent }]}>
+                <Text style={[styles.tabText, tab === k && { color: accent, fontFamily: F.bold }]}>{l}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {tab === 'comments' ? (
+            <View style={{ paddingBottom: 20 }}>
+              <CommentList list={comments.list} title={movie?.title || initialTitle} onReply={setReplyTo} onRemove={comments.remove} />
+            </View>
+          ) : null}
+
+          {tab === 'about' && movie ? <StreamOn movie={movie} style={{ marginTop: 18, marginBottom: 0 }} /> : null}
+          {tab === 'about' && movie?.overview ? <Text style={styles.overview}>{movie.overview}</Text> : null}
 
           {/* Similar — flat list with reasons, as on the web */}
-          <View onLayout={(e) => { similarY.current = e.nativeEvent.layout.y; }}>
+          {tab === 'about' ? <View onLayout={(e) => { similarY.current = e.nativeEvent.layout.y; }}>
             <SectionLabel accent={accent}>More like this</SectionLabel>
             {similar === null ? <Spinner accent={accent} /> : similar.length === 0 ? <Text style={styles.muted}>Nothing similar found yet.</Text> : similar.map((m, i) => (
               <Pressable key={`${m.id}-${i}`} onPress={() => openTitle(m)} style={({ pressed }) => [styles.simRow, i && styles.simBorder, { opacity: pressed ? 0.75 : 1 }]}>
@@ -124,15 +142,26 @@ export default function TitleScreen() {
                 </Pressable>
               </Pressable>
             ))}
-          </View>
+          </View> : null}
         </View>
       </ScrollView>
+      {tab === 'comments' ? (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={[styles.composer, { paddingBottom: insets.bottom + 10 }]}>
+            <Composer accent={accent} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPost={comments.post} />
+          </View>
+        </KeyboardAvoidingView>
+      ) : null}
       {party && movie ? <StartParty movie={movie} onClose={() => setParty(false)} /> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  tabs: { flexDirection: 'row', gap: 22, marginTop: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: T.hairline },
+  tab: { paddingBottom: 11, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabText: { fontFamily: F.medium, fontSize: 13.5, color: T.text3 },
+  composer: { paddingHorizontal: 16, paddingTop: 6, backgroundColor: 'rgba(6,6,11,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.hairline },
   center: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   noTrailer: { fontFamily: F.semibold, color: 'rgba(255,255,255,0.7)', fontSize: 13 },
   close: { position: 'absolute', left: 14 },
