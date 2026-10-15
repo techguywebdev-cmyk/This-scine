@@ -11,7 +11,7 @@ import { useAuth, useSSO } from '@clerk/expo';
 import { useSignIn, useSignUp } from '@clerk/expo/legacy';
 import { AuthView } from '@clerk/expo/native';
 import Marquee from '../components/PosterMarquee';
-import { CyclingGlow, GlassCard, usePosters } from '../components/StatusScreen';
+import { AmbientGlow, usePosters } from '../components/StatusScreen';
 import { TsLoader, DOTS } from '../components/Brand';
 import { API_URL } from '../lib/config';
 import { F, T } from '../lib/theme';
@@ -267,15 +267,14 @@ export default function SignIn() {
 
   const [title, sub] = COPY[step];
   const subtitle = step === 'password' ? email.trim() : step === 'code' ? `We sent a 6-digit code to ${email.trim()}` : step === 'reset' ? 'Choose a new password for your account.' : sub;
-  const big = Math.max(width, height) * 1.2;
   const slide = { opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#06060B' }}>
-      <CyclingGlow size={big} cx={0} cy={0} />
-      <CyclingGlow size={big} cx={width} cy={height} strength={0.7} />
-      <Marquee posters={posters} rows={8} size={88} fade={false} />
-      <LinearGradient pointerEvents="none" colors={['rgba(6,6,11,0.1)', 'rgba(6,6,11,0.35)', 'rgba(6,6,11,0.75)']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * (step === 'start' ? 0.62 : 0.42) }}>
+        <Marquee posters={posters} rows={4} size={88} />
+      </View>
+      <AmbientGlow width={width} height={height} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
@@ -283,11 +282,10 @@ export default function SignIn() {
             <Feather name={step === 'start' ? 'x' : 'arrow-left'} size={19} color="#fff" />
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: insets.top + 64, paddingBottom: insets.bottom + 14 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <GlassCard accent={accent}>
-          <Animated.View style={[slide, { paddingHorizontal: 22, paddingTop: 28, paddingBottom: 22 }]}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: insets.top + 64, paddingBottom: insets.bottom + 24 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Animated.View style={slide}>
             {step === 'start' ? <View style={{ alignItems: 'flex-start', marginBottom: 18 }}><TsLoader size={46} /></View> : null}
-            <Text style={[styles.title, step === 'start' && { fontSize: 34, lineHeight: 37 }]}>{title}</Text>
+            <Text style={[styles.title, step === 'start' && { fontSize: 38, lineHeight: 41 }]}>{title}</Text>
             {subtitle ? <Text style={styles.sub}>{subtitle}</Text> : null}
 
             <View style={{ gap: 12, marginTop: 26 }}>
@@ -351,7 +349,6 @@ export default function SignIn() {
               </Text>
             ) : null}
           </Animated.View>
-          </GlassCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

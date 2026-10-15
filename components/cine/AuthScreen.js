@@ -207,18 +207,15 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
   return (
     <div role="dialog" aria-label="Sign in to Thiscene" style={{ position: 'fixed', inset: 0, zIndex: 900, background: '#06060B', color: '#fff', fontFamily: "var(--font-sans), system-ui, sans-serif", display: 'flex', justifyContent: 'center', overflow: 'hidden', animation: page ? 'none' : 'authIn .3s ease' }}>
       <style>{BACKDROP_CSS + '@keyframes authIn{from{opacity:0}to{opacity:1}}@keyframes authBlink{50%{opacity:0}}.auth-btn{transition:transform .12s ease}.auth-btn:active{transform:scale(.97)}'}</style>
-      <Backdrop height="100%" rows={7} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.1) 0%, rgba(6,6,11,0.35) 55%, rgba(6,6,11,0.75) 100%)', pointerEvents: 'none' }} />
+      <Backdrop height={step === 'start' ? '64%' : '44%'} rows={4} />
       <button onClick={back} aria-label={step === 'start' ? 'Close' : 'Back'} style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16, zIndex: 2, width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.16)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {ic(step === 'start' ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M19 12H5M12 19l-7-7 7-7" />, 19)}
       </button>
 
-      <div style={{ position: 'relative', width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '72px 14px calc(14px + env(safe-area-inset-bottom))', overflowY: 'auto' }}>
-        <div className="auth-glass" style={{ position: 'relative', borderRadius: 30, padding: '28px 22px 22px', background: 'linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(10,10,18,0.35))', backdropFilter: 'blur(26px) saturate(150%)', WebkitBackdropFilter: 'blur(26px) saturate(150%)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: `0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px ${accent}14`, transition: 'box-shadow 1s ease', animation: 'bdUp .45s cubic-bezier(.2,.8,.2,1) both' }}>
-        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 30, background: `radial-gradient(120% 70% at 0% 0%, ${accent}26, transparent 60%)`, transition: 'background 1.2s ease', pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '72px 24px calc(28px + env(safe-area-inset-bottom))', overflowY: 'auto' }}>
         <div key={k} style={{ position: 'relative', animation: 'bdUp .4s cubic-bezier(.2,.8,.2,1) both' }}>
           {step === 'start' && <div style={{ marginBottom: 18 }}><TsMark size={52} /></div>}
-          <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: step === 'start' ? 36 : 29, lineHeight: 1.06, fontWeight: 800, letterSpacing: '-0.035em' }}>{title}</h1>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display), 'Inter Tight', system-ui, sans-serif", fontSize: step === 'start' ? 40 : 31, lineHeight: 1.06, fontWeight: 800, letterSpacing: '-0.035em' }}>{title}</h1>
           {subtitle && <p style={{ margin: '10px 0 0', fontSize: 15.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.65)' }}>{subtitle}</p>}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 26 }}>
@@ -277,7 +274,6 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
           {step === 'start' && clerk?.openSignIn && (
             <button type="button" onClick={() => { clerk.openSignIn(); onClose?.(); }} style={{ ...link, display: 'block', margin: '10px auto 0', fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Having trouble? Use the standard sign-in</button>
           )}
-        </div>
         </div>
       </div>
     </div>

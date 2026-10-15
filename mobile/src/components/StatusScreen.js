@@ -33,6 +33,22 @@ export function CyclingGlow({ size, cx, cy, strength = 1 }) {
   ));
 }
 
+// The app's ambient gradient (glow top-left + bottom-right + soft wash), drifting through the card colours
+export function AmbientGlow({ width, height }) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => { const l = Animated.loop(Animated.timing(t, { toValue: DOTS.length, duration: DOTS.length * 1600, easing: Easing.linear, useNativeDriver: false })); l.start(); return () => l.stop(); }, [t]);
+  const color = t.interpolate({ inputRange: DOTS.map((_, i) => i).concat(DOTS.length), outputRange: DOTS.concat(DOTS[0]) });
+  const big = Math.max(width, height) * 1.25;
+  const rings = [1, 0.82, 0.66, 0.52, 0.4, 0.3, 0.21];
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: color, opacity: 0.07 }]} />
+      {rings.map((r, i) => <Animated.View key={`a${i}`} style={{ position: 'absolute', width: big * r, height: big * r, borderRadius: (big * r) / 2, left: -(big * r) / 2, top: -(big * r) / 2, backgroundColor: color, opacity: 0.045 }} />)}
+      {rings.map((r, i) => <Animated.View key={`b${i}`} style={{ position: 'absolute', width: big * r, height: big * r, borderRadius: (big * r) / 2, left: width - (big * r) / 2, top: height - (big * r) / 2, backgroundColor: color, opacity: 0.035 }} />)}
+    </View>
+  );
+}
+
 // Frosted-glass card used by the full-screen moments (sign-in, errors, not found)
 export function GlassCard({ children, accent, style }) {
   return (
@@ -70,14 +86,12 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
 
   return (
     <View style={styles.root}>
-      <CyclingGlow size={big} cx={0} cy={0} />
-      <CyclingGlow size={big} cx={width} cy={height} strength={0.7} />
-      <Marquee posters={posters} rows={8} size={84} fade={false} />
-      <LinearGradient pointerEvents="none" colors={['rgba(6,6,11,0.1)', 'rgba(6,6,11,0.35)', 'rgba(6,6,11,0.75)']} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * 0.5 }}>
+        <Marquee posters={posters} rows={3} size={84} />
+      </View>
+      <AmbientGlow width={width} height={height} />
 
-      <View style={[styles.body, { paddingBottom: insets.bottom + 14 }]}>
-      <GlassCard style={{ width: '100%' }}>
-      <View style={{ alignItems: 'center', paddingHorizontal: 22, paddingTop: 32, paddingBottom: 22 }}>
+      <View style={[styles.body, { paddingBottom: insets.bottom + 34 }]}>
         <Animated.View style={[styles.iconWrap, up(10)]}>
           {[0, 0.5].map((off) => {
             const p = Animated.modulo(Animated.add(ring, off), 1);
@@ -103,15 +117,13 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
           ) : null}
         </Animated.View>
       </View>
-      </GlassCard>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#06060B', overflow: 'hidden' },
-  body: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 14 },
+  body: { flex: 1, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 28 },
   iconWrap: { width: 76, height: 76, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
   ring: { position: 'absolute', width: 76, height: 76, borderRadius: 38, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
   icon: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },

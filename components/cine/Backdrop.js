@@ -33,15 +33,13 @@ export const BACKDROP_CSS = `
 @media (prefers-reduced-motion:reduce){.bd-anim{animation:none!important}}
 `;
 
-export function Backdrop({ height = '62%', rows = 4, size = 104 }) {
+export function Backdrop({ height = '58%', rows = 4, size = 104 }) {
   const posters = usePosters(rows * 7);
   const list = posters.length ? posters : Array(rows * 7).fill(null);
   return (
     <div aria-hidden="true" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-      <div className="bd-anim" style={{ position: 'absolute', width: '120vmax', height: '120vmax', left: '-70vmax', top: '-70vmax', borderRadius: '50%', filter: 'blur(90px)', opacity: 0.22, animation: `bdGlow ${DOTS.length * 1.4}s linear infinite` }} />
-      <div className="bd-anim" style={{ position: 'absolute', width: '120vmax', height: '120vmax', right: '-75vmax', bottom: '-75vmax', borderRadius: '50%', filter: 'blur(90px)', opacity: 0.16, animation: `bdGlow ${DOTS.length * 1.4}s linear infinite reverse` }} />
       <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', left: -60, right: -60, top: -40, transform: 'rotate(-6deg)', opacity: 0.55 }}>
+        <div style={{ position: 'absolute', left: -60, right: -60, top: -40, transform: 'rotate(-6deg)', opacity: 0.5 }}>
           {Array.from({ length: rows }, (_, r) => {
             const items = list.filter((_, i) => i % rows === r);
             return (
@@ -55,8 +53,12 @@ export function Backdrop({ height = '62%', rows = 4, size = 104 }) {
             );
           })}
         </div>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.35) 0%, rgba(6,6,11,0.15) 35%, rgba(6,6,11,0.85) 80%, #06060B 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.3) 0%, rgba(6,6,11,0.15) 30%, rgba(6,6,11,0.85) 78%, #06060B 100%)' }} />
       </div>
+      {/* The app's ambient gradient, drifting through the card colours, laid over everything */}
+      <div className="bd-anim" style={{ position: 'absolute', inset: 0, opacity: 0.12, animation: `bdGlow ${DOTS.length * 1.6}s linear infinite` }} />
+      <div className="bd-anim" style={{ position: 'absolute', width: '130vmax', height: '110vmax', left: '-65vmax', top: '-55vmax', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.22, animation: `bdGlow ${DOTS.length * 1.6}s linear infinite` }} />
+      <div className="bd-anim" style={{ position: 'absolute', width: '130vmax', height: '110vmax', right: '-65vmax', bottom: '-60vmax', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.18, animation: `bdGlow ${DOTS.length * 1.6}s linear infinite`, animationDelay: `-${DOTS.length * 0.6}s` }} />
     </div>
   );
 }
@@ -66,10 +68,8 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#06060B', color: '#fff', fontFamily: "var(--font-sans), system-ui, sans-serif", display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
       <style>{BACKDROP_CSS}</style>
-      <Backdrop height="100%" rows={7} />
-      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.1) 0%, rgba(6,6,11,0.35) 55%, rgba(6,6,11,0.75) 100%)' }} />
-      <div style={{ position: 'relative', width: '100%', maxWidth: 460, padding: '0 14px calc(14px + env(safe-area-inset-bottom))' }}>
-      <div style={{ position: 'relative', borderRadius: 30, padding: '34px 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', background: 'linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(10,10,18,0.35))', backdropFilter: 'blur(26px) saturate(150%)', WebkitBackdropFilter: 'blur(26px) saturate(150%)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)', animation: 'bdUp .45s ease both' }}>
+      <Backdrop height="52%" rows={3} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 440, padding: '0 28px calc(40px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ position: 'relative', width: 80, height: 80, marginBottom: 22, animation: 'bdUp .5s ease both' }}>
           {[0, 1.1].map((d) => <span key={d} className="bd-anim" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: `bdRing 2.2s ease-out ${d}s infinite` }} />)}
           <div className="bd-anim" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'bdFloat 3.2s ease-in-out infinite' }}>{icon}</div>
@@ -84,7 +84,6 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
             ? <a href={secondary.href} style={btn(false)}>{secondary.label}</a>
             : <button onClick={secondary.onClick} style={btn(false)}>{secondary.label}</button>)}
         </div>
-      </div>
       </div>
     </div>
   );
