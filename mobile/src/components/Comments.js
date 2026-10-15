@@ -6,7 +6,7 @@ import { Feather } from '@expo/vector-icons';
 import { Avatar } from './Ui';
 import { TsLoader } from './Brand';
 import { useApi } from '../lib/api';
-import { F, T } from '../lib/theme';
+import { F, T, inkOn } from '../lib/theme';
 
 const ago = (ts) => { const m = Math.floor((Date.now() - new Date(ts)) / 60000); if (m < 1) return 'now'; if (m < 60) return `${m}m`; const h = Math.floor(m / 60); if (h < 24) return `${h}h`; const d = Math.floor(h / 24); return d < 30 ? `${d}d` : new Date(ts).toLocaleDateString([], { day: 'numeric', month: 'short' }); };
 const Stars = ({ n }) => (n > 0 ? <Text style={{ color: '#FFD166', fontSize: 11, letterSpacing: 1 }}>{'★'.repeat(n)}<Text style={{ color: 'rgba(255,255,255,0.2)' }}>{'★'.repeat(5 - n)}</Text></Text> : null);
@@ -48,10 +48,11 @@ export function CommentList({ list, onReply, onRemove, title }) {
   return list.map((c) => <View key={c.id}><Item c={c} />{(c.replies || []).map((r) => <Item key={r.id} c={r} reply />)}</View>);
 }
 
-export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff' }) {
+export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', initialRating = 0 }) {
   const { isSignedIn } = useAuth();
   const [text, setText] = useState('');
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(initialRating);
+  useEffect(() => { if (initialRating) setRating(initialRating); }, [initialRating]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const send = async () => {
@@ -74,8 +75,8 @@ export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff' }) {
       )}
       {err ? <Text style={styles.err}>{err}</Text> : null}
       <View style={styles.inputRow}>
-        <TextInput value={text} onChangeText={setText} placeholder={isSignedIn ? (replyTo ? 'Write a reply…' : 'Add a comment…') : 'Sign in to comment'} placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={1000} style={styles.input} editable={!!isSignedIn} onPressIn={() => !isSignedIn && router.push('/sign-in')} />
-        <Pressable onPress={send} disabled={busy || !text.trim()} style={[styles.send, { opacity: text.trim() ? 1 : 0.35 }]} accessibilityLabel="Post comment"><Feather name="arrow-up" size={18} color="#07070F" /></Pressable>
+        <TextInput value={text} onChangeText={setText} placeholder={isSignedIn ? (replyTo ? 'Write a reply…' : 'Comment… what did you think?') : 'Sign in to comment'} placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={1000} style={styles.input} editable={!!isSignedIn} onPressIn={() => !isSignedIn && router.push('/sign-in')} />
+        <Pressable onPress={send} disabled={busy || !text.trim()} style={[styles.send, { backgroundColor: accent, opacity: text.trim() ? 1 : 0.55 }]} accessibilityLabel="Post comment"><Feather name="send" size={18} color={inkOn(accent)} /></Pressable>
       </View>
     </View>
   );
@@ -95,6 +96,6 @@ const styles = StyleSheet.create({
   rateLabel: { fontFamily: F.semibold, fontSize: 12.5, color: T.text2, marginRight: 4 },
   err: { fontFamily: F.body, fontSize: 12, color: '#ff8a8a', marginBottom: 6 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  input: { flex: 1, minHeight: 44, maxHeight: 110, color: '#fff', fontFamily: F.body, fontSize: 15, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, borderRadius: 22, ...glass },
-  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, minHeight: 48, maxHeight: 110, color: '#fff', fontFamily: F.body, fontSize: 15, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, borderRadius: 22, ...glass },
+  send: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 });

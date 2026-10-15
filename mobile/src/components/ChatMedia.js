@@ -20,10 +20,35 @@ export function AttachTray({ onPick }) {
     <View style={styles.tray}>
       {ATTACH.map((a) => (
         <Pressable key={a.id} onPress={() => onPick(a.id)} style={({ pressed }) => [{ alignItems: 'center', gap: 7, flex: 1, opacity: pressed ? 0.6 : 1 }]} accessibilityLabel={a.label}>
-          <View style={[styles.trayIcon, { borderColor: `${a.tint}55`, backgroundColor: `${a.tint}14` }]}><Feather name={a.icon} size={22} color={a.tint} /></View>
+          <View style={[styles.trayIcon, { borderColor: `${a.tint}66`, backgroundColor: `${a.tint}26`, shadowColor: a.tint }]}><Feather name={a.icon} size={22} color={a.tint} /></View>
           <Text style={styles.trayLabel}>{a.label}</Text>
         </Pressable>
       ))}
+    </View>
+  );
+}
+
+// Emoji sets (same packs as the website's sticker tray)
+const PACKS = {
+  Cinema: ['🎬', '🍿', '🎥', '🎞️', '📽️', '🎦', '🏆', '⭐', '🌟', '💫', '🔥', '💥'],
+  Reactions: ['😂', '😍', '😱', '😭', '🤯', '😎', '🤔', '😴', '🫡', '🫠', '👀', '💯'],
+  Love: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '💕', '✨', '🙌'],
+  Fun: ['👻', '💀', '🎃', '👽', '🤖', '👾', '🎮', '🎯', '🍕', '☕', '🌙', '📱'],
+};
+export function EmojiPicker({ onPick }) {
+  const [pack, setPack] = useState('Cinema');
+  return (
+    <View style={{ paddingTop: 10, paddingBottom: 4 }}>
+      <View style={{ flexDirection: 'row', gap: 16, marginBottom: 8, paddingHorizontal: 4 }}>
+        {Object.keys(PACKS).map((k) => (
+          <Pressable key={k} onPress={() => setPack(k)} hitSlop={6}><Text style={[styles.trayLabel, pack === k ? { color: '#fff', fontFamily: F.bold } : { color: 'rgba(255,255,255,0.45)' }]}>{k}</Text></Pressable>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {PACKS[pack].map((e) => (
+          <Pressable key={e} onPress={() => onPick(e)} style={({ pressed }) => [{ width: '16.66%', alignItems: 'center', paddingVertical: 8, opacity: pressed ? 0.5 : 1 }]}><Text style={{ fontSize: 28 }}>{e}</Text></Pressable>
+        ))}
+      </View>
     </View>
   );
 }
@@ -110,7 +135,7 @@ export function MediaBubble({ m }) {
 
 const styles = StyleSheet.create({
   tray: { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 4 },
-  trayIcon: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  trayIcon: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, elevation: 6, shadowOpacity: 0.5, shadowRadius: 12 },
   trayLabel: { fontFamily: F.semibold, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
   gifWrap: { paddingTop: 8 },
   gifSearch: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, borderRadius: 21, paddingHorizontal: 14, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },

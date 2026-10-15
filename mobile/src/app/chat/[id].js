@@ -9,7 +9,7 @@ import Ambient from '../../components/Ambient';
 import VoiceBubble from '../../components/VoiceBubble';
 import { RecorderBar, useVoiceRecorder } from '../../components/VoiceRecorder';
 import SafetySheet from '../../components/SafetySheet';
-import { AttachTray, GifPicker, MediaBubble } from '../../components/ChatMedia';
+import { AttachTray, EmojiPicker, GifPicker, MediaBubble } from '../../components/ChatMedia';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Avatar, GlassButton, Poster } from '../../components/Ui';
@@ -17,7 +17,9 @@ import { TsLoader } from '../../components/Brand';
 import { useApi } from '../../lib/api';
 import { useCalls } from '../../lib/calls';
 import { openTitle } from '../../lib/titles';
-import { F, T } from '../../lib/theme';
+import { F, T, inkOn } from '../../lib/theme';
+import { useAccent } from '../../lib/accent';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const timeOf = (ts) => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const dayLabel = (ts) => {
@@ -161,12 +163,14 @@ export default function Chat() {
 
   // newest at the bottom: inverted list wants newest first
   const data = (msgs || []).slice().reverse();
-  const accent = '#fff';
+  const live = useAccent();
+  const accent = live && !/^#(fff|ffffff|e6e6ea)$/i.test(live) ? live : '#F5C842';
+  const mineInk = inkOn(accent);
 
   const renderBody = (m) => {
     const mine = m.from_me;
-    const ink = mine ? '#07070F' : '#fff';
-    if (m.msg_type === 'voice' && m.media_url) return <VoiceBubble src={m.media_url} secs={m.meta?.secs} peaks={m.meta?.peaks} mine={mine} accent="#fff" />;
+    const ink = mine ? mineInk : '#fff';
+    if (m.msg_type === 'voice' && m.media_url) return <VoiceBubble src={m.media_url} secs={m.meta?.secs} peaks={m.meta?.peaks} mine={mine} accent={mine ? mineInk : '#fff'} />;
     if (['image', 'photo', 'video', 'file'].includes(m.msg_type) && m.media_url) return <MediaBubble m={m} />;
     if ((m.msg_type === 'sticker' || m.msg_type === 'gif') && m.media_url) return <Image source={{ uri: m.media_url }} style={{ width: 150, height: 150 }} contentFit="contain" />;
     if (m.msg_type === 'title' && m.meta) {
@@ -212,7 +216,7 @@ export default function Chat() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Ambient />
+      <Ambient accent={accent} />
       <View style={[styles.head, { paddingTop: insets.top + 8 }]}>
         <GlassButton icon="chevron-left" label="Back" onPress={() => router.back()} />
         <Pressable onPress={() => router.push({ pathname: '/person/[id]', params: { id: peerId } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -244,7 +248,7 @@ export default function Chat() {
               <View>
                 {showDay ? <Text style={styles.day}>{dayLabel(m.created_at)}</Text> : null}
                 <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginVertical: 3 }}>
-                  <View style={[styles.bubble, media ? styles.mediaBubble : mine ? styles.mine : styles.theirs, m.pending && { opacity: 0.6 }]}>
+                  <View style={[styles.bubble, media ? styles.mediaBubble : mine ? [styles.mine, { backgroundColor: accent }] : styles.theirs, m.pending && { opacity: 0.6 }]}>
                     {renderBody(m)}
                   </View>
                   <Text style={styles.meta}>{timeOf(m.created_at)}{mine && !m.pending ? (m.read ? ' · Seen' : ' · Sent') : ''}</Text>
@@ -261,24 +265,28 @@ export default function Chat() {
         </View>
       ) : (
         <View style={[styles.composer, { paddingBottom: insets.bottom + 10 }]}>
+          <LinearGradient pointerEvents="none" colors={[`${accent}10`, `${accent}26`]} style={StyleSheet.absoluteFill} />
           {err ? <Text style={styles.err}>{err}</Text> : null}
           {tray === 'menu' && !rec.recording ? <AttachTray onPick={pick} /> : null}
           {tray === 'gif' && !rec.recording ? <GifPicker onSend={sendGif} onClose={() => setTray(null)} /> : null}
+          {tray === 'emoji' && !rec.recording ? <EmojiPicker onPick={(e) => setText((t) => `${t}${e}`)} /> : null}
           {rec.recording ? <RecorderBar rec={rec} maxSecs={120} /> : (
             <View style={styles.inputRow}>
-              <Pressable onPress={() => setTray((t) => (t ? null : 'menu'))} disabled={sending} accessibilityLabel={tray ? 'Close attachments' : 'Add photo, video, file or GIF'} style={[styles.send, styles.mic, tray && { backgroundColor: '#fff' }]}>
-                <Feather name={tray ? 'x' : 'plus'} size={20} color={tray ? '#07070F' : '#fff'} />
+              <Pressable onPress={() => setTray((t) => (t === 'menu' || t === 'gif' ? null : 'menu'))} disabled={sending} accessibilityLabel={tray === 'menu' || tray === 'gif' ? 'Close attachments' : 'Add photo, video, file or GIF'} style={[styles.send, { backgroundColor: tray === 'menu' || tray === 'gif' ? accent : 'rgba(0,0,0,0.3)', borderWidth: tray === 'menu' || tray === 'gif' ? 0 : 1, borderColor: 'rgba(255,255,255,0.14)' }]}>
+                <Feather name={tray === 'menu' || tray === 'gif' ? 'x' : 'plus'} size={20} color={tray === 'menu' || tray === 'gif' ? inkOn(accent) : '#fff'} />
               </Pressable>
-              <TextInput value={text} onFocus={() => tray === 'menu' && setTray(null)} onChangeText={setText} placeholder="Message…" placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={2000} style={styles.input} />
+              <View style={styles.pill}>
+                <TextInput value={text} onFocus={() => tray && tray !== 'emoji' && setTray(null)} onChangeText={setText} placeholder="Type a message…" placeholderTextColor="rgba(255,255,255,0.4)" multiline maxLength={2000} style={styles.input} />
+                <Pressable onPress={() => setTray((t) => (t === 'emoji' ? null : 'emoji'))} hitSlop={6} accessibilityLabel="Emoji" style={styles.pillBtn}><Text style={{ fontSize: 22 }}>{tray === 'emoji' ? '⌨️' : '🙂'}</Text></Pressable>
+                {!text.trim() ? (
+                  <Pressable onPress={rec.start} disabled={sending} hitSlop={6} accessibilityLabel="Record a voice note" style={styles.pillBtn}><Feather name="mic" size={21} color="rgba(255,255,255,0.75)" /></Pressable>
+                ) : null}
+              </View>
               {text.trim() ? (
-                <Pressable onPress={send} disabled={sending} accessibilityLabel="Send" style={styles.send}>
-                  <Feather name="arrow-up" size={18} color="#07070F" />
+                <Pressable onPress={send} disabled={sending} accessibilityLabel="Send" style={[styles.send, { backgroundColor: accent }]}>
+                  <Feather name="send" size={18} color={inkOn(accent)} />
                 </Pressable>
-              ) : (
-                <Pressable onPress={rec.start} disabled={sending} accessibilityLabel="Record a voice note" style={[styles.send, styles.mic]}>
-                  <Feather name="mic" size={18} color="#fff" />
-                </Pressable>
-              )}
+              ) : null}
             </View>
           )}
         </View>
@@ -301,11 +309,13 @@ const styles = StyleSheet.create({
   msgText: { fontFamily: F.body, fontSize: 14.5, lineHeight: 20 },
   meta: { fontFamily: F.body, fontSize: 10.5, color: T.text3, marginTop: 3, marginHorizontal: 6 },
   empty: { alignSelf: 'center', fontFamily: F.semibold, fontSize: 13.5, color: T.text2, marginVertical: 40 },
-  composer: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.hairline, backgroundColor: 'rgba(6,6,11,0.6)' },
+  composer: { paddingHorizontal: 12, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+  pill: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', minHeight: 48, borderRadius: 24, paddingRight: 6, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  pillBtn: { width: 36, height: 46, alignItems: 'center', justifyContent: 'center' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  input: { flex: 1, maxHeight: 120, minHeight: 44, color: '#fff', fontFamily: F.body, fontSize: 15, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  input: { flex: 1, maxHeight: 120, minHeight: 46, color: '#fff', fontFamily: F.body, fontSize: 15.5, paddingLeft: 18, paddingRight: 4, paddingTop: 12, paddingBottom: 12 },
   mic: { backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
-  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  send: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   err: { fontFamily: F.body, fontSize: 12, color: '#ff8a8a', marginBottom: 6, marginLeft: 6 },
   blockedBar: { paddingHorizontal: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.hairline },
   blockedText: { fontFamily: F.body, fontSize: 13, color: T.text2, textAlign: 'center' },
