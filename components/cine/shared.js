@@ -162,7 +162,7 @@ export function CertBadge({ cert }) {
   const color = cert==='R'||cert==='NC-17'||cert==='18'||cert==='TV-MA' ? '#FF4444'
     : cert==='PG-13'||cert==='TV-14'||cert==='15' ? '#F5A623'
     : 'rgba(255,255,255,0.5)';
-  return <span style={{fontSize:9,fontWeight:800,color,border:`1px solid ${color}55`,borderRadius:4,padding:'2px 5px',letterSpacing:0.5,flexShrink:0}}>{cert}</span>;
+  return <span style={{fontSize:9,fontWeight:800,color,background:'rgba(8,8,14,0.32)',backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',border:`1px solid ${color}66`,borderRadius:5,padding:'3px 6px',letterSpacing:0.5,flexShrink:0}}>{cert}</span>;
 }
 export function Toast({message,accent}){
   return(
@@ -1076,6 +1076,13 @@ export function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProf
     </div>
   );
 }
+
+// ── Glass system ──
+// Controls (anything you tap): smoky frosted glass; "on" fills with the film's colour.
+export const GLASS = { background: 'linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05)), rgba(8,8,14,0.22)', backdropFilter: 'blur(14px) saturate(140%)', WebkitBackdropFilter: 'blur(14px) saturate(140%)', border: '1px solid rgba(255,255,255,0.18)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14)' };
+export const glassOn = (a) => ({ background: `linear-gradient(160deg, ${a}55, ${a}22), rgba(8,8,14,0.2)`, backdropFilter: 'blur(14px) saturate(140%)', WebkitBackdropFilter: 'blur(14px) saturate(140%)', border: `1px solid ${a}aa`, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 18px ${a}40` });
+// Information (numbers, ratings): lighter, quieter glass
+export const GLASS_SOFT = { background: 'linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03)), rgba(8,8,14,0.28)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.12)' };
 export function dayPart(){const h=new Date().getHours();if(h>=5&&h<12)return{key:'morning',title:'This morning',phrase:'this morning'};if(h>=12&&h<17)return{key:'afternoon',title:'This afternoon',phrase:'this afternoon'};if(h>=17&&h<22)return{key:'tonight',title:'Tonight',phrase:'tonight'};return{key:'late',title:'Late night',phrase:'late tonight'};}
 export function ReleaseCountdown({dateStr,accent}){
   const target=dateStr?new Date(dateStr+'T00:00:00').getTime():0;
@@ -1091,7 +1098,7 @@ export function ReleaseCountdown({dateStr,accent}){
   return(
     <div style={{display:'flex',gap:6,marginBottom:12}}>
       {cells.map(([v,l],i)=>(
-        <div key={l} style={{minWidth:52,padding:'7px 8px 6px',borderRadius:12,background:'rgba(0,0,0,0.38)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:`1px solid ${i===0?accent+'40':'rgba(255,255,255,0.08)'}`,textAlign:'center'}}>
+        <div key={l} style={{minWidth:52,padding:'7px 8px 6px',borderRadius:12,...GLASS_SOFT,...(i===0?{border:`1px solid ${accent}66`}:{}),textAlign:'center'}}>
           <div style={{fontSize:19,fontWeight:800,color:i===0?accent:'#fff',fontVariantNumeric:'tabular-nums',lineHeight:1}}>{String(v).padStart(2,'0')}</div>
           <div style={{fontSize:8.5,letterSpacing:1.6,textTransform:'uppercase',color:'rgba(255,255,255,0.45)',fontWeight:700,marginTop:4}}>{l}</div>
         </div>
@@ -1174,8 +1181,8 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
           style={{
             position:'absolute',top:'40%',left:'50%',transform:'translate(-50%,-50%)',zIndex:16,
             width:68,height:68,borderRadius:'50%',cursor:'pointer',padding:0,
-            background:'rgba(0,0,0,0.55)',backdropFilter:'blur(12px)',
-            border:`2px solid ${accent}66`,
+            ...GLASS,
+            border:`1.5px solid ${accent}88`,
             display:'flex',alignItems:'center',justifyContent:'center',
             boxShadow:`0 8px 28px rgba(0,0,0,0.45),0 0 24px ${accent}22`,
             transition:'transform 0.15s ease, border-color 0.15s ease',
@@ -1195,13 +1202,13 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
       )}
       <div style={{position:'absolute',top:92,left:0,right:0,zIndex:10,padding:'0 16px',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:isActive?1:0.5,transition:'opacity 0.4s ease'}}>
         {isUpcoming
-          ?<div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`,animation:'csPulse 1.6s ease-in-out infinite'}}/><span style={{fontSize:10.5,fontWeight:700,color:'rgba(255,255,255,0.8)',letterSpacing:1.6,textTransform:'uppercase'}}>Coming Soon</span></div>
-          :<div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/><span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:1}}>{String(index+1).padStart(2,'0')}</span>{movie.isTV&&<span style={{fontSize:9,color:accent,fontWeight:700,marginLeft:2}}>TV</span>}</div>}
+          ?<div style={{display:'flex',alignItems:'center',gap:6,...GLASS_SOFT,borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`,animation:'csPulse 1.6s ease-in-out infinite'}}/><span style={{fontSize:10.5,fontWeight:700,color:'rgba(255,255,255,0.8)',letterSpacing:1.6,textTransform:'uppercase'}}>Coming Soon</span></div>
+          :<div style={{display:'flex',alignItems:'center',gap:6,...GLASS_SOFT,borderRadius:20,padding:'5px 12px'}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,boxShadow:`0 0 6px ${accent}`}}/><span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.55)',letterSpacing:1}}>{String(index+1).padStart(2,'0')}</span>{movie.isTV&&<span style={{fontSize:9,color:accent,fontWeight:700,marginLeft:2}}>TV</span>}</div>}
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           {movie.certification&&<CertBadge cert={movie.certification}/>}
           {isUpcoming
-            ?<div style={{display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:`1px solid ${accent}30`,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="calendar" size={12} color={accent}/><span style={{fontSize:12.5,fontWeight:800,color:'#fff'}}>{formatReleaseCountdown(movie.releaseDate)}</span></div>
-            :<div style={{display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.4)',backdropFilter:'blur(16px)',border:`1px solid ${accent}30`,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="star" size={11} color={accent} filled/><span style={{fontSize:13,fontWeight:800,color:'#fff'}}>{movie.rating}</span><span style={{fontSize:10,color:'rgba(255,255,255,0.25)'}}>/10</span></div>}
+            ?<div style={{display:'flex',alignItems:'center',gap:6,...GLASS_SOFT,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="calendar" size={12} color={accent}/><span style={{fontSize:12.5,fontWeight:800,color:'#fff'}}>{formatReleaseCountdown(movie.releaseDate)}</span></div>
+            :<div style={{display:'flex',alignItems:'center',gap:5,...GLASS_SOFT,borderRadius:20,padding:'5px 12px'}}><SvgIcon name="star" size={11} color={accent} filled/><span style={{fontSize:13,fontWeight:800,color:'#fff'}}>{movie.rating}</span><span style={{fontSize:10,color:'rgba(255,255,255,0.25)'}}>/10</span></div>}
         </div>
       </div>
       <div style={{position:'absolute',bottom:0,left:0,right:74,padding:'0 20px calc(14px + env(safe-area-inset-bottom))',zIndex:10,opacity:isActive?1:0.4,transform:isActive?'translateY(0)':'translateY(18px)',transition:'all 0.5s ease'}}>
@@ -1223,9 +1230,9 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
       </div>
       <div style={{position:'absolute',right:12,bottom:'calc(16px + env(safe-area-inset-bottom))',zIndex:10,display:'flex',flexDirection:'column',gap:5,alignItems:'center',opacity:isActive?1:0,transform:isActive?'translateX(0)':'translateX(28px)',transition:'all 0.45s ease 0.12s'}}>
         {[{k:'save',icon:isSaved?'check':'plus',label:isSaved?'Saved':'Save',active:isSaved,color:'#7BFF9E',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}onSave(movie);}},{k:'like',icon:'heart',label:fmt(likeCount+(liked?1:0)),active:liked,color:'#FF6B8A',filled:liked,fn:handleLike},{k:'review',icon:'chat',label:'Review',active:showComments,color:'#7BC8FF',filled:false,fn:()=>setShowComments(true)},(isUpcoming?{k:'remind',icon:'bell',label:isReminded?'Reminded':'Remind',active:!!isReminded,color:'#FFD166',filled:!!isReminded,fn:toggleReminder}:{k:'seen',icon:'eye',label:isWatched?'Seen':'Seen it',active:!!isWatched,color:'#7BFFB0',filled:false,fn:()=>{if(!isSignedIn){onAuthRequired();return;}if(onMarkWatched)onMarkWatched(movie);}}),{k:'similar',icon:'similar',label:'Similar',active:false,color:accent,filled:false,fn:()=>onFindSimilar(movie)},{k:'share',icon:'share',label:'Share',active:false,color:accent,filled:false,fn:()=>setShowShareSheet(true)}].map(btn=>(
-          <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,background:btn.active?`${btn.color}15`:'rgba(0,0,0,0.42)',backdropFilter:'blur(20px)',border:`1px solid ${btn.active?btn.color+'50':'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease',boxShadow:btn.active?`0 0 16px ${btn.color}1f`:'none'}}>
-            <SvgIcon name={btn.icon} size={20} color={btn.active?btn.color:'rgba(255,255,255,0.65)'} filled={btn.filled}/>
-            <span style={{fontSize:9,color:btn.active?btn.color:'rgba(255,255,255,0.55)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
+          <button key={btn.k} onClick={btn.fn} aria-label={btn.label} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,...(btn.active?glassOn(accent):GLASS),borderRadius:18,padding:'11px 0',cursor:'pointer',width:56,boxSizing:'border-box',transition:'all 0.22s ease'}}>
+            <SvgIcon name={btn.icon} size={20} color={btn.active?'#fff':'rgba(255,255,255,0.85)'} filled={btn.filled}/>
+            <span style={{fontSize:9,color:btn.active?'#fff':'rgba(255,255,255,0.7)',letterSpacing:0.2,fontWeight:700,marginTop:1,textShadow:'0 1px 6px rgba(0,0,0,0.6)',whiteSpace:'nowrap'}}>{btn.label}</span>
           </button>
         ))}
       </div>
