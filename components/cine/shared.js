@@ -505,8 +505,8 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       </div>
       {activeTab==='about'&&(
         <div style={{padding:'18px',animation:'fadeIn 0.2s ease'}}>
-          <div style={{display:'flex',gap:14,marginBottom:20}}>
-            <div style={{width:108,flexShrink:0,borderRadius:12,overflow:'hidden',aspectRatio:'2/3',background:movie?.gradient||T.surface2}}>
+          <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:20}}>
+            <div style={{width:108,flexShrink:0,alignSelf:'flex-start',borderRadius:12,overflow:'hidden',aspectRatio:'2/3',background:movie?.gradient||T.surface2}}>
               {movie?.poster&&<img src={movie.poster} alt={movie.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
             </div>
             <div style={{flex:1}}>

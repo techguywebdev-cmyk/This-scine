@@ -125,8 +125,8 @@ export default function TitleScreen() {
 
           {tab === 'about' && movie ? (
             <View>
-              <View style={{ flexDirection: 'row', gap: 16, marginTop: 20 }}>
-                <Poster uri={movie.poster} width={Math.round(width * 0.3)} />
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginTop: 20 }}>
+                <View style={{ alignSelf: 'flex-start' }}><Poster uri={movie.poster} width={Math.round(width * 0.3)} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.overview} numberOfLines={more ? undefined : 6}>{details?.overview || movie.overview}</Text>
                   {(details?.overview || movie.overview || '').length > 200 ? <Pressable onPress={() => setMore((v) => !v)} hitSlop={6}><Text style={[styles.readMore, { color: accent }]}>{more ? 'Show less' : 'Read more'}</Text></Pressable> : null}
