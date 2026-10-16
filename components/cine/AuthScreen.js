@@ -113,17 +113,26 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
     else onClose?.();
   };
 
+  // On slow connections Clerk can still be loading when someone taps — wait for it instead of failing
+  const ready = async () => {
+    const live = () => (inLoaded && signIn ? signIn : clerk?.loaded ? clerk.client?.signIn : null);
+    for (let i = 0; i < 40 && !live(); i++) await new Promise((r) => setTimeout(r, 250));
+    const si = live();
+    if (!si) throw { friendly: 'Still connecting to sign-in — check your connection and try again' };
+    return si;
+  };
+
   const google = async () => {
-    setBusy('google');
-    try { await signIn.authenticateWithRedirect({ strategy: 'oauth_google', redirectUrl: '/sso-callback', redirectUrlComplete: redirect || '/' }); }
-    catch (e) { fail(e, 'Google sign-in didn’t start — try email instead'); setBusy(null); }
+    setBusy('google'); setErr('');
+    try { const si = await ready(); await si.authenticateWithRedirect({ strategy: 'oauth_google', redirectUrl: '/sso-callback', redirectUrlComplete: redirect || '/' }); }
+    catch (e) { fail(e, e?.friendly || 'Google sign-in didn’t start — try email instead'); setBusy(null); }
   };
   const checkEmail = async (e) => {
     e?.preventDefault();
-    if (!inLoaded || !isEmail(email)) { setErr('Enter a valid email address'); return; }
+    if (!isEmail(email)) { setErr('Enter a valid email address'); return; }
     setBusy('email'); setErr('');
-    try { await signIn.create({ identifier: email.trim() }); go('password'); }
-    catch (x) { if (x?.errors?.[0]?.code === 'form_identifier_not_found') go('signup'); else fail(x); }
+    try { const si = await ready(); await si.create({ identifier: email.trim() }); go('password'); }
+    catch (x) { if (x?.errors?.[0]?.code === 'form_identifier_not_found') go('signup'); else fail(x, x?.friendly); }
     setBusy(null);
   };
   const sendSignInCode = async () => {
