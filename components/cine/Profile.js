@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import { fmtRemind } from './Remind';
+import AppearanceSheet from './Appearance';
+import { useTheme } from './theme';
 import { DeleteAccountSheet, BlockedList, PartyHistoryRow, AccentGlow, CoverCropModal, CoverImg, Eyebrow, GRADS, InlinePlayer, SerifStat, SvgIcon, T, Toast, UserProfileSheet, ambient, coverCache, subscribePush } from './shared';
 import { SITE_HOST, SITE_URL } from '../../lib/brand';
 
@@ -189,6 +191,7 @@ export function CineScoreRing({score,accent}){
   );
 }
 export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loadingData,onDiscover,onWatchTrailer}){
+  const[showAppearance,setShowAppearance]=useState(false);const themeNow=useTheme();
   const{user}=useUser();const{signOut}=useClerk();
   const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[showBlocked,setShowBlocked]=useState(false);const[showDelete,setShowDelete]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
   const[watchlistPublic,setWatchlistPublic]=useState(true);const[loadingSettings,setLoadingSettings]=useState(true);const[notifyPrefs,setNotifyPrefs]=useState({email:true,web:true,app:true,messages:true,follows:true,activity:true});const[hasWebPush,setHasWebPush]=useState(false);const[pushBusy,setPushBusy]=useState(false);
@@ -652,6 +655,17 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
               )}
               {/* Privacy */}
               <div style={{marginBottom:32}}>
+                <Eyebrow color={accent} style={{marginBottom:4}}>Appearance</Eyebrow>
+                <button type="button" onClick={()=>setShowAppearance(true)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                  <span style={{width:36,height:36,borderRadius:12,flexShrink:0,background:themeNow.mode==='fixed'?ambient(themeNow.color):'conic-gradient(#818CF8,#2DD4BF,#FF6B8A,#A3E635,#B07FEF,#38BDF8,#FF7A2F,#F5A623,#818CF8)',border:`1px solid ${themeNow.mode==='fixed'?themeNow.color+'88':'rgba(255,255,255,0.2)'}`}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>Your colour</div>
+                    <div style={{fontSize:11.5,color:T.text3,marginTop:2}}>{themeNow.mode==='fixed'?'One colour everywhere — tap to change':'Follows each film — tap to pick your own'}</div>
+                  </div>
+                  <span style={{color:T.text3,fontSize:14}}>›</span>
+                </button>
+              </div>
+              <div style={{marginBottom:32}}>
                 <Eyebrow color={accent} style={{marginBottom:4}}>Privacy</Eyebrow>
                 <SetRow title="Public watchlist" sub={watchlistPublic?'Anyone can see your watchlist':'Only you can see your watchlist'} right={<Switch on={watchlistPublic} onClick={togglePrivacy} disabled={loadingSettings} label="Public watchlist"/>}/>
                 <button type="button" onClick={()=>setShowBlocked(v=>!v)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',borderTop:`1px solid ${T.hairline}`,background:'none',borderLeft:'none',borderRight:'none',borderBottom:'none',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
@@ -709,6 +723,7 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                 {signedOut?(<><div style={{width:16,height:16,borderRadius:'50%',background:accent,display:'flex',alignItems:'center',justifyContent:'center'}}><SvgIcon name="check" size={10} color="#000"/></div><span style={{fontSize:13,color:accent,fontWeight:600}}>Signed out</span></>):signingOut?(<><div style={{width:14,height:14,border:'2px solid rgba(255,255,255,0.1)',borderTop:'2px solid rgba(255,255,255,0.6)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/><span style={{fontSize:13,color:'rgba(255,255,255,0.5)'}}>Signing out...</span></>):(<><SvgIcon name="logout" size={15} color="rgba(255,255,255,0.4)"/><span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Sign out</span></>)}
               </button>
               <button type="button" onClick={()=>setShowDelete(true)} style={{display:'block',margin:'0 auto',padding:'10px 12px calc(10px + env(safe-area-inset-bottom))',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:600,color:'rgba(255,120,120,0.75)'}}>Delete account</button>
+              {showAppearance&&<AppearanceSheet onClose={()=>setShowAppearance(false)}/>}
               {showDelete&&<DeleteAccountSheet accent={accent} onClose={()=>setShowDelete(false)} onDeleted={async()=>{try{await signOut();}catch{}window.location.href='/?deleted=1';}}/>}
             </div>
           )}

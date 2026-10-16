@@ -41,7 +41,7 @@ export async function GET() {
 
   try {
     const res = await fetch(
-      `${db('user_settings')}?user_id=eq.${userId}&select=watchlist_public,bio,cover_url,nickname,notify_prefs,push_subscription`,
+      `${db('user_settings')}?user_id=eq.${userId}&select=watchlist_public,bio,cover_url,nickname,notify_prefs,push_subscription,theme`,
       { headers }
     );
     const data = await res.json();
@@ -54,6 +54,7 @@ export async function GET() {
         nickname: '',
         notify_prefs: { ...DEFAULT_PREFS },
         has_web_push: false,
+        theme: { mode: 'film' },
       });
     }
 
@@ -65,6 +66,7 @@ export async function GET() {
       nickname: row.nickname || '',
       notify_prefs: parsePrefs(row.notify_prefs),
       has_web_push: !!row.push_subscription,
+      theme: row.theme && typeof row.theme === 'object' ? row.theme : { mode: 'film' },
     });
   } catch (err) {
     console.error('GET /api/settings error:', err);
@@ -102,6 +104,13 @@ export async function PATCH(request) {
     }
 
     if (body.push_subscription !== undefined) payload.push_subscription = body.push_subscription;
+
+    // Appearance: follow each film's colour, or one colour of their own everywhere
+    if (body.theme && typeof body.theme === 'object') {
+      const mode = body.theme.mode === 'fixed' ? 'fixed' : 'film';
+      const color = /^#[0-9a-fA-F]{6}$/.test(body.theme.color || '') ? body.theme.color.toUpperCase() : null;
+      payload.theme = mode === 'fixed' && color ? { mode, color } : { mode: 'film', ...(color ? { color } : {}) };
+    }
 
     if (Object.keys(payload).length <= 1) {
       return Response.json({ error: 'Nothing to save' }, { status: 400 });

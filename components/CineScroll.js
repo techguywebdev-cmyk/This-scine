@@ -5,10 +5,11 @@ import ImportSheet from './ImportSheet';
 import AskSheet, { AskButton } from './cine/Ask';
 import Splash, { TsMark } from './cine/Splash';
 import AuthScreen from './cine/AuthScreen';
+import { useTheme, themed, getTheme, setTheme } from './cine/theme';
 import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 export default function CineScroll(){
-  const{isSignedIn,user,isLoaded}=useUser();
+  const{isSignedIn,user,isLoaded}=useUser();const theme=useTheme();
   const{openSignIn}=useClerk();
   const[movies,setMovies]=useState([]);const[loading,setLoading]=useState(true);const[loadingMore,setLoadingMore]=useState(false);const[activeIndex,setActiveIndex]=useState(0);const[activeGenre,setActiveGenre]=useState('');const[activeMood,setActiveMood]=useState('Trending');const[activeProvider,setActiveProvider]=useState('');const[showFilter,setShowFilter]=useState(false);const[showAuth,setShowAuth]=useState(false);const[showProfile,setShowProfile]=useState(false);const[showLists,setShowLists]=useState(false);const[showArcs,setShowArcs]=useState(false);const[topLevelList,setTopLevelList]=useState(null);const[showFriends,setShowFriends]=useState(false);const[friendsNotifCount,setFriendsNotifCount]=useState(0);const[trailerMovie,setTrailerMovie]=useState(null);const[similarMovie,setSimilarMovie]=useState(null);const[watchlistIds,setWatchlistIds]=useState(new Set());const[reminderIds,setReminderIds]=useState(new Set());const[watchlist,setWatchlist]=useState([]);const[userReviews,setUserReviews]=useState([]);const[loadingProfileData,setLoadingProfileData]=useState(false);const[profileReady,setProfileReady]=useState(false);const[booting,setBooting]=useState(true);const[remindFor,setRemindFor]=useState(null);const[showAsk,setShowAsk]=useState(false);const endBoot=useCallback(()=>setBooting(false),[]);
   const[showTonightNudge,setShowTonightNudge]=useState(false);const[feedToast,setFeedToast]=useState(null);
@@ -149,7 +150,7 @@ export default function CineScroll(){
     if(!isLoaded||!isSignedIn||!user?.id)return;
     const t=setTimeout(()=>{
       const cached=coverCache.get(user.id);if(cached){const i=new Image();i.src=cached;}
-      fetch('/api/settings').then(r=>r.ok?r.json():null).then(d=>{if(!d)return;coverCache.set(user.id,d.cover_url||null);if(d.cover_url&&d.cover_url!==cached){const i=new Image();i.src=d.cover_url;}}).catch(()=>{});
+      fetch('/api/settings').then(r=>r.ok?r.json():null).then(d=>{if(!d)return;if(d.theme){const lt=getTheme();if(JSON.stringify(lt)!==JSON.stringify(d.theme))setTheme(d.theme,{save:false});}coverCache.set(user.id,d.cover_url||null);if(d.cover_url&&d.cover_url!==cached){const i=new Image();i.src=d.cover_url;}}).catch(()=>{});
     },1500);
     return()=>clearTimeout(t);
   },[isLoaded,isSignedIn,user?.id]);
@@ -378,7 +379,7 @@ export default function CineScroll(){
   // Drop the whole similar set right after the current card and jump to it
   const handleSimilarScrollAll=list=>{const at=activeIndex+1;setMovies(p=>{const ids=new Set(list.map(x=>x.id));const before=p.slice(0,at);const after=p.slice(at).filter(x=>!ids.has(x.id));return[...before,...list,...after];});setTimeout(()=>scrollTo(at),80);};
   saveRef.current=handleSave;
-  const accent=movies[activeIndex]?.accent||'#F5A623';
+  const accent=themed(theme,movies[activeIndex]?.accent||'#F5A623');
   const activeGenreLabel=GENRE_OPTIONS.find(g=>g.id===activeGenre)?.label||'All';
 
   return(
@@ -507,7 +508,7 @@ export default function CineScroll(){
         ):(
           movies.map((m,i)=>(
             <div key={`${m.id}-${i}`} style={{width:'100%',height:'100%',scrollSnapAlign:'start',scrollSnapStop:'always',position:'relative',flexShrink:0}}>
-              <MovieCard movie={m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onNotInterested={handleNotInterested} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} isWatched={!!watchlist.find(w=>w.movie_id===m.id&&w.watched)} onMarkWatched={handleMarkWatched} onTrailer={setTrailerMovie} isReminded={reminderIds.has(m.id)} onToggleReminder={(mv,next)=>setReminderIds(p=>{const n=new Set(p);if(next)n.add(mv.id);else n.delete(mv.id);return n;})}/>
+              <MovieCard movie={theme.mode==='fixed'?{...m,accent:theme.color}:m} isActive={i===activeIndex} index={i} onFindSimilar={setSimilarMovie} onNotInterested={handleNotInterested} onAuthRequired={()=>setShowAuth(true)} onSave={handleSave} isSaved={watchlistIds.has(m.id)} isWatched={!!watchlist.find(w=>w.movie_id===m.id&&w.watched)} onMarkWatched={handleMarkWatched} onTrailer={setTrailerMovie} isReminded={reminderIds.has(m.id)} onToggleReminder={(mv,next)=>setReminderIds(p=>{const n=new Set(p);if(next)n.add(mv.id);else n.delete(mv.id);return n;})}/>
             </div>
           ))
         )}
@@ -574,7 +575,7 @@ export default function CineScroll(){
       )}
       {showFriends&&<FriendsScreen onClose={()=>setShowFriends(false)} accent={accent} onWatchTrailer={setTrailerMovie} onAddToWatchlist={handleSave}/>}
       {showAsk&&<AskSheet accent={accent} hidden={!!trailerMovie} onClose={()=>setShowAsk(false)} onOpen={(m)=>setTrailerMovie(m)} onSave={(m)=>{if(!isSignedIn){setShowAuth(true);return;}handleSave(m);}} savedIds={watchlistIds}/>}
-      {trailerMovie&&<InlinePlayer movie={trailerMovie} onClose={()=>setTrailerMovie(null)} accent={trailerMovie.accent||accent} onSave={handleSave} isSaved={watchlistIds.has(trailerMovie.id)} initialTab={trailerMovie.initialTab} highlightCommentId={trailerMovie.highlightCommentId}/>}
+      {trailerMovie&&<InlinePlayer movie={trailerMovie} onClose={()=>setTrailerMovie(null)} accent={themed(theme,trailerMovie.accent||accent)} onSave={handleSave} isSaved={watchlistIds.has(trailerMovie.id)} initialTab={trailerMovie.initialTab} highlightCommentId={trailerMovie.highlightCommentId}/>}
 
       <style>{`@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
