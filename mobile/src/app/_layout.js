@@ -58,7 +58,7 @@ function ConnectBanner({ slow, onRetry }) {
   );
 }
 
-function BootGate({ children, onRetry }) {
+function BootGate({ children, onRetry, attempt = 0 }) {
   const { isLoaded, isSignedIn } = useAuth();
   const [slow, setSlow] = useState(false);
   const [show, setShow] = useState(false);
@@ -66,8 +66,24 @@ function BootGate({ children, onRetry }) {
   useEffect(() => {
     if (isLoaded) return undefined;
     const t1 = setTimeout(() => setShow(true), 2500);
-    const t2 = setTimeout(() => { setSlow(true); report('clerk_not_loaded', { stage: JSON.stringify(bootStage) }); }, 12000);
+    const t2 = setTimeout(async () => {
+      setSlow(true);
+      // Can this phone reach the sign-in service at all? Helps tell a blocked network from a slow one.
+      let probe = 'n/a';
+      try {
+        const host = (globalThis.atob ? globalThis.atob(String(CLERK_PUBLISHABLE_KEY).split('_')[2] || '') : '').replace(/\$$/, '');
+        if (host) {
+          const t0 = Date.now(); const ac = new AbortController(); const k = setTimeout(() => ac.abort(), 8000);
+          const r = await fetch(`https://${host}/v1/environment`, { signal: ac.signal }).catch((e) => ({ status: `err:${e?.name || e?.message || 'x'}` }));
+          clearTimeout(k); probe = `${r.status} in ${Date.now() - t0}ms`;
+        }
+      } catch (e) { probe = `throw:${e?.message || e}`; }
+      report('clerk_not_loaded', { stage: JSON.stringify(bootStage), probe, attempt: String(attempt) });
+      // Try once more by itself before asking the person to tap
+      if (attempt < 1) { setSlow(false); onRetry(); }
+    }, 12000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
   if (isLoaded) return children;
   if (!show) return null;
@@ -92,7 +108,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: T.bg }}>
       <SafeAreaProvider>
         <ClerkProvider key={attempt} publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
-          <BootGate onRetry={() => setAttempt((a) => a + 1)}>
+          <BootGate attempt={attempt} onRetry={() => setAttempt((a) => a + 1)}>
             <WatchlistProvider>
             <CallProvider>
               <StatusBar style="light" />

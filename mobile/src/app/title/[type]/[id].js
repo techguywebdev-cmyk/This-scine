@@ -170,9 +170,9 @@ export default function TitleScreen() {
                   [saved ? 'check' : 'plus', saved ? 'In your watchlist' : 'Add to watchlist', saved, '#7BFF9E', () => wl.toggleSave(movie)],
                   ['eye', watched ? 'Seen' : 'Seen it', watched, '#7BFFB0', () => wl.toggleWatched(movie)],
                 ].map(([icon, label, on, color, fn], i) => (
-                  <Pressable key={label} onPress={fn} style={({ pressed }) => [styles.action, { flex: i ? 1 : 1.8 }, on ? { borderColor: `${color}66`, backgroundColor: `${color}1f` } : !i && { backgroundColor: accent, borderColor: accent }, { opacity: pressed ? 0.8 : 1 }]}>
-                    <Feather name={icon} size={18} color={on ? color : !i ? inkOn(accent) : '#fff'} />
-                    <Text style={[styles.actionText, { color: on ? color : !i ? inkOn(accent) : '#fff' }]} numberOfLines={1}>{label}</Text>
+                  <Pressable key={label} onPress={fn} style={({ pressed }) => [styles.action, { flex: i ? 1 : 1.8 }, on ? { borderColor: `${color}66`, backgroundColor: `${color}1f` } : !i && { backgroundColor: `${accent}33`, borderColor: `${accent}99` }, { opacity: pressed ? 0.8 : 1 }]}>
+                    <Feather name={icon} size={18} color={on ? color : '#fff'} />
+                    <Text style={[styles.actionText, { color: on ? color : '#fff' }]} numberOfLines={1}>{label}</Text>
                   </Pressable>
                 ))}
               </View>

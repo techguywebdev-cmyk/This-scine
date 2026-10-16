@@ -217,9 +217,9 @@ const styles = StyleSheet.create({
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: T.hairlineStrong },
   rowName: { fontFamily: F.bold, fontSize: 13.5, color: '#fff' },
   rowMeta: { fontFamily: F.body, fontSize: 11.5, color: T.text2, marginTop: 2 },
-  followBtn: { backgroundColor: T.accent, borderRadius: 16, paddingHorizontal: 14, height: 32, justifyContent: 'center' },
+  followBtn: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 16, paddingHorizontal: 14, height: 32, justifyContent: 'center' },
   followingBtn: { backgroundColor: 'transparent', borderWidth: 1, borderColor: T.hairlineStrong },
-  followText: { fontFamily: F.bold, fontSize: 12, color: '#07070F' },
-  cta: { alignSelf: 'flex-start', backgroundColor: T.accent, borderRadius: 21, paddingHorizontal: 20, height: 42, justifyContent: 'center' },
-  ctaText: { fontFamily: F.bold, fontSize: 13, color: '#07070F' },
+  followText: { fontFamily: F.bold, fontSize: 12, color: '#fff' },
+  cta: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 21, paddingHorizontal: 20, height: 42, justifyContent: 'center' },
+  ctaText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
 });

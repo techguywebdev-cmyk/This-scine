@@ -193,7 +193,7 @@ export default function ImportSheet({ visible, onClose, accent = '#F5A623' }) {
                   <Text style={styles.btnText}>{S.openLabel}</Text><Feather name="arrow-up-right" size={14} color="#fff" />
                 </Pressable>
                 <Pressable onPress={auto} style={[styles.btn, styles.btnPrimary, { flex: 1.4 }]}>
-                  <Text style={[styles.btnText, { color: '#06060B' }]}>Import automatically</Text>
+                  <Text style={styles.btnText}>Import automatically</Text>
                 </Pressable>
               </View>
               <Pressable onPress={() => { setErr(''); setPhase('file'); }} hitSlop={8}><Text style={styles.link}>Or use an export file instead</Text></Pressable>
@@ -211,7 +211,7 @@ export default function ImportSheet({ visible, onClose, accent = '#F5A623' }) {
                   <Text style={styles.btnText}>Open export page</Text><Feather name="arrow-up-right" size={14} color="#fff" />
                 </Pressable>
                 <Pressable onPress={() => WebBrowser.openBrowserAsync(`${API_URL}/?import=1`).then(() => refresh && refresh()).catch(() => {})} style={[styles.btn, styles.btnPrimary, { flex: 1 }]}>
-                  <Text style={[styles.btnText, { color: '#06060B' }]}>Upload file</Text>
+                  <Text style={styles.btnText}>Upload file</Text>
                 </Pressable>
               </View>
               <Pressable onPress={() => { setErr(''); setNote(''); setPhase('pick'); }} hitSlop={8}><Text style={styles.link}>Back to automatic import</Text></Pressable>
@@ -233,7 +233,7 @@ export default function ImportSheet({ visible, onClose, accent = '#F5A623' }) {
               {phase === 'done' && prog.missed ? <Text style={styles.hint}>{prog.missed} couldn’t be matched</Text> : null}
               {phase === 'done' && note ? <Text style={styles.hint}>{note}</Text> : null}
               {phase === 'done' ? (
-                <Pressable onPress={onClose} style={[styles.btn, styles.btnPrimary, { marginTop: 18 }]}><Text style={[styles.btnText, { color: '#06060B' }]}>Done</Text></Pressable>
+                <Pressable onPress={onClose} style={[styles.btn, styles.btnPrimary, { marginTop: 18 }]}><Text style={styles.btnText}>Done</Text></Pressable>
               ) : (
                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 14 }}>
                   <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" />
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   note: { color: 'rgba(255,255,255,0.75)', fontSize: 12.5, marginTop: 12, lineHeight: 18, padding: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', fontFamily: F.body },
   row: { flexDirection: 'row', gap: 10, marginTop: 18 },
   btn: { height: 46, borderRadius: 23, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
-  btnPrimary: { backgroundColor: '#fff', borderColor: '#fff' },
+  btnPrimary: { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.3)' },
   btnText: { color: '#fff', fontSize: 13.5, fontFamily: F.bold },
   link: { color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontFamily: F.bold, textAlign: 'center', marginTop: 16 },
   step: { flexDirection: 'row', gap: 12, paddingVertical: 11, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.1)' },

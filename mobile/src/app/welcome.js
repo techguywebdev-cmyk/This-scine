@@ -55,7 +55,7 @@ export default function Welcome() {
       <Text style={styles.h1}>Bring a friend</Text>
       <Text style={styles.sub}>See what they’re saving, swap recommendations and start watch parties that keep you both in sync.</Text>
       <View style={{ flex: 1 }} />
-      <Pressable onPress={invite} style={styles.primary}><Feather name="send" size={16} color="#07070F" /><Text style={styles.primaryText}>Invite a friend</Text></Pressable>
+      <Pressable onPress={invite} style={styles.primary}><Feather name="send" size={16} color="#fff" /><Text style={styles.primaryText}>Invite a friend</Text></Pressable>
       <Pressable onPress={done} style={styles.quiet}><Text style={styles.quietText}>Start exploring</Text></Pressable>
     </View>
   );
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
   check: { position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: F.semibold, fontSize: 11.5, color: '#fff', marginTop: 5 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 14, backgroundColor: 'rgba(6,6,11,0.85)' },
-  primary: { height: 52, borderRadius: 26, backgroundColor: '#fff', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { fontFamily: F.bold, fontSize: 15, color: '#07070F' },
+  primary: { height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
   quiet: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   quietText: { fontFamily: F.semibold, fontSize: 13.5, color: T.text2 },
 });

@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
   check: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   newRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
   input: { flex: 1, color: '#fff', fontFamily: F.body, fontSize: 14, borderBottomWidth: 1.5, borderBottomColor: 'rgba(255,255,255,0.14)', paddingVertical: 8 },
-  create: { backgroundColor: T.accent, borderRadius: 18, paddingHorizontal: 14, height: 36, justifyContent: 'center' },
-  createText: { fontFamily: F.bold, fontSize: 13, color: '#07070F' },
+  create: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 18, paddingHorizontal: 14, height: 36, justifyContent: 'center' },
+  createText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
 });

@@ -7,11 +7,12 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { useAuth, useSSO } from '@clerk/expo';
+import { useAuth, useClerk, useSSO } from '@clerk/expo';
 import { useSignIn, useSignUp } from '@clerk/expo/legacy';
 import { AuthView } from '@clerk/expo/native';
 import Marquee from '../components/PosterMarquee';
-import { AmbientGlow, usePosters } from '../components/StatusScreen';
+import { AuthBackdrop } from '../components/StatusScreen';
+import { useAccent } from '../lib/accent';
 import { TsLoader, DOTS } from '../components/Brand';
 import { API_URL } from '../lib/config';
 import { F, T } from '../lib/theme';
@@ -107,7 +108,6 @@ export default function SignIn() {
   const { isSignedIn } = useAuth();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const posters = usePosters(24);
   const { isLoaded: inLoaded, signIn, setActive } = useSignIn();
   const { isLoaded: upLoaded, signUp } = useSignUp();
   const { startSSOFlow } = useSSO();
@@ -121,12 +121,12 @@ export default function SignIn() {
   const [busy, setBusy] = useState(null);
   const [err, setErr] = useState('');
   const [fallback, setFallback] = useState(false);
-  const [accent, setAccent] = useState(DOTS[0]);
+  const accent = useAccent();
+  const clerk = useClerk();
   const anim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => { if (isSignedIn) { router.canGoBack() ? router.back() : router.replace('/'); } }, [isSignedIn]);
   useEffect(() => { if (Platform.OS === 'android') { WebBrowser.warmUpAsync().catch(() => {}); return () => { WebBrowser.coolDownAsync().catch(() => {}); }; } return undefined; }, []);
-  useEffect(() => { let i = 0; const t = setInterval(() => { i = (i + 1) % DOTS.length; setAccent(DOTS[i]); }, 2600); return () => clearInterval(t); }, []);
 
   const go = (next) => {
     setErr('');
@@ -141,17 +141,24 @@ export default function SignIn() {
     await setActive({ session: sessionId });
   };
 
+  // Sign-in may still be connecting on a slow network — wait for it rather than silently doing nothing
+  const ready = async () => {
+    for (let i = 0; i < 40 && !clerk?.loaded; i++) await new Promise((r) => setTimeout(r, 250));
+    if (!clerk?.loaded) throw { friendly: 'Still connecting to sign-in — check your connection, then tap Google again' };
+  };
   const google = async () => {
     setBusy('google'); setErr('');
     try {
+      await ready();
       const r = await startSSOFlow({ strategy: 'oauth_google', redirectUrl: AuthSession.makeRedirectUri({ scheme: 'thiscene', path: 'sso-callback' }) });
       if (r.createdSessionId) await (r.setActive || setActive)({ session: r.createdSessionId });
-    } catch (e) { fail(e, 'Google sign-in didn’t finish — try again or use email'); }
+    } catch (e) { fail(e, e?.friendly || 'Google sign-in didn’t finish — try again or use email'); }
     setBusy(null);
   };
 
   const checkEmail = async () => {
-    if (!inLoaded || !isEmail(email)) { setErr('Enter a valid email address'); return; }
+    if (!isEmail(email)) { setErr('Enter a valid email address'); return; }
+    if (!inLoaded) { try { await ready(); } catch (e) { setErr(e.friendly); return; } }
     setBusy('email'); setErr('');
     try {
       await signIn.create({ identifier: email.trim() });
@@ -276,10 +283,7 @@ export default function SignIn() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#06060B' }}>
-      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * (step === 'start' ? 0.62 : 0.42) }}>
-        <Marquee posters={posters} rows={4} size={88} />
-      </View>
-      <AmbientGlow width={width} height={height} />
+      <AuthBackdrop accent={accent} cover={step === 'start' ? 0.62 : 0.42} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={[styles.top, { paddingTop: insets.top + 8 }]}>

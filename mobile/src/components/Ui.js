@@ -77,7 +77,7 @@ export function Empty({ title, sub, icon = 'film', action, onAction }) {
       </Animated.View>
       <Text style={{ fontFamily: F.bold, fontSize: 15, color: '#fff', textAlign: 'center' }}>{title}</Text>
       {sub ? <Text style={{ fontFamily: F.body, fontSize: 13, color: T.text2, marginTop: 6, lineHeight: 19, textAlign: 'center', maxWidth: 300 }}>{sub}</Text> : null}
-      {action ? <Pressable onPress={onAction} style={({ pressed }) => ({ marginTop: 16, height: 42, borderRadius: 21, paddingHorizontal: 20, justifyContent: 'center', backgroundColor: '#fff', opacity: pressed ? 0.8 : 1 })}><Text style={{ fontFamily: F.bold, fontSize: 14, color: '#06060B' }}>{action}</Text></Pressable> : null}
+      {action ? <Pressable onPress={onAction} style={({ pressed }) => ({ marginTop: 16, height: 42, borderRadius: 21, paddingHorizontal: 20, justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', opacity: pressed ? 0.8 : 1 })}><Text style={{ fontFamily: F.bold, fontSize: 14, color: '#fff' }}>{action}</Text></Pressable> : null}
     </Animated.View>
   );
 }

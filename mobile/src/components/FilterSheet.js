@@ -42,7 +42,7 @@ export default function FilterSheet({ value, onChange, onClose, accent = '#fff' 
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
         {has ? <Pressable onPress={() => onChange({ mood: 'Trending', genre: '', provider: '' })} style={[styles.btn, styles.ghost]}><Text style={styles.ghostText}>Reset</Text></Pressable> : null}
-        <Pressable onPress={onClose} style={[styles.btn, { backgroundColor: '#fff', flex: 1 }]}><Text style={styles.btnText}>Show films</Text></Pressable>
+        <Pressable onPress={onClose} style={[styles.btn, { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', flex: 1 }]}><Text style={styles.btnText}>Show films</Text></Pressable>
       </View>
     </ActionSheet>
   );
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: F.bold, fontSize: 12.5, color: '#fff' },
   dot: { width: 7, height: 7, borderRadius: 4 },
   btn: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
-  btnText: { fontFamily: F.bold, fontSize: 14.5, color: '#07070F' },
+  btnText: { fontFamily: F.bold, fontSize: 14.5, color: '#fff' },
   ghost: { ...glass },
   ghostText: { fontFamily: F.bold, fontSize: 14.5, color: '#fff' },
 });

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSignIn, useSignUp, useClerk } from '@clerk/nextjs';
 import { Backdrop, BACKDROP_CSS, DOTS } from './Backdrop';
 import { TsMark } from './Splash';
+import { useTheme } from './theme';
 
 // Thiscene's own sign-in / sign-up (same flow as the phone app):
 // Google, or email → password or 6-digit code; new emails create an account; forgot password.
@@ -85,7 +86,7 @@ function CodeBoxes({ value, onChange, onDone, accent }) {
   );
 }
 
-export default function AuthScreen({ onClose, redirect = '/', page = false }) {
+export default function AuthScreen({ onClose, redirect = '/', page = false, accent: given }) {
   const { isLoaded: inLoaded, signIn, setActive } = useSignIn();
   const { isLoaded: upLoaded, signUp } = useSignUp();
   const clerk = useClerk();
@@ -100,9 +101,9 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
   const [err, setErr] = useState('');
   const [ok, setOk] = useState('');
   const [k, setK] = useState(0);
-  const [accent, setAccent] = useState(DOTS[0]);
+  const theme = useTheme();
+  const accent = given || (theme.mode === 'fixed' && theme.color) || '#F5A623';
 
-  useEffect(() => { let i = 0; const t = setInterval(() => { i = (i + 1) % DOTS.length; setAccent(DOTS[i]); }, 2600); return () => clearInterval(t); }, []);
   useEffect(() => { const f = (e) => { if (e.key === 'Escape' && !page) onClose?.(); }; window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f); }, [onClose, page]);
 
   const go = (s) => { setErr(''); setOk(''); setStep(s); setK((x) => x + 1); };
@@ -225,7 +226,7 @@ export default function AuthScreen({ onClose, redirect = '/', page = false }) {
   return (
     <div role="dialog" aria-label="Sign in to Thiscene" style={{ position: 'fixed', inset: 0, zIndex: 900, background: '#06060B', color: '#fff', fontFamily: "var(--font-sans), system-ui, sans-serif", display: 'flex', justifyContent: 'center', overflow: 'hidden', animation: page ? 'none' : 'authIn .3s ease' }}>
       <style>{BACKDROP_CSS + '@keyframes authIn{from{opacity:0}to{opacity:1}}@keyframes authBlink{50%{opacity:0}}.auth-btn{transition:transform .12s ease}.auth-btn:active{transform:scale(.97)}'}</style>
-      <Backdrop height={step === 'start' ? '64%' : '44%'} rows={4} />
+      <Backdrop accent={accent} height={step === 'start' ? '64%' : '44%'} rows={4} />
       <button onClick={back} aria-label={step === 'start' ? 'Close' : 'Back'} style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16, zIndex: 2, width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.16)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {ic(step === 'start' ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M19 12H5M12 19l-7-7 7-7" />, 19)}
       </button>

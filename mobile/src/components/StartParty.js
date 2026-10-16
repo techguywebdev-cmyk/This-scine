@@ -83,7 +83,7 @@ export default function StartParty({ movie, onClose, preselect }) {
           </View>
           {err ? <Text style={styles.err}>{err}</Text> : null}
           <Pressable disabled={!pick || busy} onPress={start} style={[styles.go, { opacity: pick ? 1 : 0.4 }]}>
-            <Feather name="play" size={15} color="#07070F" />
+            <Feather name="play" size={15} color="#fff" />
             <Text style={styles.goText}>{busy ? 'Starting…' : when === 'now' ? 'Start watch party' : 'Send invite'}</Text>
           </Pressable>
         </>
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
   chip: { height: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   chipOn: { backgroundColor: '#fff', borderColor: '#fff' },
   chipText: { fontFamily: F.bold, fontSize: 12.5, color: '#fff' },
-  go: { marginTop: 20, height: 50, borderRadius: 25, backgroundColor: '#fff', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  goText: { fontFamily: F.bold, fontSize: 14.5, color: '#07070F' },
+  go: { marginTop: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  goText: { fontFamily: F.bold, fontSize: 14.5, color: '#fff' },
   err: { fontFamily: F.body, fontSize: 12.5, color: '#ff8a8a', marginTop: 12 },
   sent: { fontFamily: F.displayHeavy, fontSize: 18, color: '#fff', textAlign: 'center' },
 });

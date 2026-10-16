@@ -4,8 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import Marquee from './PosterMarquee';
-import { AmbientGlow, usePosters } from './StatusScreen';
+import { AuthBackdrop } from './StatusScreen';
 import { TsLoader } from './Brand';
 import { useAccent } from '../lib/accent';
 import { API_URL } from '../lib/config';
@@ -42,13 +41,10 @@ export function SignInPills({ style }) {
 export default function SignedOutHero({ title, sub, legal }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const posters = usePosters(24);
+  const accent = useAccent();
   return (
     <View style={{ flex: 1, backgroundColor: '#06060B' }}>
-      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * 0.58 }}>
-        <Marquee posters={posters} rows={4} size={88} />
-      </View>
-      <AmbientGlow width={width} height={height} />
+      <AuthBackdrop accent={accent} />
       <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingBottom: insets.bottom + 110 }}>
         <View style={{ alignItems: 'flex-start', marginBottom: 18 }}><TsLoader size={46} /></View>
         <Text style={styles.title}>{title}</Text>

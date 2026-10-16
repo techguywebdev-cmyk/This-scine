@@ -198,7 +198,7 @@ export default function RemindSheet({ row, onClose, onChange }) {
                   })}
                 </ScrollView>
                 <Pressable disabled={!!busy || customPast} onPress={() => save(customWhen, 'custom')} style={[styles.cta, customPast && { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  {busy === 'custom' ? <ActivityIndicator color="#06060B" /> : <Text style={styles.ctaText}>{customPast ? 'Pick a later time' : `Remind me ${fmtRemind(customWhen.toISOString()).replace(' · ', ' at ')}`}</Text>}
+                  {busy === 'custom' ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>{customPast ? 'Pick a later time' : `Remind me ${fmtRemind(customWhen.toISOString()).replace(' · ', ' at ')}`}</Text>}
                 </Pressable>
               </View>
             ) : null}
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
   chipTextOn: { color: '#06060B' },
   chipSub: { fontFamily: F.body, fontSize: 10.5, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-  cta: { marginTop: 12, height: 46, borderRadius: 23, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  ctaText: { fontFamily: F.bold, fontSize: 14, color: '#06060B' },
+  cta: { marginTop: 12, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
+  ctaText: { fontFamily: F.bold, fontSize: 14, color: '#fff' },
   remove: { marginTop: 16, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   removeText: { fontFamily: F.bold, fontSize: 14, color: '#ff8a8a' },
   doneIcon: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },

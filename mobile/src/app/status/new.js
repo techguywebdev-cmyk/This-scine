@@ -93,7 +93,7 @@ export default function NewStatus() {
         )}
         {err ? <Text style={styles.err}>{err}</Text> : null}
         <Pressable onPress={post} disabled={busy} style={styles.post}>
-          {busy ? <TsLoader size={20} /> : <><Text style={styles.postText}>Share to status</Text><Feather name="arrow-right" size={16} color="#07070F" /></>}
+          {busy ? <TsLoader size={20} /> : <><Text style={styles.postText}>Share to status</Text><Feather name="arrow-right" size={16} color="#fff" /></>}
         </Pressable>
         <Text style={[styles.hint, dark && { color: 'rgba(0,0,0,0.55)' }]}>Visible to people who follow you · gone after 24 hours</Text>
       </View>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   swatchRing: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   caption: { height: 46, borderRadius: 23, paddingHorizontal: 18, color: '#fff', fontFamily: F.body, fontSize: 15, ...glass },
   err: { fontFamily: F.semibold, fontSize: 12.5, color: '#ff8a8a', textAlign: 'center' },
-  post: { height: 52, borderRadius: 26, backgroundColor: '#fff', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  postText: { fontFamily: F.bold, fontSize: 15, color: '#07070F' },
+  post: { height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  postText: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
   hint: { fontFamily: F.body, fontSize: 11.5, color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
 });

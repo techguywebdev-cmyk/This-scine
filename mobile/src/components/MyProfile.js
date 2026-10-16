@@ -169,7 +169,7 @@ export default function MyProfile({ settingsFooter }) {
                 <TextInput value={bio} onChangeText={setBio} placeholder="A line about your taste" placeholderTextColor="rgba(255,255,255,0.35)" maxLength={160} multiline style={[styles.input, { minHeight: 70, textAlignVertical: 'top', paddingTop: 12 }]} />
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <Pressable onPress={() => { setEditing(false); setNick(s?.nickname || ''); setBio(s?.bio || ''); }} style={[styles.btn, styles.ghost]}><Text style={styles.ghostText}>Cancel</Text></Pressable>
-                  <Pressable onPress={saveAbout} disabled={busy === 'about'} style={[styles.btn, { backgroundColor: '#fff', flex: 1 }]}><Text style={styles.btnText}>{busy === 'about' ? 'Saving…' : 'Save'}</Text></Pressable>
+                  <Pressable onPress={saveAbout} disabled={busy === 'about'} style={[styles.btn, { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', flex: 1 }]}><Text style={styles.btnText}>{busy === 'about' ? 'Saving…' : 'Save'}</Text></Pressable>
                 </View>
               </View>
             ) : (
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   bio: { fontFamily: F.body, fontSize: 14, lineHeight: 21, color: T.text2, marginTop: 6 },
   input: { color: '#fff', fontFamily: F.body, fontSize: 15, minHeight: 46, paddingHorizontal: 14, borderRadius: 12, ...glass },
   btn: { height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
-  btnText: { fontFamily: F.bold, fontSize: 14, color: '#07070F' },
+  btnText: { fontFamily: F.bold, fontSize: 14, color: '#fff' },
   ghost: { ...glass },
   ghostText: { fontFamily: F.bold, fontSize: 14, color: '#fff' },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: T.hairlineStrong, marginVertical: 20 },

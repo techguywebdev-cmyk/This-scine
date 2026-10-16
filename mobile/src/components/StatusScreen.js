@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import Ambient from './Ambient';
+import { useAccent } from '../lib/accent';
 import { Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -49,6 +51,21 @@ export function AmbientGlow({ width, height }) {
   );
 }
 
+// Sign-in / signed-out / status moments: drifting posters under the app's own ambient gradient,
+// in the live colour (the film you were on, or your chosen colour) — same wash as every sheet.
+export function AuthBackdrop({ accent, cover = 0.58, rows = 4, size = 88 }) {
+  const { height } = useWindowDimensions();
+  const posters = usePosters(rows * 6);
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * cover }}>
+        <Marquee posters={posters} rows={rows} size={size} />
+      </View>
+      <Ambient overlay accent={accent} />
+    </View>
+  );
+}
+
 // Frosted-glass card used by the full-screen moments (sign-in, errors, not found)
 export function GlassCard({ children, accent, style }) {
   return (
@@ -67,7 +84,7 @@ export function GlassCard({ children, accent, style }) {
 export default function StatusScreen({ icon = 'wifi-off', title, body, primary, secondary, busy, children }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const posters = usePosters();
+  const accent = useAccent();
   const enter = useRef(new Animated.Value(0)).current;
   const ring = useRef(new Animated.Value(0)).current;
   const spin = useRef(new Animated.Value(0)).current;
@@ -86,10 +103,7 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
 
   return (
     <View style={styles.root}>
-      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: height * 0.5 }}>
-        <Marquee posters={posters} rows={3} size={84} />
-      </View>
-      <AmbientGlow width={width} height={height} />
+      <AuthBackdrop accent={accent} cover={0.5} rows={3} size={84} />
 
       <View style={[styles.body, { paddingBottom: insets.bottom + 34 }]}>
         <Animated.View style={[styles.iconWrap, up(10)]}>
@@ -106,7 +120,7 @@ export default function StatusScreen({ icon = 'wifi-off', title, body, primary, 
         {children}
         <Animated.View style={[{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 26 }, up(24)]}>
           {primary ? (
-            <Pressable onPress={primary.onPress} disabled={busy} style={({ pressed }) => [styles.primary, { opacity: pressed || busy ? 0.7 : 1 }]}>
+            <Pressable onPress={primary.onPress} disabled={busy} style={({ pressed }) => [styles.primary, { backgroundColor: `${accent}33`, borderColor: `${accent}99`, opacity: pressed || busy ? 0.7 : 1 }]}>
               <Text style={styles.primaryText}>{busy ? 'Trying…' : primary.label}</Text>
             </Pressable>
           ) : null}

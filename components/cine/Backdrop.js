@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useTheme } from './theme';
 
 // Shared cinematic backdrop for full-screen moments (sign-in, 404, errors):
 // drifting rows of posters, a glow that cycles through the card colours, and a fade to the page.
@@ -33,7 +34,9 @@ export const BACKDROP_CSS = `
 @media (prefers-reduced-motion:reduce){.bd-anim{animation:none!important}}
 `;
 
-export function Backdrop({ height = '58%', rows = 4, size = 104 }) {
+// accent given: the screen wears the app's ambient gradient in that colour (same wash as every sheet and popup)
+export const ambientWash = (a) => `radial-gradient(120% 70% at 0% 0%, ${a}3d 0%, transparent 70%), radial-gradient(120% 70% at 100% 100%, ${a}33 0%, transparent 70%), linear-gradient(165deg, ${a}24 0%, ${a}14 50%, ${a}22 100%)`;
+export function Backdrop({ height = '58%', rows = 4, size = 104, accent }) {
   const posters = usePosters(rows * 7);
   const list = posters.length ? posters : Array(rows * 7).fill(null);
   return (
@@ -55,20 +58,24 @@ export function Backdrop({ height = '58%', rows = 4, size = 104 }) {
         </div>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.3) 0%, rgba(6,6,11,0.15) 30%, rgba(6,6,11,0.85) 78%, #06060B 100%)' }} />
       </div>
-      {/* The app's ambient gradient, drifting through the card colours, laid over everything */}
+      {/* The app's ambient gradient laid over everything — one colour when we know it, otherwise drifting through the card colours */}
+      {accent ? <div style={{ position: 'absolute', inset: 0, background: ambientWash(accent), transition: 'background .8s ease' }} /> : (<>
       <div className="bd-anim" style={{ position: 'absolute', inset: 0, opacity: 0.12, animation: `bdGlow ${DOTS.length * 1.6}s linear infinite` }} />
       <div className="bd-anim" style={{ position: 'absolute', width: '130vmax', height: '110vmax', left: '-65vmax', top: '-55vmax', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.22, animation: `bdGlow ${DOTS.length * 1.6}s linear infinite` }} />
       <div className="bd-anim" style={{ position: 'absolute', width: '130vmax', height: '110vmax', right: '-65vmax', bottom: '-60vmax', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.18, animation: `bdGlow ${DOTS.length * 1.6}s linear infinite`, animationDelay: `-${DOTS.length * 0.6}s` }} />
+      </>)}
     </div>
   );
 }
 
 // Full-screen state (404, error…) with the backdrop, a pulsing icon and clear actions
 export default function StatusPage({ icon, title, body, primary, secondary }) {
+  const theme = useTheme();
+  const accent = (theme.mode === 'fixed' && theme.color) || '#F5A623';
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#06060B', color: '#fff', fontFamily: "var(--font-sans), system-ui, sans-serif", display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
       <style>{BACKDROP_CSS}</style>
-      <Backdrop height="52%" rows={3} />
+      <Backdrop accent={accent} height="52%" rows={3} />
       <div style={{ position: 'relative', width: '100%', maxWidth: 440, padding: '0 28px calc(40px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ position: 'relative', width: 80, height: 80, marginBottom: 22, animation: 'bdUp .5s ease both' }}>
           {[0, 1.1].map((d) => <span key={d} className="bd-anim" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: `bdRing 2.2s ease-out ${d}s infinite` }} />)}
@@ -78,8 +85,8 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
         {body && <p style={{ margin: '12px 0 0', fontSize: 15.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.65)', maxWidth: 360, animation: 'bdUp .55s ease .1s both' }}>{body}</p>}
         <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap', justifyContent: 'center', animation: 'bdUp .55s ease .15s both' }}>
           {primary && (primary.href
-            ? <a href={primary.href} style={btn(true)}>{primary.label}</a>
-            : <button onClick={primary.onClick} style={btn(true)}>{primary.label}</button>)}
+            ? <a href={primary.href} style={btn(true, accent)}>{primary.label}</a>
+            : <button onClick={primary.onClick} style={btn(true, accent)}>{primary.label}</button>)}
           {secondary && (secondary.href
             ? <a href={secondary.href} style={btn(false)}>{secondary.label}</a>
             : <button onClick={secondary.onClick} style={btn(false)}>{secondary.label}</button>)}
@@ -89,10 +96,10 @@ export default function StatusPage({ icon, title, body, primary, secondary }) {
   );
 }
 
-const btn = (primary) => ({
+const btn = (primary, accent = '#ffffff') => ({
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 50, padding: '0 22px', borderRadius: 25, fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'none', color: '#fff',
   backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-  ...(primary ? { background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.35)' } : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }),
+  ...(primary ? { background: `${accent}33`, border: `1px solid ${accent}99`, boxShadow: `0 8px 30px ${accent}33` } : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }),
 });
 
 export const Icon = ({ d, size = 28 }) => (

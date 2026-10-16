@@ -63,7 +63,7 @@ export default function FolderScreen() {
             {movies.length === 0 ? (
               <>
                 <Empty icon="folder" title="This folder is empty" sub="Save films from your feed, then add them here." />
-                <Pressable onPress={() => router.navigate('/')} style={styles.fill}><Feather name="play-circle" size={15} color="#07070F" /><Text style={styles.fillText}>Find films in the feed</Text></Pressable>
+                <Pressable onPress={() => router.navigate('/')} style={styles.fill}><Feather name="play-circle" size={15} color="#fff" /><Text style={styles.fillText}>Find films in the feed</Text></Pressable>
               </>
             ) : movies.map((m, i) => <MovieRow key={m.id} movie={m} first={i === 0} />)}
           </>
@@ -80,9 +80,9 @@ const styles = StyleSheet.create({
   desc: { fontFamily: F.body, fontSize: 12.5, color: 'rgba(255,255,255,0.75)', marginTop: 6, lineHeight: 18 },
   privacy: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: T.hairlineStrong },
   privacyText: { flex: 1, fontFamily: F.medium, fontSize: 12.5, color: 'rgba(255,255,255,0.85)' },
-  follow: { marginTop: 18, alignSelf: 'flex-start', backgroundColor: T.accent, borderRadius: 21, paddingHorizontal: 20, height: 42, justifyContent: 'center' },
+  follow: { marginTop: 18, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 21, paddingHorizontal: 20, height: 42, justifyContent: 'center' },
   following: { backgroundColor: 'transparent', borderWidth: 1, borderColor: T.hairlineStrong },
-  followText: { fontFamily: F.bold, fontSize: 13, color: '#07070F' },
-  fill: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: T.accent, borderRadius: 21, paddingHorizontal: 16, height: 40, marginTop: 4 },
-  fillText: { fontFamily: F.bold, fontSize: 13, color: '#07070F' },
+  followText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
+  fill: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 21, paddingHorizontal: 16, height: 40, marginTop: 4 },
+  fillText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
 });

@@ -54,6 +54,6 @@ const styles = StyleSheet.create({
   t2: { fontFamily: F.body, fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   later: { height: 34, paddingHorizontal: 10, justifyContent: 'center' },
   laterText: { fontFamily: F.semibold, fontSize: 12.5, color: 'rgba(255,255,255,0.6)' },
-  join: { height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: '#fff', justifyContent: 'center' },
-  joinText: { fontFamily: F.bold, fontSize: 12.5, color: '#07070F' },
+  join: { height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', justifyContent: 'center' },
+  joinText: { fontFamily: F.bold, fontSize: 12.5, color: '#fff' },
 });
