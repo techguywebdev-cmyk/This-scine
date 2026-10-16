@@ -2456,27 +2456,48 @@ export function ChatWidget({ peer, onClose, accent }) {
                             <div style={{ background: mine ? accent : themBubble, color: mine ? '#0A0A0F' : 'rgba(255,255,255,0.92)', borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6, padding: '10px 14px', fontSize: 14, lineHeight: 1.45 }}>{m.text}</div>
                           )}
                         </div>
-                      ) : m.msg_type === 'party' && m.meta ? (
-                        <button
-                          type="button"
-                          onClick={() => { const st = partyStatus[m.meta.party_id]?.status; if (st === 'expired' || st === 'declined') return; window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } })); }}
-                          style={{ position: 'relative', display: 'block', width: 260, textAlign: 'left', padding: 0, borderRadius: 18, overflow: 'hidden', cursor: 'pointer', fontFamily: 'inherit', background: '#111', border: `1px solid ${accent}66` }}
-                        >
-                          {(m.meta.backdrop || m.meta.poster) && <img src={m.meta.backdrop || m.meta.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />}
-                          <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.1), rgba(6,6,11,0.9))' }} />
-                          <span style={{ position: 'relative', display: 'block', padding: '46px 14px 14px' }}>
-                            <span style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: accent }}>🍿 Watch party</span>
-                            <span style={{ display: 'block', fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 4, lineHeight: 1.2 }}>{m.meta.title}</span>
-                            <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>{m.meta.scheduled_for ? `🗓 ${fmtWhen(m.meta.scheduled_for)}` : mine ? 'You invited them to watch together' : 'Invited you to watch together'}</span>
-                            {(() => {
-                              const ps = partyStatus[m.meta.party_id] || {}; const st = ps.status || 'invited'; const at = ps.at || m.meta.scheduled_for; const future = at && Date.parse(at) - Date.now() > 10 * 60000;
-                              const live = st === 'lobby' || st === 'playing' || st === 'paused';
-                              const done = st === 'ended' || st === 'expired' || st === 'declined';
-                              const label = st === 'ended' ? 'Ended' : st === 'expired' ? 'Expired' : st === 'declined' ? 'Declined' : live ? (st === 'lobby' ? 'In the lobby · Join' : 'Live now · Join') : future ? (st === 'accepted' ? `Going · ${untilLabel(at)}` : mine ? `Invited · ${untilLabel(at)}` : `${fmtWhen(at)} · Answer`) : (st === 'accepted' || at) ? 'Room open · Join' : mine ? 'Open room' : 'Join';
-                              return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: 10, height: 34, padding: '0 16px', borderRadius: 17, background: done ? 'transparent' : 'rgba(0,0,0,0.35)', border: `1px solid ${done ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.18)'}`, fontSize: 12.5, fontWeight: 800, color: done ? 'rgba(255,255,255,0.5)' : '#fff' }}>{live && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3DDC84' }} />}{label}</span>;
-                            })()}
-                          </span>
-                        </button>
+                      ) : m.msg_type === 'party' && m.meta ? ((() => {
+                        // Vertical "ticket": poster on top, a torn stub with date + status below
+                        const ps = partyStatus[m.meta.party_id] || {}; const st = ps.status || 'invited'; const at = ps.at || m.meta.scheduled_for; const future = at && Date.parse(at) - Date.now() > 10 * 60000;
+                        const live = st === 'lobby' || st === 'playing' || st === 'paused';
+                        const done = st === 'ended' || st === 'expired' || st === 'declined';
+                        const label = st === 'ended' ? 'Ended' : st === 'expired' ? 'Expired' : st === 'declined' ? 'Declined' : live ? (st === 'lobby' ? 'Join lobby' : 'Join now') : future ? (st === 'accepted' ? 'Going' : mine ? 'Invited' : 'Answer') : (st === 'accepted' || at) ? 'Join' : mine ? 'Open room' : 'Join';
+                        const d = at ? new Date(at) : null;
+                        const img = m.meta.poster || m.meta.backdrop;
+                        const bg = mine ? 'rgba(20,14,24,0.92)' : 'rgba(20,14,24,0.92)';
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => { if (st === 'expired' || st === 'declined') return; window.dispatchEvent(new CustomEvent('cine:open-party', { detail: { id: m.meta.party_id } })); }}
+                            style={{ position: 'relative', display: 'block', width: 210, textAlign: 'left', padding: 0, cursor: done ? 'default' : 'pointer', fontFamily: 'inherit', background: 'none', border: 'none', filter: done ? 'saturate(0.4)' : 'none', opacity: done ? 0.75 : 1 }}
+                          >
+                            <span style={{ position: 'relative', display: 'block', aspectRatio: '2/2.6', borderRadius: '18px 18px 6px 6px', overflow: 'hidden', background: '#111', border: `1px solid ${accent}55`, borderBottom: 'none' }}>
+                              {img && <img src={img} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
+                              <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.35) 0%, rgba(6,6,11,0) 30%, rgba(6,6,11,0.15) 55%, rgba(6,6,11,0.92) 100%)' }} />
+                              <span style={{ position: 'absolute', top: 10, left: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 12, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.14)', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', color: '#fff' }}>🍿 Watch party</span>
+                              {live && <style>{'@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}'}</style>}
+                              {live && <span style={{ position: 'absolute', top: 10, right: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 8px', borderRadius: 12, background: 'rgba(61,220,132,0.18)', border: '1px solid rgba(61,220,132,0.5)', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2, color: '#3DDC84' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3DDC84', animation: 'pulseDot 1.4s ease-in-out infinite' }} />LIVE</span>}
+                              <span style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
+                                <span style={{ display: 'block', fontFamily: T.serif, fontSize: 19, fontWeight: 800, letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.12, textShadow: '0 2px 14px rgba(0,0,0,0.6)' }}>{m.meta.title}</span>
+                                <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>{mine ? 'You invited them to watch' : 'Invited you to watch together'}</span>
+                              </span>
+                            </span>
+                            {/* perforation */}
+                            <span style={{ position: 'relative', display: 'block', height: 0, borderTop: `1.5px dashed ${accent}55`, margin: '0 10px' }}>
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 12px 12px', borderRadius: '6px 6px 18px 18px', background: bg, border: `1px solid ${accent}55`, borderTop: 'none' }}>
+                              <span style={{ display: 'block', minWidth: 0 }}>
+                                {d ? <>
+                                  <span style={{ display: 'block', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: accent }}>{d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                  <span style={{ display: 'block', fontFamily: T.serif, fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginTop: 2 }}>{d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                  {future && !done && <span style={{ display: 'block', fontSize: 10.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{untilLabel(at)}</span>}
+                                </> : <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>Right now</span>}
+                              </span>
+                              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 17, fontSize: 12.5, fontWeight: 800, ...(done ? { background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.5)' } : live ? { background: '#3DDC84', color: '#06060B', border: 'none' } : { background: `${accent}2e`, border: `1px solid ${accent}99`, color: '#fff' }) }}>{label}</span>
+                            </span>
+                          </button>
+                        );
+                      })()
                       ) : m.msg_type === 'title' && m.meta ? (
                         <button
                           type="button"

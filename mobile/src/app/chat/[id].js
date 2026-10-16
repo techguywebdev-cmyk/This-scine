@@ -10,6 +10,7 @@ import VoiceBubble from '../../components/VoiceBubble';
 import { RecorderBar, useVoiceRecorder } from '../../components/VoiceRecorder';
 import SafetySheet from '../../components/SafetySheet';
 import { AttachTray, EmojiPicker, GifPicker, MediaBubble } from '../../components/ChatMedia';
+import PartyTicket from '../../components/PartyTicket';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Avatar, GlassButton, Poster } from '../../components/Ui';
@@ -163,6 +164,14 @@ export default function Chat() {
 
   // newest at the bottom: inverted list wants newest first
   const data = (msgs || []).slice().reverse();
+  // live status for watch-party invites (lobby / live / ended …), same as the web
+  const [partyStatus, setPartyStatus] = useState({});
+  const partyIds = (msgs || []).filter((m) => m.msg_type === 'party' && m.meta?.party_id).map((m) => m.meta.party_id).slice(-20).join(',');
+  useEffect(() => {
+    if (!partyIds) return;
+    api.get(`/api/party?statuses=${partyIds}`).then((d) => setPartyStatus(d.statuses || {})).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partyIds]);
   const live = useAccent();
   const accent = live && !/^#(fff|ffffff|e6e6ea)$/i.test(live) ? live : '#F5C842';
   const mineInk = inkOn(accent);
@@ -184,25 +193,7 @@ export default function Chat() {
         </Pressable>
       );
     }
-    if (m.msg_type === 'party') {
-      const pid = m.meta?.party_id;
-      return (
-        <View style={{ width: 230 }}>
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <Poster uri={m.meta?.poster} width={44} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: F.semibold, fontSize: 10.5, letterSpacing: 1, textTransform: 'uppercase', color: ink, opacity: 0.55 }}>🍿 Watch party{m.meta?.when_label ? ` · ${m.meta.when_label}` : ''}</Text>
-              <Text style={{ fontFamily: F.bold, fontSize: 13.5, color: ink, marginTop: 2 }} numberOfLines={2}>{m.meta?.title || m.text}</Text>
-            </View>
-          </View>
-          {pid ? (
-            <Pressable onPress={() => router.push({ pathname: '/party/[id]', params: { id: pid } })} style={{ marginTop: 10, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: mine ? '#07070F' : '#fff' }}>
-              <Text style={{ fontFamily: F.bold, fontSize: 13, color: mine ? '#fff' : '#07070F' }}>{mine ? 'Open room' : 'Join'}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      );
-    }
+    if (m.msg_type === 'party') return <PartyTicket m={m} mine={mine} accent={accent} status={partyStatus[m.meta?.party_id]} />;
     if (m.msg_type === 'status_reply') {
       return (
         <View>
@@ -243,7 +234,7 @@ export default function Chat() {
             const older = data[index + 1];
             const showDay = !older || new Date(older.created_at).toDateString() !== new Date(m.created_at).toDateString();
             const mine = m.from_me;
-            const media = ['sticker', 'gif', 'image', 'photo', 'video', 'file'].includes(m.msg_type) && m.media_url;
+            const media = (['sticker', 'gif', 'image', 'photo', 'video', 'file'].includes(m.msg_type) && m.media_url) || m.msg_type === 'party';
             return (
               <View>
                 {showDay ? <Text style={styles.day}>{dayLabel(m.created_at)}</Text> : null}
