@@ -37,7 +37,8 @@ export default function PartyTicket({ m, mine, status = {}, accent }) {
     <Pressable disabled={done || !pid} onPress={() => router.push({ pathname: '/party/[id]', params: { id: pid } })} style={({ pressed }) => [{ width: 210, opacity: done ? 0.7 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
       <View style={[styles.top, { borderColor: `${accent}55` }]}>
         {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
-        <LinearGradient colors={['rgba(6,6,11,0.35)', 'rgba(6,6,11,0)', 'rgba(6,6,11,0.15)', 'rgba(6,6,11,0.92)']} locations={[0, 0.3, 0.55, 1]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['rgba(6,6,11,0.35)', 'rgba(6,6,11,0)', 'rgba(6,6,11,0.15)', 'rgba(6,6,11,0.85)']} locations={[0, 0.3, 0.55, 0.9]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['transparent', `${accent}40`]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
         <View style={styles.badge}><Text style={styles.badgeText}>🍿 WATCH PARTY</Text></View>
         {live ? <View style={styles.live}><LiveDot /><Text style={styles.liveText}>LIVE</Text></View> : null}
         <View style={styles.titleWrap}>
@@ -47,6 +48,7 @@ export default function PartyTicket({ m, mine, status = {}, accent }) {
       </View>
       <View style={[styles.perf, { borderColor: `${accent}55` }]} />
       <View style={[styles.stub, { borderColor: `${accent}55` }]}>
+        <LinearGradient colors={[`${accent}38`, `${accent}14`, `${accent}24`]} locations={[0, 0.55, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View style={{ flex: 1 }}>
           {d ? (
             <>
@@ -74,7 +76,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: F.displayHeavy, fontSize: 19, lineHeight: 22, letterSpacing: -0.4, color: '#fff', textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 12 },
   sub: { fontFamily: F.body, fontSize: 11.5, color: 'rgba(255,255,255,0.72)', marginTop: 4 },
   perf: { marginHorizontal: 10, borderTopWidth: 1.5, borderStyle: 'dashed' },
-  stub: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 11, paddingBottom: 12, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, backgroundColor: 'rgba(20,14,24,0.92)', borderWidth: 1, borderTopWidth: 0 },
+  stub: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 11, paddingBottom: 12, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, backgroundColor: 'rgba(8,8,14,0.55)', borderWidth: 1, borderTopWidth: 0, overflow: 'hidden' },
   day: { fontFamily: F.bold, fontSize: 9.5, letterSpacing: 1.6 },
   time: { fontFamily: F.displayHeavy, fontSize: 20, color: '#fff', marginTop: 2 },
   until: { fontFamily: F.body, fontSize: 10.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 },

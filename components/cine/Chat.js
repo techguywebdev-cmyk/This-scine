@@ -2464,7 +2464,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                         const label = st === 'ended' ? 'Ended' : st === 'expired' ? 'Expired' : st === 'declined' ? 'Declined' : live ? (st === 'lobby' ? 'Join lobby' : 'Join now') : future ? (st === 'accepted' ? 'Going' : mine ? 'Invited' : 'Answer') : (st === 'accepted' || at) ? 'Join' : mine ? 'Open room' : 'Join';
                         const d = at ? new Date(at) : null;
                         const img = m.meta.poster || m.meta.backdrop;
-                        const bg = mine ? 'rgba(20,14,24,0.92)' : 'rgba(20,14,24,0.92)';
+                        const bg = `linear-gradient(160deg, ${accent}38 0%, ${accent}14 55%, ${accent}24 100%), rgba(8,8,14,0.55)`;
                         return (
                           <button
                             type="button"
@@ -2473,7 +2473,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                           >
                             <span style={{ position: 'relative', display: 'block', aspectRatio: '2/2.6', borderRadius: '18px 18px 6px 6px', overflow: 'hidden', background: '#111', border: `1px solid ${accent}55`, borderBottom: 'none' }}>
                               {img && <img src={img} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
-                              <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(6,6,11,0.35) 0%, rgba(6,6,11,0) 30%, rgba(6,6,11,0.15) 55%, rgba(6,6,11,0.92) 100%)' }} />
+                              <span style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, rgba(6,6,11,0.35) 0%, rgba(6,6,11,0) 30%, rgba(6,6,11,0.15) 55%, rgba(6,6,11,0.85) 88%), linear-gradient(180deg, transparent 60%, ${accent}33 100%)` }} />
                               <span style={{ position: 'absolute', top: 10, left: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 12, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.14)', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', color: '#fff' }}>🍿 Watch party</span>
                               {live && <style>{'@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}'}</style>}
                               {live && <span style={{ position: 'absolute', top: 10, right: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 8px', borderRadius: 12, background: 'rgba(61,220,132,0.18)', border: '1px solid rgba(61,220,132,0.5)', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2, color: '#3DDC84' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3DDC84', animation: 'pulseDot 1.4s ease-in-out infinite' }} />LIVE</span>}
@@ -2485,7 +2485,7 @@ export function ChatWidget({ peer, onClose, accent }) {
                             {/* perforation */}
                             <span style={{ position: 'relative', display: 'block', height: 0, borderTop: `1.5px dashed ${accent}55`, margin: '0 10px' }}>
                             </span>
-                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 12px 12px', borderRadius: '6px 6px 18px 18px', background: bg, border: `1px solid ${accent}55`, borderTop: 'none' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 12px 12px', borderRadius: '6px 6px 18px 18px', background: bg, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: `1px solid ${accent}55`, borderTop: 'none' }}>
                               <span style={{ display: 'block', minWidth: 0 }}>
                                 {d ? <>
                                   <span style={{ display: 'block', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', color: accent }}>{d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</span>
