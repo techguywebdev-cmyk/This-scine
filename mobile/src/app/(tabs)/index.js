@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePrefsVersion } from '../../lib/prefs';
 import { Animated, FlatList, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from 'expo-router/build/react-navigation/bottom-tabs';
@@ -23,6 +24,7 @@ import { useThemed } from '../../lib/userTheme';
 const newSeed = () => String(Math.floor(Math.random() * 1e9));
 
 export default function Feed() {
+  const prefsV = usePrefsVersion();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const tabBar = useBottomTabBarHeight();
@@ -77,9 +79,9 @@ export default function Feed() {
     markBootReady();
     busy.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mood, filter.genre, filter.provider, wl.items.length]);
+  }, [mood, filter.genre, filter.provider, wl.items.length, prefsV]);
 
-  useEffect(() => { load(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mood, filter.genre, filter.provider]);
+  useEffect(() => { load(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mood, filter.genre, filter.provider, prefsV]);
   useEffect(() => {
     if (!isSignedIn) return;
     api.get('/api/reminders').then((d) => setReminded(new Set((d.items || []).map((r) => r.movie_id)))).catch(() => {});

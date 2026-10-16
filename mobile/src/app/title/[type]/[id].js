@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getPrefs } from '../../../lib/prefs';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +34,7 @@ export default function TitleScreen() {
   const keysRef = useRef([]);
   const [more, setMore] = useState(false);
   const [myRating, setMyRating] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(getPrefs().autoplay !== false);
   const [party, setParty] = useState(act === 'party');
   const [tab, setTab] = useState(startTab === 'comments' ? 'comments' : 'about');
   const [replyTo, setReplyTo] = useState(null); // from a reminder's "Watch together" button
@@ -78,7 +79,7 @@ export default function TitleScreen() {
         {/* Trailer / hero */}
         <View style={{ width, height: videoH + insets.top, paddingTop: insets.top, backgroundColor: '#000' }}>
           {trailerKey ? (
-            <YoutubePlayer key={trailerKey} height={videoH} width={width} videoId={trailerKey} play={playing} onChangeState={(s) => s === 'ended' && setPlaying(false)} onError={() => { const ks = keysRef.current; const i = ks.indexOf(trailerKey); setTrailerKey(i >= 0 && i < ks.length - 1 ? ks[i + 1] : null); }} webViewProps={{ allowsInlineMediaPlayback: true }} initialPlayerParams={{ modestbranding: true, rel: false }} />
+            <YoutubePlayer key={trailerKey} height={videoH} width={width} videoId={trailerKey} play={playing} mute={!!getPrefs().startMuted} onChangeState={(s) => s === 'ended' && setPlaying(false)} onError={() => { const ks = keysRef.current; const i = ks.indexOf(trailerKey); setTrailerKey(i >= 0 && i < ks.length - 1 ? ks[i + 1] : null); }} webViewProps={{ allowsInlineMediaPlayback: true }} initialPlayerParams={{ modestbranding: true, rel: false }} />
           ) : (
             <View style={{ width, height: videoH }}>
               {movie?.backdrop ? <Image source={{ uri: movie.backdrop }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { F, T } from '../../lib/theme';
+import { setPrefs } from '../../lib/prefs';
 import { usePushRegistration, usePushRouting } from '../../lib/push';
 import InviteBanner from '../../components/InviteBanner';
 import { useEffect, useRef } from 'react';
@@ -39,7 +40,7 @@ export default function TabsLayout() {
   // Bring in the colour they picked on another device (Appearance)
   useEffect(() => {
     if (!isSignedIn) return;
-    api.get('/api/settings').then((d) => { if (d?.theme && JSON.stringify(d.theme) !== JSON.stringify(getUserTheme())) setUserTheme(d.theme); }).catch(() => {});
+    api.get('/api/settings').then((d) => { if (d?.theme && JSON.stringify(d.theme) !== JSON.stringify(getUserTheme())) setUserTheme(d.theme); if (d?.prefs && Object.keys(d.prefs).length) setPrefs(d.prefs); }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
   useEffect(() => {

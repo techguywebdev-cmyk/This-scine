@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from '@clerk/expo';
 import { API_URL } from './config';
+import { withPrefs } from './prefs';
 
 // The web app's API routes read the Clerk session from the Authorization header,
 // so the mobile app reuses every endpoint as-is.
@@ -9,6 +10,7 @@ export function useApi() {
 
   const request = useCallback(
     async (path, { method = 'GET', body, headers = {} } = {}) => {
+      if (method === 'GET') path = withPrefs(path);
       const token = isSignedIn ? await getToken().catch(() => null) : null;
       const res = await fetch(`${API_URL}${path}`, {
         method,

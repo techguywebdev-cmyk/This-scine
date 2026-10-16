@@ -110,6 +110,7 @@ export default function RootLayout() {
                 <Stack.Screen name="party/[id]" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="ask" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="appearance" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="feed-settings" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="sign-in" options={{ animation: 'fade_from_bottom' }} />
                 <Stack.Screen name="sso-callback" options={{ animation: 'none' }} />
               </Stack>

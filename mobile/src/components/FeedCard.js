@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { img as prefImg, usePrefs } from '../lib/prefs';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +26,8 @@ function RailButton({ icon, label, active, color, onPress }) {
 
 function FeedCard({ movie, index = 0, active = true, height, bottomInset, topInset = 0, saved, watched, reminded, reviewCount, onOpen, onSave, onWatched, onRemind, onReviews, onSimilar, onShare }) {
   const accent = useThemed(movie.accent || '#F5A623');
-  const img = movie.backdrop || movie.poster;
+  usePrefs();
+  const img = prefImg(movie.backdrop || movie.poster);
   const upcoming = movie.isUpcoming && movie.releaseDate;
   const titleSize = Math.min(50, Math.max(28, 54 - (movie.title?.length || 0) * 0.9));
 

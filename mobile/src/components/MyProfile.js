@@ -200,6 +200,15 @@ export default function MyProfile({ settingsFooter }) {
               <Feather name="chevron-right" size={18} color={T.text3} />
             </Pressable>
             <View style={styles.rule} />
+            <Pressable onPress={() => router.push('/feed-settings')} style={styles.importRow}>
+              <View style={styles.roundLg}><Feather name="sliders" size={19} color="#fff" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.importTitle}>Your feed</Text>
+                <Text style={styles.importSub}>Country, streaming services, trailers and what to show</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={T.text3} />
+            </Pressable>
+            <View style={styles.rule} />
 
             {/* CineScore */}
             <View style={styles.scoreRow}>
