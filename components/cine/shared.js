@@ -333,6 +333,7 @@ export function StreamingBadges({ movieId, mediaType, title, year }) {
 export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialTab, highlightCommentId }) {
   useEffect(() => { if (movie?.id) track('title_open', { id: String(movie.id), tv: !!(movie.isTV || movie.mediaType === 'tv') }); }, [movie?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [trailerKey, setTrailerKey] = useState(null);
+  const [trailerKeys, setTrailerKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab || 'about');
@@ -384,6 +385,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
     fetch(`/api/trailer?id=${movie.id}&type=${mediaType}`)
       .then(r => r.json())
       .then(d => {
+        setTrailerKeys(Array.isArray(d.keys) && d.keys.length ? d.keys : d.trailerKey ? [d.trailerKey] : []);
         if (d.trailerKey) setTrailerKey(d.trailerKey);
         else setNotFound(true);
         setLoading(false);
@@ -479,6 +481,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
         {loading&&<div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}><div style={{width:30,height:30,border:`2.5px solid rgba(255,255,255,0.1)`,borderTop:`2.5px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:12.5,color:T.text3}}>Loading trailer...</span></div>}
         {!loading&&notFound&&<div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}><SvgIcon name="play" size={28} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text2}}>No trailer available</div></div>}
         {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
+        {!loading&&trailerKey&&trailerKeys.length>1&&<button onClick={()=>{const n=trailerKeys.indexOf(trailerKey);setTrailerKey(trailerKeys[(n+1)%trailerKeys.length]);}} style={{display:'block',marginLeft:'auto',background:'none',border:'none',padding:'7px 14px',color:'rgba(255,255,255,0.6)',fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textDecoration:'underline'}}>Trailer not playing? Try another</button>}
         <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>

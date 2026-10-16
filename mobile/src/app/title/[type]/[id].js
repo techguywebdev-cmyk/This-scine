@@ -29,6 +29,7 @@ export default function TitleScreen() {
   const [trailerKey, setTrailerKey] = useState(undefined);
   const [similar, setSimilar] = useState(null);
   const [details, setDetails] = useState(null);
+  const keysRef = useRef([]);
   const [more, setMore] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -49,7 +50,7 @@ export default function TitleScreen() {
       api.get(`/api/movies?similar=${id}&similarType=${type}&similarGenres=${genres}`).then((s) => alive && setSimilar(s.movies || [])).catch(() => alive && setSimilar([]));
     }).catch(() => {});
     api.get(`/api/movie-details?id=${id}&type=${type}`).then((d) => alive && setDetails(d)).catch(() => {});
-    api.get(`/api/trailer?id=${id}&type=${type}`).then((d) => alive && setTrailerKey(d.trailerKey || null)).catch(() => alive && setTrailerKey(null));
+    api.get(`/api/trailer?id=${id}&type=${type}`).then((d) => { if (!alive) return; keysRef.current = d.keys?.length ? d.keys : d.trailerKey ? [d.trailerKey] : []; setTrailerKey(keysRef.current[0] || null); }).catch(() => alive && setTrailerKey(null));
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, type]);
@@ -74,7 +75,7 @@ export default function TitleScreen() {
         {/* Trailer / hero */}
         <View style={{ width, height: videoH + insets.top, paddingTop: insets.top, backgroundColor: '#000' }}>
           {trailerKey ? (
-            <YoutubePlayer height={videoH} width={width} videoId={trailerKey} play={playing} onChangeState={(s) => s === 'ended' && setPlaying(false)} webViewProps={{ allowsInlineMediaPlayback: true }} initialPlayerParams={{ modestbranding: true, rel: false }} />
+            <YoutubePlayer key={trailerKey} height={videoH} width={width} videoId={trailerKey} play={playing} onChangeState={(s) => s === 'ended' && setPlaying(false)} onError={() => { const ks = keysRef.current; const i = ks.indexOf(trailerKey); setTrailerKey(i >= 0 && i < ks.length - 1 ? ks[i + 1] : null); }} webViewProps={{ allowsInlineMediaPlayback: true }} initialPlayerParams={{ modestbranding: true, rel: false }} />
           ) : (
             <View style={{ width, height: videoH }}>
               {movie?.backdrop ? <Image source={{ uri: movie.backdrop }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
