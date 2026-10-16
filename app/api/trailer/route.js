@@ -3,7 +3,8 @@
 // played inside Thiscene (some uploads block embedding and show "Video unavailable"),
 // and returns backups in order so players can fall back.
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
+import { findYouTubeTrailer } from '@/lib/ytTrailer';
 
 const TMDB_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -79,6 +80,15 @@ export async function GET(req) {
         const d3 = await tmdb(`/${type}/${id}/videos`);
         good = await playable(d3?.results || []);
       }
+    }
+
+    // TMDB has nothing playable: look on YouTube (saved, so each title is only searched once)
+    if (!good.length) {
+      const info = await tmdb(`/${type}/${id}`);
+      const title = info?.title || info?.name || searchParams.get('title');
+      const year = String(info?.release_date || info?.first_air_date || '').slice(0, 4);
+      const key = await findYouTubeTrailer({ type, id, title, year });
+      if (key) return Response.json({ trailerKey: key, name: `${title} trailer`, type: 'Trailer', keys: [key], source: 'youtube' });
     }
 
     const pick = good[0];

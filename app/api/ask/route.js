@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { SUPABASE_URL, SUPABASE_KEY } from '@/lib/db';
 import { parseAsk } from '@/lib/askParse';
+import { cachedTrailers } from '@/lib/ytTrailer';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 20;
@@ -203,7 +204,8 @@ export async function GET(req) {
   // Trailers first: check which picks actually have a YouTube trailer, put those on top, and drop
   // near-empty listings (no trailer, hardly any votes) when there are enough good ones
   const vids = await Promise.all(out.map((it) => tmdb(`/${it.mediaType}/${it.id}/videos`).then((d) => (d?.results || []).some((v) => v.site === 'YouTube' && v.key && /Trailer|Teaser|Clip/.test(v.type || ''))).catch(() => false)));
-  out.forEach((it, i) => { it.hasTrailer = vids[i]; });
+  const ytFound = await cachedTrailers(out.map((it) => ({ type: it.mediaType, id: it.id })));
+  out.forEach((it, i) => { it.hasTrailer = vids[i] || ytFound.has(`${it.mediaType}-${it.id}`); });
   const good = out.filter((it) => it.hasTrailer || it._votes >= 25);
   const ranked = (good.length >= 8 ? good : out).map((it, i) => ({ it, i })).sort((a, b) => (b.it.hasTrailer - a.it.hasTrailer) || (a.i - b.i)).map((x) => x.it).slice(0, 24);
   out.length = 0; out.push(...ranked.map(({ _votes, ...it }) => it));
