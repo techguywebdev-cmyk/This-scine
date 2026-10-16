@@ -209,7 +209,7 @@ export default function AskSheet({ accent = '#818CF8', onClose, onOpen, onSave, 
                 ))}
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 18 }}>Not quite? Add to it — “newer”, “on Prime”, “no horror”…</div>
               </>
-            ) : <div style={{ textAlign: 'center', paddingTop: 40, fontSize: 13.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>Nothing fits all of that. Try fewer details, or a different film it’s like.</div>
+            ) : <div style={{ textAlign: 'center', paddingTop: 40, fontSize: 13.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{res.note || 'Nothing fits all of that. Try fewer details, or a different film it’s like.'}</div>
           ) : (
             <>
               <div style={{ fontSize: 10.5, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, color: 'rgba(255,255,255,0.45)', margin: '8px 0 12px' }}>Try saying</div>

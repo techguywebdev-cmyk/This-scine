@@ -213,7 +213,7 @@ export default function Ask() {
                 ))}
                 <Text style={[styles.muted, { textAlign: 'center', marginTop: 18 }]}>Not quite? Add to it — “newer”, “on Prime”, “no horror”…</Text>
               </>
-            ) : <Text style={[styles.muted, { textAlign: 'center', paddingTop: 40, lineHeight: 20 }]}>Nothing fits all of that. Try fewer details, or a different film it’s like.</Text>
+            ) : <Text style={[styles.muted, { textAlign: 'center', paddingTop: 40, lineHeight: 20 }]}>{res.note || 'Nothing fits all of that. Try fewer details, or a different film it’s like.'}</Text>
           ) : (
             <>
               <Text style={[styles.tryLabel, { marginTop: 4 }]}>TRY SAYING</Text>
