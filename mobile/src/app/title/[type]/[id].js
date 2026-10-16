@@ -82,9 +82,9 @@ export default function TitleScreen() {
             <YoutubePlayer key={trailerKey} height={videoH} width={width} videoId={trailerKey} play={playing} mute={!!getPrefs().startMuted} onChangeState={(s) => s === 'ended' && setPlaying(false)} onError={() => { const ks = keysRef.current; const i = ks.indexOf(trailerKey); setTrailerKey(i >= 0 && i < ks.length - 1 ? ks[i + 1] : null); }} webViewProps={{ allowsInlineMediaPlayback: true }} initialPlayerParams={{ modestbranding: true, rel: false }} />
           ) : (
             <View style={{ width, height: videoH }}>
-              {movie?.backdrop ? <Image source={{ uri: movie.backdrop }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
+              {movie?.backdrop || movie?.poster ? <Image source={{ uri: movie.backdrop || movie.poster }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
               <LinearGradient colors={['transparent', 'rgba(6,6,11,0.8)']} style={StyleSheet.absoluteFill} />
-              <View style={styles.center}>{trailerKey === undefined ? <ActivityIndicator color="#fff" /> : <View style={{ alignItems: 'center', gap: 10 }}><Text style={styles.noTrailer}>No trailer available</Text><Pressable onPress={() => Linking.openURL(`https://www.youtube.com/results?search_query=${encodeURIComponent(`${movie?.title || initialTitle || ''} ${movie?.year || ''} trailer`)}`).catch(() => {})} style={styles.ytBtn}><Feather name="youtube" size={15} color="#fff" /><Text style={styles.ytText}>Look for it on YouTube</Text></Pressable></View>}</View>
+              <View style={styles.center}>{trailerKey === undefined ? <ActivityIndicator color="#fff" /> : <View style={{ alignItems: 'center', gap: 4 }}><Text style={styles.noTrailer}>No trailer yet</Text><Text style={{ fontFamily: F.body, fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>It’ll play right here as soon as one is out</Text></View>}</View>
             </View>
           )}
         </View>
