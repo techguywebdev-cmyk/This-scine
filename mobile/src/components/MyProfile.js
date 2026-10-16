@@ -13,6 +13,7 @@ import { Poster, Tabs } from './Ui';
 import { useApi } from '../lib/api';
 import { useAccent } from '../lib/accent';
 import ImportSheet from './ImportSheet';
+import { useUserTheme } from '../lib/userTheme';
 import { rowToMovie, useWatchlist } from '../lib/store';
 import { openTitle } from '../lib/titles';
 import { API_URL } from '../lib/config';
@@ -47,6 +48,7 @@ export default function MyProfile({ settingsFooter }) {
   const accent = useAccent();
   const [tab, setTab] = useState('profile');
   const [importing, setImporting] = useState(false);
+  const userTheme = useUserTheme();
   const [s, setS] = useState(null); // settings
   const [reviews, setReviews] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -183,6 +185,17 @@ export default function MyProfile({ settingsFooter }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.importTitle}>Import from Letterboxd or IMDb</Text>
                 <Text style={styles.importSub}>Bring everything you’ve watched in one go</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={T.text3} />
+            </Pressable>
+            <View style={styles.rule} />
+            <Pressable onPress={() => router.push('/appearance')} style={styles.importRow}>
+              {userTheme.mode === 'fixed'
+                ? <View style={[styles.roundLg, { backgroundColor: `${userTheme.color}33`, borderColor: `${userTheme.color}aa` }]}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: userTheme.color }} /></View>
+                : <View style={styles.roundLg}><View style={{ flexDirection: 'row' }}>{['#818CF8', '#2DD4BF', '#FF6B8A'].map((c, i) => <View key={c} style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c, marginLeft: i ? -4 : 0, borderWidth: 1.5, borderColor: '#06060B' }} />)}</View></View>}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.importTitle}>Your colour</Text>
+                <Text style={styles.importSub}>{userTheme.mode === 'fixed' ? 'One colour everywhere — tap to change' : 'Follows each film — tap to pick your own'}</Text>
               </View>
               <Feather name="chevron-right" size={18} color={T.text3} />
             </Pressable>

@@ -15,7 +15,6 @@ import { useApi } from '../../lib/api';
 import { usePushRegistration } from '../../lib/push';
 import { API_URL } from '../../lib/config';
 import { F, T } from '../../lib/theme';
-import { useUserTheme } from '../../lib/userTheme';
 
 const open = (path) => WebBrowser.openBrowserAsync(`${API_URL}${path}`, { toolbarColor: T.bg, controlsColor: '#ffffff' }).catch(() => {});
 
@@ -28,7 +27,6 @@ export default function Me() {
   const push = usePushRegistration();
   const [nudge, setNudge] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const userTheme = useUserTheme();
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -71,8 +69,6 @@ export default function Me() {
   const footer = (
     <View style={{ marginTop: 10 }}>
       <SectionLabel style={{ marginTop: 30 }}>Settings</SectionLabel>
-      <Row icon="droplet" text="Your colour" sub={userTheme.mode === 'fixed' ? 'One colour everywhere — tap to change' : 'Follows each film — tap to pick your own'} onPress={() => router.push('/appearance')}
-        right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{userTheme.mode === 'fixed' ? <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: userTheme.color, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }} /> : <View style={{ flexDirection: 'row' }}>{['#818CF8', '#2DD4BF', '#FF6B8A'].map((c, i) => <View key={c} style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: c, marginLeft: i ? -5 : 0, borderWidth: 1.5, borderColor: '#06060B' }} />)}</View>}<Feather name="chevron-right" size={16} color={T.text3} /></View>} />
       <Row icon="bell" text={push.enabled ? 'Notifications are on' : 'Turn on notifications'} sub={push.enabled ? null : 'Messages, watch invites and your reminders'} onPress={push.enabled ? null : push.enable} right={push.enabled ? null : undefined} />
       <Row icon="clock" text="Nudge me about older saves" sub="Once a week at most, around 7pm" right={<Switch value={!!nudge} disabled={nudge === null} onValueChange={toggleNudge} trackColor={{ true: '#fff', false: 'rgba(255,255,255,0.16)' }} thumbColor={nudge ? T.bg : '#fff'} />} />
       <Row icon="slash" text="Blocked accounts" onPress={() => router.push('/blocked')} />

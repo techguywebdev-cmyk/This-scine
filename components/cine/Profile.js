@@ -607,6 +607,27 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                 <span style={{display:'flex',transform:'rotate(-90deg)'}}><SvgIcon name="chevron" size={14} color={T.text2}/></span>
               </button>
 
+              {/* Appearance — kept near the top so it's easy to find */}
+              <div style={{marginTop:6,marginBottom:28}}>
+                <Eyebrow color={accent} style={{marginBottom:4}}>Appearance</Eyebrow>
+                <button type="button" onClick={()=>setShowAppearance(true)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                  <span style={{width:36,height:36,borderRadius:12,flexShrink:0,background:themeNow.mode==='fixed'?ambient(themeNow.color):'conic-gradient(#818CF8,#2DD4BF,#FF6B8A,#A3E635,#B07FEF,#38BDF8,#FF7A2F,#F5A623,#818CF8)',border:`1px solid ${themeNow.mode==='fixed'?themeNow.color+'88':'rgba(255,255,255,0.2)'}`}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>Your colour</div>
+                    <div style={{fontSize:11.5,color:T.text3,marginTop:2}}>{themeNow.mode==='fixed'?'One colour everywhere — tap to change':'Follows each film — tap to pick your own'}</div>
+                  </div>
+                  <span style={{color:T.text3,fontSize:14}}>›</span>
+                </button>
+                <button type="button" onClick={()=>setShowFeed(true)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',background:'none',border:'none',borderTop:`1px solid ${T.hairline}`,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                  <span style={{width:36,height:36,borderRadius:12,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:`${accent}22`,border:`1px solid ${accent}66`}}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>Your feed</div>
+                    <div style={{fontSize:11.5,color:T.text3,marginTop:2}}>Country, streaming services, trailers and what to show</div>
+                  </div>
+                  <span style={{color:T.text3,fontSize:14}}>›</span>
+                </button>
+              </div>
+
               <div style={{position:'relative',marginBottom:32}}>
                 <AccentGlow accent={accent} size={160} style={{right:-40,top:-40}}/>
                 <div style={{position:'relative',display:'flex',alignItems:'center',gap:16,marginBottom:18}}>
@@ -655,25 +676,6 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                 </div>
               )}
               {/* Privacy */}
-              <div style={{marginBottom:32}}>
-                <Eyebrow color={accent} style={{marginBottom:4}}>Appearance</Eyebrow>
-                <button type="button" onClick={()=>setShowAppearance(true)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
-                  <span style={{width:36,height:36,borderRadius:12,flexShrink:0,background:themeNow.mode==='fixed'?ambient(themeNow.color):'conic-gradient(#818CF8,#2DD4BF,#FF6B8A,#A3E635,#B07FEF,#38BDF8,#FF7A2F,#F5A623,#818CF8)',border:`1px solid ${themeNow.mode==='fixed'?themeNow.color+'88':'rgba(255,255,255,0.2)'}`}}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>Your colour</div>
-                    <div style={{fontSize:11.5,color:T.text3,marginTop:2}}>{themeNow.mode==='fixed'?'One colour everywhere — tap to change':'Follows each film — tap to pick your own'}</div>
-                  </div>
-                  <span style={{color:T.text3,fontSize:14}}>›</span>
-                </button>
-                <button type="button" onClick={()=>setShowFeed(true)} style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'13px 0',background:'none',border:'none',borderTop:`1px solid ${T.hairline}`,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
-                  <span style={{width:36,height:36,borderRadius:12,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:`${accent}22`,border:`1px solid ${accent}66`}}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13.5,fontWeight:600,color:'#fff'}}>Your feed</div>
-                    <div style={{fontSize:11.5,color:T.text3,marginTop:2}}>Country, streaming services, trailers and what to show</div>
-                  </div>
-                  <span style={{color:T.text3,fontSize:14}}>›</span>
-                </button>
-              </div>
               <div style={{marginBottom:32}}>
                 <Eyebrow color={accent} style={{marginBottom:4}}>Privacy</Eyebrow>
                 <SetRow title="Public watchlist" sub={watchlistPublic?'Anyone can see your watchlist':'Only you can see your watchlist'} right={<Switch on={watchlistPublic} onClick={togglePrivacy} disabled={loadingSettings} label="Public watchlist"/>}/>
