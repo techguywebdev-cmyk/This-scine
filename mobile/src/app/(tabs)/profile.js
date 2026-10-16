@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import Ambient from '../../components/Ambient';
 import ActionSheet from '../../components/ActionSheet';
 import MyProfile from '../../components/MyProfile';
+import SignedOutHero from '../../components/SignedOut';
 import { TsLoader } from '../../components/Brand';
 import { Empty, SectionLabel } from '../../components/Ui';
 import { useApi } from '../../lib/api';
@@ -34,20 +35,7 @@ export default function Me() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
 
-  if (!isSignedIn) {
-    return (
-      <View style={{ flex: 1, padding: 20, paddingTop: insets.top + 40 }}>
-        <Ambient />
-        <Text style={styles.h1}>Your Thiscene</Text>
-        <Empty icon="user" title="Sign in to save films, build folders and follow friends" sub="Same account as the website." />
-        <Pressable onPress={() => router.push('/sign-in')} style={styles.cta}><Text style={styles.ctaText}>Sign in or create account</Text></Pressable>
-        <View style={{ flexDirection: 'row', gap: 18, marginTop: 30 }}>
-          <Pressable onPress={() => open('/privacy')}><Text style={styles.link}>Privacy</Text></Pressable>
-          <Pressable onPress={() => open('/terms')}><Text style={styles.link}>Terms</Text></Pressable>
-        </View>
-      </View>
-    );
-  }
+  if (!isSignedIn) return <SignedOutHero title={'Your films,\nyour people.'} sub="Save what you want to watch, build folders, follow friends and pick up where you left off — same account as the website." legal />;
 
   const toggleNudge = (v) => {
     setNudge(v);

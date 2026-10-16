@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SignInPills } from '../../components/SignedOut';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,7 +69,7 @@ export default function Watchlist() {
           {!isSignedIn && tab !== 'trending' ? (
             <View style={{ paddingTop: 24 }}>
               <Empty icon="bookmark" title="Your watchlist lives here" sub="Sign in to save films and sort them into folders." />
-              <Pressable onPress={() => router.push('/sign-in')} style={styles.cta}><Text style={styles.ctaText}>Sign in</Text></Pressable>
+              <SignInPills style={{ marginTop: 18 }} />
             </View>
           ) : tab === 'mine' ? (
             <>

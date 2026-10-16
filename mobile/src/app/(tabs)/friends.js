@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SignInPills } from '../../components/SignedOut';
 import { useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
@@ -89,7 +90,7 @@ export default function Friends() {
           {!isSignedIn ? (
             <View style={{ paddingTop: 20 }}>
               <Empty icon="users" title="See what your friends are watching" sub="Sign in to follow people, see their saves and reviews, and message them about a film." />
-              <Pressable onPress={() => router.push('/sign-in')} style={styles.cta}><Text style={styles.ctaText}>Sign in</Text></Pressable>
+              <SignInPills style={{ marginTop: 18 }} />
             </View>
           ) : tab === 'feed' ? (
             feed === null ? <Spinner /> : (
