@@ -6,6 +6,7 @@ import AskSheet, { AskButton } from './cine/Ask';
 import Splash, { TsMark } from './cine/Splash';
 import AuthScreen from './cine/AuthScreen';
 import { useTheme, themed, getTheme, setTheme } from './cine/theme';
+import { setPrefs } from './cine/prefs';
 import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 export default function CineScroll(){
@@ -150,7 +151,7 @@ export default function CineScroll(){
     if(!isLoaded||!isSignedIn||!user?.id)return;
     const t=setTimeout(()=>{
       const cached=coverCache.get(user.id);if(cached){const i=new Image();i.src=cached;}
-      fetch('/api/settings').then(r=>r.ok?r.json():null).then(d=>{if(!d)return;if(d.theme){const lt=getTheme();if(JSON.stringify(lt)!==JSON.stringify(d.theme))setTheme(d.theme,{save:false});}coverCache.set(user.id,d.cover_url||null);if(d.cover_url&&d.cover_url!==cached){const i=new Image();i.src=d.cover_url;}}).catch(()=>{});
+      fetch('/api/settings').then(r=>r.ok?r.json():null).then(d=>{if(!d)return;if(d.theme){const lt=getTheme();if(JSON.stringify(lt)!==JSON.stringify(d.theme))setTheme(d.theme,{save:false});}if(d.prefs&&Object.keys(d.prefs).length)setPrefs(d.prefs,{save:false});coverCache.set(user.id,d.cover_url||null);if(d.cover_url&&d.cover_url!==cached){const i=new Image();i.src=d.cover_url;}}).catch(()=>{});
     },1500);
     return()=>clearTimeout(t);
   },[isLoaded,isSignedIn,user?.id]);
@@ -365,6 +366,7 @@ export default function CineScroll(){
   useEffect(()=>{const m=movies[activeIndex];if(!m)return;const t=setTimeout(()=>markSeen(m),1200);return()=>clearTimeout(t);},[activeIndex,movies]);
 
   useEffect(()=>{fetchMovies(activeMood,activeGenre,'',1,false,activeProvider);},[activeMood,activeGenre,activeProvider]);
+  useEffect(()=>{const f=()=>{pageRef.current=1;containerRef.current?.scrollTo?.({top:0});fetchMovies(activeMood,activeGenre,'',1,false,activeProvider);};window.addEventListener('cine:feed-refresh',f);return()=>window.removeEventListener('cine:feed-refresh',f);},[activeMood,activeGenre,activeProvider,fetchMovies]);
 
   useEffect(()=>{
     const el=containerRef.current;if(!el)return;

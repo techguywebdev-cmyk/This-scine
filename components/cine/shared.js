@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'rea
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
 import dynamic from 'next/dynamic';
+import { withPrefs, getPrefs, img as prefImg } from './prefs';
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 // Neutrals carry the visual weight since the accent color is dynamic (shifts per
@@ -480,7 +481,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       <div style={{position:'relative',zIndex:10,background:'#000',flexShrink:0,boxShadow:'0 8px 24px rgba(0,0,0,0.45)'}}>
         {loading&&<div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}><div style={{width:30,height:30,border:`2.5px solid rgba(255,255,255,0.1)`,borderTop:`2.5px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:12.5,color:T.text3}}>Loading trailer...</span></div>}
         {!loading&&notFound&&<div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}><SvgIcon name="play" size={28} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text2}}>No trailer available</div></div>}
-        {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
+        {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=${getPrefs().autoplay===false?0:1}&mute=${getPrefs().startMuted?1:0}&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
         {!loading&&trailerKey&&trailerKeys.length>1&&<button onClick={()=>{const n=trailerKeys.indexOf(trailerKey);setTrailerKey(trailerKeys[(n+1)%trailerKeys.length]);}} style={{display:'block',marginLeft:'auto',background:'none',border:'none',padding:'7px 14px',color:'rgba(255,255,255,0.6)',fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textDecoration:'underline'}}>Trailer not playing? Try another</button>}
         <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -730,6 +731,8 @@ export function installApiCache(){
     const method=((init&&init.method)||(input&&input.method)||'GET').toUpperCase();
     let path='';try{const u=new URL(url,window.location.origin);if(u.origin===window.location.origin)path=u.pathname+u.search;}catch{}
     if(!path.startsWith('/api/'))return orig(input,init);
+    // Personal feed settings (country, services, filters) ride along on the calls that use them
+    if(method==='GET'&&/^\/api\/(movies|providers|ask)\b/.test(path)){const np=withPrefs(path);if(np!==path){path=np;input=np;}}
     if(method!=='GET'){store.clear();if(!path.startsWith('/api/track'))trackFromRequest(path,method,init);return orig(input,init);}
     if(!CACHEABLE.test(path)||(init&&init.cache==='no-store'))return orig(input,init);
     const hit=store.get(path);
@@ -1139,7 +1142,7 @@ export function MovieCard({movie,isActive,index,onFindSimilar,onAuthRequired,onS
   const[liked,setLiked]=useState(false);const[userRating,setUserRating]=useState(0);const[showComments,setShowComments]=useState(false);const[imgLoaded,setImgLoaded]=useState(false);const[likeCount]=useState(Math.floor(Math.random()*60+8)*100);const[showHint,setShowHint]=useState(false);const[showAddToList,setShowAddToList]=useState(false);
   const longPressTimer=useRef(null);const isPressingRef=useRef(false);
   const fmt=n=>n>=1000?`${(n/1000).toFixed(0)}K`:n;
-  const accent=movie.accent||'#F5A623';const bgImage=movie.backdrop||movie.poster;
+  const accent=movie.accent||'#F5A623';const bgImage=prefImg(movie.backdrop||movie.poster);
   const handleLike=()=>{if(!isSignedIn){onAuthRequired();return;}setLiked(p=>!p);};
   const openTrailer=(e)=>{e?.stopPropagation?.();e?.preventDefault?.();if(navigator.vibrate)navigator.vibrate(20);setShowHint(false);try{localStorage.setItem('cine_trailer_tip','1');}catch{}onTrailer(movie);};
   const onPressStart=(e)=>{

@@ -34,11 +34,11 @@ function Preview({ color, film }) {
   );
 }
 
-export default function AppearanceSheet({ onClose }) {
+export default function AppearanceSheet({ onClose, accent }) {
   const theme = useTheme();
   const film = theme.mode !== 'fixed';
   const color = theme.color || '#818CF8';
-  const live = film ? '#818CF8' : color;
+  const live = film ? (accent || '#818CF8') : color;
   const [saved, setSaved] = useState('');
   const pick = (t) => { setTheme(t); if (navigator.vibrate) navigator.vibrate(8); setSaved('Saved — it’ll match on the app too'); };
   useEffect(() => { if (!saved) return undefined; const t = setTimeout(() => setSaved(''), 2200); return () => clearTimeout(t); }, [saved]);

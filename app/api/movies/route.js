@@ -10,6 +10,9 @@ const GENRE_MAP = {
   10759: 'Action', 10765: 'Sci-Fi', 10768: 'War', 10762: 'Kids', 10764: 'Reality',
 };
 
+// TV genre ids that should count as a hidden movie genre (e.g. hiding Action hides Action & Adventure)
+const HIDE_TV_ALIASES = { 10759: 28, 10765: 878, 10768: 10752 };
+
 // Genre name -> TMDB ids for movie and TV discover
 const NAME_TO_IDS = {
   Action: { movie: 28, tv: 10759 }, Adventure: { movie: 12, tv: 10759 }, Drama: { movie: 18, tv: 18 },
@@ -200,6 +203,12 @@ export async function GET(request) {
     PROVIDER_IDS[providerRaw.replace(/\s+/g, '')] ||
     '';
   const popularOnly = searchParams.get('popular') === '1';
+  // Personal feed settings (Settings → Your feed)
+  const region = /^[A-Za-z]{2}$/.test(searchParams.get('region') || '') ? searchParams.get('region').toUpperCase() : 'US';
+  const mine = (searchParams.get('mine') || '').split(/[|,]/).filter((x) => /^\d+$/.test(x)).slice(0, 20).join('|');
+  const hideGenres = new Set((searchParams.get('hide') || '').split(',').filter((x) => /^\d+$/.test(x)).map(Number));
+  const kind = ['movie', 'tv'].includes(searchParams.get('kind')) ? searchParams.get('kind') : '';
+  const safe = searchParams.get('safe') === '1';
 
 
   try {
@@ -403,17 +412,18 @@ export async function GET(request) {
     const monthsAgo = (n) => { const d = new Date(); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 10); };
 
     const genreQ = genre ? `&with_genres=${genre}` : '';
-    const providerQ = providerId
-      ? `&with_watch_providers=${providerId}&watch_region=US&with_watch_monetization_types=flatrate`
+    const provs = providerId || mine;
+    const providerQ = provs
+      ? `&with_watch_providers=${provs}&watch_region=${region}&with_watch_monetization_types=flatrate|free|ads`
       : '';
-    const D = (type, q) => `${TMDB_BASE}/discover/${type}?api_key=${TMDB_KEY}&include_adult=false${q}`;
+    const D = (type, q) => `${TMDB_BASE}/discover/${type}?api_key=${TMDB_KEY}&include_adult=false${type === 'movie' && safe ? '&certification_country=US&certification.lte=PG-13' : ''}${q}`;
     const L = (path, pg) => `${TMDB_BASE}/${path}?api_key=${TMDB_KEY}&page=${pg}`;
 
     // Each source: url, how many to take, and minimum votes for quality
     let sources = [];
     const src = (url, take, minVotes = 100, minRating = 5.8) => sources.push({ url, take, minVotes, minRating });
 
-    if (providerId) {
+    if (provs) {
       const sort = mood === 'top rated' ? 'vote_average.desc' : mood === 'new' || mood === 'upcoming' ? 'primary_release_date.desc' : 'popularity.desc';
       src(D('movie', `${genreQ}${providerQ}&vote_count.gte=50&sort_by=${sort}&page=${P('a', 20)}`), 8, 50);
       src(D('movie', `${genreQ}${providerQ}&vote_count.gte=300&sort_by=vote_average.desc&page=${P('b', 20)}`), 4, 300, 6.8);
@@ -481,6 +491,9 @@ export async function GET(request) {
         if (!(m.backdrop_path || m.poster_path) || !m.overview) return false;
         if ((m.vote_count || 0) < s.minVotes || (m.vote_average || 0) < s.minRating) return false;
         if (exclude.has(keyOf(m)) || exclude.has(String(m.id))) return false;
+        if (kind === 'movie' && !m.title) return false;
+        if (kind === 'tv' && m.title) return false;
+        if (hideGenres.size && (m.genre_ids || []).some((g) => hideGenres.has(g) || (HIDE_TV_ALIASES[g] && hideGenres.has(HIDE_TV_ALIASES[g])))) return false;
         return true;
       });
       let took = 0;
@@ -503,7 +516,7 @@ export async function GET(request) {
 
     // ── Mix a couple of upcoming releases into the default feed ──
     // Only for the plain Trending feed (no platform/genre filter), so filtered feeds stay pure.
-    if (!providerId && !genre && mood === 'trending' && pageNum % 2 === 1) {
+    if (!provs && !genre && mood === 'trending' && pageNum % 2 === 1 && kind !== 'tv') {
       try {
         const upPage = permPage(seed, 'up', 5, Math.ceil(pageNum / 2));
         const upRes = await fetch(
@@ -526,9 +539,11 @@ export async function GET(request) {
       }
     }
 
-    const certPromises = interleaved.slice(0, 8).map((m) => getMovieCert(m.id, !m.title));
+    const certPromises = interleaved.slice(0, safe ? 24 : 8).map((m) => getMovieCert(m.id, !m.title));
     const certs = await Promise.all(certPromises);
-    const formatted = interleaved.map((m, i) => formatItem(m, i, certs[i] || ''));
+    let formatted = interleaved.map((m, i) => formatItem(m, i, certs[i] || ''));
+    // Age filter: drop anything rated for adults
+    if (safe) formatted = formatted.filter((m) => !['R', 'NC-17', '18', 'TV-MA'].includes(m.certification));
     return Response.json({ movies: formatted });
   } catch (err) {
     console.error(err);

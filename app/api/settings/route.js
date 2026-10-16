@@ -41,7 +41,7 @@ export async function GET() {
 
   try {
     const res = await fetch(
-      `${db('user_settings')}?user_id=eq.${userId}&select=watchlist_public,bio,cover_url,nickname,notify_prefs,push_subscription,theme`,
+      `${db('user_settings')}?user_id=eq.${userId}&select=watchlist_public,bio,cover_url,nickname,notify_prefs,push_subscription,theme,prefs,top4`,
       { headers }
     );
     const data = await res.json();
@@ -55,6 +55,8 @@ export async function GET() {
         notify_prefs: { ...DEFAULT_PREFS },
         has_web_push: false,
         theme: { mode: 'film' },
+        prefs: {},
+        top4: [],
       });
     }
 
@@ -67,6 +69,8 @@ export async function GET() {
       notify_prefs: parsePrefs(row.notify_prefs),
       has_web_push: !!row.push_subscription,
       theme: row.theme && typeof row.theme === 'object' ? row.theme : { mode: 'film' },
+      prefs: row.prefs && typeof row.prefs === 'object' ? row.prefs : {},
+      top4: Array.isArray(row.top4) ? row.top4 : [],
     });
   } catch (err) {
     console.error('GET /api/settings error:', err);
@@ -104,6 +108,32 @@ export async function PATCH(request) {
     }
 
     if (body.push_subscription !== undefined) payload.push_subscription = body.push_subscription;
+
+    // Your feed & playback (region, services, trailers, data saver, content filters)
+    if (body.prefs && typeof body.prefs === 'object') {
+      const p = body.prefs, out = {};
+      if (/^[A-Za-z]{2}$/.test(p.region || '')) out.region = p.region.toUpperCase();
+      if (Array.isArray(p.services)) out.services = p.services.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 20);
+      for (const k of ['onlyMine', 'autoplay', 'startMuted', 'dataSaver', 'safe']) if (typeof p[k] === 'boolean') out[k] = p[k];
+      if (Array.isArray(p.hideGenres)) out.hideGenres = p.hideGenres.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 12);
+      if (['both', 'movie', 'tv'].includes(p.kind)) out.kind = p.kind;
+      let existing = {};
+      try {
+        const cur = await fetch(`${db('user_settings')}?user_id=eq.${encodeURIComponent(userId)}&select=prefs`, { headers, cache: 'no-store' });
+        const rows = await cur.json();
+        if (Array.isArray(rows) && rows[0]?.prefs && typeof rows[0].prefs === 'object') existing = rows[0].prefs;
+      } catch {}
+      payload.prefs = { ...existing, ...out };
+    }
+
+    // Top 4 favourite films on the profile
+    if (Array.isArray(body.top4)) {
+      payload.top4 = body.top4.slice(0, 4).filter((m) => m && Number.isFinite(Number(m.id))).map((m) => ({
+        id: Number(m.id), type: m.type === 'tv' ? 'tv' : 'movie', title: String(m.title || '').slice(0, 200),
+        poster: typeof m.poster === 'string' && /^https:\/\/image\.tmdb\.org\//.test(m.poster) ? m.poster : null,
+        year: String(m.year || '').slice(0, 4), accent: /^#[0-9a-fA-F]{6}$/.test(m.accent || '') ? m.accent : null,
+      }));
+    }
 
     // Appearance: follow each film's colour, or one colour of their own everywhere
     if (body.theme && typeof body.theme === 'object') {

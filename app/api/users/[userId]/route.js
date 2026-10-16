@@ -50,7 +50,7 @@ export async function GET(req, { params }) {
     const clerkP = clerkClient.users.getUser(targetId).catch(() => null);
     const followerP = fetch(`${db('follows')}?following_id=eq.${targetId}&select=id`, { headers: countHeaders });
     const followingP = fetch(`${db('follows')}?follower_id=eq.${targetId}&select=id`, { headers: countHeaders });
-    const settingsP = fetch(`${db('user_settings')}?user_id=eq.${targetId}&select=watchlist_public,bio,cover_url,nickname`, { headers }).then((r) => r.json()).catch(() => []);
+    const settingsP = fetch(`${db('user_settings')}?user_id=eq.${targetId}&select=watchlist_public,bio,cover_url,nickname,top4,theme`, { headers }).then((r) => r.json()).catch(() => []);
     const watchlistP = fetch(`${db('watchlist')}?user_id=eq.${targetId}&order=saved_at.desc&select=movie_id,title,year,rating,poster,backdrop,genre,overview,accent,gradient,is_tv,watched,saved_at`, { headers: countHeaders });
     const viewerP = viewerId && !isSelf
       ? Promise.all([
@@ -125,6 +125,8 @@ export async function GET(req, { params }) {
       avatar_url,
       bio,
       cover_url: coverUrl,
+      top4: Array.isArray(settingsRow?.top4) ? settingsRow.top4 : [],
+      theme_color: settingsRow?.theme?.mode === 'fixed' ? settingsRow.theme.color || null : null,
       followers: followerCount || 0,
       following: followingCount || 0,
       watchlistCount: watchlistCount || 0,

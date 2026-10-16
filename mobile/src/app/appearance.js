@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Ambient from '../components/Ambient';
+import { useAccent } from '../lib/accent';
 import { DOTS } from '../components/Brand';
 import { useApi } from '../lib/api';
 import { PALETTE, setUserTheme, useUserTheme } from '../lib/userTheme';
@@ -72,7 +73,8 @@ export default function Appearance() {
   const theme = useUserTheme();
   const film = theme.mode !== 'fixed';
   const color = theme.color || '#818CF8';
-  const live = film ? '#818CF8' : color;
+  const filmAccent = useAccent();
+  const live = film ? filmAccent : color;
   const [saved, setSaved] = useState(false);
   const pick = (t) => { Haptics.selectionAsync().catch(() => {}); setUserTheme(t, api); setSaved(true); };
   useEffect(() => { if (!saved) return undefined; const t = setTimeout(() => setSaved(false), 2200); return () => clearTimeout(t); }, [saved]);

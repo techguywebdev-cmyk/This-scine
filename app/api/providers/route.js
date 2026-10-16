@@ -16,10 +16,14 @@ export async function GET(req) {
     const res = await fetch(`${TMDB_BASE}/${type}/${id}/watch/providers?api_key=${TMDB_KEY}`);
     const data = await res.json();
     const results = data.results || {};
-    const regionData = results['US'] || results['GB'] || results['CA'] || Object.values(results)[0] || null;
+    // Their country first (from settings, or where they are); only fall back when they haven't chosen one
+    const want = (searchParams.get('region') || '').toUpperCase();
+    const strict = searchParams.get('strict') === '1';
+    const usedRegion = want && results[want] ? want : strict ? null : (results.US ? 'US' : results.GB ? 'GB' : Object.keys(results)[0] || null);
+    const regionData = usedRegion ? results[usedRegion] : null;
 
     if (!regionData) {
-      return Response.json({ providers: [], link: null });
+      return Response.json({ providers: [], link: null, region: want || null });
     }
 
     const list = [
@@ -37,12 +41,13 @@ export async function GET(req) {
         provider_name: p.provider_name,
         logo_path: p.logo_path,
       });
-      if (providers.length >= 5) break;
+      if (providers.length >= 8) break;
     }
 
     return Response.json({
       providers,
       link: regionData.link || null,
+      region: usedRegion,
     });
   } catch (err) {
     console.error('GET /api/providers error:', err);

@@ -95,7 +95,8 @@ export async function GET(req) {
   if (p.minRuntime) params['with_runtime.gte'] = String(p.minRuntime);
   if (p.language) params.with_original_language = p.language;
   if (p.region) params.with_origin_country = p.region;
-  if (p.providers.length) { params.with_watch_providers = p.providers.join('|'); params.watch_region = 'US'; }
+  const region = /^[A-Za-z]{2}$/.test(searchParams.get('region') || '') ? searchParams.get('region').toUpperCase() : 'US';
+  if (p.providers.length) { params.with_watch_providers = p.providers.join('|'); params.watch_region = region; }
   if (p.sort === 'top') { params.sort_by = 'vote_average.desc'; params['vote_count.gte'] = '800'; }
   else if (p.sort === 'hidden') { params.sort_by = 'vote_average.desc'; params['vote_count.gte'] = '60'; params['vote_count.lte'] = '1500'; params['vote_average.gte'] = '7'; }
   else if (p.sort === 'new') { params.sort_by = 'popularity.desc'; params['vote_count.gte'] = '20'; }
