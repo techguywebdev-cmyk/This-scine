@@ -21,7 +21,13 @@ export async function GET(req) {
         ? 'credits,content_ratings,videos'
         : 'credits,release_dates,videos';
     const url = `https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}&append_to_response=${append}&language=en-US`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    let res = null;
+    for (let i = 0; i < 3; i++) {
+      try { res = await fetch(url, i === 0 ? { next: { revalidate: 3600 } } : { cache: 'no-store' }); } catch { res = null; }
+      if (res && (res.ok || res.status === 404)) break;
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+    if (!res) return Response.json({ error: 'TMDB unavailable', retry: true }, { status: 503 });
     if (!res.ok) {
       const text = await res.text();
       return Response.json({ error: `TMDB error: ${text.slice(0, 120)}` }, { status: res.status });

@@ -50,8 +50,10 @@ export default function TitleScreen() {
       const genres = (m?.genreIds || []).join(',');
       api.get(`/api/movies?similar=${id}&similarType=${type}&similarGenres=${genres}`).then((s) => alive && setSimilar(s.movies || [])).catch(() => alive && setSimilar([]));
     }).catch(() => {});
-    api.get(`/api/movie-details?id=${id}&type=${type}`).then((d) => alive && setDetails(d)).catch(() => {});
-    api.get(`/api/trailer?id=${id}&type=${type}`).then((d) => { if (!alive) return; keysRef.current = d.keys?.length ? d.keys : d.trailerKey ? [d.trailerKey] : []; setTrailerKey(keysRef.current[0] || null); }).catch(() => alive && setTrailerKey(null));
+    // A failed lookup (TMDB busy) is retried rather than shown as "no trailer"
+    const retry = async (path) => { for (let i = 0; i < 3; i++) { try { return await api.get(path); } catch {} if (!alive) return null; await new Promise((r) => setTimeout(r, 800 * (i + 1))); } return null; };
+    retry(`/api/movie-details?id=${id}&type=${type}`).then((d) => alive && d && setDetails(d));
+    retry(`/api/trailer?id=${id}&type=${type}`).then((d) => { if (!alive) return; keysRef.current = d?.keys?.length ? d.keys : d?.trailerKey ? [d.trailerKey] : []; setTrailerKey(keysRef.current[0] || null); });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, type]);

@@ -337,6 +337,9 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
   const [trailerKeys, setTrailerKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [posterBroken, setPosterBroken] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab || 'about');
   const [showAddToList, setShowAddToList] = useState(false);
   const [movieDetails, setMovieDetails] = useState(null);
@@ -382,27 +385,33 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
     setMovieDetails(null);
     setCast([]);
     const mediaType = movie.mediaType || (movie.isTV || movie.is_tv ? 'tv' : 'movie');
-    // Trailer via server proxy (no client TMDB key needed)
-    fetch(`/api/trailer?id=${movie.id}&type=${mediaType}`)
-      .then(r => r.json())
-      .then(d => {
-        setTrailerKeys(Array.isArray(d.keys) && d.keys.length ? d.keys : d.trailerKey ? [d.trailerKey] : []);
-        if (d.trailerKey) setTrailerKey(d.trailerKey);
-        else setNotFound(true);
-        setLoading(false);
-      })
-      .catch(() => { setNotFound(true); setLoading(false); });
+    // Trailer + details via server proxy. A failed lookup is retried and never shown as "no trailer".
+    let alive = true;
+    const getJson = async (url) => {
+      for (let i = 0; i < 3 && alive; i++) {
+        try { const r = await fetch(url, i ? { cache: 'no-store' } : undefined); if (r.ok) return await r.json(); } catch {}
+        await new Promise((res) => setTimeout(res, 800 * (i + 1)));
+      }
+      return null;
+    };
+    setLoadFailed(false);
+    setPosterBroken(false);
+    getJson(`/api/trailer?id=${movie.id}&type=${mediaType}`).then((d) => {
+      if (!alive) return;
+      if (!d) { setLoadFailed(true); setNotFound(true); setLoading(false); return; }
+      setTrailerKeys(Array.isArray(d.keys) && d.keys.length ? d.keys : d.trailerKey ? [d.trailerKey] : []);
+      if (d.trailerKey) setTrailerKey(d.trailerKey);
+      else setNotFound(true);
+      setLoading(false);
+    });
     // Full details: director, runtime, release date, language, cast
-    fetch(`/api/movie-details?id=${movie.id}&type=${mediaType}`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.details) {
-          setMovieDetails(d.details);
-          setCast(d.cast || d.details?.credits?.cast?.slice(0, 12) || []);
-        }
-      })
-      .catch(() => {});
-  }, [movie?.id, movie?.mediaType]);
+    getJson(`/api/movie-details?id=${movie.id}&type=${mediaType}`).then((d) => {
+      if (!alive || !d?.details) return;
+      setMovieDetails(d.details);
+      setCast(d.cast || d.details?.credits?.cast?.slice(0, 12) || []);
+    });
+    return () => { alive = false; };
+  }, [movie?.id, movie?.mediaType, reloadKey]);
 
   const postComment = async () => {
     if (!isSignedIn) return;
@@ -480,7 +489,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}div::-webkit-scrollbar{display:none}.cast-scroll::-webkit-scrollbar{display:none}`}</style>
       <div style={{position:'relative',zIndex:10,background:'#000',flexShrink:0,boxShadow:'0 8px 24px rgba(0,0,0,0.45)'}}>
         {loading&&<div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}><div style={{width:30,height:30,border:`2.5px solid rgba(255,255,255,0.1)`,borderTop:`2.5px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:12.5,color:T.text3}}>Loading trailer...</span></div>}
-        {!loading&&notFound&&<div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}><SvgIcon name="play" size={28} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text2}}>No trailer available</div></div>}
+        {!loading&&notFound&&<div style={{height:180,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}><SvgIcon name="play" size={28} color={T.hairlineStrong}/><div style={{fontSize:13.5,color:T.text2}}>{loadFailed?'Couldn’t load the trailer':'No trailer available'}</div>{loadFailed&&<button type="button" onClick={()=>setReloadKey(k=>k+1)} style={{marginTop:4,height:36,padding:'0 18px',borderRadius:18,background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.14)',color:'#fff',fontWeight:700,fontSize:13,fontFamily:'inherit',cursor:'pointer'}}>Try again</button>}</div>}
         {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=${getPrefs().autoplay===false?0:1}&mute=${getPrefs().startMuted?1:0}&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
         {!loading&&trailerKey&&trailerKeys.length>1&&<button onClick={()=>{const n=trailerKeys.indexOf(trailerKey);setTrailerKey(trailerKeys[(n+1)%trailerKeys.length]);}} style={{display:'block',marginLeft:'auto',background:'none',border:'none',padding:'7px 14px',color:'rgba(255,255,255,0.6)',fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textDecoration:'underline'}}>Trailer not playing? Try another</button>}
         <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
@@ -510,8 +519,9 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       {activeTab==='about'&&(
         <div style={{padding:'18px',animation:'fadeIn 0.2s ease'}}>
           <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:20}}>
-            <div style={{width:108,flexShrink:0,alignSelf:'flex-start',borderRadius:12,overflow:'hidden',aspectRatio:'2/3',background:movie?.gradient||T.surface2}}>
-              {movie?.poster&&<img src={movie.poster} alt={movie.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+            <div style={{position:'relative',width:108,flexShrink:0,alignSelf:'flex-start',borderRadius:12,overflow:'hidden',aspectRatio:'2/3',background:movie?.gradient||T.surface2}}>
+              {movie?.poster&&!posterBroken&&<img src={movie.poster} alt="" onError={()=>setPosterBroken(true)} style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+              {(!movie?.poster||posterBroken)&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'flex-end',padding:12,fontFamily:T.serif,fontWeight:800,fontSize:17,letterSpacing:'-0.02em',lineHeight:1.1,color:'rgba(255,255,255,0.85)'}}>{movie?.title}</div>}
             </div>
             <div style={{flex:1}}>
               <p style={{fontSize:13.5,color:T.text2,lineHeight:1.65,margin:'0 0 8px'}}>{expanded?overview:shortOverview}</p>

@@ -10,9 +10,20 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 
 const TYPE_RANK = { Trailer: 0, Teaser: 1, Clip: 2, Featurette: 3, 'Opening Credits': 4, 'Behind the Scenes': 5, Bloopers: 6 };
 
-const tmdb = (path, params = {}) => {
+// TMDB occasionally refuses bursts (429) or blips — retry once, uncached, before giving up.
+// Returns null only when TMDB itself failed, so callers can tell "no trailer" from "couldn't ask".
+const tmdb = async (path, params = {}) => {
   const q = new URLSearchParams({ api_key: TMDB_KEY, ...params });
-  return fetch(`${TMDB_BASE}${path}?${q}`, { next: { revalidate: 86400 } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const url = `${TMDB_BASE}${path}?${q}`;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const r = await fetch(url, i === 0 ? { next: { revalidate: 86400 } } : { cache: 'no-store' });
+      if (r.ok) return r.json();
+      if (r.status === 404) return { results: [] };
+    } catch {}
+    await new Promise((res) => setTimeout(res, 400 * (i + 1)));
+  }
+  return null;
 };
 
 // YouTube's oEmbed answers 401/403 when the owner blocked embedding and 404 when the video is gone
@@ -53,6 +64,7 @@ export async function GET(req) {
   try {
     // English + no-language videos first
     const d = await tmdb(`/${type}/${id}/videos`, { include_video_language: 'en,null' });
+    if (!d) return Response.json({ error: 'TMDB unavailable', retry: true }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
     let good = await playable(d?.results || []);
 
     // Nothing playable? Try the film's own language, then every language
