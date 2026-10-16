@@ -1,3 +1,4 @@
+import { useThemed } from '../lib/userTheme';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
@@ -28,7 +29,7 @@ export default function StartParty({ movie, onClose, preselect }) {
   const [err, setErr] = useState('');
   const [sent, setSent] = useState(null);
   const opts = whenOptions();
-  const accent = movie?.accent || T.accent;
+  const accent = useThemed(movie?.accent || T.accent);
 
   useEffect(() => { api.get('/api/follows?type=following').then((d) => setPeople(d.users || [])).catch(() => setPeople([])); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 

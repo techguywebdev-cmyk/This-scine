@@ -16,6 +16,7 @@ import { useAuth } from '@clerk/expo';
 import { openTitle, shareTitle } from '../../../lib/titles';
 import { F, T, inkOn } from '../../../lib/theme';
 import { useAccent } from '../../../lib/accent';
+import { useThemed } from '../../../lib/userTheme';
 import StreamOn from '../../../components/StreamOn';
 
 export default function TitleScreen() {
@@ -62,7 +63,7 @@ export default function TitleScreen() {
   }, [focus, similar]);
 
   // Keep the colour of the card you came from (the API can assign a different one)
-  const accent = passedAccent || liveAccent || movie?.accent || T.accent;
+  const accent = useThemed(passedAccent || liveAccent || movie?.accent || T.accent);
   const videoH = Math.round((width * 9) / 16);
   const saved = movie && wl.ids.has(movie.id);
   const watched = movie && wl.isWatched(movie.id);

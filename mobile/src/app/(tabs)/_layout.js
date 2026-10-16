@@ -12,6 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWatchlist } from '../../lib/store';
 import { WELCOME_KEY } from '../../lib/keys';
 import { View } from 'react-native';
+import { useApi } from '../../lib/api';
+import { getUserTheme, setUserTheme } from '../../lib/userTheme';
 
 const icon = (name) => ({ color, size }) => <Feather name={name} size={size - 2} color={color} />;
 
@@ -20,6 +22,7 @@ export default function TabsLayout() {
   const { isSignedIn } = useAuth();
   const wl = useWatchlist();
   const checked = useRef(false);
+  const api = useApi();
   const push = usePushRegistration();
   // Ask for notification permission once (after sign-in), so calls and messages can ring
   useEffect(() => {
@@ -31,6 +34,12 @@ export default function TabsLayout() {
       push.enable();
     }, 6000);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
+  // Bring in the colour they picked on another device (Appearance)
+  useEffect(() => {
+    if (!isSignedIn) return;
+    api.get('/api/settings').then((d) => { if (d?.theme && JSON.stringify(d.theme) !== JSON.stringify(getUserTheme())) setUserTheme(d.theme); }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
   useEffect(() => {

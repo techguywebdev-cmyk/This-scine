@@ -18,6 +18,7 @@ import { setFeedFilter, useFeedFilter } from '../../lib/feedFilter';
 import { GlassButton } from '../../components/Ui';
 import { markBootReady } from '../../lib/boot';
 import { setAccent } from '../../lib/accent';
+import { useThemed } from '../../lib/userTheme';
 
 const newSeed = () => String(Math.floor(Math.random() * 1e9));
 
@@ -35,6 +36,7 @@ export default function Feed() {
   const [loading, setLoading] = useState(true);
   const [reminded, setReminded] = useState(new Set());
   const [activeAccent, setActiveAccent] = useState('#fff');
+  const themedActive = useThemed(activeAccent);
   const [savedToast, setSavedToast] = useState(null);
   const [remindRow, setRemindRow] = useState(null);
   const [reviewsFor, setReviewsFor] = useState(null);
@@ -157,7 +159,7 @@ export default function Feed() {
       {/* Top bar: brand + filter */}
       <View pointerEvents="box-none" style={[styles.top, { paddingTop: insets.top + 8 }]}>
         <View pointerEvents="box-none" style={styles.topRow}>
-          <Wordmark accent={activeAccent} />
+          <Wordmark accent={themedActive} />
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <GlassButton ionicon="sparkles-outline" label="Ask Thiscene — describe what you want to watch" onPress={() => router.push('/ask')} />
             <View>

@@ -1,3 +1,4 @@
+import { useThemed } from '../../lib/userTheme';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -94,7 +95,7 @@ export default function PartyRoom() {
 
   const p = v?.party;
   const peer = v?.peer, self = v?.self;
-  const accent = p?.movie?.accent || T.accent;
+  const accent = useThemed(p?.movie?.accent || T.accent);
   const nameOf = (uid) => (uid === me ? 'You' : first(uid === peer?.user_id ? peer : self));
 
   // Shared clock from the server's anchor

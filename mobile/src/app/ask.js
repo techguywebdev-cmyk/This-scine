@@ -1,3 +1,4 @@
+import { useThemed } from '../lib/userTheme';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
@@ -118,7 +119,7 @@ export default function Ask() {
 
   const movies = res?.movies || [];
   const top = movies[0];
-  const tone = top?.accent || accent;
+  const tone = useThemed(top?.accent || accent);
   const SaveBtn = ({ m, size = 36 }) => {
     const saved = wl.ids.has(m.id);
     return (

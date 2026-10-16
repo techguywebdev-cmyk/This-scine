@@ -1,3 +1,4 @@
+import { useThemed } from '../lib/userTheme';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
@@ -18,7 +19,7 @@ export default function ReviewsSheet({ movie, onClose }) {
   const insets = useSafeAreaInsets();
   const { isSignedIn } = useAuth();
   const api = useApi();
-  const accent = movie?.accent || T.accent;
+  const accent = useThemed(movie?.accent || T.accent);
   const [list, setList] = useState(null);
   const [text, setText] = useState('');
   const [rating, setRating] = useState(0);

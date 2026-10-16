@@ -7,6 +7,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { F } from '../lib/theme';
 import StreamOn from './StreamOn';
+import { useThemed } from '../lib/userTheme';
 
 const daysUntil = (d) => Math.max(0, Math.ceil((new Date(d) - Date.now()) / 86400000));
 const NOIR = '#E6E6EA';
@@ -23,7 +24,7 @@ function RailButton({ icon, label, active, color, onPress }) {
 }
 
 function FeedCard({ movie, index = 0, active = true, height, bottomInset, topInset = 0, saved, watched, reminded, reviewCount, onOpen, onSave, onWatched, onRemind, onReviews, onSimilar, onShare }) {
-  const accent = movie.accent || '#F5A623';
+  const accent = useThemed(movie.accent || '#F5A623');
   const img = movie.backdrop || movie.poster;
   const upcoming = movie.isUpcoming && movie.releaseDate;
   const titleSize = Math.min(50, Math.max(28, 54 - (movie.title?.length || 0) * 0.9));
