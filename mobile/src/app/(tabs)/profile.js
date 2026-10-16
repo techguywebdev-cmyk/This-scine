@@ -28,10 +28,12 @@ export default function Me() {
   const push = usePushRegistration();
   const [nudge, setNudge] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [np, setNp] = useState(null);
+  const [publicWl, setPublicWl] = useState(null);
 
   useEffect(() => {
     if (!isSignedIn) return;
-    api.get('/api/settings').then((d) => setNudge(!!d.notify_prefs?.nudge)).catch(() => setNudge(false));
+    api.get('/api/settings').then((d) => { setNudge(!!d.notify_prefs?.nudge); setNp({ email: true, messages: true, follows: true, activity: true, ...(d.notify_prefs || {}) }); setPublicWl(d.watchlist_public !== false); }).catch(() => setNudge(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
 
@@ -42,6 +44,14 @@ export default function Me() {
     let tz = 'UTC'; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch {}
     api.patch('/api/settings', { notify_prefs: { nudge: v, tz } }).catch(() => setNudge(!v));
   };
+
+  const toggleNp = (key) => {
+    const next = { ...np, [key]: !np[key] };
+    setNp(next);
+    api.patch('/api/settings', { notify_prefs: { [key]: next[key] } }).catch(() => setNp(np));
+  };
+  const togglePublic = (v) => { setPublicWl(v); api.patch('/api/settings', { watchlist_public: v }).catch(() => setPublicWl(!v)); };
+  const Sw = ({ value, onChange, disabled }) => <Switch value={!!value} disabled={disabled} onValueChange={onChange} trackColor={{ true: '#fff', false: 'rgba(255,255,255,0.16)' }} thumbColor={value ? T.bg : '#fff'} />;
 
   const Row = ({ icon, text, sub, onPress, right, danger }) => (
     <Pressable disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}>
@@ -58,6 +68,13 @@ export default function Me() {
     <View style={{ marginTop: 10 }}>
       <SectionLabel style={{ marginTop: 30 }}>Settings</SectionLabel>
       <Row icon="bell" text={push.enabled ? 'Notifications are on' : 'Turn on notifications'} sub={push.enabled ? null : 'Messages, watch invites and your reminders'} onPress={push.enabled ? null : push.enable} right={push.enabled ? null : undefined} />
+      {np ? (<>
+        <Row icon="message-circle" text="Messages & requests" right={<Sw value={np.messages} onChange={() => toggleNp('messages')} />} />
+        <Row icon="user-plus" text="New followers" right={<Sw value={np.follows} onChange={() => toggleNp('follows')} />} />
+        <Row icon="at-sign" text="Likes, mentions & folder activity" right={<Sw value={np.activity} onChange={() => toggleNp('activity')} />} />
+        <Row icon="mail" text="Email me too" sub="Messages & follows to your inbox" right={<Sw value={np.email} onChange={() => toggleNp('email')} />} />
+      </>) : null}
+      <Row icon="globe" text="Public watchlist" sub={publicWl === false ? 'Only you can see your watchlist' : 'Anyone can see your watchlist'} right={<Sw value={publicWl !== false} disabled={publicWl === null} onChange={togglePublic} />} />
       <Row icon="clock" text="Nudge me about older saves" sub="Once a week at most, around 7pm" right={<Switch value={!!nudge} disabled={nudge === null} onValueChange={toggleNudge} trackColor={{ true: '#fff', false: 'rgba(255,255,255,0.16)' }} thumbColor={nudge ? T.bg : '#fff'} />} />
       <Row icon="slash" text="Blocked accounts" onPress={() => router.push('/blocked')} />
       <Row icon="shield" text="Privacy policy" onPress={() => open('/privacy')} />

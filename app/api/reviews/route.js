@@ -182,7 +182,7 @@ async function notifyMentions({ fromId, fromName, text, mentions, movieId, movie
   try {
     const notify = await import('@/lib/notify');
     await Promise.race([
-      Promise.all(rows.map((r) => notify.pushUser({ userId: r.user_id, category: 'activity', title: `@${fromName} mentioned you`, body: movieTitle ? `On ${movieTitle}: ${snippet}` : snippet, url: movieId ? `/?m=${mediaType === 'tv' ? 'tv' : 'movie'}-${movieId}` : '/', tag: `mention-${reviewId}` }))),
+      Promise.all(rows.map((r) => notify.pushUser({ userId: r.user_id, category: 'activity', title: `@${fromName} mentioned you`, body: movieTitle ? `On ${movieTitle}: ${snippet}` : snippet, url: movieId ? `/?m=${mediaType === 'tv' ? 'tv' : 'movie'}-${movieId}&tab=comments` : '/?notifs=1', tag: `mention-${reviewId}` }))),
       new Promise((r) => setTimeout(r, 1500)),
     ]);
   } catch {}

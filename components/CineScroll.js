@@ -7,7 +7,7 @@ import Splash, { TsMark } from './cine/Splash';
 import AuthScreen from './cine/AuthScreen';
 import { useTheme, themed, getTheme, setTheme } from './cine/theme';
 import { setPrefs } from './cine/prefs';
-import { RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
+import { UserProfileSheet, RemindSheet, SafetySheet, Welcome, fmtWhen, PartyInvite, StartPartySheet, PartyRoom, AccentGlow, AddToListSheet, ChatWidget, FilterSheet, FriendsPulse, FriendsScreen, GENRE_OPTIONS, InlinePlayer, ListDetailSheet, ListsScreen, MovieCard, ProfileSheet, SimilarSheet, SvgIcon, T, Toast, ambient, coverCache, dayPart, installApiCache, prefetchScreens, subscribePush, track } from './cine/shared';
 
 export default function CineScroll(){
   const{isSignedIn,user,isLoaded}=useUser();const theme=useTheme();
@@ -113,6 +113,9 @@ export default function CineScroll(){
   const[showImport,setShowImport]=useState(false);
   const[safety,setSafety]=useState(null);
   useEffect(()=>{try{const u=new URL(window.location.href);if(u.searchParams.get('deleted')==='1'){u.searchParams.delete('deleted');window.history.replaceState(null,'',u.pathname+u.search);setFeedToast('Your account and data were deleted');setTimeout(()=>setFeedToast(null),4000);}}catch{}},[]);
+  // @handle taps anywhere (comments, mentions) open that person's profile
+  const[mentionProfile,setMentionProfile]=useState(null);
+  useEffect(()=>{const fn=async(e)=>{const h=e.detail?.handle||e.detail?.userId;if(!h)return;if(String(h).startsWith('user_')){setMentionProfile(h);return;}try{const d=await fetch(`/api/users/${encodeURIComponent(h)}`).then(r=>r.ok?r.json():null);if(d?.user_id)setMentionProfile(d.user_id);}catch{}};window.addEventListener('cine:open-profile',fn);return()=>window.removeEventListener('cine:open-profile',fn);},[]);
   useEffect(()=>{const fn=(e)=>{if(e.detail?.user||e.detail?.targetId)setSafety(e.detail);};window.addEventListener('cine:safety',fn);return()=>window.removeEventListener('cine:safety',fn);},[]);
   useEffect(()=>{const fn=(e)=>{const mv=e.detail?.movie;if(mv)setRemindFor(mv);};window.addEventListener('cine:remind',fn);return()=>window.removeEventListener('cine:remind',fn);},[]);
   // First-run onboarding: new (empty) accounts pick titles → import → invite. ?welcome=1 forces it for testing.
@@ -529,6 +532,7 @@ export default function CineScroll(){
       <FilterSheet show={showFilter} onClose={()=>setShowFilter(false)} onOpenFolder={id=>setTopLevelList(id)} onOpenFolders={()=>setShowLists(true)} activeGenre={activeGenre} activeMood={activeMood} onGenre={setActiveGenre} onMood={setActiveMood} accent={accent} activeProvider={activeProvider} onProvider={setActiveProvider} onSearchSelect={m=>{setMovies(p=>[m,...p.filter(x=>x.id!==m.id)]);scrollTo(0);}}/>
       {similarMovie&&<SimilarSheet movie={similarMovie} onClose={()=>setSimilarMovie(null)} accent={accent} onSelect={handleSimilarSelect} onScrollAll={handleSimilarScrollAll} onTrailer={setTrailerMovie} onSave={handleSave} savedIds={watchlistIds}/>}
       {showAuth&&<AuthScreen accent={accent} onClose={()=>setShowAuth(false)}/>}
+      {mentionProfile&&<UserProfileSheet userId={mentionProfile} onClose={()=>setMentionProfile(null)} accent={accent} onWatchTrailer={(m)=>{setMentionProfile(null);setTrailerMovie(m);}} onAddToWatchlist={handleSave}/>}
       {showProfile&&<ProfileSheet onClose={()=>setShowProfile(false)} accent={accent} watchlist={watchlist} setWatchlist={setWatchlist} userReviews={userReviews} loadingData={loadingProfileData} onWatchTrailer={(m)=>{setShowProfile(false);setTrailerMovie(m);}} onDiscover={()=>{setShowProfile(false);setTimeout(()=>setShowFilter(true),50);}}/>}
       {showLists&&<ListsScreen onClose={()=>setShowLists(false)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onMarkWatched={handleMarkWatched} onOpenList={id=>setTopLevelList(id)} openListId={topLevelList}/>}
       {topLevelList&&<ListDetailSheet listId={topLevelList} onClose={()=>setTopLevelList(null)} accent={accent} onWatchTrailer={setTrailerMovie} onSave={handleSave} watchlistIds={watchlistIds} watchlist={watchlist} onFillFromFeed={(l)=>{setTargetFolder({id:l.id,title:l.title});setShowLists(false);setTopLevelList(null);}} watchedIds={new Set(watchlist.filter(w=>w.watched).map(w=>w.movie_id))}/>}

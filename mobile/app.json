@@ -37,7 +37,33 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "this-scine.vercel.app",
+              "pathPrefix": "/u/"
+            },
+            {
+              "scheme": "https",
+              "host": "this-scine.vercel.app",
+              "pathPrefix": "/film/"
+            },
+            {
+              "scheme": "https",
+              "host": "this-scine.vercel.app",
+              "pathPrefix": "/tv/"
+            }
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",

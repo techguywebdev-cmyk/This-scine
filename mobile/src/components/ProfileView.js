@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PartyHistory from './PartyHistory';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -104,7 +105,7 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
           {p.bio ? <Text style={styles.bio}>{p.bio}</Text> : null}
           <View style={styles.stats}>
             {[[p.followers, 'followers'], [p.following, 'following'], [p.watchlistCount, 'saved'], [p.watchedCount || 0, 'watched']].map(([v, l]) => (
-              <Text key={l} style={styles.stat}><Text style={styles.b}>{v || 0}</Text> {l}</Text>
+              <Text key={l} style={styles.stat} suppressHighlighting onPress={l === 'followers' || l === 'following' ? () => router.push({ pathname: '/follows', params: { type: l, userId, name: p.display_name || p.username || '' } }) : undefined}><Text style={styles.b}>{v || 0}</Text> {l}</Text>
             ))}
           </View>
 
@@ -119,6 +120,18 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
               </Pressable>
             </View>
           ) : null}
+
+          {!p.isSelf ? (
+            <Pressable onPress={() => router.push({ pathname: '/together', params: { id: userId, name: p.display_name || p.username || '', avatar: p.avatar_url || '' } })} style={styles.together}>
+              <Text style={{ fontSize: 16 }}>🍿</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.btnText}>Watch together</Text>
+                <Text style={styles.togetherSub}>What you both want to watch, and a pick for tonight</Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={T.text3} />
+            </Pressable>
+          ) : null}
+          {!p.isSelf ? <PartyHistory target={userId} title="Watched together" style={{ marginTop: 22 }} /> : null}
 
           {!p.isSelf && p.inCommonCount > 0 ? (
             <>
@@ -185,6 +198,8 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
 }
 
 const styles = StyleSheet.create({
+  together: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, paddingHorizontal: 16, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  togetherSub: { fontFamily: F.body, fontSize: 11.5, color: T.text2, marginTop: 1 },
   topRowStatic: { flexDirection: 'row', justifyContent: 'space-between' },
   topBtns: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
   avatarRing: { width: 88, height: 88, borderRadius: 44, padding: 3, backgroundColor: T.accent },

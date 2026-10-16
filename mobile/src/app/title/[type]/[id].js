@@ -121,7 +121,7 @@ export default function TitleScreen() {
 
           {tab === 'comments' ? (
             <View style={{ paddingBottom: 20 }}>
-              <CommentList list={comments.list} title={movie?.title || initialTitle} onReply={setReplyTo} onRemove={comments.remove} />
+              <CommentList accent={accent} list={comments.list} title={movie?.title || initialTitle} onReply={setReplyTo} onRemove={comments.remove} />
               <View style={styles.inlineComposer}>
                 <Composer accent={accent} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPost={comments.post} initialRating={myRating} />
               </View>

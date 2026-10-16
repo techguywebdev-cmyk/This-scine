@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { Feather } from '@expo/vector-icons';
 import { Avatar } from './Ui';
+import { MentionSuggest, MentionText, applyMention, openHandle } from './Mentions';
 import { TsLoader } from './Brand';
 import { useApi } from '../lib/api';
 import { F, T, inkOn } from '../lib/theme';
@@ -17,25 +18,25 @@ export function useComments(movie) {
   const [list, setList] = useState(null);
   const load = useCallback(() => (movie?.id ? api.get(`/api/reviews?movieId=${movie.id}`).then((d) => setList(d.comments || [])).catch(() => setList([])) : Promise.resolve()), [movie?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
-  const post = async ({ text, rating, parentId }) => {
-    await api.post('/api/reviews', { movieId: movie.id, movieTitle: movie.title, moviePoster: movie.poster || null, mediaType: movie.isTV ? 'tv' : 'movie', text, rating: parentId ? 0 : rating, parentId: parentId || null });
+  const post = async ({ text, rating, parentId, mentions }) => {
+    await api.post('/api/reviews', { movieId: movie.id, movieTitle: movie.title, moviePoster: movie.poster || null, mediaType: movie.isTV ? 'tv' : 'movie', text, rating: parentId ? 0 : rating, parentId: parentId || null, mentions: mentions || [] });
     await load();
   };
   const remove = (id) => { setList((p) => (p || []).filter((c) => c.id !== id).map((c) => ({ ...c, replies: (c.replies || []).filter((r) => r.id !== id) }))); api.del('/api/reviews', { id }).catch(() => load()); };
   return { list, post, remove };
 }
 
-export function CommentList({ list, onReply, onRemove, title }) {
+export function CommentList({ list, onReply, onRemove, title, accent = '#F5A623' }) {
   const Item = ({ c, reply }) => (
     <View style={[styles.item, reply && { marginLeft: 44, paddingTop: 10 }]}>
       <Avatar uri={c.avatar_url} name={c.username} size={reply ? 28 : 36} />
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <Text style={styles.user}>@{c.username}</Text>
+          <Text style={styles.user} onPress={() => c.user_id ? router.push({ pathname: '/person/[id]', params: { id: c.user_id } }) : openHandle(c.username)} suppressHighlighting>@{c.username}</Text>
           <Stars n={c.rating} />
           <Text style={styles.time}>{ago(c.created_at)}</Text>
         </View>
-        <Text style={styles.text}>{c.text}</Text>
+        <MentionText text={c.text} accent={accent} style={styles.text} />
         <View style={{ flexDirection: 'row', gap: 16, marginTop: 6 }}>
           {!reply ? <Pressable onPress={() => onReply(c)} hitSlop={6}><Text style={styles.act}>Reply</Text></Pressable> : null}
           {c.isSelf ? <Pressable onPress={() => onRemove(c.id)} hitSlop={6}><Text style={[styles.act, { color: '#ff8a8a' }]}>Delete</Text></Pressable> : null}
@@ -51,6 +52,7 @@ export function CommentList({ list, onReply, onRemove, title }) {
 export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', initialRating = 0 }) {
   const { isSignedIn } = useAuth();
   const [text, setText] = useState('');
+  const mentions = useRef([]);
   const [rating, setRating] = useState(initialRating);
   useEffect(() => { if (initialRating) setRating(initialRating); }, [initialRating]);
   const [busy, setBusy] = useState(false);
@@ -59,7 +61,9 @@ export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', init
     if (!isSignedIn) { router.push('/sign-in'); return; }
     if (!text.trim() || busy) return;
     setBusy(true); setErr('');
-    try { await onPost({ text: text.trim(), rating, parentId: replyTo?.id }); setText(''); setRating(0); onCancelReply?.(); }
+    const t = text.trim();
+    const tagged = mentions.current.filter((m) => t.includes(`@${m.handle}`));
+    try { await onPost({ text: t, rating, parentId: replyTo?.id, mentions: tagged }); setText(''); mentions.current = []; setRating(0); onCancelReply?.(); }
     catch (e) { setErr(e.message || 'Couldn’t post'); }
     setBusy(false);
   };
@@ -74,6 +78,7 @@ export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', init
         </View>
       )}
       {err ? <Text style={styles.err}>{err}</Text> : null}
+      <MentionSuggest value={text} accent={accent} onPick={(u) => { mentions.current = [...mentions.current, { user_id: u.user_id, handle: u.username }]; setText((v) => applyMention(v, u)); }} />
       <View style={styles.inputRow}>
         <TextInput value={text} onChangeText={setText} placeholder={isSignedIn ? (replyTo ? 'Write a reply…' : 'Comment… what did you think?') : 'Sign in to comment'} placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={1000} style={styles.input} editable={!!isSignedIn} onPressIn={() => !isSignedIn && router.push('/sign-in')} />
         <Pressable onPress={send} disabled={busy || !text.trim()} style={[styles.send, { backgroundColor: accent, opacity: text.trim() ? 1 : 0.55 }]} accessibilityLabel="Post comment"><Feather name="send" size={18} color={inkOn(accent)} /></Pressable>

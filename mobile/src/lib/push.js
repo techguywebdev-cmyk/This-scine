@@ -67,7 +67,8 @@ export function usePushRouting() {
       const party = /party=([^&]+)/.exec(url)?.[1];
       if (party) router.push({ pathname: '/party/[id]', params: { id: decodeURIComponent(party) } });
       else if (chat) router.push({ pathname: '/chat/[id]', params: { id: decodeURIComponent(chat) } });
-      else if (title) router.push({ pathname: '/title/[type]/[id]', params: { type: title[1], id: title[2], ...(/act=party/.test(url) ? { act: 'party' } : {}) } });
+      else if (title) router.push({ pathname: '/title/[type]/[id]', params: { type: title[1], id: title[2], ...(/act=party/.test(url) ? { act: 'party' } : {}), ...(/tab=comments/.test(url) ? { tab: 'comments' } : {}) } });
+      else if (/notifs=1/.test(url)) router.push('/notifications');
       else router.navigate('/');
     });
     return () => sub.remove();

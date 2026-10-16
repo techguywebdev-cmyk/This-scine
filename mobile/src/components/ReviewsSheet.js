@@ -1,5 +1,6 @@
 import { useThemed } from '../lib/userTheme';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { MentionSuggest, MentionText, applyMention } from './Mentions';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +23,7 @@ export default function ReviewsSheet({ movie, onClose }) {
   const accent = useThemed(movie?.accent || T.accent);
   const [list, setList] = useState(null);
   const [text, setText] = useState('');
+  const mentions = useRef([]);
   const [rating, setRating] = useState(0);
   const [replyTo, setReplyTo] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -35,8 +37,8 @@ export default function ReviewsSheet({ movie, onClose }) {
     if (!text.trim() || busy) return;
     setBusy(true); setErr('');
     try {
-      await api.post('/api/reviews', { movieId: movie.id, movieTitle: movie.title, moviePoster: movie.poster || null, mediaType: movie.isTV ? 'tv' : 'movie', text: text.trim(), rating: replyTo ? 0 : rating, parentId: replyTo?.id || null });
-      setText(''); setRating(0); setReplyTo(null);
+      await api.post('/api/reviews', { movieId: movie.id, movieTitle: movie.title, moviePoster: movie.poster || null, mediaType: movie.isTV ? 'tv' : 'movie', text: text.trim(), rating: replyTo ? 0 : rating, parentId: replyTo?.id || null, mentions: mentions.current.filter((m) => text.includes(`@${m.handle}`)) });
+      setText(''); mentions.current = []; setRating(0); setReplyTo(null);
       await load();
     } catch (e) { setErr(e.message || 'Couldn’t post'); }
     setBusy(false);
@@ -48,11 +50,11 @@ export default function ReviewsSheet({ movie, onClose }) {
       <Avatar uri={c.avatar_url} name={c.username} size={reply ? 28 : 36} />
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <Text style={styles.user}>@{c.username}</Text>
+          <Text style={styles.user} onPress={() => { onClose(); router.push({ pathname: '/person/[id]', params: { id: c.user_id || c.username } }); }} suppressHighlighting>@{c.username}</Text>
           <Stars n={c.rating} />
           <Text style={styles.time}>{ago(c.created_at)}</Text>
         </View>
-        <Text style={styles.text}>{c.text}</Text>
+        <MentionText text={c.text} accent={accent} style={styles.text} />
         <View style={{ flexDirection: 'row', gap: 16, marginTop: 6 }}>
           {!reply ? <Pressable onPress={() => setReplyTo(c)} hitSlop={6}><Text style={styles.act}>Reply</Text></Pressable> : null}
           {c.isSelf ? <Pressable onPress={() => remove(c.id)} hitSlop={6}><Text style={[styles.act, { color: '#ff8a8a' }]}>Delete</Text></Pressable> : null}
@@ -88,6 +90,7 @@ export default function ReviewsSheet({ movie, onClose }) {
             </View>
           )}
           {err ? <Text style={styles.err}>{err}</Text> : null}
+          <MentionSuggest value={text} accent={accent} onPick={(u) => { mentions.current = [...mentions.current, { user_id: u.user_id, handle: u.username }]; setText((v) => applyMention(v, u)); }} />
           <View style={styles.inputRow}>
             <TextInput value={text} onChangeText={setText} placeholder={isSignedIn ? (replyTo ? 'Write a reply…' : 'What did you think?') : 'Sign in to review'} placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={1000} style={styles.input} editable={isSignedIn} onPressIn={() => !isSignedIn && (onClose(), router.push('/sign-in'))} />
             <Pressable onPress={post} disabled={busy || !text.trim()} style={[styles.send, { opacity: text.trim() ? 1 : 0.35 }]} accessibilityLabel="Post review"><Feather name="arrow-up" size={18} color="#07070F" /></Pressable>

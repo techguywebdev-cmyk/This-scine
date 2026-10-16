@@ -19,6 +19,7 @@ import { CallProvider } from '../lib/calls';
 import CallScreen from '../components/CallScreen';
 import LaunchSplash from '../components/LaunchSplash';
 import { CLERK_PUBLISHABLE_KEY } from '../lib/config';
+import { ShareHost } from '../components/ShareSheet';
 import { T } from '../lib/theme';
 import { report, bootStage } from '../lib/report';
 import { onBootReady } from '../lib/boot';
@@ -112,6 +113,7 @@ export default function RootLayout() {
             <WatchlistProvider>
             <CallProvider>
               <StatusBar style="light" />
+              <ShareHost />
               <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg }, animation: 'slide_from_right' }}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="title/[type]/[id]" options={{ animation: 'slide_from_bottom' }} />
@@ -127,6 +129,9 @@ export default function RootLayout() {
                 <Stack.Screen name="ask" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="appearance" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="feed-settings" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="follows" options={{ animation: 'slide_from_right' }} />
+                <Stack.Screen name="together" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="sign-in" options={{ animation: 'fade_from_bottom' }} />
                 <Stack.Screen name="sso-callback" options={{ animation: 'none' }} />
               </Stack>

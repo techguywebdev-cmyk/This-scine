@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SignInPills } from '../../components/SignedOut';
 import { useFocusEffect } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/expo';
@@ -16,6 +16,8 @@ import { useApi } from '../../lib/api';
 import { useWatchlist } from '../../lib/store';
 import { openTitle } from '../../lib/titles';
 import { F, T } from '../../lib/theme';
+import { setUnreadNotifs, useUnreadNotifs } from '../../lib/notifs';
+import { useAccent } from '../../lib/accent';
 
 const SECTION = { saved: ['Saves', 'saved'], watched: ['Watched', 'watched'], reviewed: ['Reviews', 'reviewed'], list_follow: ['Folders', 'followed'] };
 const timeAgo = (ts) => { const m = Math.floor((Date.now() - new Date(ts)) / 60000); if (m < 1) return 'now'; if (m < 60) return `${m}m`; const h = Math.floor(m / 60); if (h < 24) return `${h}h`; return `${Math.floor(h / 24)}d`; };
@@ -36,10 +38,27 @@ export default function Friends() {
   const [personFilter, setPersonFilter] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [leaders, setLeaders] = useState([]);
+  const [q, setQ] = useState('');
+  const [found, setFound] = useState(null);
+  const [followQ, setFollowQ] = useState('');
+  const [followingIds, setFollowingIds] = useState(new Set());
+  useEffect(() => { setFollowingIds(new Set(friends.map((f) => f.user_id))); }, [friends]);
+  useEffect(() => {
+    const t = q.trim();
+    if (t.length < 2) { setFound(null); return undefined; }
+    let alive = true;
+    const k = setTimeout(() => api.get(`/api/follows?type=search&q=${encodeURIComponent(t)}`).then((d) => alive && setFound(d.users || [])).catch(() => alive && setFound([])), 250);
+    return () => { alive = false; clearTimeout(k); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
   const tabBar = useBottomTabBarHeight();
+  const notifs = useUnreadNotifs();
+  const accent = useAccent();
   useFocusEffect(useCallback(() => {
     if (!isSignedIn) return;
     api.get('/api/messages').then((d) => setUnread((d.conversations || []).filter((c) => c.unread).length)).catch(() => {});
+    api.get('/api/notifications').then((d) => setUnreadNotifs((d.items || []).filter((n) => !n.read).length)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]));
 
@@ -51,6 +70,7 @@ export default function Friends() {
       api.get('/api/follows?type=following').then((d) => setFriends(d.users || [])).catch(() => {}),
       api.get('/api/follows?type=stats').then((d) => setStats(d)).catch(() => {}),
       api.get('/api/follows?type=suggested').then((d) => setSuggested(d.users || [])).catch(() => {}),
+      api.get('/api/leaderboard?type=watchlist').then((d) => setLeaders(d.leaders || [])).catch(() => {}),
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
@@ -69,22 +89,48 @@ export default function Friends() {
     return Object.keys(SECTION).filter((t) => map[t]).map((t) => ({ type: t, people: [...map[t].values()] }));
   }, [feed, personFilter]);
 
+  const isFollowing = (u) => followingIds.has(u.user_id) || !!u.isFollowing;
   const follow = async (u) => {
-    const next = !u.isFollowing;
-    setSuggested((p) => p.map((x) => (x.user_id === u.user_id ? { ...x, isFollowing: next } : x)));
+    const next = !isFollowing(u);
+    const mark = (x) => (x.user_id === u.user_id ? { ...x, isFollowing: next } : x);
+    setSuggested((p) => p.map(mark)); setFound((p) => (p ? p.map(mark) : p));
+    setFollowingIds((s0) => { const s1 = new Set(s0); next ? s1.add(u.user_id) : s1.delete(u.user_id); return s1; });
     try { next ? await api.post('/api/follows', { targetId: u.user_id }) : await api.del('/api/follows', { targetId: u.user_id }); } catch {}
   };
+  const FollowBtn = ({ u }) => {
+    const on = isFollowing(u);
+    return <Pressable onPress={() => follow(u)} style={[styles.followBtn, on && styles.followingBtn]}><Text style={styles.followText}>{on ? 'Following' : u.followsYou ? 'Follow back' : 'Follow'}</Text></Pressable>;
+  };
+  const MsgBtn = ({ u }) => <Pressable onPress={() => router.push({ pathname: '/chat/[id]', params: { id: u.user_id, name: u.display_name || u.username, avatar: u.avatar_url || '' } })} hitSlop={6} style={styles.msgBtn} accessibilityLabel={`Message ${u.display_name || u.username}`}><Feather name="message-circle" size={16} color="#fff" /></Pressable>;
+  // "Buzzing in your circle": titles two or more friends touched this week
+  const buzzing = useMemo(() => {
+    const cut = Date.now() - 7 * 86400000;
+    const map = new Map();
+    (feed || []).forEach((i) => {
+      if (!['saved', 'watched', 'reviewed'].includes(i.type) || !i.movie_id || new Date(i.created_at).getTime() < cut) return;
+      const cur = map.get(i.movie_id) || { item: i, people: new Map() };
+      if (!cur.people.has(i.user_id)) cur.people.set(i.user_id, i);
+      map.set(i.movie_id, cur);
+    });
+    return [...map.values()].filter((x) => x.people.size >= 2).sort((a, b) => b.people.size - a.people.size).slice(0, 10);
+  }, [feed]);
 
   const refresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   return (
     <View style={{ flex: 1 }}>
       <Ambient />
+      {isSignedIn ? (
+        <Pressable onPress={() => router.push('/notifications')} accessibilityLabel={notifs ? `Notifications, ${notifs} new` : 'Notifications'} style={[styles.bell, { top: insets.top + 12 }]}>
+          <Feather name="bell" size={20} color="#fff" />
+          {notifs ? <View style={[styles.bellBadge, { backgroundColor: accent }]}><Text style={styles.bellBadgeText}>{notifs > 9 ? '9+' : notifs}</Text></View> : null}
+        </Pressable>
+      ) : null}
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" />}>
         <PosterWall posters={wall} />
         <View style={{ paddingTop: insets.top + 48, paddingHorizontal: 20 }}>
           <Text style={styles.h1}>Friends</Text>
-          <Text style={styles.counts}><Text style={styles.b}>{stats.followers || 0}</Text> followers  ·  <Text style={styles.b}>{stats.following || 0}</Text> following</Text>
+          <Text style={styles.counts}><Text onPress={() => isSignedIn && router.push({ pathname: '/follows', params: { type: 'followers' } })} suppressHighlighting><Text style={styles.b}>{stats.followers || 0}</Text> followers</Text>  ·  <Text onPress={() => isSignedIn && router.push({ pathname: '/follows', params: { type: 'following' } })} suppressHighlighting><Text style={styles.b}>{stats.following || 0}</Text> following</Text></Text>
           <Tabs style={{ marginTop: 16 }} tabs={[['feed', 'Feed'], ['following', 'Following'], ['find', 'Find people']]} value={tab} onChange={setTab} />
 
           {!isSignedIn ? (
@@ -98,6 +144,23 @@ export default function Friends() {
                 <UpcomingParties />
                 <StatusRow onFind={() => setTab('find')} />
                 <View style={styles.rule} />
+                {buzzing.length ? (
+                  <View style={{ paddingTop: 18 }}>
+                    <SectionLabel style={{ marginTop: 0 }} right={<Text style={styles.secMeta}>This week</Text>}>Buzzing in your circle</SectionLabel>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+                      {buzzing.map(({ item, people }) => (
+                        <Pressable key={item.movie_id} onPress={() => openTitle(toMovie(item))} style={{ width: 104 }}>
+                          <Poster uri={item.movie_poster} width={104} />
+                          <View style={styles.faces}>
+                            {[...people.values()].slice(0, 3).map((p, k) => <View key={p.user_id} style={{ marginLeft: k ? -8 : 0 }}><Avatar uri={p.avatar_url} name={p.display_name || p.username} size={22} /></View>)}
+                            <Text style={styles.facesText}>{people.size} friends</Text>
+                          </View>
+                          <Text style={styles.itemTitle} numberOfLines={1}>{item.movie_title}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : null}
 
                 {sections.length === 0 ? (
                   <Empty icon="coffee" title={friends.length ? 'Quiet for now' : 'Your feed fills up when you follow people'} sub={friends.length ? 'When the people you follow save or review something, it shows up here.' : 'Find a few film lovers in Find people.'} />
@@ -156,15 +219,26 @@ export default function Friends() {
             )
           ) : tab === 'following' ? (
             <View style={{ paddingTop: 8 }}>
-              {friends.length === 0 ? <Empty icon="user-plus" title="You're not following anyone yet" /> : friends.map((f, i) => <PersonRow key={f.user_id} u={f} first={i === 0} />)}
+              {friends.length > 6 ? <SearchBox value={followQ} onChange={setFollowQ} placeholder="Search people you follow" /> : null}
+              {friends.length === 0 ? <Empty icon="user-plus" title="You're not following anyone yet" action="Find people to follow" onAction={() => setTab('find')} />
+                : friends.filter((f) => !followQ || `${f.username} ${f.display_name || ''}`.toLowerCase().includes(followQ.toLowerCase())).map((f, i) => <PersonRow key={f.user_id} u={f} first={i === 0} right={<MsgBtn u={f} />} />)}
             </View>
           ) : (
             <View style={{ paddingTop: 8 }}>
-              {suggested.length === 0 ? <Empty icon="users" title="No suggestions right now" /> : suggested.map((u, i) => (
-                <PersonRow key={u.user_id} u={u} first={i === 0} right={
-                  <Pressable onPress={() => follow(u)} style={[styles.followBtn, u.isFollowing && styles.followingBtn]}><Text style={[styles.followText, u.isFollowing && { color: '#fff' }]}>{u.isFollowing ? 'Following' : 'Follow'}</Text></Pressable>
-                } />
-              ))}
+              <SearchBox value={q} onChange={setQ} placeholder="Search by name or username" />
+              {found ? (found.length === 0 ? <Text style={styles.hint}>No one found for “{q.trim()}”.</Text> : found.map((u, i) => <PersonRow key={u.user_id} u={u} first={i === 0} right={<FollowBtn u={u} />} />)) : (
+                <>
+                  <SectionLabel style={{ marginTop: 18 }}>Suggested for you</SectionLabel>
+                  {suggested.length === 0 ? <Text style={styles.hint}>No suggestions right now.</Text> : suggested.map((u, i) => <PersonRow key={u.user_id} u={u} first={i === 0} right={<FollowBtn u={u} />} />)}
+                  {leaders.length ? <SectionLabel style={{ marginTop: 26 }} right={<Text style={styles.secMeta}>Biggest watchlists</Text>}>Top curators</SectionLabel> : null}
+                  {leaders.map((u, i) => (
+                    <View key={u.user_id} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={[styles.rank, u.rank === 1 && { color: accent }]}>{u.rank}</Text>
+                      <View style={{ flex: 1 }}><PersonRow u={{ ...u, mutualCount: 0, meta: `${u.watchlistCount} saved · @${u.username}` }} first={i === 0} right={<FollowBtn u={u} />} /></View>
+                    </View>
+                  ))}
+                </>
+              )}
             </View>
           )}
         </View>
@@ -179,13 +253,23 @@ export default function Friends() {
   );
 }
 
+function SearchBox({ value, onChange, placeholder }) {
+  return (
+    <View style={styles.search}>
+      <Feather name="search" size={16} color="rgba(255,255,255,0.5)" />
+      <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor="rgba(255,255,255,0.38)" autoCapitalize="none" autoCorrect={false} style={styles.searchInput} />
+      {value ? <Pressable onPress={() => onChange('')} hitSlop={8}><Feather name="x" size={15} color="rgba(255,255,255,0.6)" /></Pressable> : null}
+    </View>
+  );
+}
+
 function PersonRow({ u, right, first }) {
   return (
     <Pressable onPress={() => router.push({ pathname: '/person/[id]', params: { id: u.user_id } })} style={[styles.row, !first && styles.rowBorder]}>
       <Avatar uri={u.avatar_url} name={u.display_name || u.username} size={44} />
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName} numberOfLines={1}>{u.display_name || u.username}</Text>
-        <Text style={styles.rowMeta} numberOfLines={1}>{u.mutualCount ? `${u.mutualCount} mutual` : `@${u.username}`}</Text>
+        <Text style={styles.rowMeta} numberOfLines={1}>{u.meta || (u.mutualCount ? `${u.mutualCount} mutual friend${u.mutualCount === 1 ? '' : 's'}` : `@${u.username}`)}</Text>
       </View>
       {right}
     </Pressable>
@@ -193,6 +277,15 @@ function PersonRow({ u, right, first }) {
 }
 
 const styles = StyleSheet.create({
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, paddingHorizontal: 14, borderRadius: 23, marginTop: 6, marginBottom: 6, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  searchInput: { flex: 1, color: '#fff', fontFamily: F.body, fontSize: 14.5, paddingVertical: 0 },
+  msgBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  faces: { flexDirection: 'row', alignItems: 'center', marginTop: 7 },
+  facesText: { fontFamily: F.semibold, fontSize: 10.5, color: 'rgba(255,255,255,0.7)', marginLeft: 6 },
+  rank: { width: 24, fontFamily: F.displayHeavy, fontSize: 15, color: 'rgba(255,255,255,0.35)' },
+  bell: { position: 'absolute', right: 18, zIndex: 10, width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  bellBadge: { position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#0B0B12' },
+  bellBadgeText: { fontFamily: F.bold, fontSize: 9.5, color: '#07070F' },
   h1: { fontFamily: F.displayHeavy, fontSize: 28, color: '#fff', marginTop: 78, letterSpacing: -0.5 },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: T.hairlineStrong, marginTop: 20 },
   fab: { position: 'absolute', right: 18, width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', elevation: 6 },

@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { F, T } from '../../lib/theme';
 import { setPrefs } from '../../lib/prefs';
+import { setUnreadNotifs, useUnreadNotifs } from '../../lib/notifs';
 import { usePushRegistration, usePushRouting } from '../../lib/push';
 import InviteBanner from '../../components/InviteBanner';
 import { useEffect, useRef } from 'react';
@@ -43,6 +44,15 @@ export default function TabsLayout() {
     api.get('/api/settings').then((d) => { if (d?.theme && JSON.stringify(d.theme) !== JSON.stringify(getUserTheme())) setUserTheme(d.theme); if (d?.prefs && Object.keys(d.prefs).length) setPrefs(d.prefs); }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
+  // Unread notifications → a dot on the Friends tab, refreshed every couple of minutes
+  const notifs = useUnreadNotifs();
+  useEffect(() => {
+    if (!isSignedIn) return undefined;
+    const pull = () => api.get('/api/notifications').then((d) => setUnreadNotifs((d.items || []).filter((n) => !n.read).length)).catch(() => {});
+    pull(); const t = setInterval(pull, 120000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
   useEffect(() => {
     if (!isSignedIn || checked.current || wl.loading) return;
     const t = setTimeout(async () => {
@@ -69,7 +79,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'For you', tabBarIcon: icon('play-circle') }} />
       <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: icon('compass') }} />
       <Tabs.Screen name="watchlist" options={{ title: 'Watchlist', tabBarIcon: icon('bookmark') }} />
-      <Tabs.Screen name="friends" options={{ title: 'Friends', tabBarIcon: icon('users') }} />
+      <Tabs.Screen name="friends" options={{ title: 'Friends', tabBarIcon: icon('users'), tabBarBadge: notifs ? (notifs > 9 ? '9+' : notifs) : undefined, tabBarBadgeStyle: { backgroundColor: '#FF6B8A', color: '#fff', fontSize: 10 } }} />
       <Tabs.Screen name="profile" options={{ title: 'You', tabBarIcon: icon('user') }} />
     </Tabs>
     <InviteBanner />

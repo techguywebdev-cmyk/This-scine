@@ -281,7 +281,7 @@ export async function POST(request) {
       const me = await clerkClient.users.getUser(userId).catch(() => null);
       const name = me?.username || me?.firstName || 'Someone';
       await Promise.race([
-        notify.pushUser({ userId: targetId, category: 'follows', title: 'New follower', body: `${name} started following you`, url: '/', tag: 'follow' }),
+        notify.pushUser({ userId: targetId, category: 'follows', title: 'New follower', body: `${name} started following you`, url: '/?notifs=1', tag: 'follow' }),
         new Promise((r) => setTimeout(r, 1500)),
       ]);
     } catch (e) {

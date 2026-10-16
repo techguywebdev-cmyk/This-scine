@@ -765,7 +765,8 @@ if(typeof window!=='undefined'){try{if(!sessionStorage.getItem('cs_session')){se
 // Highlights @handles in comment text
 export function MentionText({text,accent}){
   const parts=String(text||'').split(/(@[a-zA-Z0-9_.]{2,32})/g);
-  return <>{parts.map((p,i)=>p.startsWith('@')&&i%2===1?<span key={i} style={{color:accent,fontWeight:700}}>{p}</span>:<span key={i}>{p}</span>)}</>;
+  const open=(e,h)=>{e.stopPropagation();window.dispatchEvent(new CustomEvent('cine:open-profile',{detail:{handle:h.slice(1)}}));};
+  return <>{parts.map((p,i)=>p.startsWith('@')&&i%2===1?<span key={i} role="link" tabIndex={0} onClick={(e)=>open(e,p)} onKeyDown={(e)=>{if(e.key==='Enter')open(e,p);}} style={{color:accent,fontWeight:700,cursor:'pointer'}}>{p}</span>:<span key={i}>{p}</span>)}</>;
 }
 // Suggestions that pop up while typing "@name" — people you follow first, then everyone
 export function MentionSuggest({value,onPick,accent}){

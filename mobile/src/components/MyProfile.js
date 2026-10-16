@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import PartyHistory from './PartyHistory';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -210,6 +211,7 @@ export default function MyProfile({ settingsFooter }) {
             </Pressable>
             <View style={styles.rule} />
 
+            <PartyHistory target="me" title="Watch parties" accent={accent} style={{ marginTop: 18, marginBottom: 6 }} />
             {/* CineScore */}
             <View style={styles.scoreRow}>
               <Ring value={sc} accent={accent} />
