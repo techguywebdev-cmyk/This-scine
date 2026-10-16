@@ -113,8 +113,13 @@ export function playChatSound(theme) {
   } catch {}
 }
 // ─── CHAT WIDGET (message requests / DMs) ───────────────────────────────────
-export function ChatWidget({ peer, onClose, accent }) {
+export function ChatWidget({ peer, onClose, accent: accentIn }) {
   const { user } = useUser();
+  // Chat theme — chosen per conversation, the same for both people
+  const [chatTheme, setChatTheme] = useState('classic');
+  const [showThemes, setShowThemes] = useState(false);
+  const th = CHAT_THEMES[chatTheme] || CHAT_THEMES.classic;
+  const accent = chatTheme !== 'classic' ? th.accent : accentIn;
   const [messages, setMessages] = useState([]);
   const [peerInfo, setPeerInfo] = useState(peer || null);
   const [blocked, setBlocked] = useState(null); // 'by_me' | 'by_them' | null
@@ -393,7 +398,7 @@ export function ChatWidget({ peer, onClose, accent }) {
     if (!text || !peerId) return;
     setInput('');
     setShowStickers(false);
-    playChatSound(CHAT_THEMES.classic);
+    playChatSound(th);
     await postMessage(
       { text, msg_type: 'text' },
       {
@@ -513,7 +518,24 @@ export function ChatWidget({ peer, onClose, accent }) {
 
   const name = peerInfo?.display_name || peerInfo?.username || 'friend';
   const meBubble = accent || '#F5C842';
-  const themBubble = 'rgba(255,255,255,0.08)';
+  const themBubble = chatTheme !== 'classic' ? th.bubbleThem : 'rgba(255,255,255,0.08)';
+  useEffect(() => {
+    if (!peerId) return undefined;
+    let alive = true;
+    const pull = () => fetch(`/api/chat-theme?with=${encodeURIComponent(peerId)}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (alive && d?.theme && CHAT_THEMES[d.theme]) setChatTheme(d.theme); }).catch(() => {});
+    pull(); const t = setInterval(pull, 20000);
+    return () => { alive = false; clearInterval(t); };
+  }, [peerId]);
+  const pickTheme = async (id) => {
+    if (id === chatTheme) { setShowThemes(false); return; }
+    const prev = chatTheme; const t = CHAT_THEMES[id];
+    setChatTheme(id); setShowThemes(false); playChatSound(t);
+    try {
+      const r = await fetch('/api/chat-theme', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ with: peerId, theme: id }) });
+      if (!r.ok) throw new Error();
+      fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ toUserId: peerId, text: `${t.emoji} changed the chat theme to ${t.label}` }) }).then(() => load()).catch(() => {});
+    } catch { setChatTheme(prev); }
+  };
 
   const formatCallTime = (s) => {
     const m = Math.floor(s / 60);
@@ -1240,7 +1262,7 @@ export function ChatWidget({ peer, onClose, accent }) {
       if (!res.ok) throw new Error(d.error || 'Upload failed');
       if (d.message) setMessages((prev) => [...prev, d.message]);
       else load();
-      playChatSound(CHAT_THEMES.classic);
+      playChatSound(th);
       scrollBottom();
     } catch (err) {
       setError(err.message || 'Could not send file');
@@ -1622,6 +1644,17 @@ export function ChatWidget({ peer, onClose, accent }) {
 
           <button
             type="button"
+            onClick={() => setShowThemes((v) => !v)}
+            disabled={!!blocked}
+            aria-label="Chat theme"
+            aria-expanded={showThemes}
+            title="Chat theme"
+            style={{ width: 40, height: 40, borderRadius: '50%', background: showThemes ? `${accent}2e` : 'rgba(255,255,255,0.06)', border: showThemes ? `1px solid ${accent}88` : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}
+          >
+            {th.emoji}
+          </button>
+          <button
+            type="button"
             onClick={() => setShowTogether(true)}
             disabled={!!blocked}
             aria-label="Watch together"
@@ -1684,6 +1717,20 @@ export function ChatWidget({ peer, onClose, accent }) {
             <SvgIcon name="dots" size={18} color="rgba(255,255,255,0.75)" />
           </button>
         </div>
+        {showThemes && (
+          <div role="listbox" aria-label="Chat theme" style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', padding: '10px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, animation: 'fadeIn .2s ease' }}>
+            {Object.values(CHAT_THEMES).map((t) => {
+              const on = t.id === chatTheme;
+              return (
+                <button key={t.id} type="button" role="option" aria-selected={on} onClick={() => pickTheme(t.id)}
+                  style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 66, padding: '8px 0', borderRadius: 16, cursor: 'pointer', fontFamily: 'inherit', background: on ? `${t.accent}26` : 'rgba(255,255,255,0.04)', border: `1px solid ${on ? t.accent : 'rgba(255,255,255,0.1)'}` }}>
+                  <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, background: `radial-gradient(circle at 30% 30%, ${t.accent}66, ${t.bg})`, boxShadow: on ? `0 0 14px ${t.accent}66` : 'none' }}>{t.emoji}</span>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: on ? '#fff' : 'rgba(255,255,255,0.65)' }}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {showTogether && peerId && <TogetherSheet peer={{ user_id: peerId, username: peerInfo?.username, display_name: peerInfo?.display_name || peerInfo?.username, avatar_url: peerInfo?.avatar_url || null }} accent={accent} onClose={() => setShowTogether(false)} />}
         {/* Incoming call */}
@@ -2520,10 +2567,11 @@ export function ChatWidget({ peer, onClose, accent }) {
                         <div
                           style={{
                             background: mine ? accent : themBubble,
-                            color: mine ? '#0A0A0F' : 'rgba(255,255,255,0.92)',
-                            borderRadius: 18,
-                            borderBottomRightRadius: mine ? 6 : 18,
-                            borderBottomLeftRadius: mine ? 18 : 6,
+                            color: mine ? '#0A0A0F' : (chatTheme !== 'classic' ? th.text : 'rgba(255,255,255,0.92)'),
+                            borderRadius: chatTheme !== 'classic' ? th.radius : 18,
+                            borderBottomRightRadius: mine ? Math.min(6, chatTheme !== 'classic' ? th.radius : 6) : (chatTheme !== 'classic' ? th.radius : 18),
+                            borderBottomLeftRadius: mine ? (chatTheme !== 'classic' ? th.radius : 18) : Math.min(6, chatTheme !== 'classic' ? th.radius : 6),
+                            fontFamily: chatTheme !== 'classic' && th.bodyFont !== 'inherit' ? th.bodyFont : undefined,
                             padding: '10px 14px',
                             fontSize: 14,
                             lineHeight: 1.45,

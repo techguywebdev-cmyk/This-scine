@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
+import { Top4Row } from './Top4';
 import { PartyHistoryRow, TogetherSheet, ChatWidget, CoverImg, FolderCoverFill, FollowListModal, GRADS, ListDetailSheet, SvgIcon, T, Toast, ambient, coverCache } from './shared';
 import { SITE_URL } from '../../lib/brand';
 
@@ -298,6 +299,9 @@ if(type==='arc_complete')return{icon:'flame',label:'Finished a Cine Arc',color:'
                       </div>
                     </div>
                   )}
+
+                  {/* TOP 4 */}
+                  {profile.top4?.length>0&&<div style={{marginTop:26}}><Top4Row items={profile.top4} accent={accentColor||accent} label={`${(profile.display_name||profile.username||'Their').split(' ')[0]}’s top 4`}/></div>}
 
                   {/* WATCHED TOGETHER */}
                   {!profile.isSelf&&currentUser&&currentUser.id!==userId&&<PartyHistoryRow target={profile.user_id||userId} title="Watched together" accent={accentColor||accent} style={{marginTop:26}}/>}

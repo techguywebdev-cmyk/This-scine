@@ -74,7 +74,6 @@ export default function Me() {
         <Row icon="at-sign" text="Likes, mentions & folder activity" right={<Sw value={np.activity} onChange={() => toggleNp('activity')} />} />
         <Row icon="mail" text="Email me too" sub="Messages & follows to your inbox" right={<Sw value={np.email} onChange={() => toggleNp('email')} />} />
       </>) : null}
-      <Row icon="globe" text="Public watchlist" sub={publicWl === false ? 'Only you can see your watchlist' : 'Anyone can see your watchlist'} right={<Sw value={publicWl !== false} disabled={publicWl === null} onChange={togglePublic} />} />
       <Row icon="clock" text="Nudge me about older saves" sub="Once a week at most, around 7pm" right={<Switch value={!!nudge} disabled={nudge === null} onValueChange={toggleNudge} trackColor={{ true: '#fff', false: 'rgba(255,255,255,0.16)' }} thumbColor={nudge ? T.bg : '#fff'} />} />
       <Row icon="slash" text="Blocked accounts" onPress={() => router.push('/blocked')} />
       <Row icon="shield" text="Privacy policy" onPress={() => open('/privacy')} />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { statusTextStyle } from '../../lib/statusText';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -119,7 +120,7 @@ export default function StatusViewer() {
       {item.kind === 'video' ? <VideoItem key={item.id} uri={item.media_url} paused={paused} onProgress={setProg} onEnd={next} /> : null}
       {item.kind === 'text' ? (
         <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: 30 }]} pointerEvents="none">
-          <Text style={[styles.statusText, dark && { color: ink, textShadowRadius: 0 }, { fontSize: item.text?.length > 140 ? 22 : item.text?.length > 60 ? 28 : 36 }]}>{item.text}</Text>
+          <Text style={[styles.statusText, { alignSelf: 'stretch' }, statusTextStyle(item.meta?.text, (item.text || '').length)]}>{item.text}</Text>
         </View>
       ) : null}
       {item.kind !== 'text' && item.text ? <View style={[styles.caption, { bottom: insets.bottom + 90 }]} pointerEvents="none"><Text style={styles.captionText}>{item.text}</Text></View> : null}

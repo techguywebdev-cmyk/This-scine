@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { CHAT_THEMES } from '../../lib/chatThemes';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -173,7 +174,29 @@ export default function Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyIds]);
   const live = useAccent();
-  const accent = live && !/^#(fff|ffffff|e6e6ea)$/i.test(live) ? live : '#F5C842';
+  // Chat theme — per conversation, the same for both people (matches the website)
+  const [themeId, setThemeId] = useState('classic');
+  const [showThemes, setShowThemes] = useState(false);
+  const th = CHAT_THEMES[themeId] || CHAT_THEMES.classic;
+  useEffect(() => {
+    let alive = true;
+    const pull = () => api.get(`/api/chat-theme?with=${encodeURIComponent(peerId)}`).then((d) => { if (alive && d?.theme && CHAT_THEMES[d.theme]) setThemeId(d.theme); }).catch(() => {});
+    pull(); const t = setInterval(pull, 20000);
+    return () => { alive = false; clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peerId]);
+  const pickTheme = async (id) => {
+    setShowThemes(false);
+    if (id === themeId) return;
+    const prev = themeId; const t = CHAT_THEMES[id];
+    setThemeId(id); Haptics.selectionAsync().catch(() => {});
+    try {
+      await api.post('/api/chat-theme', { with: peerId, theme: id });
+      api.post('/api/messages', { toUserId: peerId, text: `${t.emoji} changed the chat theme to ${t.label}` }).catch(() => {});
+    } catch { setThemeId(prev); }
+  };
+  const base = live && !/^#(fff|ffffff|e6e6ea)$/i.test(live) ? live : '#F5C842';
+  const accent = th.accent || base;
   const mineInk = inkOn(accent);
 
   const renderBody = (m) => {
@@ -202,7 +225,7 @@ export default function Chat() {
         </View>
       );
     }
-    return <Text style={[styles.msgText, { color: ink }]}>{m.text}</Text>;
+    return <Text style={[styles.msgText, { color: mine ? ink : th.text }, th.mono && { fontFamily: 'monospace' }]}>{m.text}</Text>;
   };
 
   return (
@@ -217,11 +240,26 @@ export default function Chat() {
             {peer.username ? <Text style={styles.peerHandle} numberOfLines={1}>@{peer.username}</Text> : null}
           </View>
         </Pressable>
+        {!blocked ? <Pressable onPress={() => setShowThemes((v) => !v)} accessibilityLabel="Chat theme" style={[styles.emojiBtn, showThemes && { borderColor: `${accent}99`, backgroundColor: `${accent}2e` }]}><Text style={{ fontSize: 16 }}>{th.emoji}</Text></Pressable> : null}
+        {!blocked ? <Pressable onPress={() => router.push({ pathname: '/together', params: { id: peerId, name: peer.display_name || peer.username || '', avatar: peer.avatar_url || '' } })} accessibilityLabel="Watch together" style={styles.emojiBtn}><Text style={{ fontSize: 16 }}>🍿</Text></Pressable> : null}
         {!blocked ? <GlassButton icon="phone" label="Voice call" onPress={() => calls.start({ user_id: peerId, display_name: peer.display_name, username: peer.username, avatar_url: peer.avatar_url }, 'audio')} /> : null}
         {!blocked ? <GlassButton icon="video" label="Video call" onPress={() => calls.start({ user_id: peerId, display_name: peer.display_name, username: peer.username, avatar_url: peer.avatar_url }, 'video')} /> : null}
         <GlassButton icon="more-horizontal" label="Report or block" onPress={() => setSafety(true)} />
       </View>
 
+      {showThemes ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 14, paddingBottom: 10 }}>
+          {Object.values(CHAT_THEMES).map((t) => {
+            const on = t.id === themeId; const c = t.accent || base;
+            return (
+              <Pressable key={t.id} onPress={() => pickTheme(t.id)} accessibilityState={{ selected: on }} style={[styles.themeChip, { borderColor: on ? c : 'rgba(255,255,255,0.1)', backgroundColor: on ? `${c}26` : 'rgba(255,255,255,0.04)' }]}>
+                <View style={[styles.themeDot, { backgroundColor: `${c}55` }]}><Text style={{ fontSize: 16 }}>{t.emoji}</Text></View>
+                <Text style={[styles.themeLabel, on && { color: '#fff' }]}>{t.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
       {msgs === null ? <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><TsLoader size={40} /></View> : (
         <FlatList
           ref={listRef}
@@ -239,7 +277,7 @@ export default function Chat() {
               <View>
                 {showDay ? <Text style={styles.day}>{dayLabel(m.created_at)}</Text> : null}
                 <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginVertical: 3 }}>
-                  <View style={[styles.bubble, media ? styles.mediaBubble : mine ? [styles.mine, { backgroundColor: accent }] : styles.theirs, m.pending && { opacity: 0.6 }]}>
+                  <View style={[styles.bubble, media ? styles.mediaBubble : mine ? [styles.mine, { backgroundColor: accent, borderRadius: th.radius, borderBottomRightRadius: Math.min(6, th.radius) }] : [styles.theirs, { backgroundColor: th.bubbleThem, borderRadius: th.radius, borderBottomLeftRadius: Math.min(6, th.radius) }], m.pending && { opacity: 0.6 }]}>
                     {renderBody(m)}
                   </View>
                   <Text style={styles.meta}>{timeOf(m.created_at)}{mine && !m.pending ? (m.read ? ' · Seen' : ' · Sent') : ''}</Text>
@@ -289,6 +327,10 @@ export default function Chat() {
 }
 
 const styles = StyleSheet.create({
+  emojiBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  themeChip: { width: 68, alignItems: 'center', gap: 6, paddingVertical: 8, borderRadius: 16, borderWidth: 1 },
+  themeDot: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  themeLabel: { fontFamily: F.bold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: T.hairline },
   peerName: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
   peerHandle: { fontFamily: F.body, fontSize: 11.5, color: T.text2 },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import Top4 from './Top4';
 import PartyHistory from './PartyHistory';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -211,6 +212,7 @@ export default function MyProfile({ settingsFooter }) {
             </Pressable>
             <View style={styles.rule} />
 
+            <Top4 items={s?.top4 || []} editable watchlist={items.map(rowToMovie)} accent={accent} label="YOUR TOP 4" style={{ marginTop: 18, marginBottom: 6 }} />
             <PartyHistory target="me" title="Watch parties" accent={accent} style={{ marginTop: 18, marginBottom: 6 }} />
             {/* CineScore */}
             <View style={styles.scoreRow}>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FeedPopups from '../../components/FeedPopups';
 import { usePrefsVersion } from '../../lib/prefs';
 import { Animated, FlatList, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,6 +44,7 @@ export default function Feed() {
   const [remindRow, setRemindRow] = useState(null);
   const [reviewsFor, setReviewsFor] = useState(null);
   const [activeKey, setActiveKey] = useState(null);
+  const [activeIdx, setActiveIdx] = useState(0);
   const toastTimer = useRef(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const page = useRef(1);
@@ -89,7 +91,7 @@ export default function Feed() {
   }, [isSignedIn]);
 
   const filterOn = mood !== 'Trending' || !!filter.genre || !!filter.provider;
-  const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.item) { setActiveAccent(v.item.accent || T.accent); setAccent(v.item.accent); setActiveKey(feedKey(v.item)); setTimeout(() => markSeen(v.item), 1200); } }).current;
+  const onViewable = useRef(({ viewableItems }) => { const v = viewableItems[0]; if (v?.index != null) setActiveIdx(v.index); if (v?.item) { setActiveAccent(v.item.accent || T.accent); setAccent(v.item.accent); setActiveKey(feedKey(v.item)); setTimeout(() => markSeen(v.item), 1200); } }).current;
   useEffect(() => { if (movies[0] && activeAccent === '#fff') { setActiveAccent(movies[0].accent || T.accent); setAccent(movies[0].accent); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [movies.length]);
 
   const showSaved = (m) => {
@@ -158,6 +160,7 @@ export default function Feed() {
         />
       )}
 
+      <FeedPopups accent={themedActive === '#fff' ? T.accent : themedActive} top={insets.top + 62} activeIndex={activeIdx} />
       {/* Top bar: brand + filter */}
       <View pointerEvents="box-none" style={[styles.top, { paddingTop: insets.top + 8 }]}>
         <View pointerEvents="box-none" style={styles.topRow}>

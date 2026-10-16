@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NEXT_ALIGN, STATUS_FONTS, STATUS_TEXT_COLORS, statusTextStyle } from '../../lib/statusText';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,8 +24,9 @@ export default function NewStatus() {
   const [err, setErr] = useState('');
   const accent = '#818CF8';
   const colour = bg === 'ambient' ? accent : bg;
-  const ink = '#fff';
-  const dark = ink !== '#fff' && ink !== '#FFFFFF';
+  const [ts, setTs] = useState({ font: 'serif', color: '#FFFFFF', align: 'center', size: 1 });
+  const ink = ts.color;
+  const dark = ink === '#07070F';
 
   const pick = async () => {
     setErr('');
@@ -51,7 +53,7 @@ export default function NewStatus() {
         if (!up.url) throw new Error('Upload failed');
         body = { kind: media.kind, media_url: up.url, text: text.trim() || undefined };
       } else {
-        body = { kind: 'text', text: text.trim(), bg: colour, meta: bg === 'ambient' ? { bgStyle: 'ambient' } : undefined };
+        body = { kind: 'text', text: text.trim(), bg: colour, meta: { text: ts, ...(bg === 'ambient' ? { bgStyle: 'ambient' } : {}) } };
       }
       await api.post('/api/status', body);
       router.back();
@@ -75,7 +77,7 @@ export default function NewStatus() {
         {media ? (
           media.kind === 'video' ? <View style={styles.videoTag}><Feather name="video" size={14} color="#fff" /><Text style={styles.videoText}>Video ready</Text></View> : null
         ) : (
-          <TextInput value={text} onChangeText={setText} autoFocus multiline maxLength={700} placeholder="What are you watching?" placeholderTextColor={dark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.55)'} style={[styles.big, dark && { color: ink }, { fontSize: text.length > 140 ? 22 : text.length > 60 ? 28 : 34 }]} textAlign="center" />
+          <TextInput value={text} onChangeText={setText} autoFocus multiline maxLength={700} placeholder="What are you watching?" placeholderTextColor={dark ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.55)'} style={[styles.big, statusTextStyle(ts, text.length), { alignSelf: 'stretch' }, dark && { color: ink }, { fontSize: text.length > 140 ? 22 : text.length > 60 ? 28 : 34 }]} textAlign="center" />
         )}
       </View>
 
@@ -83,6 +85,18 @@ export default function NewStatus() {
         {media ? (
           <TextInput value={text} onChangeText={setText} placeholder="Add a caption…" placeholderTextColor="rgba(255,255,255,0.6)" style={styles.caption} maxLength={300} />
         ) : (
+          <>
+          <View style={styles.tools}>
+            {Object.entries(STATUS_FONTS).map(([k, f]) => (
+              <Pressable key={k} onPress={() => setTs({ ...ts, font: k })} style={[styles.tool, ts.font === k && styles.toolOn]}><Text style={[styles.toolText, { fontFamily: f[1], fontStyle: f[2] ? 'italic' : 'normal' }]}>{f[0]}</Text></Pressable>
+            ))}
+            <Pressable onPress={() => setTs({ ...ts, align: NEXT_ALIGN[ts.align] || 'center' })} accessibilityLabel="Text alignment" style={styles.tool}><Feather name={ts.align === 'left' ? 'align-left' : ts.align === 'right' ? 'align-right' : 'align-center'} size={15} color="#fff" /></Pressable>
+            <Pressable onPress={() => setTs({ ...ts, size: Math.max(0.6, +(ts.size - 0.2).toFixed(1)) })} accessibilityLabel="Smaller text" style={styles.tool}><Text style={styles.toolText}>A−</Text></Pressable>
+            <Pressable onPress={() => setTs({ ...ts, size: Math.min(1.8, +(ts.size + 0.2).toFixed(1)) })} accessibilityLabel="Bigger text" style={styles.tool}><Text style={styles.toolText}>A+</Text></Pressable>
+          </View>
+          <View style={[styles.swatches, { marginBottom: 6 }]}>
+            {STATUS_TEXT_COLORS.map((c) => <Pressable key={c} onPress={() => setTs({ ...ts, color: c })} accessibilityLabel="Text colour" style={[styles.dotRing, { borderColor: ts.color === c ? '#fff' : 'rgba(255,255,255,0.25)' }]}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: c }} /></Pressable>)}
+          </View>
           <View style={styles.swatches}>
             {['ambient', ...STATUS_BGS].map((c) => (
               <Pressable key={c} onPress={() => setBg(c)} accessibilityLabel={c === 'ambient' ? 'Default background' : 'Background colour'} style={[styles.swatchRing, { borderColor: bg === c ? '#fff' : 'rgba(255,255,255,0.3)', borderWidth: bg === c ? 2.5 : 1.5 }]}>
@@ -90,6 +104,7 @@ export default function NewStatus() {
               </Pressable>
             ))}
           </View>
+          </>
         )}
         {err ? <Text style={styles.err}>{err}</Text> : null}
         <Pressable onPress={post} disabled={busy} style={styles.post}>
@@ -103,6 +118,11 @@ export default function NewStatus() {
 
 const glass = { backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' };
 const styles = StyleSheet.create({
+  tools: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginBottom: 10 },
+  tool: { height: 32, minWidth: 38, paddingHorizontal: 11, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  toolOn: { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: 'rgba(255,255,255,0.5)' },
+  toolText: { fontSize: 13, color: '#fff', fontFamily: F.bold },
+  dotRing: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 },
   head: { fontFamily: F.bold, fontSize: 15, color: '#fff' },
   round: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', ...glass },

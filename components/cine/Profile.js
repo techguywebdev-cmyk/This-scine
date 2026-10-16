@@ -1,4 +1,5 @@
 'use client';
+import { Top4Row } from './Top4';
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import ImportSheet from '../ImportSheet';
@@ -194,6 +195,7 @@ export function CineScoreRing({score,accent}){
 export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,loadingData,onDiscover,onWatchTrailer}){
   const[showAppearance,setShowAppearance]=useState(false);const[showFeed,setShowFeed]=useState(false);const themeNow=useTheme();
   const{user}=useUser();const{signOut}=useClerk();
+  const[top4,setTop4]=useState([]);
   const[tab,setTab]=useState('profile');const[signingOut,setSigningOut]=useState(false);const[signedOut,setSignedOut]=useState(false);const[showTmdb,setShowTmdb]=useState(false);const[showBlocked,setShowBlocked]=useState(false);const[showDelete,setShowDelete]=useState(false);const[sharing,setSharing]=useState(false);const[toast,setToast]=useState(null);const[watchlistSearch,setWatchlistSearch]=useState('');const[watchlistFilter,setWatchlistFilter]=useState('all');const[watchlistSort,setWatchlistSort]=useState('date');const[watchlistPlatform,setWatchlistPlatform]=useState('');const[providerCache,setProviderCache]=useState({});const[loadingProviders,setLoadingProviders]=useState(false);const[platformAlerts,setPlatformAlerts]=useState([]);const[playerMovie,setPlayerMovie]=useState(null);
   const[watchlistPublic,setWatchlistPublic]=useState(true);const[loadingSettings,setLoadingSettings]=useState(true);const[notifyPrefs,setNotifyPrefs]=useState({email:true,web:true,app:true,messages:true,follows:true,activity:true});const[hasWebPush,setHasWebPush]=useState(false);const[pushBusy,setPushBusy]=useState(false);
   const[bio,setBio]=useState('');const[bioInput,setBioInput]=useState('');const[savingBio,setSavingBio]=useState(false);
@@ -208,7 +210,7 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
   const[showOwnPreview,setShowOwnPreview]=useState(false);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(null),3000);};
   useEffect(()=>{
-    fetch('/api/settings').then(r=>r.json()).then(d=>{setWatchlistPublic(d.watchlist_public!==false);setBio(d.bio||'');setBioInput(d.bio||'');setCoverUrl(d.cover_url||null);setNickname(d.nickname||'');setNicknameInput(d.nickname||'');setNotifyPrefs(d.notify_prefs||{email:true,web:true,app:true,messages:true,follows:true,activity:true});setHasWebPush(!!d.has_web_push);setLoadingSettings(false);}).catch(()=>setLoadingSettings(false));
+    fetch('/api/settings').then(r=>r.json()).then(d=>{setTop4(Array.isArray(d.top4)?d.top4:[]);setWatchlistPublic(d.watchlist_public!==false);setBio(d.bio||'');setBioInput(d.bio||'');setCoverUrl(d.cover_url||null);setNickname(d.nickname||'');setNicknameInput(d.nickname||'');setNotifyPrefs(d.notify_prefs||{email:true,web:true,app:true,messages:true,follows:true,activity:true});setHasWebPush(!!d.has_web_push);setLoadingSettings(false);}).catch(()=>setLoadingSettings(false));
   },[]);
   const togglePrivacy=async()=>{
     const next=!watchlistPublic;
@@ -566,6 +568,9 @@ export function ProfileSheet({onClose,accent,watchlist,setWatchlist,userReviews,
                   <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4}}><div style={{width:5,height:5,borderRadius:'50%',background:accent,flexShrink:0}}/><span style={{fontSize:11,color:T.text2,fontWeight:500}}>{user?.primaryEmailAddress?.emailAddress}</span></div>
                 </div>
               </div>
+
+              {/* TOP 4 — the films that say the most about you */}
+              <Top4Row items={top4} editable watchlist={watchlist} accent={accent} label="Your top 4" onSaved={setTop4}/>
 
               {/* ABOUT YOU — read view; edit icon reveals borderless fields in place */}
               <div style={{marginBottom:32,paddingBottom:32,borderBottom:`1px solid ${T.hairline}`}}>

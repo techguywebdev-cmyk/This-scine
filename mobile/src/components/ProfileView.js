@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Top4 from './Top4';
 import PartyHistory from './PartyHistory';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
@@ -131,6 +132,7 @@ export default function ProfileView({ userId, onBack, footer, headerRight }) {
               <Feather name="chevron-right" size={16} color={T.text3} />
             </Pressable>
           ) : null}
+          <Top4 items={p.top4 || []} label={`${(p.display_name || p.username || 'THEIR').split(' ')[0].toUpperCase()}’S TOP 4`} style={{ marginTop: 22 }} />
           {!p.isSelf ? <PartyHistory target={userId} title="Watched together" style={{ marginTop: 22 }} /> : null}
 
           {!p.isSelf && p.inCommonCount > 0 ? (

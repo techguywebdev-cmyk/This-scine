@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import { CommentList, Composer, useListComments } from '../../components/Comments';
+import { API_URL } from '../../lib/config';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -27,6 +29,13 @@ export default function FolderScreen() {
     setData((d) => ({ ...d, list: { ...d.list, is_public: v } }));
     try { await api.patch(`/api/lists/${id}`, { is_public: v }); } catch { setData((d) => ({ ...d, list: { ...d.list, is_public: !v } })); }
   };
+  const comments = useListComments(list && list.is_public !== false ? id : null);
+  const [replyTo, setReplyTo] = useState(null);
+  const removeMovie = async (movieId) => {
+    setData((d) => ({ ...d, movies: (d.movies || []).filter((m) => m.movie_id !== movieId) }));
+    try { await api.del(`/api/lists/${id}/movies`, { movieId }); } catch { load(); }
+  };
+  const share = () => Share.share({ message: `${list?.description ? `${list.title} — ${list.description}` : `Check out “${list?.title}” on Thiscene`}\n${API_URL}/?list=${id}`, url: `${API_URL}/?list=${id}`, title: list?.title }).catch(() => {});
   const toggleFollow = async () => {
     const next = !list.is_following;
     setData((d) => ({ ...d, list: { ...d.list, is_following: next } }));
@@ -37,7 +46,10 @@ export default function FolderScreen() {
     <View style={{ flex: 1 }}>
       <Ambient accent={list?.cover_accent || T.accent} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 10, paddingHorizontal: 20, paddingBottom: insets.bottom + 40 }}>
-        <GlassButton icon="chevron-left" label="Back" onPress={() => router.back()} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <GlassButton icon="chevron-left" label="Back" onPress={() => router.back()} />
+          {list && list.is_public !== false ? <GlassButton icon="share" label="Share folder" onPress={share} /> : null}
+        </View>
         {error ? <Empty icon="alert-circle" title="Couldn't open this folder" sub={error} /> : !list ? <Spinner /> : (
           <>
             <View style={styles.head}>
@@ -65,7 +77,21 @@ export default function FolderScreen() {
                 <Empty icon="folder" title="This folder is empty" sub="Save films from your feed, then add them here." />
                 <Pressable onPress={() => router.navigate('/')} style={styles.fill}><Feather name="play-circle" size={15} color="#fff" /><Text style={styles.fillText}>Find films in the feed</Text></Pressable>
               </>
-            ) : movies.map((m, i) => <MovieRow key={m.id} movie={m} first={i === 0} />)}
+            ) : movies.map((m, i) => (
+              <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}><MovieRow movie={m} first={i === 0} /></View>
+                {list.is_owner ? <Pressable onPress={() => removeMovie(m.id)} hitSlop={8} accessibilityLabel={`Remove ${m.title} from this folder`} style={styles.remove}><Feather name="x" size={14} color="rgba(255,255,255,0.7)" /></Pressable> : null}
+              </View>
+            ))}
+            {list.is_public !== false ? (
+              <>
+                <SectionLabel style={{ marginTop: 30 }}>{`Comments${comments.list?.length ? ` · ${comments.list.length}` : ''}`}</SectionLabel>
+                <CommentList list={comments.list} title={list.title} onReply={setReplyTo} onRemove={comments.remove} accent={T.accent} />
+                <View style={{ marginTop: 16 }}>
+                  <Composer noRating placeholder="Say something about this folder…" replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPost={comments.post} accent={T.accent} />
+                </View>
+              </>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -74,6 +100,7 @@ export default function FolderScreen() {
 }
 
 const styles = StyleSheet.create({
+  remove: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   head: { flexDirection: 'row', gap: 16, alignItems: 'flex-end', marginTop: 18 },
   title: { fontFamily: F.displayHeavy, fontSize: 24, color: '#fff', letterSpacing: -0.4 },
   by: { fontFamily: F.body, fontSize: 12.5, color: T.text2, marginTop: 4 },

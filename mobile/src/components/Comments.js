@@ -26,6 +26,17 @@ export function useComments(movie) {
   return { list, post, remove };
 }
 
+// Comments on a public folder (same /api/reviews?listId= as the website)
+export function useListComments(listId) {
+  const api = useApi();
+  const [list, setList] = useState(null);
+  const load = useCallback(() => (listId ? api.get(`/api/reviews?listId=${listId}`).then((d) => setList(d.comments || [])).catch(() => setList([])) : Promise.resolve()), [listId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [load]);
+  const post = async ({ text, parentId, mentions }) => { await api.post('/api/reviews', { listId, text, rating: 0, parentId: parentId || null, mentions: mentions || [] }); await load(); };
+  const remove = (id) => { setList((p) => (p || []).filter((c) => c.id !== id).map((c) => ({ ...c, replies: (c.replies || []).filter((x) => x.id !== id) }))); api.del('/api/reviews', { id }).catch(() => load()); };
+  return { list, post, remove };
+}
+
 export function CommentList({ list, onReply, onRemove, title, accent = '#F5A623' }) {
   const Item = ({ c, reply }) => (
     <View style={[styles.item, reply && { marginLeft: 44, paddingTop: 10 }]}>
@@ -49,7 +60,7 @@ export function CommentList({ list, onReply, onRemove, title, accent = '#F5A623'
   return list.map((c) => <View key={c.id}><Item c={c} />{(c.replies || []).map((r) => <Item key={r.id} c={r} reply />)}</View>);
 }
 
-export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', initialRating = 0 }) {
+export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', initialRating = 0, noRating = false, placeholder }) {
   const { isSignedIn } = useAuth();
   const [text, setText] = useState('');
   const mentions = useRef([]);
@@ -71,7 +82,7 @@ export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', init
     <View>
       {replyTo ? (
         <View style={styles.replyBar}><Text style={styles.replyText} numberOfLines={1}>Replying to @{replyTo.username}</Text><Pressable onPress={onCancelReply} hitSlop={8}><Feather name="x" size={15} color={T.text2} /></Pressable></View>
-      ) : (
+      ) : noRating ? null : (
         <View style={styles.rateRow}>
           <Text style={styles.rateLabel}>Your rating</Text>
           {[1, 2, 3, 4, 5].map((n) => <Pressable key={n} onPress={() => setRating(rating === n ? 0 : n)} hitSlop={4}><Feather name="star" size={19} color={rating >= n ? accent : 'rgba(255,255,255,0.25)'} /></Pressable>)}
@@ -80,7 +91,7 @@ export function Composer({ onPost, replyTo, onCancelReply, accent = '#fff', init
       {err ? <Text style={styles.err}>{err}</Text> : null}
       <MentionSuggest value={text} accent={accent} onPick={(u) => { mentions.current = [...mentions.current, { user_id: u.user_id, handle: u.username }]; setText((v) => applyMention(v, u)); }} />
       <View style={styles.inputRow}>
-        <TextInput value={text} onChangeText={setText} placeholder={isSignedIn ? (replyTo ? 'Write a reply…' : 'Comment… what did you think?') : 'Sign in to comment'} placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={1000} style={styles.input} editable={!!isSignedIn} onPressIn={() => !isSignedIn && router.push('/sign-in')} />
+        <TextInput value={text} onChangeText={setText} placeholder={isSignedIn ? (replyTo ? 'Write a reply…' : placeholder || 'Comment… what did you think?') : 'Sign in to comment'} placeholderTextColor="rgba(255,255,255,0.35)" multiline maxLength={1000} style={styles.input} editable={!!isSignedIn} onPressIn={() => !isSignedIn && router.push('/sign-in')} />
         <Pressable onPress={send} disabled={busy || !text.trim()} style={[styles.send, { backgroundColor: accent, opacity: text.trim() ? 1 : 0.55 }]} accessibilityLabel="Post comment"><Feather name="send" size={18} color={inkOn(accent)} /></Pressable>
       </View>
     </View>
