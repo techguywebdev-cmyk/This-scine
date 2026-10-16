@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getPrefs } from '../../../lib/prefs';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, Linking } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -84,7 +84,7 @@ export default function TitleScreen() {
             <View style={{ width, height: videoH }}>
               {movie?.backdrop ? <Image source={{ uri: movie.backdrop }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
               <LinearGradient colors={['transparent', 'rgba(6,6,11,0.8)']} style={StyleSheet.absoluteFill} />
-              <View style={styles.center}>{trailerKey === undefined ? <ActivityIndicator color="#fff" /> : <Text style={styles.noTrailer}>No trailer available</Text>}</View>
+              <View style={styles.center}>{trailerKey === undefined ? <ActivityIndicator color="#fff" /> : <View style={{ alignItems: 'center', gap: 10 }}><Text style={styles.noTrailer}>No trailer available</Text><Pressable onPress={() => Linking.openURL(`https://www.youtube.com/results?search_query=${encodeURIComponent(`${movie?.title || initialTitle || ''} ${movie?.year || ''} trailer`)}`).catch(() => {})} style={styles.ytBtn}><Feather name="youtube" size={15} color="#fff" /><Text style={styles.ytText}>Look for it on YouTube</Text></Pressable></View>}</View>
             </View>
           )}
         </View>
@@ -206,6 +206,8 @@ export default function TitleScreen() {
 }
 
 const styles = StyleSheet.create({
+  ytBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 36, paddingHorizontal: 16, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  ytText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
   roundBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   sharePill: { height: 44, borderRadius: 22, borderWidth: 1, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 7 },
   shareText: { fontFamily: F.bold, fontSize: 14 },

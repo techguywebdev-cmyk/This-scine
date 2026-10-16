@@ -196,9 +196,17 @@ export async function GET(req) {
     const bits = [why, ...facets.filter((f) => !/^(Series|Recent|Classic|Highly rated|Popular)$/.test(f)).slice(0, 3)].filter(Boolean);
     if (p.providers.length === 1) bits.push(`On ${PROVIDER_NAMES[p.providers[0]] || 'your service'}`);
     item.why = [...new Set(bits)].slice(0, 3).join(' · ') || `${item.genre.join(' · ')}${item.year ? ` · ${item.year}` : ''}`;
+    item._votes = m.vote_count || 0;
     out.push(item);
-    if (out.length >= 24) break;
+    if (out.length >= 40) break;
   }
+  // Trailers first: check which picks actually have a YouTube trailer, put those on top, and drop
+  // near-empty listings (no trailer, hardly any votes) when there are enough good ones
+  const vids = await Promise.all(out.map((it) => tmdb(`/${it.mediaType}/${it.id}/videos`).then((d) => (d?.results || []).some((v) => v.site === 'YouTube' && v.key && /Trailer|Teaser|Clip/.test(v.type || ''))).catch(() => false)));
+  out.forEach((it, i) => { it.hasTrailer = vids[i]; });
+  const good = out.filter((it) => it.hasTrailer || it._votes >= 25);
+  const ranked = (good.length >= 8 ? good : out).map((it, i) => ({ it, i })).sort((a, b) => (b.it.hasTrailer - a.it.hasTrailer) || (a.i - b.i)).map((x) => x.it).slice(0, 24);
+  out.length = 0; out.push(...ranked.map(({ _votes, ...it }) => it));
   // Fill in the runtime for the top few when length mattered
   if ((p.maxRuntime || p.minRuntime) && out.length) {
     await Promise.all(out.slice(0, 10).map(async (it) => {
