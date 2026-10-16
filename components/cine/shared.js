@@ -952,10 +952,10 @@ export function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProf
       <div
         style={{
           pointerEvents: 'all',
-          background: 'rgba(5,5,12,0.88)',
-          backdropFilter: 'blur(16px)',
-          border: `1px solid ${T.hairline}`,
+          background: ambient(accent),
+          border: `1px solid ${accent}44`,
           borderRadius: 18,
+          transition: 'background .5s ease, border-color .5s ease',
           padding: '8px 10px 8px 12px',
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         }}
@@ -1024,8 +1024,8 @@ export function FriendsPulse({ accent, onOpenFriends, onWatchTrailer, onOpenProf
                   gap: 8,
                   alignItems: 'center',
                   textAlign: 'left',
-                  background: T.surface2,
-                  border: `1px solid ${T.hairline}`,
+                  background: 'rgba(0,0,0,0.22)',
+                  border: `1px solid ${accent}2e`,
                   borderRadius: 14,
                   padding: 6,
                   cursor: 'pointer',

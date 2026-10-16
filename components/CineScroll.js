@@ -458,8 +458,8 @@ export default function CineScroll(){
             onKeyDown={(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setShowTonightNudge(false);try{localStorage.setItem('cine_tonight_nudge',new Date().toISOString().slice(0,10));}catch{}setShowFilter(true);}}}
             style={{
               pointerEvents:'all',display:'flex',alignItems:'center',gap:10,
-              background:'rgba(5,5,12,0.92)',backdropFilter:'blur(16px)',
-              border:`1px solid ${accent}44`,borderRadius:22,padding:'10px 14px 10px 12px',
+              background:ambient(accent),
+              border:`1px solid ${accent}55`,borderRadius:22,padding:'10px 14px 10px 12px',
               cursor:'pointer',fontFamily:'inherit',boxShadow:`0 8px 28px rgba(0,0,0,0.4)`,
               animation:'toastIn 0.35s cubic-bezier(0.22,1,0.36,1)',
             }}
