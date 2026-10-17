@@ -174,7 +174,7 @@ export function Toast({message,accent}){
     </div>
   );
 }
-export function StreamingBadges({ movieId, mediaType, title, year }) {
+export function StreamingBadges({ movieId, mediaType, title, year, accent }) {
   const [providers, setProviders] = useState([]);
 
   useEffect(() => {
@@ -294,7 +294,7 @@ export function StreamingBadges({ movieId, mediaType, title, year }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginBottom: 10 }}>
-      <span style={{ fontSize: 9, letterSpacing: 1.6, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 9, letterSpacing: 1.6, color: accent ? `${accent}cc` : 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase' }}>
         Stream on
       </span>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -496,7 +496,7 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}div::-webkit-scrollbar{display:none}.cast-scroll::-webkit-scrollbar{display:none}`}</style>
       <div style={{position:'relative',zIndex:10,background:'#000',flexShrink:0,boxShadow:'0 8px 24px rgba(0,0,0,0.45)'}}>
         {/* Bar above the video so our buttons never sit on YouTube's own controls */}
-        <div style={{display:'flex',alignItems:'center',gap:10,height:52,padding:'0 12px',paddingTop:'env(safe-area-inset-top,0px)',boxSizing:'content-box'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,height:52,padding:'0 12px',paddingTop:'env(safe-area-inset-top,0px)',boxSizing:'content-box',background:`linear-gradient(90deg, ${accent}38 0%, ${accent}14 60%, ${accent}24 100%), #06060B`}}>
           <button onClick={onClose} aria-label="Back" style={{flexShrink:0,background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:18,width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
           </button>
@@ -579,18 +579,18 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
               </button>
             </div>
           )}
-          <StreamingBadges movieId={movie?.id} mediaType={movie?.mediaType} title={movie?.title} year={movie?.year}/>
+          <StreamingBadges movieId={movie?.id} mediaType={movie?.mediaType} title={movie?.title} year={movie?.year} accent={accent}/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:1,borderTop:`1px solid ${T.hairline}`,borderBottom:`1px solid ${T.hairline}`,borderRadius:0,overflow:'hidden',marginBottom:20,marginTop:8}}>
             {[
-              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="7" width="4" height="10"/><path d="M6 7l4-4 4 4M14 7v10M18 7l2 2v6l-2 2"/></svg>,label:'Director',value:director?.name||'—'},
-              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,label:'Release Date',value:releaseDateFormatted||'—'},
-              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>,label:'Runtime',value:runtimeStr||'—'},
-              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>,label:'Language',value:language||'—'},
+              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="7" width="4" height="10"/><path d="M6 7l4-4 4 4M14 7v10M18 7l2 2v6l-2 2"/></svg>,label:'Director',value:director?.name||'—'},
+              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,label:'Release Date',value:releaseDateFormatted||'—'},
+              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>,label:'Runtime',value:runtimeStr||'—'},
+              {icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>,label:'Language',value:language||'—'},
             ].map((m,i)=>(
               <div key={i} style={{background:'transparent',boxShadow:`-1px 0 0 ${T.hairline}, 0 -1px 0 ${T.hairline}`,padding:'14px',display:'flex',alignItems:'center',gap:12}}>
                 <div style={{flexShrink:0}}>{m.icon}</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <Eyebrow style={{marginBottom:3,fontSize:8.5}}>{m.label}</Eyebrow>
+                  <Eyebrow color={`${accent}cc`} style={{marginBottom:3,fontSize:8.5}}>{m.label}</Eyebrow>
                   <div style={{fontSize:12.5,fontWeight:600,color:T.text,lineHeight:1.3}}>{m.value}</div>
                 </div>
               </div>
@@ -605,12 +605,12 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
               <div className="cast-scroll" style={{display:'flex',gap:16,overflowX:'auto',WebkitOverflowScrolling:'touch',scrollbarWidth:'none',paddingBottom:4}}>
                 {cast.map(person=>(
                   <div key={person.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,flexShrink:0,width:66}}>
-                    <div style={{width:60,height:60,borderRadius:'50%',overflow:'hidden',background:T.surface2,border:`1px solid ${T.hairline}`}}>
+                    <div style={{width:60,height:60,borderRadius:'50%',overflow:'hidden',background:`${accent}1a`,border:`2px solid ${accent}55`}}>
                       {person.profile_path?<img src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} alt={person.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,color:T.text3}}>{person.name[0]}</div>}
                     </div>
                     <div style={{textAlign:'center'}}>
                       <div style={{fontSize:11,fontWeight:600,color:T.text,lineHeight:1.3,wordBreak:'break-word'}}>{person.name}</div>
-                      <div style={{fontSize:9,color:T.text3,lineHeight:1.3,marginTop:2,wordBreak:'break-word'}}>{person.character}</div>
+                      <div style={{fontSize:9,color:`${accent}b3`,lineHeight:1.3,marginTop:2,wordBreak:'break-word'}}>{person.character}</div>
                     </div>
                   </div>
                 ))}

@@ -23,7 +23,7 @@ function linkFor(p, title, year) {
 }
 
 // "STREAM ON" + provider logos, like the web card
-export default function StreamOn({ movie, style, showEmpty = false }) {
+export default function StreamOn({ movie, style, showEmpty = false, accent }) {
   const api = useApi();
   const key = `${movie.isTV || movie.is_tv ? 'tv' : 'movie'}-${movie.id}`;
   const [list, setList] = useState(cache.get(key) || null);
@@ -37,13 +37,13 @@ export default function StreamOn({ movie, style, showEmpty = false }) {
   if (!list) return null;
   if (!list.length) return showEmpty ? (
     <View style={[{ marginBottom: 10 }, style]}>
-      <Text style={{ fontFamily: F.bold, fontSize: 9, letterSpacing: 1.6, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>STREAM ON</Text>
+      <Text style={{ fontFamily: F.bold, fontSize: 9, letterSpacing: 1.6, color: accent ? `${accent}cc` : 'rgba(255,255,255,0.4)', marginBottom: 6 }}>STREAM ON</Text>
       <Text style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>Not streaming in your country right now. Change your country in Your feed.</Text>
     </View>
   ) : null;
   return (
     <View style={[{ marginBottom: 10 }, style]}>
-      <Text style={{ fontFamily: F.bold, fontSize: 9, letterSpacing: 1.6, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>STREAM ON</Text>
+      <Text style={{ fontFamily: F.bold, fontSize: 9, letterSpacing: 1.6, color: accent ? `${accent}cc` : 'rgba(255,255,255,0.4)', marginBottom: 6 }}>STREAM ON</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {list.slice(0, 6).map((p) => (
           <Pressable key={p.provider_id} onPress={() => Linking.openURL(linkFor(p, movie.title, movie.year)).catch(() => {})} accessibilityLabel={`Watch on ${p.provider_name}`} style={{ width: 30, height: 30, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', backgroundColor: 'rgba(0,0,0,0.4)' }}>

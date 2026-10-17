@@ -77,7 +77,8 @@ export default function TitleScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: T.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Ambient accent={accent} />
       {/* Pinned: a slim bar (clears the status bar, holds Back) + the trailer — details scroll underneath, like the website */}
-      <View style={{ backgroundColor: '#000', paddingTop: insets.top, zIndex: 5, elevation: 6 }}>
+      <View style={{ backgroundColor: '#06060B', paddingTop: insets.top, zIndex: 5, elevation: 6 }}>
+        <LinearGradient colors={[`${accent}40`, `${accent}14`, `${accent}26`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
         <View style={styles.bar}>
           <GlassButton icon="arrow-left" size={36} onPress={() => router.back()} label="Back" />
           <Text style={styles.barTitle} numberOfLines={1}>{movie?.title || initialTitle}</Text>
@@ -184,21 +185,21 @@ export default function TitleScreen() {
                 ))}
               </View>
 
-              <StreamOn movie={movie} showEmpty style={{ marginTop: 22, marginBottom: 0 }} />
+              <StreamOn movie={movie} showEmpty accent={accent} style={{ marginTop: 22, marginBottom: 0 }} />
 
               {/* Details — same four as the website */}
               {details ? (
-                <View style={styles.facts}>
+                <View style={[styles.facts, { borderColor: `${accent}33` }]}>
                   {[
                     ['video', type === 'tv' ? 'CREATOR' : 'DIRECTOR', details.director],
                     ['calendar', type === 'tv' ? 'FIRST AIRED' : 'RELEASE DATE', details.release_date ? new Date(`${details.release_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null],
                     ['clock', type === 'tv' ? 'EPISODE' : 'RUNTIME', details.runtime ? (details.runtime >= 60 ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m` : `${details.runtime}m`) : null],
                     ['globe', 'LANGUAGE', details.language],
                   ].map(([icon, label, value], i) => (
-                    <View key={label} style={[styles.fact, i % 2 === 1 && styles.factRight, i > 1 && styles.factTop]}>
-                      <Feather name={icon} size={16} color="rgba(255,255,255,0.4)" />
+                    <View key={label} style={[styles.fact, i % 2 === 1 && [styles.factRight, { borderLeftColor: `${accent}33` }], i > 1 && [styles.factTop, { borderTopColor: `${accent}33` }]]}>
+                      <Feather name={icon} size={16} color={accent} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.factLabel}>{label}</Text>
+                        <Text style={[styles.factLabel, { color: `${accent}cc` }]}>{label}</Text>
                         <Text style={styles.factValue} numberOfLines={2}>{value || '—'}</Text>
                       </View>
                     </View>
@@ -216,11 +217,11 @@ export default function TitleScreen() {
                   <ScrollView horizontal={!allCast} showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, marginTop: 14 }} contentContainerStyle={allCast ? { paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 14 } : { paddingHorizontal: 20, gap: 14 }}>
                     {details.cast.map((c) => (
                       <Pressable key={`${c.id}-${c.character}`} onPress={() => router.push({ pathname: '/ask', params: { q: `${type === 'tv' ? 'shows' : 'movies'} with ${c.name}` } })} accessibilityLabel={`More with ${c.name}`} style={{ width: 76, alignItems: 'center' }}>
-                        <View style={styles.castPic}>
+                        <View style={[styles.castPic, { borderColor: `${accent}66`, backgroundColor: `${accent}1a` }]}>
                           {c.profile_path ? <Image source={{ uri: `https://image.tmdb.org/t/p/w185${c.profile_path}` }} style={{ width: 68, height: 68, borderRadius: 34 }} contentFit="cover" /> : <Text style={{ fontFamily: F.bold, fontSize: 22, color: '#fff' }}>{(c.name || '?')[0]}</Text>}
                         </View>
                         <Text style={styles.castName} numberOfLines={2}>{c.name}</Text>
-                        {c.character ? <Text style={styles.castRole} numberOfLines={1}>{c.character}</Text> : null}
+                        {c.character ? <Text style={[styles.castRole, { color: `${accent}b3` }]} numberOfLines={1}>{c.character}</Text> : null}
                       </Pressable>
                     ))}
                   </ScrollView>
