@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +26,7 @@ let speech; const sr = () => { if (speech === undefined) { try { speech = requir
 function Dots() {
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => { const l = Animated.loop(Animated.timing(a, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true })); l.start(); return () => l.stop(); }, [a]);
+  useEffect(() => { if (initialQ) ask(String(initialQ)); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [initialQ]);
   return (
     <View style={{ flexDirection: 'row', gap: 7 }}>
       {DOTS.slice(0, 5).map((c, i) => {
@@ -54,6 +55,7 @@ export default function Ask() {
   const api = useApi();
   const accent = useAccent();
   const wl = useWatchlist();
+  const { q: initialQ } = useLocalSearchParams();
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState(null);

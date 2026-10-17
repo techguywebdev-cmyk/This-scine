@@ -55,9 +55,13 @@ export async function GET(req) {
       certification,
       runtime: data.runtime || data.episode_run_time?.[0] || null,
       release_date: data.release_date || data.first_air_date || null,
-      language:
-        data.spoken_languages?.[0]?.english_name ||
-        (data.original_language ? String(data.original_language).toUpperCase() : null),
+      language: (() => {
+        const code = data.original_language;
+        const m = (data.spoken_languages || []).find((l) => l.iso_639_1 === code);
+        if (m?.english_name) return m.english_name;
+        try { if (code) return new Intl.DisplayNames(['en'], { type: 'language' }).of(code); } catch {}
+        return data.spoken_languages?.[0]?.english_name || (code ? String(code).toUpperCase() : null);
+      })(),
       vote_count: data.vote_count || 0,
       overview: data.overview || '',
       cast: (data.credits?.cast || []).slice(0, 12),

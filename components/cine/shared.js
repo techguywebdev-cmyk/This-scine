@@ -464,7 +464,14 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
   const runtime = movieDetails?.runtime;
   const runtimeStr = runtime ? `${Math.floor(runtime/60)}h ${runtime%60}m` : movieDetails?.episode_run_time?.[0] ? `${movieDetails.episode_run_time[0]}m` : null;
   const director = (movieDetails?.credits?.crew || []).find(c => c.job === 'Director') || (movieDetails?.created_by||[])[0];
-  const language = movieDetails?.spoken_languages?.[0]?.english_name || movieDetails?.original_language?.toUpperCase();
+  const language = (() => {
+    const code = movieDetails?.original_language;
+    const spoken = movieDetails?.spoken_languages || [];
+    const match = spoken.find((l) => l.iso_639_1 === code);
+    if (match?.english_name) return match.english_name;
+    try { if (code) return new Intl.DisplayNames(['en'], { type: 'language' }).of(code); } catch {}
+    return spoken[0]?.english_name || code?.toUpperCase();
+  })();
   const releaseDate = movieDetails?.release_date || movieDetails?.first_air_date;
   const releaseDateFormatted = releaseDate ? new Date(releaseDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : null;
   const voteCount = movieDetails?.vote_count;
@@ -488,6 +495,14 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
       {showShare&&<ShareSheet movie={movie} accent={accent} onClose={()=>setShowShare(false)}/>}
       <style>{`@keyframes playerSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}div::-webkit-scrollbar{display:none}.cast-scroll::-webkit-scrollbar{display:none}`}</style>
       <div style={{position:'relative',zIndex:10,background:'#000',flexShrink:0,boxShadow:'0 8px 24px rgba(0,0,0,0.45)'}}>
+        {/* Bar above the video so our buttons never sit on YouTube's own controls */}
+        <div style={{display:'flex',alignItems:'center',gap:10,height:52,padding:'0 12px',paddingTop:'env(safe-area-inset-top,0px)',boxSizing:'content-box'}}>
+          <button onClick={onClose} aria-label="Back" style={{flexShrink:0,background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:18,width:36,height:36,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </button>
+          <div style={{flex:1,minWidth:0,fontSize:14.5,fontWeight:700,color:'rgba(255,255,255,0.9)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{movie?.title}</div>
+          {!loading&&trailerKey&&trailerKeys.length>1&&<button onClick={()=>{const n=trailerKeys.indexOf(trailerKey);setTrailerKey(trailerKeys[(n+1)%trailerKeys.length]);}} aria-label="Trailer not playing? Try another trailer" style={{flexShrink:0,display:'inline-flex',alignItems:'center',gap:6,height:32,padding:'0 12px',borderRadius:16,background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.16)',color:'#fff',fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Other trailer</button>}
+        </div>
         {loading&&<div style={{height:220,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12}}><div style={{width:30,height:30,border:`2.5px solid rgba(255,255,255,0.1)`,borderTop:`2.5px solid ${accent}`,borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/><span style={{fontSize:12.5,color:T.text3}}>Loading trailer...</span></div>}
         {!loading&&notFound&&<div style={{position:'relative',height:220,overflow:'hidden',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
           {(movie?.backdrop||movie?.poster)&&<img src={movie.backdrop||movie.poster} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.55}}/>}
@@ -499,10 +514,6 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
           </div>
         </div>}
         {!loading&&trailerKey&&<div style={{position:'relative',width:'100%',paddingBottom:'56.25%'}}><iframe src={`https://www.youtube.com/embed/${trailerKey}?autoplay=${getPrefs().autoplay===false?0:1}&mute=${getPrefs().startMuted?1:0}&rel=0&modestbranding=1&playsinline=1`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen style={{position:'absolute',inset:0,width:'100%',height:'100%',border:'none'}} title={`${movie?.title} Trailer`}/></div>}
-        {!loading&&trailerKey&&trailerKeys.length>1&&<button onClick={()=>{const n=trailerKeys.indexOf(trailerKey);setTrailerKey(trailerKeys[(n+1)%trailerKeys.length]);}} aria-label="Trailer not playing? Try another trailer" style={{position:'absolute',top:12,right:12,zIndex:3,display:'inline-flex',alignItems:'center',gap:6,height:32,padding:'0 12px',borderRadius:16,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.16)',color:'#fff',fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Other trailer</button>}
-        <button onClick={onClose} style={{position:'absolute',top:12,left:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:10,width:32,height:32,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        </button>
       </div>
       <div style={{flex:1,minHeight:0,overflowY:'auto',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'18px 18px 0',flexShrink:0}}>

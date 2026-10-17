@@ -31,6 +31,7 @@ export default function TitleScreen() {
   const [trailerKey, setTrailerKey] = useState(undefined);
   const [similar, setSimilar] = useState(null);
   const [details, setDetails] = useState(null);
+  const [allCast, setAllCast] = useState(false);
   const keysRef = useRef([]);
   const [more, setMore] = useState(false);
   const [myRating, setMyRating] = useState(0);
@@ -75,9 +76,14 @@ export default function TitleScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: T.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Ambient accent={accent} />
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+      {/* Pinned: a slim bar (clears the status bar, holds Back) + the trailer — details scroll underneath, like the website */}
+      <View style={{ backgroundColor: '#000', paddingTop: insets.top, zIndex: 5, elevation: 6 }}>
+        <View style={styles.bar}>
+          <GlassButton icon="arrow-left" size={36} onPress={() => router.back()} label="Back" />
+          <Text style={styles.barTitle} numberOfLines={1}>{movie?.title || initialTitle}</Text>
+        </View>
         {/* Trailer / hero */}
-        <View style={{ width, height: videoH + insets.top, paddingTop: insets.top, backgroundColor: '#000' }}>
+        <View style={{ width, height: videoH, backgroundColor: '#000' }}>
           {trailerKey ? (
             <YoutubePlayer key={trailerKey} height={videoH} width={width} videoId={trailerKey} play={playing} mute={!!getPrefs().startMuted} onChangeState={(s) => s === 'ended' && setPlaying(false)} onError={() => { const ks = keysRef.current; const i = ks.indexOf(trailerKey); setTrailerKey(i >= 0 && i < ks.length - 1 ? ks[i + 1] : null); }} webViewProps={{ allowsInlineMediaPlayback: true }} initialPlayerParams={{ modestbranding: true, rel: false }} />
           ) : (
@@ -88,7 +94,8 @@ export default function TitleScreen() {
             </View>
           )}
         </View>
-        <View style={[styles.close, { top: insets.top + 10 }]}><GlassButton icon="arrow-left" size={40} onPress={() => router.back()} label="Back" /></View>
+      </View>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
         <View style={{ paddingHorizontal: 20, paddingTop: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
@@ -147,7 +154,7 @@ export default function TitleScreen() {
                   <Text style={styles.rateLabel}>TMDB RATING</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 8 }}>
                     <Ionicons name="star" size={18} color={accent} />
-                    <Text style={styles.rateBig}>{movie.rating !== 'N/A' ? movie.rating : '—'}</Text>
+                    <Text style={styles.rateBig}>{movie.rating && movie.rating !== 'N/A' ? movie.rating : details?.details?.vote_average ? Number(details.details.vote_average).toFixed(1) : '—'}</Text>
                     <Text style={styles.rateOf}>/10</Text>
                   </View>
                   <Text style={styles.rateSub}>{details?.vote_count ? `${details.vote_count >= 1000 ? `${Math.round(details.vote_count / 1000)}K` : details.vote_count} votes` : movie.votes ? `${movie.votes} votes` : ''}</Text>
@@ -177,7 +184,48 @@ export default function TitleScreen() {
                 ))}
               </View>
 
-              <StreamOn movie={movie} style={{ marginTop: 20, marginBottom: 0 }} />
+              <StreamOn movie={movie} showEmpty style={{ marginTop: 22, marginBottom: 0 }} />
+
+              {/* Details — same four as the website */}
+              {details ? (
+                <View style={styles.facts}>
+                  {[
+                    ['video', type === 'tv' ? 'CREATOR' : 'DIRECTOR', details.director],
+                    ['calendar', type === 'tv' ? 'FIRST AIRED' : 'RELEASE DATE', details.release_date ? new Date(`${details.release_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null],
+                    ['clock', type === 'tv' ? 'EPISODE' : 'RUNTIME', details.runtime ? (details.runtime >= 60 ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m` : `${details.runtime}m`) : null],
+                    ['globe', 'LANGUAGE', details.language],
+                  ].map(([icon, label, value], i) => (
+                    <View key={label} style={[styles.fact, i % 2 === 1 && styles.factRight, i > 1 && styles.factTop]}>
+                      <Feather name={icon} size={16} color="rgba(255,255,255,0.4)" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.factLabel}>{label}</Text>
+                        <Text style={styles.factValue} numberOfLines={2}>{value || '—'}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
+              {/* Cast */}
+              {details?.cast?.length ? (
+                <View style={{ marginTop: 26 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <Text style={styles.castHead}>Cast</Text>
+                    {details.cast.length > 6 ? <Pressable onPress={() => setAllCast((v) => !v)} hitSlop={8}><Text style={[styles.seeAll, { color: accent }]}>{allCast ? 'Show less' : 'See all'}</Text></Pressable> : null}
+                  </View>
+                  <ScrollView horizontal={!allCast} showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, marginTop: 14 }} contentContainerStyle={allCast ? { paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 14 } : { paddingHorizontal: 20, gap: 14 }}>
+                    {details.cast.map((c) => (
+                      <Pressable key={`${c.id}-${c.character}`} onPress={() => router.push({ pathname: '/ask', params: { q: `${type === 'tv' ? 'shows' : 'movies'} with ${c.name}` } })} accessibilityLabel={`More with ${c.name}`} style={{ width: 76, alignItems: 'center' }}>
+                        <View style={styles.castPic}>
+                          {c.profile_path ? <Image source={{ uri: `https://image.tmdb.org/t/p/w185${c.profile_path}` }} style={{ width: 68, height: 68, borderRadius: 34 }} contentFit="cover" /> : <Text style={{ fontFamily: F.bold, fontSize: 22, color: '#fff' }}>{(c.name || '?')[0]}</Text>}
+                        </View>
+                        <Text style={styles.castName} numberOfLines={2}>{c.name}</Text>
+                        {c.character ? <Text style={styles.castRole} numberOfLines={1}>{c.character}</Text> : null}
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -206,6 +254,19 @@ export default function TitleScreen() {
 }
 
 const styles = StyleSheet.create({
+  facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 22, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.1)' },
+  fact: { width: '50%', flexDirection: 'row', gap: 12, paddingVertical: 16, paddingRight: 10 },
+  factRight: { paddingLeft: 14, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: 'rgba(255,255,255,0.1)' },
+  factTop: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.1)' },
+  factLabel: { fontFamily: F.bold, fontSize: 9.5, letterSpacing: 2, color: 'rgba(255,255,255,0.4)' },
+  factValue: { fontFamily: F.bold, fontSize: 14.5, color: '#fff', marginTop: 4 },
+  castHead: { fontFamily: F.displayHeavy, fontSize: 20, color: '#fff', letterSpacing: -0.4 },
+  seeAll: { fontFamily: F.bold, fontSize: 13 },
+  castPic: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)' },
+  castName: { fontFamily: F.bold, fontSize: 12, color: '#fff', marginTop: 7, textAlign: 'center' },
+  castRole: { fontFamily: F.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2, textAlign: 'center' },
+  bar: { height: 50, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12 },
+  barTitle: { flex: 1, fontFamily: F.bold, fontSize: 14.5, color: 'rgba(255,255,255,0.9)' },
   ytBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 36, paddingHorizontal: 16, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.4)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
   ytText: { fontFamily: F.bold, fontSize: 13, color: '#fff' },
   roundBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

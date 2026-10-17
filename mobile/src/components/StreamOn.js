@@ -23,7 +23,7 @@ function linkFor(p, title, year) {
 }
 
 // "STREAM ON" + provider logos, like the web card
-export default function StreamOn({ movie, style }) {
+export default function StreamOn({ movie, style, showEmpty = false }) {
   const api = useApi();
   const key = `${movie.isTV || movie.is_tv ? 'tv' : 'movie'}-${movie.id}`;
   const [list, setList] = useState(cache.get(key) || null);
@@ -34,7 +34,13 @@ export default function StreamOn({ movie, style }) {
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  if (!list || !list.length) return null;
+  if (!list) return null;
+  if (!list.length) return showEmpty ? (
+    <View style={[{ marginBottom: 10 }, style]}>
+      <Text style={{ fontFamily: F.bold, fontSize: 9, letterSpacing: 1.6, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>STREAM ON</Text>
+      <Text style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>Not streaming in your country right now. Change your country in Your feed.</Text>
+    </View>
+  ) : null;
   return (
     <View style={[{ marginBottom: 10 }, style]}>
       <Text style={{ fontFamily: F.bold, fontSize: 9, letterSpacing: 1.6, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>STREAM ON</Text>
