@@ -1,6 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAccent } from '../../lib/accent';
 import { Feather } from '@expo/vector-icons';
 import { F, T } from '../../lib/theme';
 import { setPrefs } from '../../lib/prefs';
@@ -63,16 +65,25 @@ export default function TabsLayout() {
     }, 1200);
     return () => clearTimeout(t);
   }, [isSignedIn, wl.loading, wl.items.length]);
+  const liveAccent = useAccent();
+  const tabAccent = liveAccent && !/^#(fff|ffffff)$/i.test(liveAccent) ? liveAccent : T.accent;
   return (
     <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#fff',
+        tabBarActiveTintColor: /^#e6e6ea$/i.test(tabAccent) ? '#fff' : tabAccent,
+        tabBarActiveBackgroundColor: 'transparent',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.45)',
         tabBarLabelStyle: { fontFamily: F.semibold, fontSize: 10.5 },
-        tabBarStyle: { position: 'absolute', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent', elevation: 0 },
-        tabBarBackground: () => <BlurView intensity={40} tint="dark" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6,6,11,0.55)' }]} />,
+        tabBarStyle: { position: 'absolute', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: `${tabAccent}40`, backgroundColor: 'transparent', elevation: 0 },
+        // The app's ambient gradient in the live colour (the film on screen, or your chosen colour)
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            <BlurView intensity={40} tint="dark" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6,6,11,0.6)' }]} />
+            <LinearGradient colors={[`${tabAccent}40`, `${tabAccent}14`, `${tabAccent}2e`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+          </View>
+        ),
         sceneStyle: { backgroundColor: T.bg },
       }}
     >
