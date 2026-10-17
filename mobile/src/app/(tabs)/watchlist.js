@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { SignInPills } from '../../components/SignedOut';
+import SignedOutHero, { SignInPills } from '../../components/SignedOut';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +51,8 @@ export default function Watchlist() {
 
   const col3 = (width - 40 - 24) / 3;
   const refresh = async () => { setRefreshing(true); await Promise.all([wl.refresh(), fetchLists(tab)]); setRefreshing(false); };
+
+  if (!isSignedIn) return <SignedOutHero title={'Save it.\nWatch it later.'} sub="Keep a watchlist, sort it into folders and get reminded when it’s time to watch — same account as the website." />;
 
   return (
     <View style={{ flex: 1 }}>

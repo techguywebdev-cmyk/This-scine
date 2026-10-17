@@ -47,7 +47,7 @@ export default function TabsLayout() {
   // Unread notifications → a dot on the Friends tab, refreshed every couple of minutes
   const notifs = useUnreadNotifs();
   useEffect(() => {
-    if (!isSignedIn) return undefined;
+    if (!isSignedIn) { setUnreadNotifs(0); return undefined; }
     const pull = () => api.get('/api/notifications').then((d) => setUnreadNotifs((d.items || []).filter((n) => !n.read).length)).catch(() => {});
     pull(); const t = setInterval(pull, 120000);
     return () => clearInterval(t);

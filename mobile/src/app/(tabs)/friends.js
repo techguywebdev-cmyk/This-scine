@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { SignInPills } from '../../components/SignedOut';
+import SignedOutHero, { SignInPills } from '../../components/SignedOut';
 import { useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
@@ -116,6 +116,8 @@ export default function Friends() {
   }, [feed]);
 
   const refresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  if (!isSignedIn) return <SignedOutHero title={'Your people,\ntheir picks.'} sub="Follow friends, see what they save and review, and message them about a film — same account as the website." />;
 
   return (
     <View style={{ flex: 1 }}>
