@@ -57,7 +57,7 @@ export default function Watchlist() {
   return (
     <View style={{ flex: 1 }}>
       <Ambient />
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" />}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1A1A22" />}>
         <PosterWall posters={wall} />
         <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20 }}>
           <View style={styles.topRow}>

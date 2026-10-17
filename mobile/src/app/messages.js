@@ -43,7 +43,7 @@ export default function Inbox() {
           data={list}
           keyExtractor={(c) => c.peer_id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor="#fff" />}
+          refreshControl={<RefreshControl colors={["#fff"]} progressBackgroundColor="#1A1A22" refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor="#fff" />}
           ListHeaderComponent={<Text style={styles.h1}>Messages</Text>}
           ListEmptyComponent={<Empty icon="message-circle" title="No messages yet" sub="Open a friend’s profile and tap Message to start a conversation." />}
           renderItem={({ item: c, index }) => (

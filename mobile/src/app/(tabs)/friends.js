@@ -128,7 +128,7 @@ export default function Friends() {
           {notifs ? <View style={[styles.bellBadge, { backgroundColor: accent }]}><Text style={styles.bellBadgeText}>{notifs > 9 ? '9+' : notifs}</Text></View> : null}
         </Pressable>
       ) : null}
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" />}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1A1A22" />}>
         <PosterWall posters={wall} />
         <View style={{ paddingTop: insets.top + 48, paddingHorizontal: 20 }}>
           <Text style={styles.h1}>Friends</Text>

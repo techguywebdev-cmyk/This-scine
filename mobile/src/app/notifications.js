@@ -105,7 +105,7 @@ export default function Notifications() {
         <FlatList data={items} keyExtractor={(n, i) => String(n.id || i)} renderItem={renderItem}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 40, flexGrow: 1 }}
           ItemSeparatorComponent={() => <View style={styles.sep} />}
-          refreshControl={<RefreshControl refreshing={refreshing} tintColor="#fff" onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1A1A22" onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
           ListEmptyComponent={<View style={{ paddingTop: 40 }}><Empty icon="bell" title="No notifications yet" sub="New followers, mentions and activity show up here." /></View>} />
       )}
     </View>

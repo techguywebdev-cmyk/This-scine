@@ -32,7 +32,7 @@ export const GlassButton = ({ icon, ionicon, onPress, size = 38, label: a11y }) 
 export const Avatar = ({ uri, name, size = 40, ring, accent = T.accent }) => (
   <View style={{ width: size, height: size, borderRadius: size / 2, padding: ring ? 2 : 0, backgroundColor: ring ? accent : 'transparent' }}>
     <View style={{ flex: 1, borderRadius: size, overflow: 'hidden', backgroundColor: '#1A1A22', borderWidth: ring ? 2 : 0, borderColor: T.bg, alignItems: 'center', justifyContent: 'center' }}>
-      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={{ color: '#fff', fontFamily: F.bold, fontSize: size * 0.38 }}>{(name || 'U')[0].toUpperCase()}</Text>}
+      {uri ? <Image source={{ uri }} style={[StyleSheet.absoluteFill, { borderRadius: size }]} contentFit="cover" /> : <Text style={{ color: '#fff', fontFamily: F.bold, fontSize: size * 0.38 }}>{(name || 'U')[0].toUpperCase()}</Text>}
     </View>
   </View>
 );
