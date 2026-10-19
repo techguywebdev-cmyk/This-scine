@@ -617,6 +617,26 @@ export function InlinePlayer({ movie, onClose, accent, onSave, isSaved, initialT
               </div>
             </div>
           )}
+          {(movie?.mediaType==='tv'||movie?.isTV)&&(movieDetails?.seasons||[]).filter(x=>x.season_number>0).length>0&&(
+            <div style={{marginBottom:32}}>
+              <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:14}}>
+                <span style={{fontSize:17,letterSpacing:'-0.02em',fontWeight:700,color:T.text,fontFamily:T.serif}}>Seasons</span>
+                <span style={{fontSize:12,color:`${accent}cc`,fontWeight:600}}>{movieDetails.number_of_seasons} season{movieDetails.number_of_seasons===1?'':'s'} · {movieDetails.number_of_episodes} episodes</span>
+              </div>
+              <div style={{display:'flex',gap:12,overflowX:'auto',scrollbarWidth:'none',paddingBottom:4}}>
+                {movieDetails.seasons.filter(x=>x.season_number>0).map(x=>(
+                  <div key={x.id||x.season_number} style={{flexShrink:0,width:104}}>
+                    <div style={{position:'relative',width:'100%',aspectRatio:'2/3',borderRadius:8,overflow:'hidden',background:`${accent}12`,border:`1px solid ${accent}44`}}>
+                      {(x.poster_path||movie?.poster)&&<img src={x.poster_path?`https://image.tmdb.org/t/p/w342${x.poster_path}`:movie.poster} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+                      {movieDetails.last_episode_to_air?.season_number===x.season_number&&<span style={{position:'absolute',left:6,top:6,padding:'2px 6px',borderRadius:6,background:`${accent}e6`,color:'#07070F',fontSize:8.5,fontWeight:800,letterSpacing:1.2}}>LATEST</span>}
+                    </div>
+                    <div style={{fontSize:12,fontWeight:700,color:T.text,marginTop:7,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{x.name||`Season ${x.season_number}`}</div>
+                    <div style={{fontSize:10.5,color:`${accent}b3`,marginTop:2}}>{[x.air_date?x.air_date.slice(0,4):null,x.episode_count?`${x.episode_count} episodes`:null].filter(Boolean).join(' · ')}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {activeTab==='comments'&&(

@@ -50,7 +50,7 @@ export default function TitleScreen() {
       const m = d.movies?.[0];
       setMovie(m || null);
       const genres = (m?.genreIds || []).join(',');
-      api.get(`/api/movies?similar=${id}&similarType=${type}&similarGenres=${genres}`).then((s) => alive && setSimilar(s.movies || [])).catch(() => alive && setSimilar([]));
+      if (focus === 'similar') api.get(`/api/movies?similar=${id}&similarType=${type}&similarGenres=${genres}`).then((s) => alive && setSimilar(s.movies || [])).catch(() => alive && setSimilar([]));
     }).catch(() => {});
     // A failed lookup (TMDB busy) is retried rather than shown as "no trailer"
     const retry = async (path) => { for (let i = 0; i < 3; i++) { try { return await api.get(path); } catch {} if (!alive) return null; await new Promise((r) => setTimeout(r, 800 * (i + 1))); } return null; };
@@ -104,7 +104,7 @@ export default function TitleScreen() {
             {movie ? (
               <>
                 <Pressable onPress={() => (isSignedIn ? setParty(true) : router.push('/sign-in'))} accessibilityLabel="Start a watch party" style={[styles.roundBtn, { borderColor: `${accent}66`, backgroundColor: `${accent}1f` }]}><Text style={{ fontSize: 20 }}>🍿</Text></Pressable>
-                <Pressable onPress={() => shareTitle(movie)} accessibilityLabel="Share" style={[styles.sharePill, { borderColor: `${accent}66`, backgroundColor: `${accent}1f` }]}>
+                <Pressable onPress={() => shareTitle({ ...movie, accent })} accessibilityLabel="Share" style={[styles.sharePill, { borderColor: `${accent}66`, backgroundColor: `${accent}1f` }]}>
                   <Feather name="share" size={15} color={accent} /><Text style={[styles.shareText, { color: accent }]}>Share</Text>
                 </Pressable>
               </>
@@ -130,9 +130,6 @@ export default function TitleScreen() {
           {tab === 'comments' ? (
             <View style={{ paddingBottom: 20 }}>
               <CommentList accent={accent} list={comments.list} title={movie?.title || initialTitle} onReply={setReplyTo} onRemove={comments.remove} />
-              <View style={styles.inlineComposer}>
-                <Composer accent={accent} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPost={comments.post} initialRating={myRating} />
-              </View>
             </View>
           ) : null}
 
@@ -227,11 +224,33 @@ export default function TitleScreen() {
                   </ScrollView>
                 </View>
               ) : null}
+
+              {/* Seasons (series) */}
+              {type === 'tv' && details?.details?.seasons?.filter((x) => x.season_number > 0).length ? (
+                <View style={{ marginTop: 26 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                    <Text style={styles.castHead}>Seasons</Text>
+                    <Text style={[styles.seeAll, { color: `${accent}cc` }]}>{details.details.number_of_seasons} season{details.details.number_of_seasons === 1 ? '' : 's'} · {details.details.number_of_episodes} episodes</Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, marginTop: 14 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+                    {details.details.seasons.filter((x) => x.season_number > 0).map((x) => (
+                      <View key={x.id || x.season_number} style={{ width: 112 }}>
+                        <View style={[styles.seasonArt, { borderColor: `${accent}44` }]}>
+                          {x.poster_path || movie?.poster ? <Image source={{ uri: x.poster_path ? `https://image.tmdb.org/t/p/w342${x.poster_path}` : movie.poster }} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
+                          {details.details.last_episode_to_air?.season_number === x.season_number ? <View style={[styles.seasonTag, { backgroundColor: `${accent}e6` }]}><Text style={styles.seasonTagText}>LATEST</Text></View> : null}
+                        </View>
+                        <Text style={styles.seasonName} numberOfLines={1}>{x.name || `Season ${x.season_number}`}</Text>
+                        <Text style={[styles.castRole, { textAlign: 'left', color: `${accent}b3` }]} numberOfLines={1}>{[x.air_date ? x.air_date.slice(0, 4) : null, x.episode_count ? `${x.episode_count} episodes` : null].filter(Boolean).join(' · ')}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
           {/* Similar — flat list with reasons, as on the web */}
-          {tab === 'about' ? <View onLayout={(e) => { similarY.current = e.nativeEvent.layout.y; }}>
+          {tab === 'about' && focus === 'similar' ? <View onLayout={(e) => { similarY.current = e.nativeEvent.layout.y; }}>
             <SectionLabel accent={accent}>More like this</SectionLabel>
             {similar === null ? <Spinner accent={accent} /> : similar.length === 0 ? <Text style={styles.muted}>Nothing similar found yet.</Text> : similar.map((m, i) => (
               <Pressable key={`${m.id}-${i}`} onPress={() => openTitle(m)} style={({ pressed }) => [styles.simRow, i && styles.simBorder, { opacity: pressed ? 0.75 : 1 }]}>
@@ -249,12 +268,23 @@ export default function TitleScreen() {
           </View> : null}
         </View>
       </ScrollView>
+      {tab === 'comments' ? (
+        <View style={[styles.dock, { paddingBottom: insets.bottom + 10, borderTopColor: `${accent}33` }]}>
+          <LinearGradient colors={[`${accent}1f`, `${accent}0a`]} style={StyleSheet.absoluteFill} />
+          <Composer accent={accent} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPost={comments.post} initialRating={myRating} />
+        </View>
+      ) : null}
       {party && movie ? <StartParty movie={movie} onClose={() => setParty(false)} /> : null}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  dock: { paddingHorizontal: 20, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, backgroundColor: 'rgba(6,6,11,0.92)', overflow: 'hidden' },
+  seasonArt: { width: 112, height: 168, borderRadius: 10, overflow: 'hidden', borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
+  seasonTag: { position: 'absolute', left: 6, top: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  seasonTagText: { fontFamily: F.bold, fontSize: 8.5, letterSpacing: 1.2, color: '#07070F' },
+  seasonName: { fontFamily: F.bold, fontSize: 12.5, color: '#fff', marginTop: 7 },
   facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 22, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.1)' },
   fact: { width: '50%', flexDirection: 'row', gap: 12, paddingVertical: 16, paddingRight: 10 },
   factRight: { paddingLeft: 14, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: 'rgba(255,255,255,0.1)' },

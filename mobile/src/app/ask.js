@@ -1,4 +1,5 @@
 import { useThemed } from '../lib/userTheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
@@ -62,7 +63,11 @@ export default function Ask() {
   const [err, setErr] = useState('');
   const [listening, setListening] = useState(false);
   const [wall, setWall] = useState([]);
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  // Recent searches, kept on this phone
+  const [recent, setRecent] = useState([]);
+  useEffect(() => { AsyncStorage.getItem('thiscene.askRecent.v1').then((v) => { try { setRecent(JSON.parse(v || '[]')); } catch {} }).catch(() => {}); }, []);
+  const remember = (t) => setRecent((p) => { const next = [t, ...p.filter((x) => x.toLowerCase() !== t.toLowerCase())].slice(0, 6); AsyncStorage.setItem('thiscene.askRecent.v1', JSON.stringify(next)).catch(() => {}); return next; });
   const pulse = useRef(new Animated.Value(0)).current;
   const finalRef = useRef('');
   const qRef = useRef('');
@@ -75,6 +80,7 @@ export default function Ask() {
     try {
       const d = await api.get(`/api/ask?q=${encodeURIComponent(t)}`);
       setRes(d);
+      remember(t);
       const ps = (d.movies || []).map((m) => m.poster).filter(Boolean);
       if (ps.length >= 4) setWall(ps.slice(0, 14));
       api.post('/api/track', { name: 'ask', props: { q: t.slice(0, 80), n: (d.movies || []).length, app: 'android' } }).catch(() => {});
@@ -136,7 +142,7 @@ export default function Ask() {
       <Ambient accent={tone} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         {/* Header: drifting posters, tinted by the top pick */}
-        <View style={{ height: 190 + insets.top }}>
+        <View style={{ height: (res || busy || listening ? 190 : Math.max(190, Math.round(height * 0.42))) + insets.top }}>
           <Marquee posters={wall} tone={tone} />
           <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.close, { position: 'absolute', top: insets.top + 10, right: 18 }]} accessibilityLabel="Close"><Feather name="x" size={18} color="#fff" /></Pressable>
           <View style={{ position: 'absolute', left: 20, right: 20, bottom: 6 }}>
@@ -227,6 +233,21 @@ export default function Ask() {
                   </Pressable>
                 ))}
               </View>
+              {recent.length ? (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 26 }}>
+                    <Text style={[styles.tryLabel, { marginBottom: 0 }]}>YOUR RECENT</Text>
+                    <Pressable onPress={() => { setRecent([]); AsyncStorage.removeItem('thiscene.askRecent.v1').catch(() => {}); }} hitSlop={8}><Text style={[styles.muted, { color: tone }]}>Clear</Text></Pressable>
+                  </View>
+                  {recent.map((r) => (
+                    <Pressable key={r} onPress={() => ask(r)} style={({ pressed }) => [styles.recentRow, { opacity: pressed ? 0.6 : 1 }]}>
+                      <Feather name="clock" size={15} color="rgba(255,255,255,0.45)" />
+                      <Text style={styles.recentText} numberOfLines={1}>{r}</Text>
+                      <Feather name="arrow-up-left" size={15} color="rgba(255,255,255,0.35)" />
+                    </Pressable>
+                  ))}
+                </>
+              ) : null}
               <Text style={[styles.muted, { marginTop: 18, lineHeight: 18 }]}>Tap the mic and say it like you’d tell a friend — mood, a film it’s like, how long, where you watch.</Text>
             </>
           )}
@@ -238,6 +259,8 @@ export default function Ask() {
 
 const glass = { backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' };
 const styles = StyleSheet.create({
+  recentRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.08)' },
+  recentText: { flex: 1, fontFamily: F.semibold, fontSize: 14, color: 'rgba(255,255,255,0.85)' },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
   badgeText: { fontFamily: F.bold, fontSize: 10.5, letterSpacing: 2.2, color: '#fff' },
   orb: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
